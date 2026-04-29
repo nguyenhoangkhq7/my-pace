@@ -1,1 +1,2 @@
 @AGENTS.md
+MyPACE Design Principle: Every UI element must serve a purpose. Avoid visual noise. Use shadcn/ui components with 'New York' style and 'Slate' base color. Buttons for adding cards should use the 'ghost' variant to stay invisible until hovered, reducing brain load.
