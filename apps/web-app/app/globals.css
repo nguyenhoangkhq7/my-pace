@@ -5,14 +5,14 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --pace-bg: #0f1318;
-  --pace-sidebar: #12161c;
-  --pace-panel: #1a1f26;
-  --pace-card: #222831;
-  --pace-border: #2a313b;
-  --pace-muted: #8b98a7;
-  --pace-accent: #a9c5ff;
-  --pace-accent-strong: #bcd4ff;
+  --pace-bg: #0b0e11;
+  --pace-sidebar: #0f172a;
+  --pace-panel: #0f172a80;
+  --pace-card: #1f2937;
+  --pace-border: #1f2937;
+  --pace-muted: #94a3b8;
+  --pace-accent: #93c5fd;
+  --pace-accent-strong: #bfdbfe;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);

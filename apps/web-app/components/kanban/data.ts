@@ -8,22 +8,22 @@ export const kanbanColumns: KanbanColumnData[] = [
       {
         id: "backlog-1",
         title: "Research competitor typography systems",
-        tag: { label: "RESEARCH", className: "bg-[#243147] text-[#b7c7e6]" },
+        tag: { label: "RESEARCH", className: "bg-blue-500/20 text-blue-200" },
       },
       {
         id: "backlog-2",
         title: "Draft initial moodboards for the workspace",
-        tag: { label: "DESIGN", className: "bg-[#2a2f45] text-[#c0c7e6]" },
+        tag: { label: "DESIGN", className: "bg-amber-500/20 text-amber-200" },
       },
       {
         id: "backlog-3",
         title: "Interview top focus experts",
-        tag: { label: "PLANNING", className: "bg-[#2c3340] text-[#c6d0df]" },
+        tag: { label: "PLANNING", className: "bg-emerald-500/20 text-emerald-200" },
       },
       {
         id: "backlog-4",
         title: "Map competitor onboarding flows",
-        tag: { label: "RESEARCH", className: "bg-[#243147] text-[#b7c7e6]" },
+        tag: { label: "RESEARCH", className: "bg-blue-500/20 text-blue-200" },
       },
     ],
   },
@@ -34,17 +34,17 @@ export const kanbanColumns: KanbanColumnData[] = [
       {
         id: "todo-1",
         title: "Update technical documentation for API v2",
-        tag: { label: "DOCS", className: "bg-[#263041] text-[#b8c2d4]" },
+        tag: { label: "DOCS", className: "bg-sky-500/20 text-sky-200" },
       },
       {
         id: "todo-2",
         title: "Review security protocols for user data",
-        tag: { label: "DEV", className: "bg-[#263143] text-[#b8c6de]" },
+        tag: { label: "DEV", className: "bg-amber-500/20 text-amber-200" },
       },
       {
         id: "todo-3",
         title: "Refactor CSS variable system",
-        tag: { label: "CORE", className: "bg-[#2c3340] text-[#c6d0df]" },
+        tag: { label: "CORE", className: "bg-emerald-500/20 text-emerald-200" },
       },
     ],
   },
@@ -55,13 +55,13 @@ export const kanbanColumns: KanbanColumnData[] = [
       {
         id: "doing-1",
         title: "Finalizing dark theme color palette",
-        tag: { label: "ACTIVE", className: "bg-[#2a3650] text-[#bdd0f0]" },
+        tag: { label: "ACTIVE", className: "bg-blue-500/20 text-blue-200" },
         progress: 62,
       },
       {
         id: "doing-2",
         title: "Implementing kanban drag-and-drop",
-        tag: { label: "UI", className: "bg-[#243147] text-[#b7c7e6]" },
+        tag: { label: "UI", className: "bg-amber-500/20 text-amber-200" },
       },
       {
         id: "doing-3",

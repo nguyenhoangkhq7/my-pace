@@ -9,7 +9,7 @@ type KanbanCardProps = {
 
 export function KanbanCard({ card }: KanbanCardProps) {
   return (
-    <Card className="bg-pace-card">
+    <Card className="border-slate-700/80 bg-slate-800">
       <CardContent className="space-y-3 px-4 pb-4 pt-4">
         <p
           className={cn(
