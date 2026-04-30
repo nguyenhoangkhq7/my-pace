@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: my-pace-service
+  datasource:
+    url: jdbc:mysql://localhost:3306/my_pace_db
+    username: root
+    password: 22718451
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: validate
