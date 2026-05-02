@@ -1,20 +1,22 @@
-package nhk.entity;
+package nhk.kanban;
 
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import nhk.user.User;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
+import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 @Getter
 @Setter
 @Entity
-@Table(name = "contexts")
-public class Context {
+@Table(name = "boards")
+public class Board {
    @Id
    @GeneratedValue(strategy = GenerationType.IDENTITY)
    @Column(name = "id", nullable = false)
@@ -25,14 +27,18 @@ public class Context {
    @JoinColumn(name = "user_id", nullable = false)
    private User user;
 
-   @Column(name = "name", nullable = false, length = 50)
+   @Column(name = "name", nullable = false, length = 100)
    private String name;
 
-   @ColumnDefault("'#3498db'")
+   @ColumnDefault("'#1d2125'")
    @Column(name = "color_code", length = 7)
    private String colorCode;
 
-   @OneToMany(mappedBy = "context")
-   private Set<Task> tasks = new LinkedHashSet<>();
+   @ColumnDefault("CURRENT_TIMESTAMP")
+   @Column(name = "created_at")
+   private Instant createdAt;
+
+   @OneToMany(mappedBy = "board")
+   private Set<BoardColumn> boardColumns = new LinkedHashSet<>();
 
 }

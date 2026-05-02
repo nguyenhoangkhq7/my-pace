@@ -1,4 +1,4 @@
-package nhk.board.exception;
+package nhk.kanban;
 
 public class BoardNotFound extends RuntimeException {
    public BoardNotFound(String message) {

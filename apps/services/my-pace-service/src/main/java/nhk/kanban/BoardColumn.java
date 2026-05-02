@@ -1,8 +1,9 @@
-package nhk.entity;
+package nhk.kanban;
 
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import nhk.task.Task;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
@@ -14,8 +15,8 @@ import java.util.Set;
 @Getter
 @Setter
 @Entity
-@Table(name = "boards")
-public class Board {
+@Table(name = "board_columns")
+public class BoardColumn {
    @Id
    @GeneratedValue(strategy = GenerationType.IDENTITY)
    @Column(name = "id", nullable = false)
@@ -23,21 +24,21 @@ public class Board {
 
    @ManyToOne(fetch = FetchType.LAZY, optional = false)
    @OnDelete(action = OnDeleteAction.CASCADE)
-   @JoinColumn(name = "user_id", nullable = false)
-   private User user;
+   @JoinColumn(name = "board_id", nullable = false)
+   private Board board;
 
-   @Column(name = "name", nullable = false, length = 100)
+   @Column(name = "name", nullable = false, length = 50)
    private String name;
 
-   @ColumnDefault("'#1d2125'")
-   @Column(name = "color_code", length = 7)
-   private String colorCode;
+   @ColumnDefault("0")
+   @Column(name = "position")
+   private Integer position;
 
    @ColumnDefault("CURRENT_TIMESTAMP")
    @Column(name = "created_at")
    private Instant createdAt;
 
-   @OneToMany(mappedBy = "board")
-   private Set<BoardColumn> boardColumns = new LinkedHashSet<>();
+   @OneToMany(mappedBy = "column")
+   private Set<Task> tasks = new LinkedHashSet<>();
 
 }

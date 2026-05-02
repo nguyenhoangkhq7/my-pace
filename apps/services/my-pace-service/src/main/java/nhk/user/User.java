@@ -1,8 +1,14 @@
-package nhk.entity;
+package nhk.user;
 
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import nhk.task.Context;
+import nhk.energy.EnergyCheckin;
+import nhk.energy.EnergyProfile;
+import nhk.task.TimeBlock;
+import nhk.kanban.Board;
+import nhk.task.Task;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.time.Instant;
@@ -19,14 +25,21 @@ public class User {
    @Column(name = "id", nullable = false)
    private Integer id;
 
-   @Column(name = "username", nullable = false, length = 50)
-   private String username;
-
    @Column(name = "email", nullable = false, length = 191)
    private String email;
 
    @Column(name = "password_hash", nullable = false)
    private String passwordHash;
+
+   @Column(name = "full_name", nullable = false, length = 100)
+   private String fullName;
+
+   @Enumerated(EnumType.STRING)
+   @Column(name = "role", length = 20)
+   private Role role = Role.USER;
+
+   @Column(name = "is_locked")
+   private boolean isLocked = false;
 
    @ColumnDefault("CURRENT_TIMESTAMP")
    @Column(name = "created_at")

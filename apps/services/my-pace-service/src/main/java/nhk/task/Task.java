@@ -1,9 +1,10 @@
-package nhk.entity;
+package nhk.task;
 
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import nhk.enums.ImpactType;
+import nhk.kanban.BoardColumn;
+import nhk.user.User;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;

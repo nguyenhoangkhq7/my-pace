@@ -1,8 +1,6 @@
-package nhk.board.service;
+package nhk.kanban;
 
 import lombok.AllArgsConstructor;
-import nhk.board.repository.BoardRepository;
-import nhk.entity.Board;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -14,5 +12,9 @@ public class BoardService {
 
    public List<Board> getBoards() {
       return boardRepository.findAll();
+   }
+
+   public Board getBoard(Long id) {
+      return boardRepository.findById(id).orElse(null);
    }
 }

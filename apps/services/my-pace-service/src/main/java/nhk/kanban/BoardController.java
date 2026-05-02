@@ -1,17 +1,10 @@
-package nhk.board.controller;
+package nhk.kanban;
 
 import lombok.AllArgsConstructor;
-import nhk.board.exception.BoardNotFound;
-import nhk.board.service.BoardService;
-import nhk.entity.Board;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @AllArgsConstructor
 @RestController
@@ -26,6 +19,15 @@ class BoardController {
          throw new BoardNotFound("No boards found");
       }
       return boards;
+   }
+
+   @GetMapping("/{id}")
+   public Board getBoard(@PathVariable Long id) {
+      var board = boardService.getBoard(id);
+      if(board == null) {
+         throw new BoardNotFound("Board not found");
+      }
+      return board;
    }
 
    @ExceptionHandler(BoardNotFound.class)
