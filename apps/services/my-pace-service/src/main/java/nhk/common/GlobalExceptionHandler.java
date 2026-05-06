@@ -1,7 +1,9 @@
 package nhk.common;
 
 import lombok.extern.slf4j.Slf4j;
+import nhk.kanban.BoardNotFound;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -43,6 +45,7 @@ public class GlobalExceptionHandler {
 
    @ExceptionHandler(DataIntegrityViolationException.class)
    public ResponseEntity<Map<String, Object>> handleConflict(DataIntegrityViolationException ex) {
+      log.error("Data Integrity Violation xảy ra: ", ex);
       return buildResponse("Dữ liệu đã tồn tại hoặc vi phạm ràng buộc hệ thống", HttpStatus.CONFLICT);
    }
 
@@ -61,5 +64,10 @@ public class GlobalExceptionHandler {
    public ResponseEntity<Map<String, Object>> handleNullPointerException(NullPointerException ex) {
        log.error("Null Pointer Exception xảy ra: ", ex);
       return buildResponse("Lỗi hệ thống null pointer exception", HttpStatus.INTERNAL_SERVER_ERROR);
+   }
+
+   @ExceptionHandler(BoardNotFound.class)
+   public ProblemDetail handleBoardNotFoundException(BoardNotFound ex) {
+      return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
    }
 }

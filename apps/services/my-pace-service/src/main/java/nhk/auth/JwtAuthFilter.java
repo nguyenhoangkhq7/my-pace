@@ -36,11 +36,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
          filterChain.doFilter(request, response);
          return;
       }
-      var userDetails = userDetailsServiceCustom.loadUserByUsername(jwt.getUserIdFromToken().toString());
+
       var authentication = new UsernamePasswordAuthenticationToken(
-              userDetails,
+              jwt.getUserIdFromToken(),
               null,
-              userDetails.getAuthorities()
+              List.of(new SimpleGrantedAuthority("ROLE_" + jwt.getRoleFromToken()))
       );
       authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
       SecurityContextHolder.getContext().setAuthentication(authentication);

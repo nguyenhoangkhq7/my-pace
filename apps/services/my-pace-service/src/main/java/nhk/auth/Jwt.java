@@ -20,6 +20,9 @@ public class Jwt {
    public Integer getUserIdFromToken() {
       return Integer.parseInt(claims.getSubject());
    }
+   public String getRoleFromToken() {
+      return Role.valueOf(claims.get("role").toString()).name();
+   }
 
    @Override
    public String toString() {

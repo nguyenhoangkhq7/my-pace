@@ -42,7 +42,6 @@ public class SecurityConfig {
               .authorizeHttpRequests(c -> {
                          featureSecurityRules.forEach(r -> r.configure(c));
                          c.anyRequest().authenticated();
-
                       }
               )
               .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)

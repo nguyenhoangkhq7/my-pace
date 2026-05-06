@@ -3,6 +3,7 @@ package nhk.auth;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import nhk.user.UserMapper;
 import nhk.user.UserRepository;
@@ -11,10 +12,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.Map;
+
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 @AllArgsConstructor
 public class AuthController {
    private final AuthenticationManager manager;
@@ -22,13 +28,20 @@ public class AuthController {
    private final UserRepository userRepository;
    private final JwtConfig jwtConfig;
    private final UserMapper userMapper;
+   private final PasswordEncoder passwordEncoder;
 
    @PostMapping("/register")
-   public ResponseEntity<JwtResponse> register(
-           @RequestBody RegisterRequest request,
+   public ResponseEntity<?> register(
+           @Valid @RequestBody RegisterRequest request,
            HttpServletResponse response
    ) {
+      var existingUser = userRepository.findByEmail(request.getEmail());
+      if(existingUser.isPresent()) {
+         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "Email is already registered"));
+      }
       var user = userMapper.toEntity(request);
+      user.setPasswordHash(passwordEncoder.encode(request.password));
+      user.setCreatedAt(Instant.now());
       userRepository.save(user);
 
       String accessToken = jwtService.generateAccessToken(user).toString();

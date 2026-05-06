@@ -1,37 +1,40 @@
 package nhk.kanban;
 
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @AllArgsConstructor
 @RestController
-@RequestMapping("/board")
+@RequestMapping("/api/boards")
 class BoardController {
    private final BoardService boardService;
 
    @GetMapping
-   public List<Board> getBoards() {
-      var boards = boardService.getBoards();
-      if(boards.isEmpty()) {
-         throw new BoardNotFound("No boards found");
-      }
-      return boards;
+   public ResponseEntity<List<BoardSimpleResponse>> getMyBoards(@AuthenticationPrincipal Integer userId) {
+      var boards = boardService.getMyBoards(userId);
+      return ResponseEntity.ok(boards);
    }
 
    @GetMapping("/{id}")
-   public Board getBoard(@PathVariable Long id) {
-      var board = boardService.getBoard(id);
-      if(board == null) {
-         throw new BoardNotFound("Board not found");
-      }
-      return board;
+   public ResponseEntity<BoardSimpleResponse> getMyBoard(@PathVariable Integer id, @AuthenticationPrincipal Integer userId) {
+      var board = boardService.getMyBoard(id, userId);
+      return ResponseEntity.ok(board);
    }
 
-   @ExceptionHandler(BoardNotFound.class)
-   public ResponseEntity<String> handleBoardNotFound(BoardNotFound exception) {
-      return ResponseEntity.status(404).body(exception.getMessage());
+   @PostMapping
+   public ResponseEntity<BoardSimpleResponse> createMyBoard(@RequestBody CreateBoardRequest request, @AuthenticationPrincipal Integer userId) {
+      var createdBoard = boardService.createMyBoard(request, userId);
+      return ResponseEntity.status(HttpStatus.CREATED).body(createdBoard);
+   }
+
+   @DeleteMapping("/{id}")
+   public ResponseEntity<Void> deleteMyBoard(@PathVariable Integer id, @AuthenticationPrincipal Integer userId) {
+      boardService.deleteMyBoard(id, userId);
+      return ResponseEntity.noContent().build();
    }
 }

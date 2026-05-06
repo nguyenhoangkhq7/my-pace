@@ -1,4 +1,4 @@
-package nhk.task;
+package nhk.kanban;
 
 import jakarta.persistence.*;
 import lombok.Getter;

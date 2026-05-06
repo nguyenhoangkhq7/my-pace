@@ -3,12 +3,12 @@ package nhk.user;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import nhk.task.Context;
+import nhk.kanban.Context;
 import nhk.energy.EnergyCheckin;
 import nhk.energy.EnergyProfile;
-import nhk.task.TimeBlock;
+import nhk.kanban.TimeBlock;
 import nhk.kanban.Board;
-import nhk.task.Task;
+import nhk.kanban.Task;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.time.Instant;

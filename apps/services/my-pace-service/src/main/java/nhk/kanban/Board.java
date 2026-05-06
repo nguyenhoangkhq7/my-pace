@@ -34,11 +34,10 @@ public class Board {
    @Column(name = "color_code", length = 7)
    private String colorCode;
 
-   @ColumnDefault("CURRENT_TIMESTAMP")
    @Column(name = "created_at")
-   private Instant createdAt;
+   private Instant createdAt = Instant.now();
 
    @OneToMany(mappedBy = "board")
+   @OrderBy("position ASC")
    private Set<BoardColumn> boardColumns = new LinkedHashSet<>();
-
 }

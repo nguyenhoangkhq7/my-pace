@@ -1,4 +1,4 @@
-package nhk.task;
+package nhk.kanban;
 
 public enum ImpactType {
    DRAIN, RECHARGE

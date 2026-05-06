@@ -17,10 +17,10 @@ public class UserDetailsServiceCustom implements UserDetailsService {
 
    @Override
    @NonNull
-   public UserDetails loadUserByUsername(@NonNull String userId) throws UsernameNotFoundException {
-      return userRepository.findById(Integer.parseInt(userId))
+   public UserDetails loadUserByUsername(@NonNull String email) throws UsernameNotFoundException {
+      return userRepository.findByEmail(email)
               .map(UserDetailsCustom::new)
-              .orElseThrow(() -> new UsernameNotFoundException("User not found with id: " + userId));
+              .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
    }
 
    @ExceptionHandler(UsernameNotFoundException.class)

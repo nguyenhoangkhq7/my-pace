@@ -11,6 +11,6 @@ spring:
     hibernate:
       ddl-auto: validate
   jwt:
-    access-token-expiration: 3600000 # 1 hour in milliseconds
-    refresh-token-expiration: 604800000 # 7 days in milliseconds
     secret: ${JWT_SECRET}
+    access-token-expiration: 3600 # 1 hour in seconds
+    refresh-token-expiration: 604800 # 7 days in seconds

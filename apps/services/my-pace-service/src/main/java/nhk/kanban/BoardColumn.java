@@ -3,7 +3,6 @@ package nhk.kanban;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import nhk.task.Task;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
@@ -39,6 +38,6 @@ public class BoardColumn {
    private Instant createdAt;
 
    @OneToMany(mappedBy = "column")
+   @OrderBy("position ASC")
    private Set<Task> tasks = new LinkedHashSet<>();
-
 }
