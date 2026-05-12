@@ -1,4 +1,4 @@
-import { FocusSession } from "@/components/layout/FocusSession";
+import { FocusSession } from "@/features/focus";
 
 const navItems = [
   { label: "Boards", active: true },

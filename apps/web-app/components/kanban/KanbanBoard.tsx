@@ -1,5 +1,5 @@
 import { KanbanColumn } from "@/components/kanban/KanbanColumn";
-import { KanbanColumnData } from "@/components/kanban/types";
+import { KanbanColumnData } from "@/features/todos/types";
 
 type KanbanBoardProps = {
   columns: KanbanColumnData[];

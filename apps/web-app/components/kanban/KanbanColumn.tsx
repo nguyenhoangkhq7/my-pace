@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { KanbanCard } from "@/components/kanban/KanbanCard";
-import { KanbanColumnData } from "@/components/kanban/types";
+import { KanbanColumnData } from "@/features/todos/types";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PlusSignIcon } from "@hugeicons/core-free-icons";
 

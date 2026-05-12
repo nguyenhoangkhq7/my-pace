@@ -16,4 +16,3 @@ export type KanbanColumnData = {
   title: string;
   cards: KanbanCardData[];
 };
-

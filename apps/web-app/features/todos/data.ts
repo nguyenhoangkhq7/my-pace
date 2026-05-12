@@ -1,4 +1,4 @@
-import { KanbanColumnData } from "@/components/kanban/types";
+import { KanbanColumnData } from "@/features/todos/types";
 
 export const kanbanColumns: KanbanColumnData[] = [
   {
@@ -95,4 +95,3 @@ export const kanbanColumns: KanbanColumnData[] = [
     ],
   },
 ];
-

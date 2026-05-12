@@ -1,9 +1,8 @@
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
-import { kanbanColumns } from "@/components/kanban/data";
+import { kanbanColumns } from "@/features/todos/data";
 import { Button } from "@/components/ui/button";
-import AppLayout from "@/app/(app)/layout";
 
-function AppPageContent() {
+export function TodosBoardView() {
   return (
     <>
       <div className="flex items-center justify-between py-6">
@@ -14,13 +13,5 @@ function AppPageContent() {
       </div>
       <KanbanBoard columns={kanbanColumns} />
     </>
-  );
-}
-
-export default function Page() {
-  return (
-    <AppLayout>
-      <AppPageContent />
-    </AppLayout>
   );
 }

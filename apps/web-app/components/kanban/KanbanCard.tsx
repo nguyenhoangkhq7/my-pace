@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { KanbanCardData } from "@/components/kanban/types";
+import { KanbanCardData } from "@/features/todos/types";
 
 type KanbanCardProps = {
   card: KanbanCardData;
