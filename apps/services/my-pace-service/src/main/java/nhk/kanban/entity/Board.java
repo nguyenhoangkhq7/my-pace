@@ -1,10 +1,9 @@
-package nhk.kanban;
+package nhk.kanban.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import nhk.user.User;
-import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
@@ -29,10 +28,6 @@ public class Board {
 
    @Column(name = "name", nullable = false, length = 100)
    private String name;
-
-   @ColumnDefault("'#1d2125'")
-   @Column(name = "color_code", length = 7)
-   private String colorCode;
 
    @Column(name = "created_at")
    private Instant createdAt = Instant.now();

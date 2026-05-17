@@ -32,7 +32,6 @@ CREATE TABLE boards (
                         id INT AUTO_INCREMENT PRIMARY KEY,
                         user_id INT NOT NULL,
                         name VARCHAR(100) NOT NULL,
-                        color_code VARCHAR(7) DEFAULT '#1d2125' COMMENT 'Màu nền hoặc chủ đề của board',
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
@@ -60,13 +59,14 @@ CREATE TABLE tasks (
                        description TEXT,
 
     -- Logic năng lượng
-                       energy_required INT NOT NULL DEFAULT 3 COMMENT 'Thang điểm 1-5',
+                       energy_required INT DEFAULT 3 COMMENT 'Thang điểm 1-5',
                        impact_type VARCHAR(20) DEFAULT 'DRAIN',
 
     -- Ước tính & Thông tin thêm
                        estimated_minutes SMALLINT DEFAULT 30,
                        priority INT DEFAULT 1,
                        is_recurring BOOLEAN DEFAULT FALSE,
+                       is_done BOOLEAN DEFAULT FALSE,
                        due_date DATETIME,
                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 

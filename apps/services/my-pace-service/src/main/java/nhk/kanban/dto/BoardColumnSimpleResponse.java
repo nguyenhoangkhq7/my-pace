@@ -1,4 +1,4 @@
-package nhk.kanban;
+package nhk.kanban.dto;
 
 import lombok.Data;
 
@@ -6,7 +6,8 @@ import java.util.Set;
 
 @Data
 public class BoardColumnSimpleResponse {
+    private Integer id;
     private String name;
-    private int position;
+    private Integer position;
     private Set<TaskSimpleResponse> tasks;
 }

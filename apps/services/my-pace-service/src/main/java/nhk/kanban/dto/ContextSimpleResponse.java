@@ -1,9 +1,10 @@
-package nhk.kanban;
+package nhk.kanban.dto;
 
 import lombok.Data;
 
 @Data
-public class CreateBoardRequest {
+public class ContextSimpleResponse {
+    private Integer id;
     private String name;
     private String colorCode;
 }

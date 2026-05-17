@@ -1,6 +1,11 @@
-package nhk.kanban;
+package nhk.kanban.service;
 
 import lombok.AllArgsConstructor;
+import nhk.kanban.mapper.BoardMapper;
+import nhk.kanban.dto.BoardSimpleResponse;
+import nhk.kanban.dto.CreateBoardRequest;
+import nhk.kanban.exception.BoardNotFound;
+import nhk.kanban.repository.BoardRepository;
 import nhk.user.UserService;
 import org.springframework.stereotype.Service;
 

@@ -1,4 +1,4 @@
-package nhk.kanban;
+package nhk.kanban.rule;
 
 import nhk.auth.SecurityRules;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -11,7 +11,7 @@ public class BoardRules implements SecurityRules {
    public void configure(
            AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry registry
    ) {
-      registry.requestMatchers("/api/board").authenticated();
-      registry.requestMatchers("/api/board/**").authenticated();
+      registry.requestMatchers("/api/boards").authenticated();
+      registry.requestMatchers("/api/boards/**").authenticated();
    }
 }

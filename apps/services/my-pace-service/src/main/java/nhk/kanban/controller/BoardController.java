@@ -1,6 +1,9 @@
-package nhk.kanban;
+package nhk.kanban.controller;
 
 import lombok.AllArgsConstructor;
+import nhk.kanban.service.BoardService;
+import nhk.kanban.dto.BoardSimpleResponse;
+import nhk.kanban.dto.CreateBoardRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;

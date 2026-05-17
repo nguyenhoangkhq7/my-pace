@@ -1,4 +1,4 @@
-package nhk.kanban;
+package nhk.kanban.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;

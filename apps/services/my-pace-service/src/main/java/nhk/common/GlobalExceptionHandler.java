@@ -5,7 +5,10 @@ import lombok.extern.slf4j.Slf4j;
 import nhk.auth.EmailRegistered;
 import nhk.auth.InvalidOtp;
 import nhk.auth.TokenInvalid;
-import nhk.kanban.BoardNotFound;
+import nhk.kanban.exception.BoardNotFound;
+import nhk.kanban.exception.BoardColumnNotFound;
+import nhk.kanban.exception.BoardColumnNotInBoard;
+import nhk.kanban.exception.ContextNotFound;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -37,14 +40,27 @@ public class GlobalExceptionHandler {
            MethodArgumentNotValidException exception
    ) {
       var errors = new HashMap<String, String>();
-      exception.getBindingResult().getFieldErrors().forEach(e -> {
-         errors.put(e.getField(), e.getDefaultMessage());
-      });
+      exception.getBindingResult().getFieldErrors().forEach(e -> errors.put(e.getField(), e.getDefaultMessage()));
       return buildResponse(HttpStatus.BAD_REQUEST, "Dữ liệu đầu vào không hợp lệ", errors);
    }
 
    @ExceptionHandler(BoardNotFound.class)
    public ResponseEntity<ErrorResponse> handleBoardNotFoundException(BoardNotFound ex) {
+      return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+   }
+
+   @ExceptionHandler(BoardColumnNotFound.class)
+   public ResponseEntity<ErrorResponse> handleBoardColumnNotFoundException(BoardColumnNotFound ex) {
+      return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+   }
+
+   @ExceptionHandler(BoardColumnNotInBoard.class)
+   public ResponseEntity<ErrorResponse> handleBoardColumnNotInBoardException(BoardColumnNotInBoard ex) {
+      return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+   }
+
+   @ExceptionHandler(ContextNotFound.class)
+   public ResponseEntity<ErrorResponse> handleContextNotFoundException(ContextNotFound ex) {
       return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
    }
 
@@ -65,7 +81,7 @@ public class GlobalExceptionHandler {
    }
 
    @ExceptionHandler(AccessDeniedException.class)
-   public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
+   public ResponseEntity<ErrorResponse> handleAccessDenied() {
       return buildResponse(HttpStatus.FORBIDDEN, "Bạn không có quyền truy cập chức năng này");
    }
 

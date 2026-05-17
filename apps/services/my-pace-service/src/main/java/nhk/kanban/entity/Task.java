@@ -1,4 +1,4 @@
-package nhk.kanban;
+package nhk.kanban.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -48,32 +48,36 @@ public class Task {
    private String description;
 
    @ColumnDefault("3")
-   @Column(name = "energy_required", nullable = false)
-   private Integer energyRequired;
+   @Column(name = "energy_required")
+   private Integer energyRequired = 3;
 
    @ColumnDefault("'DRAIN'")
    @Enumerated(EnumType.STRING)
    @Column(name = "impact_type", length = 20)
-   private ImpactType impactType;
+   private ImpactType impactType = ImpactType.DRAIN;
 
    @ColumnDefault("30")
    @Column(name = "estimated_minutes")
-   private Short estimatedMinutes;
+   private Short estimatedMinutes = 30;
 
    @ColumnDefault("1")
    @Column(name = "priority")
-   private Integer priority;
+   private Integer priority = 1;
 
    @ColumnDefault("0")
    @Column(name = "is_recurring")
-   private Boolean isRecurring;
+   private Boolean isRecurring = false;
+
+   @ColumnDefault("0")
+   @Column(name = "is_done")
+   private Boolean isDone = false;
 
    @Column(name = "due_date")
    private Instant dueDate;
 
    @ColumnDefault("CURRENT_TIMESTAMP")
    @Column(name = "created_at")
-   private Instant createdAt;
+   private Instant createdAt = Instant.now();
 
    @OneToMany(mappedBy = "task")
    private Set<TaskRecurrence> taskRecurrences = new LinkedHashSet<>();
@@ -81,4 +85,31 @@ public class Task {
    @OneToMany(mappedBy = "task")
    private Set<TimeBlock> timeBlocks = new LinkedHashSet<>();
 
+   @PrePersist
+   void prePersist() {
+      if (energyRequired == null) {
+         energyRequired = 3;
+      }
+      if (impactType == null) {
+         impactType = ImpactType.DRAIN;
+      }
+      if (estimatedMinutes == null) {
+         estimatedMinutes = 30;
+      }
+      if (priority == null) {
+         priority = 1;
+      }
+      if (isRecurring == null) {
+         isRecurring = false;
+      }
+      if (isDone == null) {
+         isDone = false;
+      }
+      if (createdAt == null) {
+         createdAt = Instant.now();
+      }
+      if (position == null) {
+         position = 0;
+      }
+   }
 }
