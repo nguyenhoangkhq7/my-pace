@@ -1,73 +1,106 @@
 package nhk.common;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
+import nhk.auth.EmailRegistered;
+import nhk.auth.InvalidOtp;
+import nhk.auth.TokenInvalid;
 import nhk.kanban.BoardNotFound;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mail.MailException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.dao.DataIntegrityViolationException;
-import jakarta.persistence.EntityNotFoundException;
-import org.springframework.security.access.AccessDeniedException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
-import java.util.Map;
 
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+   private ResponseEntity<ErrorResponse> buildResponse(HttpStatus status, String message, Object data) {
+      ErrorResponse response = new ErrorResponse(LocalDateTime.now(), status.value(), message, data);
+      return ResponseEntity.status(status).body(response);
+   }
+
+   private ResponseEntity<ErrorResponse> buildResponse(HttpStatus status, String message) {
+      return buildResponse(status, message, null);
+   }
+
    @ExceptionHandler(MethodArgumentNotValidException.class)
-   public ResponseEntity<Map<String, String>> handleMethodArgumentNotValidException(
+   public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(
            MethodArgumentNotValidException exception
    ) {
       var errors = new HashMap<String, String>();
       exception.getBindingResult().getFieldErrors().forEach(e -> {
          errors.put(e.getField(), e.getDefaultMessage());
       });
-      return ResponseEntity.badRequest().body(errors);
-   }
-
-   private ResponseEntity<Map<String, Object>> buildResponse(String message, HttpStatus status) {
-      Map<String, Object> response = new HashMap<>();
-      response.put("timestamp", LocalDateTime.now());
-      response.put("status", status.value());
-      response.put("message", message);
-      return new ResponseEntity<>(response, status);
-   }
-
-   @ExceptionHandler(EntityNotFoundException.class)
-   public ResponseEntity<Map<String, Object>> handleNotFound(EntityNotFoundException ex) {
-      return buildResponse(ex.getMessage(), HttpStatus.NOT_FOUND);
-   }
-
-   @ExceptionHandler(DataIntegrityViolationException.class)
-   public ResponseEntity<Map<String, Object>> handleConflict(DataIntegrityViolationException ex) {
-      log.error("Data Integrity Violation xảy ra: ", ex);
-      return buildResponse("Dữ liệu đã tồn tại hoặc vi phạm ràng buộc hệ thống", HttpStatus.CONFLICT);
-   }
-
-   @ExceptionHandler(AccessDeniedException.class)
-   public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex) {
-      return buildResponse("Bạn không có quyền truy cập chức năng này", HttpStatus.FORBIDDEN);
-   }
-
-   @ExceptionHandler({RuntimeException.class, Exception.class})
-   public ResponseEntity<Map<String, Object>> handleAllExceptions(Exception ex) {
-       log.error("System Error: ", ex);
-      return buildResponse("Có lỗi hệ thống xảy ra, vui lòng thử lại sau", HttpStatus.INTERNAL_SERVER_ERROR);
-   }
-
-   @ExceptionHandler(NullPointerException.class)
-   public ResponseEntity<Map<String, Object>> handleNullPointerException(NullPointerException ex) {
-       log.error("Null Pointer Exception xảy ra: ", ex);
-      return buildResponse("Lỗi hệ thống null pointer exception", HttpStatus.INTERNAL_SERVER_ERROR);
+      return buildResponse(HttpStatus.BAD_REQUEST, "Dữ liệu đầu vào không hợp lệ", errors);
    }
 
    @ExceptionHandler(BoardNotFound.class)
-   public ProblemDetail handleBoardNotFoundException(BoardNotFound ex) {
-      return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+   public ResponseEntity<ErrorResponse> handleBoardNotFoundException(BoardNotFound ex) {
+      return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+   }
+
+   @ExceptionHandler(EmailRegistered.class)
+   public ResponseEntity<ErrorResponse> handleEmailRegisteredException(EmailRegistered ex) {
+      return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
+   }
+
+   @ExceptionHandler(InvalidOtp.class)
+   public ResponseEntity<ErrorResponse> handleInvalidOtpException(InvalidOtp ex) {
+      log.error("Error validation OTP: ", ex);
+      return buildResponse(HttpStatus.BAD_REQUEST, "OTP not exist or not valid in system");
+   }
+
+   @ExceptionHandler(BadCredentialsException.class)
+   public ResponseEntity<ErrorResponse> handleBadCredentialsException() {
+      return buildResponse(HttpStatus.UNAUTHORIZED, "Sai tên đăng nhập hoặc mật khẩu");
+   }
+
+   @ExceptionHandler(AccessDeniedException.class)
+   public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
+      return buildResponse(HttpStatus.FORBIDDEN, "Bạn không có quyền truy cập chức năng này");
+   }
+
+   @ExceptionHandler(EntityNotFoundException.class)
+   public ResponseEntity<ErrorResponse> handleNotFound(EntityNotFoundException ex) {
+      return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+   }
+
+   @ExceptionHandler(DataIntegrityViolationException.class)
+   public ResponseEntity<ErrorResponse> handleConflict(DataIntegrityViolationException ex) {
+      log.error("Data Integrity Violation xảy ra: ", ex);
+      return buildResponse(HttpStatus.CONFLICT, "Dữ liệu đã tồn tại hoặc vi phạm ràng buộc hệ thống");
+   }
+
+   @ExceptionHandler(MailException.class)
+   public ResponseEntity<ErrorResponse> handleMailException(MailException ex) {
+      log.error("Error sending email: ", ex);
+      return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "There is error while sending email");
+   }
+
+   @ExceptionHandler(NullPointerException.class)
+   public ResponseEntity<ErrorResponse> handleNullPointerException(NullPointerException ex) {
+      log.error("Null Pointer Exception xảy ra: ", ex);
+      return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Lỗi hệ thống null pointer exception");
+   }
+
+   @ExceptionHandler({RuntimeException.class, Exception.class})
+   public ResponseEntity<ErrorResponse> handleAllExceptions(Exception ex) {
+      log.error("System Error: ", ex);
+      return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Có lỗi hệ thống xảy ra, vui lòng thử lại sau");
+   }
+
+   @ExceptionHandler({TokenInvalid.class})
+   public ResponseEntity<ErrorResponse> handleTokenInvalid(Exception ex) {
+      log.error("System Error: ", ex);
+      return buildResponse(HttpStatus.UNAUTHORIZED, "Token hết hạn hoặc không hợp lệ");
    }
 }

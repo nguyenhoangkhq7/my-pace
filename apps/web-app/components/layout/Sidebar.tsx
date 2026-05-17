@@ -1,5 +1,3 @@
-import { FocusSession } from "@/features/focus";
-
 const navItems = [
   { label: "Boards", active: true },
   { label: "Calendar", active: false },
@@ -20,9 +18,6 @@ export function Sidebar() {
           />
         ))}
       </nav>
-      <div className="mt-auto">
-        <FocusSession />
-      </div>
     </aside>
   );
 }
