@@ -43,12 +43,12 @@ function RegisterProgress({ step }: { step: number }) {
                                 className={cn(
                                     "flex h-10 w-10 items-center justify-center rounded-full border text-sm font-semibold transition-all",
                                     isCompleted &&
-                                        "border-transparent bg-green-500 text-white",
+                                        "border-transparent bg-emerald-500/20 text-emerald-200",
                                     isActive &&
-                                        "border-transparent bg-primary text-primary-foreground",
+                                        "border-transparent bg-pace-accent text-slate-950",
                                     !isActive &&
                                         !isCompleted &&
-                                        "border-transparent bg-muted text-muted-foreground"
+                                        "border-transparent bg-slate-800 text-slate-400"
                                 )}
                             >
                                 {isCompleted ? "✓" : item.id}
@@ -59,14 +59,14 @@ function RegisterProgress({ step }: { step: number }) {
                                     className={cn(
                                         "text-sm font-medium",
                                         isActive || isCompleted
-                                            ? "text-foreground"
-                                            : "text-muted-foreground"
+                                            ? "text-slate-100"
+                                            : "text-slate-400"
                                     )}
                                 >
                                     {item.title}
                                 </p>
 
-                                <p className="text-xs text-muted-foreground">
+                                <p className="text-xs text-slate-400">
                                     {item.id === 1
                                         ? "Enter email"
                                         : item.id === 2
@@ -79,9 +79,9 @@ function RegisterProgress({ step }: { step: number }) {
                 })}
             </div>
 
-            <div className="h-2 overflow-hidden rounded-full bg-muted">
+            <div className="h-2 overflow-hidden rounded-full bg-slate-800">
                 <div
-                    className="h-full rounded-full bg-primary transition-all duration-300"
+                    className="h-full rounded-full bg-pace-accent transition-all duration-300"
                     style={{ width: `${progress}%` }}
                 />
             </div>
@@ -93,11 +93,11 @@ export function RegisterForm() {
     const [step, setStep] = useState(1);
 
     return (
-        <Card className="w-full max-w-2xl overflow-hidden rounded-3xl border-none shadow-2xl">
+        <Card className="w-full min-h-136 overflow-hidden rounded-3xl border-none shadow-2xl">
             <div className="space-y-8 p-6 sm:p-8 lg:p-10">
                 <RegisterProgress step={step} />
 
-                <div className="min-h-[34rem]">
+                <div>
                     {step === 1 && (
                         <OtpEmailStep onNext={() => setStep(2)} />
                     )}

@@ -93,7 +93,10 @@ export function OtpUserDataStep() {
             const session = normalizeAuthSession(response.data);
 
             if (!session) {
-                throw new Error("Invalid auth response from server");
+                form.setError("root", {
+                    message: "Invalid auth response from server",
+                });
+                return;
             }
 
             setSession(session);
@@ -131,11 +134,11 @@ export function OtpUserDataStep() {
                             Create your profile
                         </CardTitle>
 
-                        <CardDescription className="mx-auto max-w-md text-base leading-relaxed">
+                        <CardDescription className="mx-auto max-w-md text-base leading-relaxed text-slate-300">
                             Complete your registration for:
                         </CardDescription>
 
-                        <p className="text-sm font-medium text-foreground">
+                        <p className="text-sm font-medium text-slate-100">
                             {registerFormData.email || "your@email.com"}
                         </p>
                     </div>
@@ -168,7 +171,7 @@ export function OtpUserDataStep() {
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-100"
                                 >
                                     <HugeiconsIcon
                                         icon={showPassword ? ViewOffSlashIcon : ViewIcon}
@@ -192,7 +195,7 @@ export function OtpUserDataStep() {
                                 <button
                                     type="button"
                                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-100"
                                 >
                                     <HugeiconsIcon
                                         icon={showConfirmPassword ? ViewOffSlashIcon : ViewIcon}
@@ -223,10 +226,10 @@ export function OtpUserDataStep() {
                     />
                 )}
 
-                <div className="flex items-center justify-center gap-1 text-sm text-muted-foreground">
+                <div className="flex items-center justify-center gap-1 text-sm text-slate-400">
                     <span>Already have an account?</span>
 
-                    <Button variant="link" className="h-auto p-0 text-sm font-medium" type="button" asChild>
+                    <Button variant="link" className="h-auto p-0 text-sm font-medium text-slate-100 hover:text-slate-200" type="button" asChild>
                         <Link href="/login">Login</Link>
                     </Button>
                 </div>

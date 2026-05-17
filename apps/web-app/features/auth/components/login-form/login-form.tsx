@@ -43,7 +43,10 @@ export function LoginForm() {
       const session = normalizeAuthSession(response.data);
 
       if (!session) {
-        throw new Error("Invalid auth response from server");
+        loginForm.setError("root", {
+          message: "Invalid auth response from server",
+        });
+        return;
       }
 
       setSession(session);
@@ -62,13 +65,13 @@ export function LoginForm() {
 
   return (
       <form onSubmit={loginForm.handleSubmit(onSubmit)}>
-        <Card className="border-none shadow-xl rounded-2xl">
-          <CardHeader className="space-y-2 text-center pb-6">
-            <CardTitle className="text-3xl font-bold tracking-tight">
+        <Card className="w-full min-h-136 overflow-hidden rounded-3xl border-none shadow-2xl">
+          <CardHeader className="space-y-2 pb-6 text-center">
+            <CardTitle className="text-3xl font-bold tracking-tight text-slate-100">
               Login
             </CardTitle>
 
-            <CardDescription className="text-base">
+            <CardDescription className="text-base text-slate-300">
               Welcome back to my space
             </CardDescription>
           </CardHeader>
@@ -126,12 +129,12 @@ export function LoginForm() {
               />
             )}
 
-            <div className="flex items-center justify-center gap-1 text-sm text-muted-foreground">
+            <div className="flex items-center justify-center gap-1 text-sm text-slate-400">
               <span>Don&apos;t have an account?</span>
 
               <Button
                   variant="link"
-                  className="h-auto p-0 text-sm"
+                  className="h-auto p-0 text-sm text-slate-100 hover:text-slate-200"
                   asChild
               >
                 <Link href="/register">Register</Link>

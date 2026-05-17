@@ -115,11 +115,11 @@ export function OtpVerificationStep({onNext}: OtpVerificationStepProps) {
                         <CardTitle className="text-3xl font-bold tracking-tight">
                             Verify your account
                         </CardTitle>
-                        <CardDescription className="mx-auto max-w-md text-base leading-relaxed">
+                        <CardDescription className="mx-auto max-w-md text-base leading-relaxed text-slate-300">
                             We sent a 6-digit verification code
                             to:
                         </CardDescription>
-                        <p className="text-sm font-medium text-foreground">
+                        <p className="text-sm font-medium text-slate-100">
                             {registerFormData.email ||
                                 "your@email.com"}
                         </p>
@@ -171,7 +171,7 @@ export function OtpVerificationStep({onNext}: OtpVerificationStepProps) {
                                                 className="h-14 w-12 rounded-xl border text-lg shadow-sm transition-all focus-within:ring-2"
                                             />
                                         </InputOTPGroup>
-                                        <InputOTPSeparator className="mx-3 text-muted-foreground" />
+                                        <InputOTPSeparator className="mx-3 text-slate-500" />
                                         <InputOTPGroup className="gap-2">
                                             <InputOTPSlot
                                                 index={3}
@@ -204,13 +204,13 @@ export function OtpVerificationStep({onNext}: OtpVerificationStepProps) {
                         )}
 
                         <FieldDescription className="space-y-2 text-center">
-                            <p className="text-sm text-muted-foreground">
+                            <span className="block text-sm text-slate-400">
                                 Didn&apos;t receive the code?
-                            </p>
+                            </span>
 
                             <button
                                 type="button"
-                                className="text-sm font-medium text-primary hover:underline"
+                                className="text-sm font-medium text-slate-100 hover:text-slate-200 hover:underline"
                             >
                                 Try another email address
                             </button>
