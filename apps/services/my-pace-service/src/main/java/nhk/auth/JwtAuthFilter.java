@@ -6,22 +6,21 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
-import nhk.user.UserDetailsServiceCustom;
+import nhk.user.UserDetailsCustom;
+import nhk.user.UserRepository;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.List;
 
 @Component
 @AllArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
    private final JwtService jwtService;
-   private final UserDetailsServiceCustom userDetailsServiceCustom;
+   private final UserRepository userRepository;
 
    @Override
    protected void doFilterInternal(HttpServletRequest request, @NonNull HttpServletResponse response,@NonNull FilterChain filterChain) throws ServletException, IOException {
@@ -37,13 +36,16 @@ public class JwtAuthFilter extends OncePerRequestFilter {
          return;
       }
 
-      var authentication = new UsernamePasswordAuthenticationToken(
-              jwt.getUserIdFromToken(),
-              null,
-              List.of(new SimpleGrantedAuthority("ROLE_" + jwt.getRoleFromToken()))
-      );
-      authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-      SecurityContextHolder.getContext().setAuthentication(authentication);
+      userRepository.findById(jwt.getUserIdFromToken()).ifPresent(user -> {
+         var userDetails = new UserDetailsCustom(user);
+         var authentication = new UsernamePasswordAuthenticationToken(
+                 userDetails,
+                 null,
+                 userDetails.getAuthorities()
+         );
+         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+         SecurityContextHolder.getContext().setAuthentication(authentication);
+      });
       filterChain.doFilter(request, response);
    }
 }

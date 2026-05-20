@@ -1,7 +1,6 @@
 package nhk.auth;
 
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nhk.mail.SendOtpMailService;
@@ -13,7 +12,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Slf4j
 @Service
@@ -43,12 +42,12 @@ class AuthService {
             throw new EmailRegistered("Email is already registered");
         }
         var user = userMapper.toEntity(request);
-        user.setPasswordHash(passwordEncoder.encode(request.password));
-        user.setCreatedAt(Instant.now());
+        user.setPassword(passwordEncoder.encode(request.password));
+        user.setCreatedAt(LocalDateTime.now());
         return userRepository.save(user);
     }
 
-    public User loginUser(LoginRequest request, HttpServletResponse response) {
+    public User loginUser(LoginRequest request) {
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
                 request.getEmail(),
                 request.getPassword()

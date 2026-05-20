@@ -2,120 +2,96 @@ CREATE TABLE users (
                        id INT AUTO_INCREMENT PRIMARY KEY,
                        full_name VARCHAR(100) NOT NULL,
                        email VARCHAR(191) NOT NULL UNIQUE,
-                       password_hash VARCHAR(255) NOT NULL,
+                       password VARCHAR(255) NOT NULL,
                        role VARCHAR(20) DEFAULT 'USER',
                        is_locked BOOLEAN DEFAULT FALSE,
-                       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
+                       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 2. Cấu hình năng lượng cá nhân (Nhịp sinh học)
-CREATE TABLE energy_profiles (
-                                 id INT AUTO_INCREMENT PRIMARY KEY,
-                                 user_id INT NOT NULL,
-                                 peak_start_time TIME COMMENT 'Giờ bắt đầu khung giờ vàng',
-                                 peak_end_time TIME COMMENT 'Giờ kết thúc khung giờ vàng',
-                                 default_buffer_minutes INT DEFAULT 15,
-                                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB;
+CREATE TABLE categories (
+                            id INT AUTO_INCREMENT PRIMARY KEY,
+                            user_id INT NOT NULL,
+                            name VARCHAR(100) NOT NULL,
+                            preferred_start_time TIME NULL,
+                            preferred_end_time TIME NULL,
 
--- 3. Ngữ cảnh công việc (Context Batching)
-CREATE TABLE contexts (
-                          id INT AUTO_INCREMENT PRIMARY KEY,
-                          user_id INT NOT NULL,
-                          name VARCHAR(50) NOT NULL,
-                          color_code VARCHAR(7) DEFAULT '#3498db',
-                          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB;
+                            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                            INDEX idx_user_category (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 4. Bảng Bảng (Boards)
-CREATE TABLE boards (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
-                        user_id INT NOT NULL,
-                        name VARCHAR(100) NOT NULL,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB;
-
--- 5. Cột trong Bảng (Board Columns)
-CREATE TABLE board_columns (
-                               id INT AUTO_INCREMENT PRIMARY KEY,
-                               board_id INT NOT NULL,
-                               name VARCHAR(50) NOT NULL,
-                               position INT DEFAULT 0 COMMENT 'Thứ tự sắp xếp từ trái sang phải',
-                               created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                               FOREIGN KEY (board_id) REFERENCES boards(id) ON DELETE CASCADE,
-                               INDEX idx_board_position (board_id, position)
-) ENGINE=InnoDB;
-
--- 6. Danh sách Công việc (Tasks)
--- Đã tích hợp column_id và position, loại bỏ status
 CREATE TABLE tasks (
                        id INT AUTO_INCREMENT PRIMARY KEY,
                        user_id INT NOT NULL,
-                       column_id INT COMMENT 'Thay thế cho status bằng cách liên kết trực tiếp với cột của board',
-                       position INT DEFAULT 0 COMMENT 'Vị trí của task trong cột',
-                       context_id INT,
+                       category_id INT NULL,
+                       parent_id INT NULL,
                        title VARCHAR(255) NOT NULL,
-                       description TEXT,
-
-    -- Logic năng lượng
-                       energy_required INT DEFAULT 3 COMMENT 'Thang điểm 1-5',
-                       impact_type VARCHAR(20) DEFAULT 'DRAIN',
-
-    -- Ước tính & Thông tin thêm
-                       estimated_minutes SMALLINT DEFAULT 30,
-                       priority INT DEFAULT 1,
-                       is_recurring BOOLEAN DEFAULT FALSE,
+                       position DOUBLE DEFAULT 65536.0,
+                       status VARCHAR(20) DEFAULT 'TODO',
                        is_done BOOLEAN DEFAULT FALSE,
-                       due_date DATETIME,
-                       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+                       priority TINYINT DEFAULT 2 COMMENT '1: LOW, 2: MEDIUM, 3: HIGH, 4: URGENT',
+                       energy_required TINYINT DEFAULT 3 COMMENT '1: VERY_LOW, 2: LOW, 3: MEDIUM, 4: HIGH, 5: INTENSE',
+                       estimated_minutes SMALLINT,
+                       due_date DATETIME NULL,
+                       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 
                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-                       FOREIGN KEY (column_id) REFERENCES board_columns(id) ON DELETE SET NULL,
-                       FOREIGN KEY (context_id) REFERENCES contexts(id) ON DELETE SET NULL,
+                       FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
+                       FOREIGN KEY (parent_id) REFERENCES tasks(id) ON DELETE CASCADE,
 
-    -- Index để load dữ liệu Board nhanh
-                       INDEX idx_user_column (user_id, column_id)
-) ENGINE=InnoDB;
+                       INDEX idx_user_todo_deadline (user_id, is_done, due_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 7. Quản lý quy luật lặp lại (Recurrence Rules)
-CREATE TABLE task_recurrence (
+CREATE TABLE task_details (
+                              task_id INT PRIMARY KEY,
+                              description TEXT NULL,
+                              attachments_json TEXT NULL,
+                              updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                              FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE scheduled_tasks (
                                  id INT AUTO_INCREMENT PRIMARY KEY,
+                                 user_id INT NOT NULL,
                                  task_id INT NOT NULL,
-                                 frequency VARCHAR(20) NOT NULL,
-                                 days_of_week VARCHAR(20) COMMENT '0: Chủ nhật, 1-6: Thứ 2 đến Thứ 7',
-                                 start_date DATE NOT NULL,
-                                 repeat_until DATE NULL COMMENT 'Nếu NULL là lặp vô hạn',
+                                 start_time DATETIME NOT NULL,
+                                 end_time DATETIME NOT NULL,
+                                 date_applied DATE NOT NULL,
+                                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
                                  FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 8. Nhật ký năng lượng (Check-ins)
+CREATE TABLE events (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        user_id INT NOT NULL,
+                        title VARCHAR(255) NOT NULL,
+                        description TEXT,
+                        start_at DATETIME NOT NULL,
+                        end_at DATETIME NOT NULL,
+                        is_recurring BOOLEAN DEFAULT FALSE,
+                        recurrence_rule VARCHAR(255) NULL,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE recurrence_events (
+                                   id INT AUTO_INCREMENT PRIMARY KEY,
+                                   user_id INT NOT NULL,
+                                   event_id INT NOT NULL,
+                                   start_at DATETIME NOT NULL,
+                                   end_at DATETIME NOT NULL,
+                                   is_cancelled BOOLEAN DEFAULT FALSE,
+                                   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                                   FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+                                   INDEX idx_user_recurrence_range (user_id, start_at, end_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE energy_checkins (
                                  id BIGINT AUTO_INCREMENT PRIMARY KEY,
                                  user_id INT NOT NULL,
                                  energy_level INT NOT NULL,
-                                 alertness_level INT NOT NULL,
-                                 note VARCHAR(255),
-                                 recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB;
-
--- 9. Lịch trình thực tế (Time Blocks)
-CREATE TABLE time_blocks (
-                             id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                             user_id INT NOT NULL,
-                             task_id INT NULL,
-                             checkin_id BIGINT NULL,
-                             block_type VARCHAR(20) NOT NULL,
-                             is_locked BOOLEAN DEFAULT FALSE COMMENT 'TRUE: Không tự động dời lịch',
-                             scheduled_start DATETIME NOT NULL,
-                             scheduled_end DATETIME NOT NULL,
-                             actual_start DATETIME NULL,
-                             actual_end DATETIME NULL,
-                             title_override VARCHAR(255),
-
-                             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-                             FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
-                             FOREIGN KEY (checkin_id) REFERENCES energy_checkins(id) ON DELETE SET NULL,
-                             INDEX idx_schedule (user_id, scheduled_start, scheduled_end)
-) ENGINE=InnoDB;
+                                 note VARCHAR(255) NULL,
+                                 recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                                 INDEX idx_user_energy_time (user_id, recorded_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

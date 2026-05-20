@@ -10,8 +10,17 @@ public class SecurityUtils {
 
    public static Optional<User> getCurrentUser() {
       var authentication = SecurityContextHolder.getContext().getAuthentication();
-      if(authentication != null && authentication.getPrincipal() instanceof UserDetailsCustom)
-         return Optional.of(((UserDetailsCustom) authentication.getPrincipal()).getUser());
+      if(authentication == null) {
+         return Optional.empty();
+      }
+
+      Object principal = authentication.getPrincipal();
+      if(principal instanceof UserDetailsCustom userDetailsCustom) {
+         return Optional.of(userDetailsCustom.getUser());
+      }
+      if(principal instanceof User user) {
+         return Optional.of(user);
+      }
       return Optional.empty();
    }
 

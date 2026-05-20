@@ -96,11 +96,16 @@ const executeRequest = async <T>(endpoint: string, options: RequestOptions): Pro
         };
     }
 
-    const data = await response.json();
+    const json = await response.json();
+    const hasWrapper = json && typeof json === "object" && "data" in json && "status" in json;
+    const actualData = hasWrapper ? json.data : json;
+    const actualStatus = hasWrapper && typeof json.status === "number" ? json.status : response.status;
+    const actualMessage = (hasWrapper && typeof json.message === "string") ? json.message : (json.message || "Success");
+
     return {
-        data: data as T,
-        status: response.status,
-        message: data.message || 'Success'
+        data: actualData as T,
+        status: actualStatus,
+        message: actualMessage
     };
 };
 

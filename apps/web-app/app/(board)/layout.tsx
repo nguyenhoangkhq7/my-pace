@@ -1,23 +1,33 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
-import { TodosBoardView } from "@/features/todos/TodosBoardView";
+import { RightPanel } from "@/components/dashboard/RightPanel";
+import { useFilterStore } from "@/stores/filter.store";
+import { NewItemModal } from "@/components/modals/NewItemModal";
 
-export default function AppLayout() {
-  const [selectedBoardId, setSelectedBoardId] = useState<number | null>(null);
+export default function AppLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const activeView = useFilterStore((s) => s.activeView);
+  const setActiveView = useFilterStore((s) => s.setActiveView);
+
+  const isNewItemModalOpen = useFilterStore((s) => s.isNewItemModalOpen);
+  const setIsNewItemModalOpen = useFilterStore((s) => s.setIsNewItemModalOpen);
 
   return (
     <div className="flex h-screen bg-pace-bg text-foreground">
-      <Sidebar
-        selectedBoardId={selectedBoardId}
-        onSelectBoard={setSelectedBoardId}
-      />
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <main className="flex min-h-0 flex-1 flex-col px-8 pb-10 overflow-hidden">
-          <TodosBoardView boardId={selectedBoardId} />
-        </main>
-      </div>
+      <Sidebar activeView={activeView} onViewChange={setActiveView} />
+
+      <main className="flex min-w-0 flex-1 flex-col overflow-y-auto px-8 py-6 scrollbar-thin">
+        {children}
+      </main>
+
+      <RightPanel />
+
+      <NewItemModal open={isNewItemModalOpen} onOpenChange={setIsNewItemModalOpen} />
     </div>
   );
 }

@@ -30,7 +30,7 @@ public class UserDetailsCustom implements UserDetails {
 
    @Override
    public @Nullable String getPassword() {
-      return user.getPasswordHash();
+      return user.getPassword();
    }
 
    @Override

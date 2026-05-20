@@ -1,6 +1,5 @@
 package nhk.auth;
 
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -49,7 +48,7 @@ public class AuthController {
            @RequestBody LoginRequest request,
            HttpServletResponse response
    ) {
-      var user = authService.loginUser(request, response);
+      var user = authService.loginUser(request);
 
       String accessToken = jwtService.generateAccessToken(user).toString();
       String refreshToken = jwtService.generateRefreshToken(user).toString();
