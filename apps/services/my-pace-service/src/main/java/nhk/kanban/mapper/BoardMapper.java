@@ -20,7 +20,6 @@ import java.util.List;
 )
 public interface BoardMapper {
     Board toEntity(CreateBoardRequest createBoardRequest);
-
     BoardSimpleResponse toSimpleResponse(Board board);
     List<BoardSimpleResponse> toListSimpleResponse(List<Board> board);
 }

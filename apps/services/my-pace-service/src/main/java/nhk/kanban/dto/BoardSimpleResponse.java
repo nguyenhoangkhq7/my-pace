@@ -9,6 +9,5 @@ import java.util.Set;
 public class BoardSimpleResponse {
     private Integer id;
     private String name;
-    private Instant createdAt;
     private Set<BoardColumnSimpleResponse> boardColumns;
 }

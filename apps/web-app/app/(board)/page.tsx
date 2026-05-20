@@ -1,5 +1,4 @@
-import { TodosBoardView } from "@/features/todos";
-
+// Board content is rendered directly in the (board) layout.
 export default function HomePage() {
-  return <TodosBoardView />;
+  return null;
 }

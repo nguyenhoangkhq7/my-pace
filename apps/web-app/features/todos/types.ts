@@ -1,18 +1,35 @@
-export type KanbanTag = {
-  label: string;
-  className: string;
+// ── API response types ───────────────────────────────────────────────────────
+
+export type BoardSummary = {
+  id: number;
+  name: string;
 };
 
-export type KanbanCardData = {
-  id: string;
-  title: string;
-  tag?: KanbanTag;
-  progress?: number;
-  completed?: boolean;
+export type TaskContext = {
+  name: string;
+  colorCode: string;
 };
 
-export type KanbanColumnData = {
-  id: string;
+export type Task = {
+  id: number;
   title: string;
-  cards: KanbanCardData[];
+  position: number;
+  context: TaskContext | null;
+  dueDate: string | null;        // ISO date string
+  priority: string | null;
+  energyRequired: string | null;
+  estimatedMinutes: number | null;
+};
+
+export type BoardColumn = {
+  id: number;
+  name: string;
+  position: number;
+  tasks: Task[];
+};
+
+export type Board = {
+  id: number;
+  name: string;
+  boardColumns: BoardColumn[];
 };
