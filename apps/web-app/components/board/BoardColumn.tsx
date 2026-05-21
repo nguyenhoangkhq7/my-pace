@@ -12,7 +12,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import type { TaskItem, TaskStatus } from "@/features/todos/types";
 import { useTasks } from "@/hooks/useTasks";
-import { useFilterStore } from "@/stores/filter.store";
+import { useCategoryFilterStore } from "@/stores/category-filter.store";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -27,7 +27,7 @@ type BoardColumnProps = {
 
 export function BoardColumn({ status, title, tasks, count }: BoardColumnProps) {
   const { createTask } = useTasks();
-  const selectedCategoryId = useFilterStore((s) => s.selectedCategoryId);
+  const selectedCategoryId = useCategoryFilterStore((s) => s.selectedCategoryId);
 
   // ── Inline quick-add state ──
   const [isAdding, setIsAdding] = useState(false);

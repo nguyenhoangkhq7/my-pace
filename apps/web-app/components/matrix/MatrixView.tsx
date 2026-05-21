@@ -7,7 +7,7 @@ import {
   UserMultipleIcon,
   Delete01Icon,
 } from "@hugeicons/core-free-icons";
-import { useFilterStore } from "@/stores/filter.store";
+import { useCategoryFilterStore } from "@/stores/category-filter.store";
 import type { MatrixQuadrantType, TaskItem } from "@/features/todos/types";
 import { MatrixQuadrant } from "./MatrixQuadrant";
 import { CATEGORY_BADGE_COLORS } from "@/features/todos/types";
@@ -53,8 +53,8 @@ const QUADRANTS: {
 ];
 
 export function MatrixView() {
-  const selectedCategoryId = useFilterStore((s) => s.selectedCategoryId);
-  const setCategory = useFilterStore((s) => s.setCategory);
+  const selectedCategoryId = useCategoryFilterStore((s) => s.selectedCategoryId);
+  const setCategory = useCategoryFilterStore((s) => s.setCategory);
 
   const { tasks } = useTasks();
   const { categories } = useCategories();
@@ -73,7 +73,7 @@ export function MatrixView() {
   );
 
   filteredTasks.forEach((task) => {
-    const isImportant = task.isImportant === true;
+    const isImportant = task.isImportant;
     let isUrgent = false;
 
     if (task.dueDate) {

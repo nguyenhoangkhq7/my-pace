@@ -2,11 +2,11 @@
 
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { useFilterStore } from "@/stores/filter.store";
 import { BoardColumn } from "@/components/board/BoardColumn";
 import { CATEGORY_BADGE_COLORS } from "@/features/todos/types";
 import { useTasks } from "@/hooks/useTasks";
 import { useCategories } from "@/hooks/useCategories";
+import { useCategoryFilterStore } from "@/stores/category-filter.store";
 
 // ── Column config ─────────────────────────────────────────────────────────────
 
@@ -20,8 +20,8 @@ const COLUMNS = [
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function BoardSection() {
-  const selectedCategoryId = useFilterStore((s) => s.selectedCategoryId);
-  const setCategory = useFilterStore((s) => s.setCategory);
+  const selectedCategoryId = useCategoryFilterStore((s) => s.selectedCategoryId);
+  const setCategory = useCategoryFilterStore((s) => s.setCategory);
 
   const { tasks } = useTasks();
   const { categories } = useCategories();

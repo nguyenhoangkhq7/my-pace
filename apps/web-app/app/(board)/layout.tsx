@@ -3,20 +3,21 @@
 import React from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { RightPanel } from "@/components/dashboard/RightPanel";
-import { useFilterStore } from "@/stores/filter.store";
 import { NewItemModal } from "@/components/modals/NewItemModal";
 import { TaskDetailModal } from "@/components/modals/TaskDetailModal";
+import { useViewStore } from "@/stores/view.store";
+import { useModalStore } from "@/stores/modal.store";
 
 export default function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const activeView = useFilterStore((s) => s.activeView);
-  const setActiveView = useFilterStore((s) => s.setActiveView);
+  const activeView = useViewStore((s) => s.activeView);
+  const setActiveView = useViewStore((s) => s.setActiveView);
 
-  const isNewItemModalOpen = useFilterStore((s) => s.isNewItemModalOpen);
-  const setIsNewItemModalOpen = useFilterStore((s) => s.setIsNewItemModalOpen);
+  const isNewItemModalOpen = useModalStore((s) => s.isNewItemModalOpen);
+  const setIsNewItemModalOpen = useModalStore((s) => s.setIsNewItemModalOpen);
 
   return (
     <div className="flex h-screen bg-pace-bg text-foreground">

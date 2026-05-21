@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useAuthStore } from "@/features/auth";
-import { useFilterStore } from "@/stores/filter.store";
+import { useModalStore } from "@/stores/modal.store";
 import {
   Grid02Icon,
   Calendar01Icon,
@@ -31,12 +31,12 @@ const NAV_ITEMS: NavItem[] = [
 
 type SidebarProps = {
   activeView: string;
-  onViewChange: (view: string) => void;
+  onViewChangeAction: (view: string) => void;
 };
 
-export function Sidebar({ activeView, onViewChange }: SidebarProps) {
+export function Sidebar({ activeView, onViewChangeAction }: SidebarProps) {
   const clearSession = useAuthStore((s) => s.clearSession);
-  const setIsNewItemModalOpen = useFilterStore((s) => s.setIsNewItemModalOpen);
+  const setIsNewItemModalOpen = useModalStore((s) => s.setIsNewItemModalOpen);
 
   const handleLogout = () => {
     clearSession();
@@ -85,7 +85,7 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
           return (
             <button
               key={item.id}
-              onClick={() => onViewChange(item.id)}
+              onClick={() => onViewChangeAction(item.id)}
               className={cn(
                 "flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5",
                 "text-sm font-medium transition-all duration-150",

@@ -16,7 +16,7 @@ import {
   ENERGY_LABELS,
   ENERGY_COLORS,
 } from "@/features/todos/types";
-import { useFilterStore } from "@/stores/filter.store";
+import { useModalStore } from "@/stores/modal.store";
 import { useTasks } from "@/hooks/useTasks";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -71,7 +71,7 @@ type BoardCardProps = {
 
 export function BoardCard({ task }: BoardCardProps) {
   const { toggleTaskDone, updateTaskTitle } = useTasks();
-  const setTaskDetailTask = useFilterStore((s) => s.setTaskDetailTask);
+  const setTaskDetailTask = useModalStore((s) => s.setTaskDetailTask);
 
   // ── Resolved values ──
   const cleanEnergy = resolveEnergy(task.energyRequired);

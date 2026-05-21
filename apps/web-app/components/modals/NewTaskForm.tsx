@@ -13,7 +13,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
-import { useFilterStore } from "@/stores/filter.store";
+import { useModalStore } from "@/stores/modal.store";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { StarIcon, StarOffIcon } from "@hugeicons/core-free-icons";
 import type { EnergyLevel, TaskStatus } from "@/features/todos/types";
@@ -45,7 +45,7 @@ type NewTaskFormProps = {
 export function NewTaskForm({ onSuccessAction }: NewTaskFormProps) {
   const { categories } = useCategories();
   const { createTask } = useTasks();
-  const defaultTaskStatus = useFilterStore((s) => s.defaultTaskStatus);
+  const defaultTaskStatus = useModalStore((s) => s.defaultTaskStatus);
   const handleSuccess = onSuccessAction;
 
   const form = useForm<NewTaskValues>({

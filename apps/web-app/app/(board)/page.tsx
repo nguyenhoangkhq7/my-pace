@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { useFilterStore } from "@/stores/filter.store";
 import { MatrixView } from "@/components/matrix/MatrixView";
 import { BoardSection } from "@/components/board/BoardSection";
 import { CalendarView } from "@/features/calendar";
@@ -9,9 +8,10 @@ import { useTasks } from "@/hooks/useTasks";
 import { useCategories } from "@/hooks/useCategories";
 import { useEvents } from "@/hooks/useEvents";
 import { useNotes } from "@/hooks/useNotes";
+import { useViewStore } from "@/stores/view.store";
 
 export default function DashboardPage() {
-  const activeView = useFilterStore((s) => s.activeView);
+  const activeView = useViewStore((s) => s.activeView);
 
   const { fetchTasks } = useTasks();
   const { fetchCategories } = useCategories();

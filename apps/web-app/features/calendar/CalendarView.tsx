@@ -8,8 +8,8 @@ import { Loading03Icon } from "@hugeicons/core-free-icons";
 import { useEvents } from "@/hooks/useEvents";
 import { useScheduledTasks } from "@/hooks/useScheduledTasks";
 import { useTasks } from "@/hooks/useTasks";
-import { CalendarScheduleSection } from "../../components/calendar/CalendarScheduleSection";
-import { CalendarTaskSidebar } from "../../components/calendar/CalendarTaskSidebar";
+import { CalendarScheduleSection } from "@/components/calendar/CalendarScheduleSection";
+import { CalendarTaskSidebar } from "@/components/calendar/CalendarTaskSidebar";
 import type { CalendarViewTab, ScheduledEventMeta } from "./types";
 
 export function CalendarView() {
@@ -140,20 +140,19 @@ export function CalendarView() {
 
   return (
     <div className="flex h-full min-h-0 flex-1 gap-6 overflow-hidden">
-      <CalendarTaskSidebar
-        activeTab={activeTab}
-        onTabChangeAction={setActiveTab}
-        tasks={tasks}
-        unscheduledTasks={unscheduledTasks}
-        onAutoScheduleAction={handleAutoScheduleAction}
-      />
-
       <CalendarScheduleSection
         calendarEvents={calendarEvents}
         onDateSelectAction={handleDateSelect}
         onEventDropAction={handleEventDrop}
         onEventResizeAction={handleEventResize}
         onEventClickAction={handleEventClick}
+      />
+      <CalendarTaskSidebar
+        activeTab={activeTab}
+        onTabChangeAction={setActiveTab}
+        tasks={tasks}
+        unscheduledTasks={unscheduledTasks}
+        onAutoScheduleAction={handleAutoScheduleAction}
       />
     </div>
   );

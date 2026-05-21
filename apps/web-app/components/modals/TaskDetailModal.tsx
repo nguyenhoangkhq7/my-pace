@@ -16,7 +16,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
-import { useFilterStore } from "@/stores/filter.store";
+import { useModalStore } from "@/stores/modal.store";
 import type {
   TaskItem,
   TaskStatus,
@@ -55,8 +55,8 @@ function resolveEnergyValue(value: unknown): EnergyOption {
 // ── Component ────────────────────────────────────────────────────────────────
 
 export function TaskDetailModal() {
-  const task = useFilterStore((s) => s.taskDetailTask);
-  const setTaskDetailTask = useFilterStore((s) => s.setTaskDetailTask);
+  const task = useModalStore((s) => s.taskDetailTask);
+  const setTaskDetailTask = useModalStore((s) => s.setTaskDetailTask);
 
   const isOpen = task !== null;
 
