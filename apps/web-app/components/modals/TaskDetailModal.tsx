@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/field";
 import { useFilterStore } from "@/stores/filter.store";
 import type {
-  EnergyLevel,
   TaskItem,
   TaskStatus,
 } from "@/features/todos/types";
@@ -40,16 +39,17 @@ const STATUS_OPTIONS: { value: TaskStatus; label: string }[] = [
 ];
 
 const ENERGY_OPTIONS = ["LOW", "MEDIUM", "HIGH"] as const;
-type EnergyOption = (typeof ENERGY_OPTIONS)[number];
+type EnergyOption = (typeof ENERGY_OPTIONS)[number] | "";
 
 function resolveEnergyValue(value: unknown): EnergyOption {
   const raw = String(value ?? "").toUpperCase();
 
+  if (raw === "") return "";
   if (raw === "LOW" || raw === "1") return "LOW";
   if (raw === "MEDIUM" || raw === "2") return "MEDIUM";
   if (raw === "HIGH" || raw === "3") return "HIGH";
 
-  return "MEDIUM";
+  return "";
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -124,7 +124,7 @@ function TaskDetailModalContent({ task, onClose }: TaskDetailModalContentProps) 
       description: description.trim() || null,
       categoryId: categoryId ? parseInt(categoryId) : null,
       isImportant,
-      energyRequired,
+      energyRequired: energyRequired || null,
       estimatedMinutes: estimatedMinutes ? parseInt(estimatedMinutes) : null,
       dueDate: dueDate ? new Date(dueDate).toISOString() : null,
       status,
@@ -253,6 +253,7 @@ function TaskDetailModalContent({ task, onClose }: TaskDetailModalContentProps) 
                 onChange={(e) => setEnergyRequired(resolveEnergyValue(e.target.value))}
                 className="h-10 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 text-sm text-slate-300 outline-none transition focus:border-pace-accent"
               >
+                <option value="">None</option>
                 {ENERGY_OPTIONS.map((e) => (
                   <option key={e} value={e}>
                     {"⚡".repeat(e === "LOW" ? 1 : e === "MEDIUM" ? 2 : 3)} {ENERGY_LABELS[e]}

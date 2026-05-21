@@ -83,7 +83,7 @@ export type TaskItem = {
   status: TaskStatus;
   isDone: boolean;
   isImportant: boolean;
-  energyRequired: EnergyLevel;
+  energyRequired: EnergyLevel | null;
   estimatedMinutes: number | null;
   dueDate: string | null; // ISO datetime
   createdAt: string;

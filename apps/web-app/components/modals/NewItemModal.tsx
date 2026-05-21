@@ -61,7 +61,7 @@ export function NewItemModal({ open, onOpenChangeAction }: NewItemModalProps) {
 
           <div className="px-6 py-5">
             <TabsContent value="task" className="mt-0">
-              <NewTaskForm onSuccess={handleSuccess} />
+              <NewTaskForm onSuccessAction={handleSuccess} />
             </TabsContent>
             <TabsContent value="category" className="mt-0">
               <NewCategoryForm onSuccessAction={handleSuccess} />

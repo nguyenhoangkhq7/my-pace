@@ -68,6 +68,7 @@ export function BoardColumn({ status, title, tasks, count }: BoardColumnProps) {
       title: trimmed,
       status,
       categoryId: selectedCategoryId,
+      energyRequired: null,
     });
     if (created) {
       setNewTitle("");

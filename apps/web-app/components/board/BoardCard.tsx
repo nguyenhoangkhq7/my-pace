@@ -48,14 +48,15 @@ function formatDueDate(iso: string): { label: string; overdue: boolean } {
 
 // ── Energy Resolver ───────────────────────────────────────────────────────────
 
-function resolveEnergy(val: unknown): EnergyLevel {
+function resolveEnergy(val: unknown): EnergyLevel | null {
   const key = String(val ?? "").toUpperCase();
 
+  if (key === "") return null;
   if (key === "LOW" || key === "1") return "LOW";
   if (key === "MEDIUM" || key === "2") return "MEDIUM";
   if (key === "HIGH" || key === "3") return "HIGH";
 
-  return "MEDIUM";
+  return null;
 }
 
 function energyRepeat(level: EnergyLevel): number {
@@ -75,7 +76,7 @@ export function BoardCard({ task }: BoardCardProps) {
   // ── Resolved values ──
   const cleanEnergy = resolveEnergy(task.energyRequired);
   const isImportant = Boolean(task.isImportant);
-  const energyColor = ENERGY_COLORS[cleanEnergy];
+  const energyColor = cleanEnergy ? ENERGY_COLORS[cleanEnergy] : null;
 
   const categoryColors = task.category
     ? CATEGORY_BADGE_COLORS[task.category.name] ?? {
@@ -230,15 +231,17 @@ export function BoardCard({ task }: BoardCardProps) {
       </div>
 
       {/* ── Energy indicator ── */}
-      <span
-        className={cn(
-          "mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-          energyColor.bg,
-          energyColor.text,
-        )}
-      >
-        {"⚡".repeat(energyRepeat(cleanEnergy))} {ENERGY_LABELS[cleanEnergy]}
-      </span>
+      {cleanEnergy && energyColor && (
+        <span
+          className={cn(
+            "mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+            energyColor.bg,
+            energyColor.text,
+          )}
+        >
+          {"⚡".repeat(energyRepeat(cleanEnergy))} {ENERGY_LABELS[cleanEnergy]}
+        </span>
+      )}
 
       {/* ── Footer: due date + time ── */}
       <div className="mt-3">

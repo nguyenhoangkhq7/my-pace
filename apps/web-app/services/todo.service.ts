@@ -13,7 +13,7 @@ export type TaskMutationInput = {
   description?: string | null;
   categoryId?: number | null;
   isImportant?: boolean;
-  energyRequired?: EnergyLevel;
+  energyRequired?: EnergyLevel | null;
   estimatedMinutes?: number | null;
   dueDate?: string | null;
   status?: TaskStatus;
@@ -84,7 +84,7 @@ export const todoService = {
   async createTask(taskData: CreateTaskInput): Promise<TaskItem> {
     const payload: CreateTaskInput = {
       isImportant: false,
-      energyRequired: "MEDIUM",
+      energyRequired: null,
       ...taskData,
     };
 

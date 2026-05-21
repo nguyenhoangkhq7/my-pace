@@ -27,7 +27,7 @@ const newTaskSchema = z.object({
   title: z.string().min(1, "Title is required").max(255),
   categoryId: z.string().optional(),
   isImportant: z.boolean(),
-  energyRequired: z.enum(["LOW", "MEDIUM", "HIGH"]),
+  energyRequired: z.union([z.enum(["LOW", "MEDIUM", "HIGH"]), z.literal("")]),
   estimatedMinutes: z.string().optional(),
   dueDate: z.string().optional(),
   description: z.string().optional(),
@@ -39,15 +39,14 @@ type NewTaskValues = z.infer<typeof newTaskSchema>;
 // ── Component ───────────────────────────────────────────────────────────────
 
 type NewTaskFormProps = {
-  onSuccess?: () => void;
   onSuccessAction?: () => void;
 };
 
-export function NewTaskForm({ onSuccess, onSuccessAction }: NewTaskFormProps) {
+export function NewTaskForm({ onSuccessAction }: NewTaskFormProps) {
   const { categories } = useCategories();
   const { createTask } = useTasks();
   const defaultTaskStatus = useFilterStore((s) => s.defaultTaskStatus);
-  const handleSuccess = onSuccessAction ?? onSuccess;
+  const handleSuccess = onSuccessAction;
 
   const form = useForm<NewTaskValues>({
     resolver: zodResolver(newTaskSchema),
@@ -55,7 +54,7 @@ export function NewTaskForm({ onSuccess, onSuccessAction }: NewTaskFormProps) {
       title: "",
       categoryId: "",
       isImportant: false,
-      energyRequired: "MEDIUM",
+      energyRequired: "",
       estimatedMinutes: "",
       dueDate: "",
       description: "",
@@ -75,7 +74,7 @@ export function NewTaskForm({ onSuccess, onSuccessAction }: NewTaskFormProps) {
       title: data.title,
       categoryId: categoryIdVal,
       isImportant: data.isImportant,
-      energyRequired: data.energyRequired as EnergyLevel,
+      energyRequired: data.energyRequired === "" ? null : (data.energyRequired as EnergyLevel),
       estimatedMinutes: estimatedMinutesVal,
       dueDate: dueDateVal,
       description: data.description || null,
@@ -190,6 +189,7 @@ export function NewTaskForm({ onSuccess, onSuccessAction }: NewTaskFormProps) {
                 id="task-energy"
                 className="h-10 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 text-sm text-slate-300 outline-none transition focus:border-pace-accent"
               >
+                <option value="">None</option>
                 <option value="LOW">⚡ Low</option>
                 <option value="MEDIUM">⚡⚡ Medium</option>
                 <option value="HIGH">⚡⚡⚡ High</option>
