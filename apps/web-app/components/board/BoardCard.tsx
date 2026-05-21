@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useRef, useEffect, useCallback } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -15,8 +15,8 @@ import {
   CATEGORY_BADGE_COLORS,
   ENERGY_LABELS,
 } from "@/features/todos/types";
-import { useTodoStore } from "@/stores/todo.store";
 import { useFilterStore } from "@/stores/filter.store";
+import { useTasks } from "@/hooks/useTasks";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -74,8 +74,7 @@ type BoardCardProps = {
 };
 
 export function BoardCard({ task }: BoardCardProps) {
-  const toggleTaskDone = useTodoStore((s) => s.toggleTaskDone);
-  const updateTaskTitle = useTodoStore((s) => s.updateTaskTitle);
+  const { toggleTaskDone, updateTaskTitle } = useTasks();
   const setTaskDetailTask = useFilterStore((s) => s.setTaskDetailTask);
 
   // ── Resolved values ──
@@ -103,17 +102,12 @@ export function BoardCard({ task }: BoardCardProps) {
   const [editValue, setEditValue] = useState(task.title);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Sync editValue when task title changes externally
-  useEffect(() => {
-    if (!isEditing) setEditValue(task.title);
-  }, [task.title, isEditing]);
-
   // Auto-focus when editing starts
   useEffect(() => {
     if (isEditing) inputRef.current?.focus();
   }, [isEditing]);
 
-  const commitEdit = useCallback(() => {
+  const commitEdit = () => {
     const trimmed = editValue.trim();
     setIsEditing(false);
     if (trimmed && trimmed !== task.title) {
@@ -121,7 +115,7 @@ export function BoardCard({ task }: BoardCardProps) {
     } else {
       setEditValue(task.title);
     }
-  }, [editValue, task.id, task.title, updateTaskTitle]);
+  };
 
   const handleEditKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
@@ -154,6 +148,7 @@ export function BoardCard({ task }: BoardCardProps) {
       <button
         onClick={(e) => {
           e.stopPropagation();
+            setEditValue(task.title);
           setIsEditing(true);
         }}
         aria-label="Edit title"
@@ -235,7 +230,7 @@ export function BoardCard({ task }: BoardCardProps) {
         ) : (
           <p
             className={cn(
-              "text-sm font-medium text-slate-100 leading-5 min-w-0 flex-1 break-words",
+              "text-sm font-medium text-slate-100 leading-5 min-w-0 flex-1 wrap-break-word",
               task.isDone && "line-through text-slate-500",
             )}
           >

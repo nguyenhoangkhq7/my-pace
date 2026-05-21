@@ -8,11 +8,12 @@ import {
   Delete01Icon,
 } from "@hugeicons/core-free-icons";
 import { useFilterStore } from "@/stores/filter.store";
-import { useTodoStore } from "@/stores/todo.store";
 import type { MatrixQuadrantType, TaskItem } from "@/features/todos/types";
 import { MatrixQuadrant } from "./MatrixQuadrant";
 import { CATEGORY_BADGE_COLORS } from "@/features/todos/types";
 import { cn } from "@/lib/utils";
+import { useTasks } from "@/hooks/useTasks";
+import { useCategories } from "@/hooks/useCategories";
 
 const QUADRANTS: {
   key: MatrixQuadrantType;
@@ -55,8 +56,8 @@ export function MatrixView() {
   const selectedCategoryId = useFilterStore((s) => s.selectedCategoryId);
   const setCategory = useFilterStore((s) => s.setCategory);
 
-  const tasks = useTodoStore((s) => s.tasks);
-  const categories = useTodoStore((s) => s.categories);
+  const { tasks } = useTasks();
+  const { categories } = useCategories();
 
   const groupedTasks: Record<MatrixQuadrantType, TaskItem[]> = {
     "do-now": [],

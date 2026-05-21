@@ -2,7 +2,7 @@
 
 import { HugeiconsIcon } from "@hugeicons/react";
 import { MoreHorizontalIcon } from "@hugeicons/core-free-icons";
-import { useTodoStore } from "@/stores/todo.store";
+import { useEvents } from "@/hooks/useEvents";
 
 function formatTime(isoString: string): string {
   const date = new Date(isoString);
@@ -10,7 +10,7 @@ function formatTime(isoString: string): string {
 }
 
 export default function UpcomingEvents() {
-  const events = useTodoStore((s) => s.events);
+  const { events } = useEvents();
 
   return (
     <div>

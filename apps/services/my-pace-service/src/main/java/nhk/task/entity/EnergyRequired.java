@@ -4,11 +4,9 @@ import lombok.Getter;
 
 @Getter
 public enum EnergyRequired {
-    VERY_LOW((byte) 1),
-    LOW((byte) 2),
-    MEDIUM((byte) 3),
-    HIGH((byte) 4),
-    INTENSE((byte) 5);
+    LOW((byte) 1),
+    MEDIUM((byte) 2),
+    HIGH((byte) 3);
 
     private final byte code;
 

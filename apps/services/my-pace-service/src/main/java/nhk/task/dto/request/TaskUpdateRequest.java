@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import nhk.task.entity.EnergyRequired;
-import nhk.task.entity.TaskPriority;
 import nhk.task.entity.TaskStatus;
 
 import java.time.LocalDateTime;
@@ -17,8 +16,8 @@ public class TaskUpdateRequest {
     private Integer categoryId;
     private Integer parentId;
     private TaskStatus status;
-    private TaskPriority priority;
     private EnergyRequired energyRequired;
+    private Boolean isImportant;
     private Boolean isDone;
     private Double position;
     private Short estimatedMinutes;

@@ -11,7 +11,7 @@ import {
   Cancel01Icon,
 } from "@hugeicons/core-free-icons";
 import type { TaskItem, TaskStatus } from "@/features/todos/types";
-import { useTodoStore } from "@/stores/todo.store";
+import { useTasks } from "@/hooks/useTasks";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -25,7 +25,7 @@ type BoardColumnProps = {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function BoardColumn({ status, title, tasks, count }: BoardColumnProps) {
-  const createTask = useTodoStore((s) => s.createTask);
+  const { createTask } = useTasks();
 
   // ── Inline quick-add state ──
   const [isAdding, setIsAdding] = useState(false);
@@ -62,16 +62,13 @@ export function BoardColumn({ status, title, tasks, count }: BoardColumnProps) {
     if (!trimmed || isSubmitting) return;
 
     setIsSubmitting(true);
-    try {
-      await createTask({ title: trimmed, status });
+    const created = await createTask({ title: trimmed, status });
+    if (created) {
       setNewTitle("");
       // Keep the input open for rapid entry
       inputRef.current?.focus();
-    } catch (err) {
-      console.error("Failed to quick-add task:", err);
-    } finally {
-      setIsSubmitting(false);
     }
+    setIsSubmitting(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

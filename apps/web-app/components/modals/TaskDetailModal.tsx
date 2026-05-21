@@ -17,8 +17,6 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { useFilterStore } from "@/stores/filter.store";
-import { useTodoStore } from "@/stores/todo.store";
-import { appToast } from "@/components/feedback/app-toast";
 import type {
   EnergyLevel,
   Priority,
@@ -30,6 +28,9 @@ import {
   ENERGY_LABELS,
 } from "@/features/todos/types";
 import { cn } from "@/lib/utils";
+import { useCategories } from "@/hooks/useCategories";
+import { useTasks } from "@/hooks/useTasks";
+import type { UpdateTaskInput } from "@/services/todo.service";
 
 // ── Status display config ────────────────────────────────────────────────────
 
@@ -73,8 +74,8 @@ type TaskDetailModalContentProps = {
 };
 
 function TaskDetailModalContent({ task, onClose }: TaskDetailModalContentProps) {
-  const categories = useTodoStore((s) => s.categories);
-  const updateTask = useTodoStore((s) => s.updateTask);
+  const { categories } = useCategories();
+  const { updateTask } = useTasks();
 
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description ?? "");
@@ -103,34 +104,25 @@ function TaskDetailModalContent({ task, onClose }: TaskDetailModalContentProps) 
     if (!title.trim()) return;
 
     setIsSubmitting(true);
-    try {
-      const payload: Record<string, unknown> = {
-        title: title.trim(),
-        description: description.trim() || null,
-        categoryId: categoryId ? parseInt(categoryId) : null,
-        priority: parseInt(priority) as Priority,
-        energyRequired: parseInt(energyRequired) as EnergyLevel,
-        estimatedMinutes: estimatedMinutes ? parseInt(estimatedMinutes) : null,
-        dueDate: dueDate ? new Date(dueDate).toISOString() : null,
-        status,
-        isDone: status === "DONE",
-      };
+    const payload: UpdateTaskInput = {
+      title: title.trim(),
+      description: description.trim() || null,
+      categoryId: categoryId ? parseInt(categoryId) : null,
+      priority: parseInt(priority) as Priority,
+      energyRequired: parseInt(energyRequired) as EnergyLevel,
+      estimatedMinutes: estimatedMinutes ? parseInt(estimatedMinutes) : null,
+      dueDate: dueDate ? new Date(dueDate).toISOString() : null,
+      status,
+      isDone: status === "DONE",
+    };
 
-      await updateTask(task.id, payload);
+    const saved = await updateTask(task.id, payload);
 
-      appToast.success("Task updated", {
-        description: `"${title.trim()}" has been saved.`,
-      });
-
+    if (saved) {
       onClose();
-    } catch (err: unknown) {
-      console.error("Failed to update task:", err);
-      appToast.error("Update failed", {
-        description: err instanceof Error ? err.message : "Something went wrong.",
-      });
-    } finally {
-      setIsSubmitting(false);
     }
+
+    setIsSubmitting(false);
   };
 
   return (

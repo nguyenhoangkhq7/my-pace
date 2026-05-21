@@ -56,15 +56,14 @@ public class Task {
     @Column(name = "is_done")
     private Boolean isDone = false;
 
-    @Convert(converter = TaskPriorityConverter.class)
-    @ColumnDefault("2")
-    @Column(name = "priority")
-    private TaskPriority priority = TaskPriority.MEDIUM;
-
     @Convert(converter = EnergyRequiredConverter.class)
-    @ColumnDefault("3")
+    @ColumnDefault("2")
     @Column(name = "energy_required")
     private EnergyRequired energyRequired = EnergyRequired.MEDIUM;
+
+    @ColumnDefault("0")
+    @Column(name = "is_important", nullable = false)
+    private Boolean isImportant = false;
 
     @Column(name = "estimated_minutes")
     private Short estimatedMinutes;

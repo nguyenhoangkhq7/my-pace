@@ -28,9 +28,9 @@ CREATE TABLE tasks (
                        position DOUBLE DEFAULT 65536.0,
                        status VARCHAR(20) DEFAULT 'TODO',
                        is_done BOOLEAN DEFAULT FALSE,
+                        is_important BOOLEAN DEFAULT FALSE,
 
-                       priority TINYINT DEFAULT 2 COMMENT '1: LOW, 2: MEDIUM, 3: HIGH, 4: URGENT',
-                       energy_required TINYINT DEFAULT 3 COMMENT '1: VERY_LOW, 2: LOW, 3: MEDIUM, 4: HIGH, 5: INTENSE',
+                        energy_required TINYINT NOT NULL DEFAULT 2 COMMENT '1: LOW, 2: MEDIUM, 3: HIGH',
                        estimated_minutes SMALLINT,
                        due_date DATETIME NULL,
                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

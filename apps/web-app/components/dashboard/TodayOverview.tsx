@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
-import { useTodoStore } from "@/stores/todo.store";
+import { useMemo } from "react";
+import { useTasks } from "@/hooks/useTasks";
 
 const RADIUS = 52;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 export default function TodayOverview() {
-  const tasks = useTodoStore((s) => s.tasks);
+  const { tasks } = useTasks();
 
   const stats = useMemo(() => {
     const total = tasks.length;
@@ -25,12 +25,10 @@ export default function TodayOverview() {
   const { total, completed, overdue } = stats;
   const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-  const [offset, setOffset] = useState(CIRCUMFERENCE);
-
-  useEffect(() => {
-    // Trigger animation on mount or whenever percentage changes
-    setOffset(CIRCUMFERENCE - (percentage / 100) * CIRCUMFERENCE);
-  }, [percentage]);
+  const offset = useMemo(
+    () => CIRCUMFERENCE - (percentage / 100) * CIRCUMFERENCE,
+    [percentage],
+  );
 
   return (
     <div>

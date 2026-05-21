@@ -9,7 +9,6 @@ import nhk.task.dto.response.TaskResponse;
 import nhk.task.dto.response.TodayStatsResponse;
 import nhk.task.entity.Task;
 import nhk.task.entity.TaskDetail;
-import nhk.task.entity.TaskPriority;
 import nhk.task.entity.TaskStatus;
 import nhk.task.mapper.TaskMapper;
 import nhk.task.repository.CategoryRepository;
@@ -146,8 +145,8 @@ public class TaskService {
         return Boolean.TRUE.equals(task.getIsDone()) || task.getStatus() == TaskStatus.DONE;
     }
 
-    private boolean isHighPriority(Task task) {
-        return task.getPriority() != null && task.getPriority().getCode() >= TaskPriority.HIGH.getCode();
+    private boolean isImportant(Task task) {
+        return Boolean.TRUE.equals(task.getIsImportant());
     }
 
     private boolean isDueTodayOrPast(Task task) {
@@ -159,19 +158,19 @@ public class TaskService {
     }
 
     private boolean isDoNow(Task task) {
-        return isHighPriority(task) && isDueTodayOrPast(task);
+        return isImportant(task) && isDueTodayOrPast(task);
     }
 
     private boolean isSchedule(Task task) {
-        return isHighPriority(task) && isFutureOrNull(task);
+        return isImportant(task) && isFutureOrNull(task);
     }
 
     private boolean isDelegate(Task task) {
-        return !isHighPriority(task) && isDueTodayOrPast(task);
+        return !isImportant(task) && isDueTodayOrPast(task);
     }
 
     private boolean isEliminate(Task task) {
-        return !isHighPriority(task) && isFutureOrNull(task);
+        return !isImportant(task) && isFutureOrNull(task);
     }
 
     private void upsertDetail(Task task, String description, String attachmentsJson) {

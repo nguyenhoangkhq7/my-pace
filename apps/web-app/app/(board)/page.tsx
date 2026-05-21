@@ -2,17 +2,20 @@
 
 import { useEffect } from "react";
 import { useFilterStore } from "@/stores/filter.store";
-import { useTodoStore } from "@/stores/todo.store";
 import { MatrixView } from "@/components/matrix/MatrixView";
 import { BoardSection } from "@/components/board/BoardSection";
+import { useTasks } from "@/hooks/useTasks";
+import { useCategories } from "@/hooks/useCategories";
+import { useEvents } from "@/hooks/useEvents";
+import { useNotes } from "@/hooks/useNotes";
 
 export default function DashboardPage() {
   const activeView = useFilterStore((s) => s.activeView);
 
-  const fetchTasks = useTodoStore((s) => s.fetchTasks);
-  const fetchCategories = useTodoStore((s) => s.fetchCategories);
-  const fetchEvents = useTodoStore((s) => s.fetchEvents);
-  const fetchNotes = useTodoStore((s) => s.fetchNotes);
+  const { fetchTasks } = useTasks();
+  const { fetchCategories } = useCategories();
+  const { fetchEvents } = useEvents();
+  const { fetchNotes } = useNotes();
 
   useEffect(() => {
     fetchTasks();

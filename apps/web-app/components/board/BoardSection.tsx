@@ -3,9 +3,10 @@
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { useFilterStore } from "@/stores/filter.store";
-import { useTodoStore } from "@/stores/todo.store";
 import { BoardColumn } from "@/components/board/BoardColumn";
 import { CATEGORY_BADGE_COLORS } from "@/features/todos/types";
+import { useTasks } from "@/hooks/useTasks";
+import { useCategories } from "@/hooks/useCategories";
 
 // ── Column config ─────────────────────────────────────────────────────────────
 
@@ -22,8 +23,8 @@ export function BoardSection() {
   const selectedCategoryId = useFilterStore((s) => s.selectedCategoryId);
   const setCategory = useFilterStore((s) => s.setCategory);
 
-  const tasks = useTodoStore((s) => s.tasks);
-  const categories = useTodoStore((s) => s.categories);
+  const { tasks } = useTasks();
+  const { categories } = useCategories();
 
   // Filter tasks per column by selected category
   const filteredColumns = useMemo(() => {

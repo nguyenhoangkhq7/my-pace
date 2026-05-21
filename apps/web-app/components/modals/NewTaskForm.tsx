@@ -13,10 +13,11 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
-import { useTodoStore } from "@/stores/todo.store";
 import { useFilterStore } from "@/stores/filter.store";
-import { appToast } from "@/components/feedback/app-toast";
 import type { Priority, EnergyLevel, TaskStatus } from "@/features/todos/types";
+import { useCategories } from "@/hooks/useCategories";
+import { useTasks } from "@/hooks/useTasks";
+import type { CreateTaskInput } from "@/services/todo.service";
 
 // ── Schema ──────────────────────────────────────────────────────────────────
 
@@ -41,8 +42,8 @@ type NewTaskFormProps = {
 };
 
 export function NewTaskForm({ onSuccess, onSuccessAction }: NewTaskFormProps) {
-  const categories = useTodoStore((s) => s.categories);
-  const createTask = useTodoStore((s) => s.createTask);
+  const { categories } = useCategories();
+  const { createTask } = useTasks();
   const defaultTaskStatus = useFilterStore((s) => s.defaultTaskStatus);
   const handleSuccess = onSuccessAction ?? onSuccess;
 
@@ -63,36 +64,27 @@ export function NewTaskForm({ onSuccess, onSuccessAction }: NewTaskFormProps) {
   const status = useWatch({ control: form.control, name: "status" });
 
   const onSubmit = async (data: NewTaskValues) => {
-    try {
-      const categoryIdVal = data.categoryId ? parseInt(data.categoryId) : null;
-      const priorityVal = parseInt(data.priority);
-      const energyRequiredVal = parseInt(data.energyRequired);
-      const estimatedMinutesVal = data.estimatedMinutes ? parseInt(data.estimatedMinutes) : null;
-      const dueDateVal = data.dueDate ? new Date(data.dueDate).toISOString() : null;
+    const categoryIdVal = data.categoryId ? parseInt(data.categoryId) : null;
+    const priorityVal = parseInt(data.priority);
+    const energyRequiredVal = parseInt(data.energyRequired);
+    const estimatedMinutesVal = data.estimatedMinutes ? parseInt(data.estimatedMinutes) : null;
+    const dueDateVal = data.dueDate ? new Date(data.dueDate).toISOString() : null;
 
-      const payload = {
-        title: data.title,
-        categoryId: categoryIdVal,
-        priority: priorityVal as Priority,
-        energyRequired: energyRequiredVal as EnergyLevel,
-        estimatedMinutes: estimatedMinutesVal,
-        dueDate: dueDateVal,
-        description: data.description || undefined,
-        status: (data.status || defaultTaskStatus || "TODO") as TaskStatus,
-      };
+    const payload: CreateTaskInput = {
+      title: data.title,
+      categoryId: categoryIdVal,
+      priority: priorityVal as Priority,
+      energyRequired: energyRequiredVal as EnergyLevel,
+      estimatedMinutes: estimatedMinutesVal,
+      dueDate: dueDateVal,
+      description: data.description || null,
+      status: (data.status || defaultTaskStatus || "TODO") as TaskStatus,
+    };
 
-      await createTask(payload);
-
-      appToast.success("Task created", {
-        description: `"${data.title}" has been added.`,
-      });
+    const created = await createTask(payload);
+    if (created) {
       form.reset();
       handleSuccess?.();
-    } catch (err: unknown) {
-      console.error("Failed to create task:", err);
-      appToast.error("Task creation failed", {
-        description: err instanceof Error ? err.message : "Something went wrong.",
-      });
     }
   };
 

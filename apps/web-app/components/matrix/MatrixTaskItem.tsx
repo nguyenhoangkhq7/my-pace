@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { cn } from "@/lib/utils";
 import type { TaskItem } from "@/features/todos/types";
 import { CATEGORY_BADGE_COLORS } from "@/features/todos/types";
@@ -9,6 +8,7 @@ import {
   CircleIcon,
   CheckmarkCircle02Icon,
 } from "@hugeicons/core-free-icons";
+import { useTasks } from "@/hooks/useTasks";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -28,8 +28,6 @@ function formatDueDate(iso: string): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-import { useTodoStore } from "@/stores/todo.store";
-
 // ── Component ─────────────────────────────────────────────────────────────────
 
 type MatrixTaskItemProps = {
@@ -37,7 +35,7 @@ type MatrixTaskItemProps = {
 };
 
 export function MatrixTaskItem({ task }: MatrixTaskItemProps) {
-  const toggleTaskDone = useTodoStore((s) => s.toggleTaskDone);
+  const { toggleTaskDone } = useTasks();
 
   const done = task.isDone;
 

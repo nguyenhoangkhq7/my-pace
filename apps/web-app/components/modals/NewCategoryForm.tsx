@@ -11,8 +11,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
-import { useTodoStore } from "@/stores/todo.store";
-import { appToast } from "@/components/feedback/app-toast";
+import { useCategories } from "@/hooks/useCategories";
 
 // ── Schema ──────────────────────────────────────────────────────────────────
 
@@ -34,7 +33,7 @@ type NewCategoryFormProps = {
 };
 
 export function NewCategoryForm({ onSuccessAction }: NewCategoryFormProps) {
-  const createCategory = useTodoStore((s) => s.createCategory);
+  const { createCategory } = useCategories();
 
   const form = useForm<NewCategoryValues>({
     resolver: zodResolver(newCategorySchema),
@@ -46,23 +45,15 @@ export function NewCategoryForm({ onSuccessAction }: NewCategoryFormProps) {
   });
 
   const onSubmit = async (data: NewCategoryValues) => {
-    try {
-      await createCategory(
-        data.name,
-        data.preferredStartTime || undefined,
-        data.preferredEndTime || undefined
-      );
+    const created = await createCategory(
+      data.name,
+      data.preferredStartTime || undefined,
+      data.preferredEndTime || undefined,
+    );
 
-      appToast.success("Category created", {
-        description: `"${data.name}" has been added.`,
-      });
+    if (created) {
       form.reset();
       onSuccessAction();
-    } catch (err: unknown) {
-      console.error("Failed to create category:", err);
-      appToast.error("Category creation failed", {
-        description: err instanceof Error ? err.message : "Something went wrong.",
-      });
     }
   };
 
