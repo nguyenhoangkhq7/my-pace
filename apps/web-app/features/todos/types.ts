@@ -38,7 +38,7 @@ export type Board = {
 
 export type Priority = 1 | 2 | 3 | 4; // LOW, MEDIUM, HIGH, URGENT
 export type EnergyLevel = 1 | 2 | 3 | 4 | 5; // VERY_LOW → INTENSE
-export type TaskStatus = "TODO" | "DOING" | "IN_REVIEW" | "DONE" | "BACKLOG";
+export type TaskStatus = "TODO" | "DOING" | "IN_REVIEW" | "DONE";
 
 export const PRIORITY_LABELS: Record<Priority, string> = {
   1: "Low",

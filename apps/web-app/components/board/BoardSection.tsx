@@ -2,8 +2,6 @@
 
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { FavouriteIcon } from "@hugeicons/core-free-icons";
 import { useFilterStore } from "@/stores/filter.store";
 import { useTodoStore } from "@/stores/todo.store";
 import { BoardColumn } from "@/components/board/BoardColumn";
@@ -17,14 +15,6 @@ const COLUMNS = [
   { key: "IN_REVIEW", title: "In Review" },
   { key: "DONE", title: "Done" },
 ] as const;
-
-// ── Avatar gradients for the stacked avatars ─────────────────────────────────
-
-const AVATAR_GRADIENTS = [
-  "from-blue-400 to-cyan-400",
-  "from-violet-400 to-fuchsia-400",
-  "from-emerald-400 to-teal-400",
-];
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -49,38 +39,6 @@ export function BoardSection() {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      {/* ── Header row ── */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <h2 className="text-xl font-semibold text-slate-100">
-            Board Management
-          </h2>
-          <button
-            aria-label="Favourite board"
-            className="text-slate-400 hover:text-amber-400 transition cursor-pointer"
-          >
-            <HugeiconsIcon icon={FavouriteIcon} size={18} />
-          </button>
-        </div>
-
-        {/* Stacked avatars */}
-        <div className="flex items-center">
-          {AVATAR_GRADIENTS.map((gradient, i) => (
-            <div
-              key={i}
-              className={cn(
-                "h-7 w-7 rounded-full border-2 border-slate-900 bg-gradient-to-br",
-                gradient,
-                i > 0 && "-ml-2",
-              )}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* ── Subtitle ── */}
-      <p className="text-sm text-slate-400 mt-1">Project Zenith Alpha</p>
-
       {/* ── Category filter pills ── */}
       <div className="mt-4 flex items-center gap-2 flex-wrap">
         {/* "All" pill */}
@@ -126,7 +84,7 @@ export function BoardSection() {
       </div>
 
       {/* ── Columns container ── */}
-      <div className="mt-5 flex items-stretch gap-5 overflow-x-auto pb-4 flex-1 min-h-0">
+      <div className="mt-5 flex items-start gap-5 overflow-x-auto pb-4">
         {filteredColumns.map((col) => (
           <BoardColumn
             key={col.key}

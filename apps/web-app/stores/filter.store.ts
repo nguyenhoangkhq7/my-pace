@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { TaskStatus } from "@/features/todos/types";
+import type { TaskItem, TaskStatus } from "@/features/todos/types";
 
 interface FilterState {
   /** null = show all categories */
@@ -12,6 +12,10 @@ interface FilterState {
   isNewItemModalOpen: boolean;
   defaultTaskStatus: TaskStatus | null;
   setIsNewItemModalOpen: (open: boolean, defaultStatus?: TaskStatus | null) => void;
+
+  // Task Detail Modal global state
+  taskDetailTask: TaskItem | null;
+  setTaskDetailTask: (task: TaskItem | null) => void;
 }
 
 export const useFilterStore = create<FilterState>((set) => ({
@@ -24,4 +28,8 @@ export const useFilterStore = create<FilterState>((set) => ({
   defaultTaskStatus: null,
   setIsNewItemModalOpen: (open, defaultStatus = null) =>
     set({ isNewItemModalOpen: open, defaultTaskStatus: defaultStatus }),
+
+  taskDetailTask: null,
+  setTaskDetailTask: (task) => set({ taskDetailTask: task }),
 }));
+

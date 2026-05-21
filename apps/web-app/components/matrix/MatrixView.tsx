@@ -104,10 +104,12 @@ export function MatrixView() {
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* Header row */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-slate-100">Matrix View</h2>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-slate-100">Eisenhower Matrix View</h2>
+        </div>
+        <p className="text-sm text-slate-400 italic">Ưu tiên công việc cấp bách và quan trọng.</p>
       </div>
-
       {/* Category filter pills */}
       <div className="mt-4 flex items-center gap-2 flex-wrap">
         {/* "All" pill */}

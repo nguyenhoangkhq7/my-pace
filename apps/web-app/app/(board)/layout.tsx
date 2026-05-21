@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { RightPanel } from "@/components/dashboard/RightPanel";
 import { useFilterStore } from "@/stores/filter.store";
 import { NewItemModal } from "@/components/modals/NewItemModal";
+import { TaskDetailModal } from "@/components/modals/TaskDetailModal";
 
 export default function AppLayout({
   children,
@@ -28,6 +29,8 @@ export default function AppLayout({
       <RightPanel />
 
       <NewItemModal open={isNewItemModalOpen} onOpenChange={setIsNewItemModalOpen} />
+      <TaskDetailModal />
     </div>
   );
 }
+

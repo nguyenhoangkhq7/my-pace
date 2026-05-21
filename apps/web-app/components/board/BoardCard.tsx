@@ -1,9 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Calendar01Icon, CircleIcon, CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
+import {
+  Calendar01Icon,
+  CircleIcon,
+  CheckmarkCircle02Icon,
+  PencilEdit01Icon,
+} from "@hugeicons/core-free-icons";
 import type { TaskItem, Priority, EnergyLevel } from "@/features/todos/types";
 import {
   PRIORITY_COLORS,
@@ -11,6 +16,7 @@ import {
   ENERGY_LABELS,
 } from "@/features/todos/types";
 import { useTodoStore } from "@/stores/todo.store";
+import { useFilterStore } from "@/stores/filter.store";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -18,25 +24,47 @@ function formatDueDate(iso: string): { label: string; overdue: boolean } {
   const due = new Date(iso);
   const now = new Date();
 
+  const hh = due.getHours().toString().padStart(2, "0");
+  const mm = due.getMinutes().toString().padStart(2, "0");
+  const timeStr = `${hh}:${mm}`;
+
   // Strip time for day comparison
   const dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate());
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   if (dueDay.getTime() === today.getTime()) {
-    return { label: "Today", overdue: due.getTime() < now.getTime() };
+    return { label: `Today, ${timeStr}`, overdue: due.getTime() < now.getTime() };
   }
+
+  const dateStr = due.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
   if (dueDay.getTime() < today.getTime()) {
-    return {
-      label: due.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-      overdue: true,
-    };
+    return { label: `${dateStr}, ${timeStr}`, overdue: true };
   }
 
-  return {
-    label: due.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-    overdue: false,
-  };
+  return { label: `${dateStr}, ${timeStr}`, overdue: false };
+}
+
+// ── Priority / Energy Resolvers ───────────────────────────────────────────────
+
+const PRIORITY_MAP: Record<string, Priority> = {
+  "1": 1, LOW: 1, "2": 2, MEDIUM: 2, "3": 3, HIGH: 3, "4": 4, URGENT: 4,
+};
+
+const ENERGY_MAP: Record<string, EnergyLevel> = {
+  "1": 1, VERY_LOW: 1, "2": 2, LOW: 2, "3": 3, MEDIUM: 3, "4": 4, HIGH: 4, "5": 5, INTENSE: 5,
+};
+
+function resolvePriority(val: unknown): Priority {
+  if (typeof val === "number" && val >= 1 && val <= 4) return val as Priority;
+  const key = String(val ?? "").toUpperCase();
+  return PRIORITY_MAP[key] ?? 2;
+}
+
+function resolveEnergy(val: unknown): EnergyLevel {
+  if (typeof val === "number" && val >= 1 && val <= 5) return val as EnergyLevel;
+  const key = String(val ?? "").toUpperCase();
+  return ENERGY_MAP[key] ?? 3;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -47,41 +75,13 @@ type BoardCardProps = {
 
 export function BoardCard({ task }: BoardCardProps) {
   const toggleTaskDone = useTodoStore((s) => s.toggleTaskDone);
+  const updateTaskTitle = useTodoStore((s) => s.updateTaskTitle);
+  const setTaskDetailTask = useFilterStore((s) => s.setTaskDetailTask);
 
-  // Robust parsing to handle numeric, string, enum-name, and null/undefined values for Priority
-  const priorityMap: Record<string | number, Priority> = {
-    "1": 1, "LOW": 1, "low": 1,
-    "2": 2, "MEDIUM": 2, "medium": 2,
-    "3": 3, "HIGH": 3, "high": 3,
-    "4": 4, "URGENT": 4, "urgent": 4,
-  };
-
-  const cleanPriority = (
-    typeof task.priority === "number"
-      ? task.priority
-      : task.priority
-        ? priorityMap[String(task.priority).toUpperCase()] || 2
-        : 2
-  ) as Priority;
-
+  // ── Resolved values ──
+  const cleanPriority = resolvePriority(task.priority);
+  const cleanEnergy = resolveEnergy(task.energyRequired);
   const priorityColor = PRIORITY_COLORS[cleanPriority] ?? PRIORITY_COLORS[2];
-
-  // Robust parsing for EnergyLevel
-  const energyMap: Record<string | number, EnergyLevel> = {
-    "1": 1, "VERY_LOW": 1, "very_low": 1,
-    "2": 2, "LOW": 2, "low": 2,
-    "3": 3, "MEDIUM": 3, "medium": 3,
-    "4": 4, "HIGH": 4, "high": 4,
-    "5": 5, "INTENSE": 5, "intense": 5,
-  };
-
-  const cleanEnergy = (
-    typeof task.energyRequired === "number"
-      ? task.energyRequired
-      : task.energyRequired
-        ? energyMap[String(task.energyRequired).toUpperCase()] || 3
-        : 3
-  ) as EnergyLevel;
 
   const categoryColors = task.category
     ? CATEGORY_BADGE_COLORS[task.category.name] ?? {
@@ -98,10 +98,51 @@ export function BoardCard({ task }: BoardCardProps) {
   const showHighBadge = cleanPriority >= 3;
   const isUrgent = cleanPriority === 4;
 
+  // ── Inline title editing ──
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(task.title);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Sync editValue when task title changes externally
+  useEffect(() => {
+    if (!isEditing) setEditValue(task.title);
+  }, [task.title, isEditing]);
+
+  // Auto-focus when editing starts
+  useEffect(() => {
+    if (isEditing) inputRef.current?.focus();
+  }, [isEditing]);
+
+  const commitEdit = useCallback(() => {
+    const trimmed = editValue.trim();
+    setIsEditing(false);
+    if (trimmed && trimmed !== task.title) {
+      updateTaskTitle(task.id, trimmed);
+    } else {
+      setEditValue(task.title);
+    }
+  }, [editValue, task.id, task.title, updateTaskTitle]);
+
+  const handleEditKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commitEdit();
+    } else if (e.key === "Escape") {
+      setEditValue(task.title);
+      setIsEditing(false);
+    }
+  };
+
+  // ── Card click → open detail modal ──
+  const handleCardClick = () => {
+    if (!isEditing) setTaskDetailTask(task);
+  };
+
   return (
     <div
+      onClick={handleCardClick}
       className={cn(
-        "group rounded-xl border-l-[3px] border border-slate-700/60",
+        "group relative cursor-pointer rounded-xl border-l-[3px] border border-slate-700/60",
         "bg-slate-800/80 shadow-sm transition-all duration-150",
         "hover:border-slate-600/80 hover:bg-slate-800 hover:shadow-md hover:-translate-y-px",
         "p-3",
@@ -109,6 +150,24 @@ export function BoardCard({ task }: BoardCardProps) {
         task.isDone && "opacity-60",
       )}
     >
+      {/* ── Edit button (visible on hover) ── */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsEditing(true);
+        }}
+        aria-label="Edit title"
+        className={cn(
+          "absolute top-2 right-2 rounded-md p-1",
+          "text-slate-500 transition-all duration-150",
+          "opacity-0 group-hover:opacity-100",
+          "hover:bg-slate-700 hover:text-slate-200",
+          "active:scale-90",
+        )}
+      >
+        <HugeiconsIcon icon={PencilEdit01Icon} size={13} />
+      </button>
+
       {/* ── Badge row: category + priority ── */}
       {(categoryColors || showHighBadge) && (
         <div className="flex flex-wrap items-center gap-1.5">
@@ -149,7 +208,7 @@ export function BoardCard({ task }: BoardCardProps) {
           aria-label={task.isDone ? "Mark incomplete" : "Mark complete"}
           className={cn(
             "mt-0.5 shrink-0 transition-all duration-150 hover:scale-110 active:scale-95",
-            task.isDone ? "text-emerald-400" : "text-slate-500 hover:text-slate-300"
+            task.isDone ? "text-emerald-400" : "text-slate-500 hover:text-slate-300",
           )}
         >
           <HugeiconsIcon
@@ -157,14 +216,32 @@ export function BoardCard({ task }: BoardCardProps) {
             size={16}
           />
         </button>
-        <p
-          className={cn(
-            "text-sm font-medium text-slate-100 leading-5 min-w-0 flex-1 break-words",
-            task.isDone && "line-through text-slate-500",
-          )}
-        >
-          {task.title}
-        </p>
+
+        {isEditing ? (
+          <input
+            ref={inputRef}
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={commitEdit}
+            onKeyDown={handleEditKeyDown}
+            onClick={(e) => e.stopPropagation()}
+            className={cn(
+              "flex-1 min-w-0 bg-slate-700/60 rounded-md px-1.5 py-0.5",
+              "text-sm font-medium text-slate-100 leading-5",
+              "border border-pace-accent/60 outline-none",
+              "focus:border-pace-accent focus:ring-1 focus:ring-pace-accent/30",
+            )}
+          />
+        ) : (
+          <p
+            className={cn(
+              "text-sm font-medium text-slate-100 leading-5 min-w-0 flex-1 break-words",
+              task.isDone && "line-through text-slate-500",
+            )}
+          >
+            {task.title}
+          </p>
+        )}
       </div>
 
       {/* ── Energy indicator ── */}
@@ -174,9 +251,8 @@ export function BoardCard({ task }: BoardCardProps) {
         </span>
       )}
 
-      {/* ── Footer: due date + avatar ── */}
-      <div className="mt-3 flex items-center justify-between">
-        {/* Due date */}
+      {/* ── Footer: due date + time ── */}
+      <div className="mt-3">
         {dueMeta ? (
           <span
             className={cn(
@@ -190,9 +266,6 @@ export function BoardCard({ task }: BoardCardProps) {
         ) : (
           <span />
         )}
-
-        {/* Avatar placeholder */}
-        <div className="h-6 w-6 shrink-0 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400" />
       </div>
     </div>
   );

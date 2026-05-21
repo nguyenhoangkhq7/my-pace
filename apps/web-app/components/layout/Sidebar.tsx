@@ -22,7 +22,7 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { id: "matrix", label: "Matrix View", icon: Grid02Icon },
+  { id: "matrix", label: "Today", icon: Grid02Icon },
   { id: "board", label: "Board", icon: Task01Icon },
   { id: "calendar", label: "Calendar", icon: Calendar01Icon },
   { id: "analytics", label: "Analytics", icon: ChartHistogramIcon },

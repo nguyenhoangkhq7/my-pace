@@ -20,6 +20,8 @@ interface TodoStoreState {
   createCategory: (name: string, preferredStartTime?: string, preferredEndTime?: string) => Promise<void>;
   updateTaskStatus: (id: number, status: TaskStatus) => Promise<void>;
   toggleTaskDone: (id: number, isDone: boolean) => Promise<void>;
+  updateTask: (id: number, data: Record<string, unknown>) => Promise<void>;
+  updateTaskTitle: (id: number, title: string) => Promise<void>;
   updateNotes: (notes: string) => Promise<void>;
 }
 
@@ -166,6 +168,30 @@ export const useTodoStore = create<TodoStoreState>((set, get) => ({
     } catch (err: any) {
       console.error("Error toggling task done:", err);
       set({ tasks: originalTasks, error: err.message || "Failed to toggle task" });
+    }
+  },
+
+  updateTask: async (id, data) => {
+    const originalTasks = get().tasks;
+    try {
+      await fetchClient.patch<TaskItem, Record<string, unknown>>(`tasks/${id}`, data);
+      await get().fetchTasks();
+    } catch (err: any) {
+      console.error("Error updating task:", err);
+      set({ tasks: originalTasks, error: err.message || "Failed to update task" });
+      throw err;
+    }
+  },
+
+  updateTaskTitle: async (id, title) => {
+    // Optimistic update
+    const originalTasks = get().tasks;
+    set({ tasks: originalTasks.map((t) => (t.id === id ? { ...t, title } : t)) });
+    try {
+      await fetchClient.patch<TaskItem, { title: string }>(`tasks/${id}`, { title });
+    } catch (err: any) {
+      console.error("Error updating task title:", err);
+      set({ tasks: originalTasks, error: err.message || "Failed to update title" });
     }
   },
 

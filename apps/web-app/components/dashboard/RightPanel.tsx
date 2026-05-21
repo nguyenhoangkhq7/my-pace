@@ -7,12 +7,14 @@ import {
   ArrowLeft01Icon,
 } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
+import { useFilterStore } from "@/stores/filter.store";
 import TodayOverview from "./TodayOverview";
 import QuickNotes from "./QuickNotes";
 import UpcomingEvents from "./UpcomingEvents";
 
 export function RightPanel() {
   const [isExpanded, setIsExpanded] = useState(true);
+  const activeView = useFilterStore((s) => s.activeView);
 
   return (
     <div
@@ -45,7 +47,7 @@ export function RightPanel() {
         )}
       >
         <div className="flex flex-col gap-6">
-          <TodayOverview />
+          {activeView === "matrix" && <TodayOverview />}
           <QuickNotes />
           <UpcomingEvents />
         </div>
