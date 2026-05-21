@@ -57,9 +57,8 @@ public class Task {
     private Boolean isDone = false;
 
     @Convert(converter = EnergyRequiredConverter.class)
-    @ColumnDefault("2")
     @Column(name = "energy_required")
-    private EnergyRequired energyRequired = EnergyRequired.MEDIUM;
+    private EnergyRequired energyRequired;
 
     @ColumnDefault("0")
     @Column(name = "is_important", nullable = false)

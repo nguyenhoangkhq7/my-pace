@@ -56,6 +56,7 @@ public class TaskService {
         Task task = taskMapper.toEntity(request);
         task.setUser(userRepository.getReferenceById(currentUser.getId()));
         task.setCreatedAt(LocalDateTime.now());
+        applyBooleanDefaults(task, request.getIsDone(), request.getIsImportant());
         applyAssociations(task, currentUser.getId(), request.getCategoryId(), request.getParentId());
         upsertDetail(task, request.getDescription(), request.getAttachmentsJson());
         return taskMapper.toResponse(taskRepository.save(task));
@@ -137,8 +138,14 @@ public class TaskService {
 
     private void applyTaskUpdate(Task task, Integer userId, TaskUpdateRequest request) {
         taskMapper.updateEntity(request, task);
+        applyBooleanDefaults(task, request.getIsDone(), request.getIsImportant());
         applyAssociations(task, userId, request.getCategoryId(), request.getParentId());
         upsertDetail(task, request.getDescription(), request.getAttachmentsJson());
+    }
+
+    private void applyBooleanDefaults(Task task, Boolean isDone, Boolean isImportant) {
+        task.setIsDone(Boolean.TRUE.equals(isDone));
+        task.setIsImportant(Boolean.TRUE.equals(isImportant));
     }
 
     private boolean isCompleted(Task task) {

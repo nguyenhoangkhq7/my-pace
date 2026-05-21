@@ -30,7 +30,7 @@ CREATE TABLE tasks (
                        is_done BOOLEAN DEFAULT FALSE,
                         is_important BOOLEAN DEFAULT FALSE,
 
-                        energy_required TINYINT NOT NULL DEFAULT 2 COMMENT '1: LOW, 2: MEDIUM, 3: HIGH',
+                         energy_required TINYINT NULL COMMENT '1: LOW, 2: MEDIUM, 3: HIGH',
                        estimated_minutes SMALLINT,
                        due_date DATETIME NULL,
                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
