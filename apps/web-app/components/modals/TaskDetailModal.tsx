@@ -19,14 +19,12 @@ import {
 import { useFilterStore } from "@/stores/filter.store";
 import type {
   EnergyLevel,
-  Priority,
   TaskItem,
   TaskStatus,
 } from "@/features/todos/types";
-import {
-  PRIORITY_LABELS,
-  ENERGY_LABELS,
-} from "@/features/todos/types";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { StarIcon, StarOffIcon } from "@hugeicons/core-free-icons";
+import { ENERGY_LABELS } from "@/features/todos/types";
 import { cn } from "@/lib/utils";
 import { useCategories } from "@/hooks/useCategories";
 import { useTasks } from "@/hooks/useTasks";
@@ -40,6 +38,19 @@ const STATUS_OPTIONS: { value: TaskStatus; label: string }[] = [
   { value: "IN_REVIEW", label: "In Review" },
   { value: "DONE", label: "Done" },
 ];
+
+const ENERGY_OPTIONS = ["LOW", "MEDIUM", "HIGH"] as const;
+type EnergyOption = (typeof ENERGY_OPTIONS)[number];
+
+function resolveEnergyValue(value: unknown): EnergyOption {
+  const raw = String(value ?? "").toUpperCase();
+
+  if (raw === "LOW" || raw === "1") return "LOW";
+  if (raw === "MEDIUM" || raw === "2") return "MEDIUM";
+  if (raw === "HIGH" || raw === "3") return "HIGH";
+
+  return "MEDIUM";
+}
 
 // ── Component ────────────────────────────────────────────────────────────────
 
@@ -76,15 +87,19 @@ type TaskDetailModalContentProps = {
 function TaskDetailModalContent({ task, onClose }: TaskDetailModalContentProps) {
   const { categories } = useCategories();
   const { updateTask } = useTasks();
+  const currentTask = task as TaskItem & {
+    isImportant?: boolean;
+    energyRequired?: EnergyOption | string | number | null;
+  };
 
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description ?? "");
   const [categoryId, setCategoryId] = useState(
     task.categoryId ? String(task.categoryId) : "",
   );
-  const [priority, setPriority] = useState(String(task.priority ?? 2));
+  const [isImportant, setIsImportant] = useState(Boolean(currentTask.isImportant));
   const [energyRequired, setEnergyRequired] = useState(
-    String(task.energyRequired ?? 3),
+    resolveEnergyValue(currentTask.energyRequired),
   );
   const [estimatedMinutes, setEstimatedMinutes] = useState(
     task.estimatedMinutes ? String(task.estimatedMinutes) : "",
@@ -104,17 +119,17 @@ function TaskDetailModalContent({ task, onClose }: TaskDetailModalContentProps) 
     if (!title.trim()) return;
 
     setIsSubmitting(true);
-    const payload: UpdateTaskInput = {
+    const payload = {
       title: title.trim(),
       description: description.trim() || null,
       categoryId: categoryId ? parseInt(categoryId) : null,
-      priority: parseInt(priority) as Priority,
-      energyRequired: parseInt(energyRequired) as EnergyLevel,
+      isImportant,
+      energyRequired,
       estimatedMinutes: estimatedMinutes ? parseInt(estimatedMinutes) : null,
       dueDate: dueDate ? new Date(dueDate).toISOString() : null,
       status,
       isDone: status === "DONE",
-    };
+    } as UpdateTaskInput;
 
     const saved = await updateTask(task.id, payload);
 
@@ -126,7 +141,7 @@ function TaskDetailModalContent({ task, onClose }: TaskDetailModalContentProps) 
   };
 
   return (
-      <DialogContent className="top-[8%]! translate-y-0! w-[60vw]! max-w-none! border-slate-800 bg-pace-sidebar p-0 shadow-2xl">
+    <DialogContent className="top-[8%]! translate-y-0! w-[60vw]! max-w-none! border-slate-800 bg-pace-sidebar p-0 shadow-2xl">
       <DialogHeader className="px-6 pt-6 pb-2">
         <DialogTitle className="text-lg font-semibold text-slate-100">
           Task Details
@@ -187,7 +202,7 @@ function TaskDetailModalContent({ task, onClose }: TaskDetailModalContentProps) 
             </Field>
           </FieldGroup>
 
-          {/* ── Right column: Category, Priority, Energy, Est Time, Due Date ── */}
+          {/* ── Right column: Category, Important, Energy, Est Time, Due Date ── */}
           <FieldGroup className="space-y-4">
             <Field className="space-y-1.5">
               <FieldLabel htmlFor="detail-category">Category</FieldLabel>
@@ -207,53 +222,59 @@ function TaskDetailModalContent({ task, onClose }: TaskDetailModalContentProps) 
             </Field>
 
             <Field className="space-y-1.5">
-              <FieldLabel htmlFor="detail-priority">Priority</FieldLabel>
+              <FieldLabel>Important</FieldLabel>
+              <button
+                type="button"
+                onClick={() => setIsImportant((current) => !current)}
+                aria-pressed={isImportant}
+                className={cn(
+                  "flex h-10 w-full items-center justify-between rounded-lg border px-3 text-sm transition",
+                  "hover:bg-slate-800 hover:text-slate-100 active:scale-[0.98]",
+                  isImportant
+                    ? "border-amber-400/40 bg-amber-500/15 text-amber-200"
+                    : "border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600",
+                )}
+              >
+                <span className="flex items-center gap-2 font-medium">
+                  <HugeiconsIcon icon={isImportant ? StarIcon : StarOffIcon} size={16} />
+                  Important
+                </span>
+                <span className="text-xs uppercase tracking-wide">
+                  {isImportant ? "On" : "Off"}
+                </span>
+              </button>
+            </Field>
+
+            <Field className="space-y-1.5">
+              <FieldLabel htmlFor="detail-energy">Energy</FieldLabel>
               <select
-                id="detail-priority"
-                value={priority}
-                onChange={(e) => setPriority(e.target.value)}
+                id="detail-energy"
+                value={energyRequired}
+                onChange={(e) => setEnergyRequired(resolveEnergyValue(e.target.value))}
                 className="h-10 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 text-sm text-slate-300 outline-none transition focus:border-pace-accent"
               >
-                {([1, 2, 3, 4] as Priority[]).map((p) => (
-                  <option key={p} value={p}>
-                    {PRIORITY_LABELS[p]}
+                {ENERGY_OPTIONS.map((e) => (
+                  <option key={e} value={e}>
+                    {"⚡".repeat(e === "LOW" ? 1 : e === "MEDIUM" ? 2 : 3)} {ENERGY_LABELS[e]}
                   </option>
                 ))}
               </select>
             </Field>
 
-            <div className="grid grid-cols-2 gap-3">
-              <Field className="space-y-1.5">
-                <FieldLabel htmlFor="detail-energy">Energy</FieldLabel>
-                <select
-                  id="detail-energy"
-                  value={energyRequired}
-                  onChange={(e) => setEnergyRequired(e.target.value)}
-                  className="h-10 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 text-sm text-slate-300 outline-none transition focus:border-pace-accent"
-                >
-                  {([1, 2, 3, 4, 5] as EnergyLevel[]).map((e) => (
-                    <option key={e} value={e}>
-                      {"⚡".repeat(e)} {ENERGY_LABELS[e]}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-
-              <Field className="space-y-1.5">
-                <FieldLabel htmlFor="detail-estimate">
-                  Est. <span className="font-normal text-slate-500">(min)</span>
-                </FieldLabel>
-                <Input
-                  id="detail-estimate"
-                  type="number"
-                  min={1}
-                  value={estimatedMinutes}
-                  onChange={(e) => setEstimatedMinutes(e.target.value)}
-                  placeholder="e.g. 30"
-                  className="h-10 rounded-lg border-slate-700 bg-slate-800 text-slate-100 placeholder:text-slate-500 focus:border-pace-accent"
-                />
-              </Field>
-            </div>
+            <Field className="space-y-1.5">
+              <FieldLabel htmlFor="detail-estimate">
+                Est. <span className="font-normal text-slate-500">(min)</span>
+              </FieldLabel>
+              <Input
+                id="detail-estimate"
+                type="number"
+                min={1}
+                value={estimatedMinutes}
+                onChange={(e) => setEstimatedMinutes(e.target.value)}
+                placeholder="e.g. 30"
+                className="h-10 rounded-lg border-slate-700 bg-slate-800 text-slate-100 placeholder:text-slate-500 focus:border-pace-accent"
+              />
+            </Field>
 
             <Field className="space-y-1.5">
               <FieldLabel htmlFor="detail-due">Due Date</FieldLabel>

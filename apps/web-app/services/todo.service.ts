@@ -3,7 +3,6 @@ import type {
   Category,
   CalendarEvent,
   EnergyLevel,
-  Priority,
   TaskItem,
   TaskStatus,
 } from "@/features/todos/types";
@@ -12,7 +11,7 @@ export type TaskMutationInput = {
   title?: string;
   description?: string | null;
   categoryId?: number | null;
-  priority?: Priority;
+  isImportant?: boolean;
   energyRequired?: EnergyLevel;
   estimatedMinutes?: number | null;
   dueDate?: string | null;
@@ -69,7 +68,13 @@ export const todoService = {
   },
 
   async createTask(taskData: CreateTaskInput): Promise<TaskItem> {
-    const res = await fetchClient.post<TaskItem, CreateTaskInput>("tasks", taskData);
+    const payload: CreateTaskInput = {
+      isImportant: false,
+      energyRequired: "MEDIUM",
+      ...taskData,
+    };
+
+    const res = await fetchClient.post<TaskItem, CreateTaskInput>("tasks", payload);
 
     if (!res.data) {
       throw new Error("Failed to create task");

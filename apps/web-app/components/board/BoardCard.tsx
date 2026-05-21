@@ -8,12 +8,13 @@ import {
   CircleIcon,
   CheckmarkCircle02Icon,
   PencilEdit01Icon,
+  StarIcon,
 } from "@hugeicons/core-free-icons";
-import type { TaskItem, Priority, EnergyLevel } from "@/features/todos/types";
+import type { TaskItem, EnergyLevel } from "@/features/todos/types";
 import {
-  PRIORITY_COLORS,
   CATEGORY_BADGE_COLORS,
   ENERGY_LABELS,
+  ENERGY_COLORS,
 } from "@/features/todos/types";
 import { useFilterStore } from "@/stores/filter.store";
 import { useTasks } from "@/hooks/useTasks";
@@ -45,26 +46,20 @@ function formatDueDate(iso: string): { label: string; overdue: boolean } {
   return { label: `${dateStr}, ${timeStr}`, overdue: false };
 }
 
-// ── Priority / Energy Resolvers ───────────────────────────────────────────────
-
-const PRIORITY_MAP: Record<string, Priority> = {
-  "1": 1, LOW: 1, "2": 2, MEDIUM: 2, "3": 3, HIGH: 3, "4": 4, URGENT: 4,
-};
-
-const ENERGY_MAP: Record<string, EnergyLevel> = {
-  "1": 1, VERY_LOW: 1, "2": 2, LOW: 2, "3": 3, MEDIUM: 3, "4": 4, HIGH: 4, "5": 5, INTENSE: 5,
-};
-
-function resolvePriority(val: unknown): Priority {
-  if (typeof val === "number" && val >= 1 && val <= 4) return val as Priority;
-  const key = String(val ?? "").toUpperCase();
-  return PRIORITY_MAP[key] ?? 2;
-}
+// ── Energy Resolver ───────────────────────────────────────────────────────────
 
 function resolveEnergy(val: unknown): EnergyLevel {
-  if (typeof val === "number" && val >= 1 && val <= 5) return val as EnergyLevel;
   const key = String(val ?? "").toUpperCase();
-  return ENERGY_MAP[key] ?? 3;
+
+  if (key === "LOW" || key === "1") return "LOW";
+  if (key === "MEDIUM" || key === "2") return "MEDIUM";
+  if (key === "HIGH" || key === "3") return "HIGH";
+
+  return "MEDIUM";
+}
+
+function energyRepeat(level: EnergyLevel): number {
+  return level === "LOW" ? 1 : level === "MEDIUM" ? 2 : 3;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -78,9 +73,9 @@ export function BoardCard({ task }: BoardCardProps) {
   const setTaskDetailTask = useFilterStore((s) => s.setTaskDetailTask);
 
   // ── Resolved values ──
-  const cleanPriority = resolvePriority(task.priority);
   const cleanEnergy = resolveEnergy(task.energyRequired);
-  const priorityColor = PRIORITY_COLORS[cleanPriority] ?? PRIORITY_COLORS[2];
+  const isImportant = Boolean(task.isImportant);
+  const energyColor = ENERGY_COLORS[cleanEnergy];
 
   const categoryColors = task.category
     ? CATEGORY_BADGE_COLORS[task.category.name] ?? {
@@ -93,9 +88,6 @@ export function BoardCard({ task }: BoardCardProps) {
     () => (task.dueDate ? formatDueDate(task.dueDate) : null),
     [task.dueDate],
   );
-
-  const showHighBadge = cleanPriority >= 3;
-  const isUrgent = cleanPriority === 4;
 
   // ── Inline title editing ──
   const [isEditing, setIsEditing] = useState(false);
@@ -140,7 +132,7 @@ export function BoardCard({ task }: BoardCardProps) {
         "bg-slate-800/80 shadow-sm transition-all duration-150",
         "hover:border-slate-600/80 hover:bg-slate-800 hover:shadow-md hover:-translate-y-px",
         "p-3",
-        priorityColor.border,
+        isImportant ? "border-l-amber-400" : "border-l-slate-600",
         task.isDone && "opacity-60",
       )}
     >
@@ -148,7 +140,7 @@ export function BoardCard({ task }: BoardCardProps) {
       <button
         onClick={(e) => {
           e.stopPropagation();
-            setEditValue(task.title);
+          setEditValue(task.title);
           setIsEditing(true);
         }}
         aria-label="Edit title"
@@ -163,8 +155,8 @@ export function BoardCard({ task }: BoardCardProps) {
         <HugeiconsIcon icon={PencilEdit01Icon} size={13} />
       </button>
 
-      {/* ── Badge row: category + priority ── */}
-      {(categoryColors || showHighBadge) && (
+      {/* ── Badge row: category + important ── */}
+      {(categoryColors || isImportant) && (
         <div className="flex flex-wrap items-center gap-1.5">
           {categoryColors && task.category && (
             <span
@@ -178,16 +170,14 @@ export function BoardCard({ task }: BoardCardProps) {
             </span>
           )}
 
-          {showHighBadge && (
+          {isImportant && (
             <span
               className={cn(
-                "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-                isUrgent
-                  ? "bg-rose-500/20 text-rose-300"
-                  : "bg-amber-500/20 text-amber-200",
+                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                "bg-amber-500/20 text-amber-200",
               )}
             >
-              {isUrgent ? "URGENT" : "HIGH"}
+              <HugeiconsIcon icon={StarIcon} size={10} /> Important
             </span>
           )}
         </div>
@@ -240,11 +230,15 @@ export function BoardCard({ task }: BoardCardProps) {
       </div>
 
       {/* ── Energy indicator ── */}
-      {cleanEnergy >= 4 && (
-        <span className="mt-1.5 inline-block text-[9px] text-slate-500">
-          ⚡ {ENERGY_LABELS[cleanEnergy]}
-        </span>
-      )}
+      <span
+        className={cn(
+          "mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+          energyColor.bg,
+          energyColor.text,
+        )}
+      >
+        {"⚡".repeat(energyRepeat(cleanEnergy))} {ENERGY_LABELS[cleanEnergy]}
+      </span>
 
       {/* ── Footer: due date + time ── */}
       <div className="mt-3">

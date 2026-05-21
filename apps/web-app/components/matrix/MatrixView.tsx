@@ -73,7 +73,7 @@ export function MatrixView() {
   );
 
   filteredTasks.forEach((task) => {
-    const isHighPriority = task.priority >= 3;
+    const isImportant = task.isImportant === true;
     let isUrgent = false;
 
     if (task.dueDate) {
@@ -86,11 +86,11 @@ export function MatrixView() {
       isUrgent = dueDay.getTime() <= today.getTime();
     }
 
-    if (isHighPriority && isUrgent) {
+    if (isImportant && isUrgent) {
       groupedTasks["do-now"].push(task);
-    } else if (isHighPriority && !isUrgent) {
+    } else if (isImportant && !isUrgent) {
       groupedTasks["schedule"].push(task);
-    } else if (!isHighPriority && isUrgent) {
+    } else if (!isImportant && isUrgent) {
       groupedTasks["delegate"].push(task);
     } else {
       groupedTasks["eliminate"].push(task);

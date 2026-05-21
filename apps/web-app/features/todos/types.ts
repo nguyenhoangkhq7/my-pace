@@ -16,8 +16,8 @@ export type Task = {
   position: number;
   context: TaskContext | null;
   dueDate: string | null; // ISO date string
-  priority: string | null;
-  energyRequired: string | null;
+  isImportant: boolean;
+  energyRequired: EnergyLevel | null;
   estimatedMinutes: number | null;
 };
 
@@ -34,32 +34,21 @@ export type Board = {
   boardColumns: BoardColumn[];
 };
 
-// ── Priority & Energy enums (aligned to V1 SQL migration) ───────────────────
+// ── Energy enum (aligned to V1 SQL migration) ───────────────────────────────
 
-export type Priority = 1 | 2 | 3 | 4; // LOW, MEDIUM, HIGH, URGENT
-export type EnergyLevel = 1 | 2 | 3 | 4 | 5; // VERY_LOW → INTENSE
+export type EnergyLevel = "LOW" | "MEDIUM" | "HIGH";
 export type TaskStatus = "TODO" | "DOING" | "IN_REVIEW" | "DONE";
 
-export const PRIORITY_LABELS: Record<Priority, string> = {
-  1: "Low",
-  2: "Medium",
-  3: "High",
-  4: "Urgent",
-};
-
-export const PRIORITY_COLORS: Record<Priority, { bg: string; text: string; border: string }> = {
-  1: { bg: "bg-slate-500/20", text: "text-slate-300", border: "border-l-slate-500" },
-  2: { bg: "bg-blue-500/20", text: "text-blue-200", border: "border-l-blue-400" },
-  3: { bg: "bg-amber-500/20", text: "text-amber-200", border: "border-l-amber-400" },
-  4: { bg: "bg-rose-500/20", text: "text-rose-300", border: "border-l-rose-500" },
-};
-
 export const ENERGY_LABELS: Record<EnergyLevel, string> = {
-  1: "Very Low",
-  2: "Low",
-  3: "Medium",
-  4: "High",
-  5: "Intense",
+  LOW: "Low",
+  MEDIUM: "Medium",
+  HIGH: "High",
+};
+
+export const ENERGY_COLORS: Record<EnergyLevel, { bg: string; text: string }> = {
+  LOW: { bg: "bg-emerald-500/20", text: "text-emerald-200" },
+  MEDIUM: { bg: "bg-amber-500/20", text: "text-amber-200" },
+  HIGH: { bg: "bg-rose-500/20", text: "text-rose-300" },
 };
 
 // ── Category (was "context" in old schema) ──────────────────────────────────
@@ -93,7 +82,7 @@ export type TaskItem = {
   position: number;
   status: TaskStatus;
   isDone: boolean;
-  priority: Priority;
+  isImportant: boolean;
   energyRequired: EnergyLevel;
   estimatedMinutes: number | null;
   dueDate: string | null; // ISO datetime

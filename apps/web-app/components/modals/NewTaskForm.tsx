@@ -14,7 +14,9 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { useFilterStore } from "@/stores/filter.store";
-import type { Priority, EnergyLevel, TaskStatus } from "@/features/todos/types";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { StarIcon, StarOffIcon } from "@hugeicons/core-free-icons";
+import type { EnergyLevel, TaskStatus } from "@/features/todos/types";
 import { useCategories } from "@/hooks/useCategories";
 import { useTasks } from "@/hooks/useTasks";
 import type { CreateTaskInput } from "@/services/todo.service";
@@ -24,8 +26,8 @@ import type { CreateTaskInput } from "@/services/todo.service";
 const newTaskSchema = z.object({
   title: z.string().min(1, "Title is required").max(255),
   categoryId: z.string().optional(),
-  priority: z.string(),
-  energyRequired: z.string(),
+  isImportant: z.boolean(),
+  energyRequired: z.enum(["LOW", "MEDIUM", "HIGH"]),
   estimatedMinutes: z.string().optional(),
   dueDate: z.string().optional(),
   description: z.string().optional(),
@@ -52,8 +54,8 @@ export function NewTaskForm({ onSuccess, onSuccessAction }: NewTaskFormProps) {
     defaultValues: {
       title: "",
       categoryId: "",
-      priority: "2",
-      energyRequired: "3",
+      isImportant: false,
+      energyRequired: "MEDIUM",
       estimatedMinutes: "",
       dueDate: "",
       description: "",
@@ -62,19 +64,18 @@ export function NewTaskForm({ onSuccess, onSuccessAction }: NewTaskFormProps) {
   });
 
   const status = useWatch({ control: form.control, name: "status" });
+  const isImportant = useWatch({ control: form.control, name: "isImportant" });
 
   const onSubmit = async (data: NewTaskValues) => {
     const categoryIdVal = data.categoryId ? parseInt(data.categoryId) : null;
-    const priorityVal = parseInt(data.priority);
-    const energyRequiredVal = parseInt(data.energyRequired);
     const estimatedMinutesVal = data.estimatedMinutes ? parseInt(data.estimatedMinutes) : null;
     const dueDateVal = data.dueDate ? new Date(data.dueDate).toISOString() : null;
 
     const payload: CreateTaskInput = {
       title: data.title,
       categoryId: categoryIdVal,
-      priority: priorityVal as Priority,
-      energyRequired: energyRequiredVal as EnergyLevel,
+      isImportant: data.isImportant,
+      energyRequired: data.energyRequired as EnergyLevel,
       estimatedMinutes: estimatedMinutesVal,
       dueDate: dueDateVal,
       description: data.description || null,
@@ -139,7 +140,7 @@ export function NewTaskForm({ onSuccess, onSuccessAction }: NewTaskFormProps) {
           </Field>
         </FieldGroup>
 
-        {/* ── Right column: Category, Priority, Energy+Est, Due Date ── */}
+        {/* ── Right column: Category, Important, Energy, Est, Due Date ── */}
         <FieldGroup className="space-y-4">
           <Field className="space-y-1.5">
             <FieldLabel htmlFor="task-category">Category</FieldLabel>
@@ -158,17 +159,27 @@ export function NewTaskForm({ onSuccess, onSuccessAction }: NewTaskFormProps) {
           </Field>
 
           <Field className="space-y-1.5">
-            <FieldLabel htmlFor="task-priority">Priority</FieldLabel>
-            <select
-              {...form.register("priority")}
-              id="task-priority"
-              className="h-10 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 text-sm text-slate-300 outline-none transition focus:border-pace-accent"
+            <FieldLabel>Important</FieldLabel>
+            <button
+              type="button"
+              onClick={() => form.setValue("isImportant", !isImportant, { shouldDirty: true })}
+              aria-pressed={isImportant}
+              className={cn(
+                "flex h-10 w-full items-center justify-between rounded-lg border px-3 text-sm font-medium transition",
+                "hover:bg-slate-800 hover:text-slate-100 active:scale-[0.98]",
+                isImportant
+                  ? "border-amber-400/40 bg-amber-500/15 text-amber-200"
+                  : "border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600",
+              )}
             >
-              <option value="1">Low</option>
-              <option value="2">Medium</option>
-              <option value="3">High</option>
-              <option value="4">Urgent</option>
-            </select>
+              <span className="flex items-center gap-2">
+                <HugeiconsIcon icon={isImportant ? StarIcon : StarOffIcon} size={16} />
+                <span>Important</span>
+              </span>
+              <span className="text-xs uppercase tracking-wide">
+                {isImportant ? "On" : "Off"}
+              </span>
+            </button>
           </Field>
 
           <div className="grid grid-cols-2 gap-3">
@@ -179,11 +190,9 @@ export function NewTaskForm({ onSuccess, onSuccessAction }: NewTaskFormProps) {
                 id="task-energy"
                 className="h-10 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 text-sm text-slate-300 outline-none transition focus:border-pace-accent"
               >
-                <option value="1">⚡ Very Low</option>
-                <option value="2">⚡⚡ Low</option>
-                <option value="3">⚡⚡⚡ Medium</option>
-                <option value="4">⚡⚡⚡⚡ High</option>
-                <option value="5">⚡⚡⚡⚡⚡ Intense</option>
+                <option value="LOW">⚡ Low</option>
+                <option value="MEDIUM">⚡⚡ Medium</option>
+                <option value="HIGH">⚡⚡⚡ High</option>
               </select>
             </Field>
 
