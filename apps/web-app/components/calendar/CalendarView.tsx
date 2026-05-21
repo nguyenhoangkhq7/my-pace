@@ -154,7 +154,7 @@ export function CalendarView() {
 
   return (
     <div className="flex h-full min-h-0 flex-1 gap-6 overflow-hidden">
-      <aside className="flex w-80 shrink-0 flex-col overflow-hidden rounded-2xl border border-slate-800 bg-pace-sidebar p-4">
+      <aside className="order-2 flex w-80 shrink-0 flex-col overflow-hidden rounded-2xl border border-slate-800 bg-pace-sidebar p-4">
         <div className="mb-4 flex items-center gap-2">
           <HugeiconsIcon icon={Calendar01Icon} size={20} className="text-pace-accent" />
           <div>
@@ -233,7 +233,7 @@ export function CalendarView() {
         </div>
       </aside>
 
-      <section className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-800 bg-pace-sidebar p-5 shadow-inner">
+      <section className="order-1 flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-800 bg-pace-sidebar p-5 shadow-inner">
         <div className="mb-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <HugeiconsIcon icon={Task01Icon} size={18} className="text-pace-accent" />
