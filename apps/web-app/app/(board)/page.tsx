@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useFilterStore } from "@/stores/filter.store";
 import { MatrixView } from "@/components/matrix/MatrixView";
 import { BoardSection } from "@/components/board/BoardSection";
+import { CalendarView } from "@/components/calendar/CalendarView";
 import { useTasks } from "@/hooks/useTasks";
 import { useCategories } from "@/hooks/useCategories";
 import { useEvents } from "@/hooks/useEvents";
@@ -28,7 +29,8 @@ export default function DashboardPage() {
     <div className="flex-1 flex flex-col min-h-0">
       {activeView === "matrix" && <MatrixView />}
       {activeView === "board" && <BoardSection />}
-      {activeView !== "matrix" && activeView !== "board" && (
+      {activeView === "calendar" && <CalendarView />}
+      {activeView !== "matrix" && activeView !== "board" && activeView !== "calendar" && (
         <div className="flex flex-col items-center justify-center flex-1 h-full min-h-75 text-center p-8 bg-pace-card rounded-2xl border border-slate-800">
           <p className="text-lg font-semibold text-slate-100 uppercase tracking-wider">
             {activeView} View

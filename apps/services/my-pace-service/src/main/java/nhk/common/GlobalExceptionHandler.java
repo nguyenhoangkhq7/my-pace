@@ -72,6 +72,16 @@ public class GlobalExceptionHandler {
       return buildResponse(HttpStatus.CONFLICT, "Dữ liệu đã tồn tại hoặc vi phạm ràng buộc hệ thống");
    }
 
+   @ExceptionHandler(IllegalArgumentException.class)
+   public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
+      return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+   }
+
+   @ExceptionHandler(IllegalStateException.class)
+   public ResponseEntity<ErrorResponse> handleIllegalStateException(IllegalStateException ex) {
+      return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+   }
+
    @ExceptionHandler(MailException.class)
    public ResponseEntity<ErrorResponse> handleMailException(MailException ex) {
       log.error("Error sending email: ", ex);

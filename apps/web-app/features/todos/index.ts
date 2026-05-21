@@ -1,5 +1,3 @@
-import { ENERGY_COLORS as TODOS_ENERGY_COLORS } from "./types";
-
 export { TodosBoardView } from "./TodosBoardView";
 export type {
   Board,
@@ -13,12 +11,9 @@ export type {
   TaskStatus,
   EnergyLevel,
   CalendarEvent,
+  ScheduledTask,
   MatrixQuadrantType,
   TodayStats,
 } from "./types";
-export {
-  ENERGY_LABELS,
-  CATEGORY_BADGE_COLORS,
-} from "./types";
-export const ENERGY_COLORS = TODOS_ENERGY_COLORS;
+export { ENERGY_LABELS, ENERGY_COLORS, CATEGORY_BADGE_COLORS } from "./types";
 export { getAllBoards, getBoardById, deleteBoard } from "./api";

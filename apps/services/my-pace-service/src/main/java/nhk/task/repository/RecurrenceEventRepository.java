@@ -9,6 +9,9 @@ import java.util.List;
 
 public interface RecurrenceEventRepository extends JpaRepository<RecurrenceEvent, Integer> {
     @EntityGraph(attributePaths = {"event"})
+    List<RecurrenceEvent> findAllByUser_IdAndIsCancelledFalseOrderByStartAtAsc(Integer userId);
+
+    @EntityGraph(attributePaths = {"event"})
     List<RecurrenceEvent> findAllByUser_IdAndIsCancelledFalseAndStartAtGreaterThanEqualOrderByStartAtAsc(Integer userId, LocalDateTime from);
 }
 

@@ -102,6 +102,17 @@ export type CalendarEvent = {
   color: string;
 };
 
+export type ScheduledTask = {
+  id: number;
+  taskId: number;
+  taskTitle: string;
+  categoryName: string;
+  categoryColor: string;
+  startTime: string;
+  endTime: string;
+  task: TaskItem;
+};
+
 // ── Matrix quadrant type ────────────────────────────────────────────────────
 
 export type MatrixQuadrantType =
