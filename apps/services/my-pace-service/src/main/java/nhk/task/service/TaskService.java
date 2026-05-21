@@ -56,6 +56,7 @@ public class TaskService {
         Task task = taskMapper.toEntity(request);
         task.setUser(userRepository.getReferenceById(currentUser.getId()));
         task.setCreatedAt(LocalDateTime.now());
+        task.setPosition(request.getPosition() != null ? request.getPosition() : getNextPosition(currentUser.getId()));
         applyBooleanDefaults(task, request.getIsDone(), request.getIsImportant());
         applyAssociations(task, currentUser.getId(), request.getCategoryId(), request.getParentId());
         upsertDetail(task, request.getDescription(), request.getAttachmentsJson());
@@ -146,6 +147,15 @@ public class TaskService {
     private void applyBooleanDefaults(Task task, Boolean isDone, Boolean isImportant) {
         task.setIsDone(Boolean.TRUE.equals(isDone));
         task.setIsImportant(Boolean.TRUE.equals(isImportant));
+    }
+
+    private Double getNextPosition(Integer userId) {
+        return taskRepository.findAllByUserIdOrderByCreatedAtDesc(userId).stream()
+                .map(Task::getPosition)
+                .filter(java.util.Objects::nonNull)
+                .max(Double::compareTo)
+                .map(max -> max + 1.0d)
+                .orElse(1.0d);
     }
 
     private boolean isCompleted(Task task) {

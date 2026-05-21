@@ -45,7 +45,7 @@ public class Task {
 
     @ColumnDefault("65536")
     @Column(name = "position")
-    private Double position = 65536.0;
+    private Double position;
 
     @Enumerated(EnumType.STRING)
     @ColumnDefault("'TODO'")
