@@ -5,6 +5,7 @@ import "sonner/dist/styles.css";
 import { cn } from "@/lib/utils";
 import { AppToastHost } from "@/components/feedback/toast-host";
 import { AuthProvider } from "@/features/auth";
+import React from "react";
 
 const inter = Inter({
   subsets: ["latin"],

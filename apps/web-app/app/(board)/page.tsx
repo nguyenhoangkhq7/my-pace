@@ -15,7 +15,6 @@ export default function DashboardPage() {
   const fetchNotes = useTodoStore((s) => s.fetchNotes);
 
   useEffect(() => {
-    // Fetch all database records once on mount
     fetchTasks();
     fetchCategories();
     fetchEvents();
@@ -27,7 +26,7 @@ export default function DashboardPage() {
       {activeView === "matrix" && <MatrixView />}
       {activeView === "board" && <BoardSection />}
       {activeView !== "matrix" && activeView !== "board" && (
-        <div className="flex flex-col items-center justify-center flex-1 h-full min-h-[300px] text-center p-8 bg-pace-card rounded-2xl border border-slate-800">
+        <div className="flex flex-col items-center justify-center flex-1 h-full min-h-75 text-center p-8 bg-pace-card rounded-2xl border border-slate-800">
           <p className="text-lg font-semibold text-slate-100 uppercase tracking-wider">
             {activeView} View
           </p>

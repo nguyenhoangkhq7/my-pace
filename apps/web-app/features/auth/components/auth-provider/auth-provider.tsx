@@ -23,11 +23,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             try {
                 const response = await get<unknown>("auth/refresh");
                 const session = normalizeAuthSession(response.data);
-
                 if (!isMounted) {
                     return;
                 }
-
                 if (session) {
                     setSession(session);
                 } else {

@@ -32,9 +32,29 @@ export function BoardColumn({ status, title, tasks, count }: BoardColumnProps) {
   const [newTitle, setNewTitle] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const addTaskRef = useRef<HTMLDivElement>(null);
+
+  const handleCancel = () => {
+    setNewTitle("");
+    setIsAdding(false);
+  };
 
   useEffect(() => {
     if (isAdding) inputRef.current?.focus();
+  }, [isAdding]);
+
+  useEffect(() => {
+    if (!isAdding) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target;
+      if (target instanceof Node && addTaskRef.current && !addTaskRef.current.contains(target)) {
+        handleCancel();
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
   }, [isAdding]);
 
   const handleSubmit = async () => {
@@ -62,11 +82,6 @@ export function BoardColumn({ status, title, tasks, count }: BoardColumnProps) {
       setNewTitle("");
       setIsAdding(false);
     }
-  };
-
-  const handleCancel = () => {
-    setNewTitle("");
-    setIsAdding(false);
   };
 
   return (
@@ -106,7 +121,7 @@ export function BoardColumn({ status, title, tasks, count }: BoardColumnProps) {
       </div>
 
       {/* ── Inline quick-add ── */}
-      <div className="mt-3 shrink-0">
+      <div ref={addTaskRef} className="mt-3 shrink-0">
         {isAdding ? (
           <div className="flex flex-col gap-2 rounded-xl border border-slate-700/60 bg-slate-800/80 p-2.5">
             <input

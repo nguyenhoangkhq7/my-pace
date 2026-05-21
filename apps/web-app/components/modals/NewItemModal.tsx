@@ -17,19 +17,19 @@ import { Task01Icon, GridTableIcon } from "@hugeicons/core-free-icons";
 
 type NewItemModalProps = {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChangeAction: (open: boolean) => void;
 };
 
 // ── Component ───────────────────────────────────────────────────────────────
 
-export function NewItemModal({ open, onOpenChange }: NewItemModalProps) {
+export function NewItemModal({ open, onOpenChangeAction }: NewItemModalProps) {
   const handleSuccess = () => {
-    onOpenChange(false);
+    onOpenChangeAction(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg border-slate-800 bg-pace-sidebar p-0 shadow-2xl">
+    <Dialog open={open} onOpenChange={onOpenChangeAction}>
+      <DialogContent className="top-[8%]! translate-y-0! w-[60vw]! max-w-none! border-slate-800 bg-pace-sidebar p-0 shadow-2xl">
         <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle className="text-lg font-semibold text-slate-100">
             Create New
@@ -64,7 +64,7 @@ export function NewItemModal({ open, onOpenChange }: NewItemModalProps) {
               <NewTaskForm onSuccess={handleSuccess} />
             </TabsContent>
             <TabsContent value="category" className="mt-0">
-              <NewCategoryForm onSuccess={handleSuccess} />
+              <NewCategoryForm onSuccessAction={handleSuccess} />
             </TabsContent>
           </div>
         </Tabs>

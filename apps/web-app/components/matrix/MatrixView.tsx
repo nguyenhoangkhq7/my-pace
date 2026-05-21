@@ -14,8 +14,6 @@ import { MatrixQuadrant } from "./MatrixQuadrant";
 import { CATEGORY_BADGE_COLORS } from "@/features/todos/types";
 import { cn } from "@/lib/utils";
 
-// ── Quadrant config ───────────────────────────────────────────────────────────
-
 const QUADRANTS: {
   key: MatrixQuadrantType;
   title: string;
@@ -53,8 +51,6 @@ const QUADRANTS: {
   },
 ];
 
-// ── Component ─────────────────────────────────────────────────────────────────
-
 export function MatrixView() {
   const selectedCategoryId = useFilterStore((s) => s.selectedCategoryId);
   const setCategory = useFilterStore((s) => s.setCategory);
@@ -62,7 +58,6 @@ export function MatrixView() {
   const tasks = useTodoStore((s) => s.tasks);
   const categories = useTodoStore((s) => s.categories);
 
-  // Group tasks into quadrants client-side
   const groupedTasks: Record<MatrixQuadrantType, TaskItem[]> = {
     "do-now": [],
     "schedule": [],
@@ -70,16 +65,16 @@ export function MatrixView() {
     "eliminate": [],
   };
 
+  // filter task theo độ khó và độ ưu tiên (tính cấp bách cần làm)
+  // do-now đối với
   const filteredTasks = tasks.filter(
     (t) => selectedCategoryId === null || t.categoryId === selectedCategoryId
   );
 
   filteredTasks.forEach((task) => {
-    // 1. Check priority (High/Urgent vs Low/Medium)
     const isHighPriority = task.priority >= 3;
-
-    // 2. Check urgency (dueDate is today or overdue)
     let isUrgent = false;
+
     if (task.dueDate) {
       const due = new Date(task.dueDate);
       const now = new Date();

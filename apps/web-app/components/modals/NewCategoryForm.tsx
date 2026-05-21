@@ -30,10 +30,10 @@ type NewCategoryValues = z.infer<typeof newCategorySchema>;
 // ── Component ───────────────────────────────────────────────────────────────
 
 type NewCategoryFormProps = {
-  onSuccess: () => void;
+  onSuccessAction: () => void;
 };
 
-export function NewCategoryForm({ onSuccess }: NewCategoryFormProps) {
+export function NewCategoryForm({ onSuccessAction }: NewCategoryFormProps) {
   const createCategory = useTodoStore((s) => s.createCategory);
 
   const form = useForm<NewCategoryValues>({
@@ -57,11 +57,11 @@ export function NewCategoryForm({ onSuccess }: NewCategoryFormProps) {
         description: `"${data.name}" has been added.`,
       });
       form.reset();
-      onSuccess();
-    } catch (err: any) {
+      onSuccessAction();
+    } catch (err: unknown) {
       console.error("Failed to create category:", err);
       appToast.error("Category creation failed", {
-        description: err.message || "Something went wrong.",
+        description: err instanceof Error ? err.message : "Something went wrong.",
       });
     }
   };
@@ -100,7 +100,7 @@ export function NewCategoryForm({ onSuccess }: NewCategoryFormProps) {
                 {...form.register("preferredStartTime")}
                 id="cat-start"
                 type="time"
-                className="h-9 rounded-lg bg-slate-700/80 border-slate-600 text-sm text-slate-300 focus:border-pace-accent [color-scheme:dark]"
+                className="h-9 rounded-lg border-slate-600 bg-slate-700/80 text-sm text-slate-300 focus:border-pace-accent scheme-dark"
               />
             </Field>
 
@@ -112,7 +112,7 @@ export function NewCategoryForm({ onSuccess }: NewCategoryFormProps) {
                 {...form.register("preferredEndTime")}
                 id="cat-end"
                 type="time"
-                className="h-9 rounded-lg bg-slate-700/80 border-slate-600 text-sm text-slate-300 focus:border-pace-accent [color-scheme:dark]"
+                className="h-9 rounded-lg border-slate-600 bg-slate-700/80 text-sm text-slate-300 focus:border-pace-accent scheme-dark"
               />
             </Field>
           </div>

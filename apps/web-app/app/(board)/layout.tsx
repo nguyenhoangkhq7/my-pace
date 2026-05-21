@@ -28,7 +28,7 @@ export default function AppLayout({
 
       <RightPanel />
 
-      <NewItemModal open={isNewItemModalOpen} onOpenChange={setIsNewItemModalOpen} />
+      <NewItemModal open={isNewItemModalOpen} onOpenChangeAction={setIsNewItemModalOpen} />
       <TaskDetailModal />
     </div>
   );

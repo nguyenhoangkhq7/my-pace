@@ -134,16 +134,7 @@ function TaskDetailModalContent({ task, onClose }: TaskDetailModalContentProps) 
   };
 
   return (
-      <DialogContent
-          className="
-    !w-[60vw]
-    !max-w-none
-    border-slate-800
-    bg-pace-sidebar
-    p-0
-    shadow-2xl
-  "
-      >
+      <DialogContent className="top-[8%]! translate-y-0! w-[60vw]! max-w-none! border-slate-800 bg-pace-sidebar p-0 shadow-2xl">
       <DialogHeader className="px-6 pt-6 pb-2">
         <DialogTitle className="text-lg font-semibold text-slate-100">
           Task Details
