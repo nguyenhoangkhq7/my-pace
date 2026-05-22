@@ -1,14 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { MatrixView } from "@/components/matrix/MatrixView";
-import { BoardSection } from "@/components/board/BoardSection";
+import { MatrixView, BoardView, useTasks, useCategories, useEvents, useNotes, useViewStore } from "@/features/todos";
 import { CalendarView } from "@/features/calendar";
-import { useTasks } from "@/hooks/useTasks";
-import { useCategories } from "@/hooks/useCategories";
-import { useEvents } from "@/hooks/useEvents";
-import { useNotes } from "@/hooks/useNotes";
-import { useViewStore } from "@/stores/view.store";
 
 export default function DashboardPage() {
   const activeView = useViewStore((s) => s.activeView);
@@ -28,7 +22,7 @@ export default function DashboardPage() {
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {activeView === "matrix" && <MatrixView />}
-      {activeView === "board" && <BoardSection />}
+      {activeView === "board" && <BoardView />}
       {activeView === "calendar" && <CalendarView />}
       {activeView !== "matrix" && activeView !== "board" && activeView !== "calendar" && (
         <div className="flex flex-col items-center justify-center flex-1 h-full min-h-75 text-center p-8 bg-pace-card rounded-2xl border border-slate-800">

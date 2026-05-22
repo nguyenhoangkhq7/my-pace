@@ -34,12 +34,12 @@ import { getApiErrorMessage, post } from "@/lib/fetchClient";
 import {
     normalizeAuthSession,
     useAuthStore,
-} from "@/features/auth/store/auth.store";
+} from "../../store/auth.store";
 import {
     userDataStepSchema,
     type UserDataStepValues,
-} from "@/features/auth/schema/auth.schema";
-import { useRegisterStore } from "@/features/auth/store/register.store";
+} from "../../schema/auth.schema";
+import { useRegisterStore } from "../../store/register.store";
 
 type RegisterRequest = {
     email: string;

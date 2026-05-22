@@ -25,12 +25,12 @@ import { Button } from "@/components/ui/button";
 
 import { post, getApiErrorMessage } from "@/lib/fetchClient";
 
-import { useRegisterStore } from "@/features/auth/store/register.store";
+import { useRegisterStore } from "../../store/register.store";
 
 import {
     emailStepSchema,
     type EmailStepValues,
-} from "@/features/auth/schema/auth.schema";
+} from "../../schema/auth.schema";
 import { AppAlert } from "@/components/feedback/app-alert";
 import { appToast } from "@/components/feedback/app-toast";
 

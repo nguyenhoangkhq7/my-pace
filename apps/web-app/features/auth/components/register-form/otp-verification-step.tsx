@@ -26,11 +26,11 @@ import {
 
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRegisterStore } from "@/features/auth/store/register.store";
+import { useRegisterStore } from "../../store/register.store";
 import {
     otpStepSchema,
     type OtpStepValues,
-} from "@/features/auth/schema/auth.schema";
+} from "../../schema/auth.schema";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
     RefreshIcon,

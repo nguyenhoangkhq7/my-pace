@@ -1,5 +1,5 @@
 import {create} from "zustand";
-import {RegisterValues} from "@/features/auth/schema/auth.schema";
+import {RegisterValues} from "../schema/auth.schema";
 
 interface RegisterState {
     registerFormData: Partial<RegisterValues>;

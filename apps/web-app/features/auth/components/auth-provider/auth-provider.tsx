@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
-import { useAuthStore, normalizeAuthSession } from "@/features/auth/store/auth.store";
+import { useAuthStore, normalizeAuthSession } from "../../store/auth.store";
 import { get } from "@/lib/fetchClient";
 
 export function AuthProvider({ children }: { children: ReactNode }) {

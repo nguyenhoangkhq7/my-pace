@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useAuthStore } from "@/features/auth";
-import { useModalStore } from "@/stores/modal.store";
+import { useModalStore } from "@/features/todos";
 import {
   Grid02Icon,
   Calendar01Icon,

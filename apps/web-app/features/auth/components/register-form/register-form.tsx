@@ -5,9 +5,9 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-import { OtpEmailStep } from "@/features/auth/components/register-form/otp-email-step";
-import { OtpVerificationStep } from "@/features/auth/components/register-form/otp-verification-step";
-import { OtpUserDataStep } from "@/features/auth/components/register-form/otp-user-data-step";
+import { OtpEmailStep } from "./otp-email-step";
+import { OtpVerificationStep } from "./otp-verification-step";
+import { OtpUserDataStep } from "./otp-user-data-step";
 
 const steps = [
     {

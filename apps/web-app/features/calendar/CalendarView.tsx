@@ -5,12 +5,11 @@ import type { DateSelectArg, EventClickArg, EventDropArg, EventInput } from "@fu
 import type { EventResizeDoneArg } from "@fullcalendar/interaction";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Loading03Icon } from "@hugeicons/core-free-icons";
-import { useEvents } from "@/hooks/useEvents";
-import { useScheduledTasks } from "@/hooks/useScheduledTasks";
-import { useTasks } from "@/hooks/useTasks";
-import { CalendarScheduleSection } from "@/components/calendar/CalendarScheduleSection";
-import { CalendarTaskSidebar } from "@/components/calendar/CalendarTaskSidebar";
-import type { CalendarViewTab, ScheduledEventMeta } from "./types";
+import {TaskBase, useTasks, useEvents} from "@/features/todos";
+import {useScheduledTasks} from "./hooks/useScheduledTasks";
+import {CalendarTask, CalendarViewTab, ScheduledEventMeta} from "./types/calendar.type";
+import {CalendarScheduleSection} from "./components/CalendarScheduleSection";
+import {CalendarTaskSidebar} from "./components/CalendarTaskSidebar";
 
 export function CalendarView() {
   const { events, fetchEvents } = useEvents();
@@ -35,7 +34,7 @@ export function CalendarView() {
 
   const scheduledTaskIds = useMemo(() => new Set(scheduledTasks.map((st) => st.taskId)), [scheduledTasks]);
   const unscheduledTasks = useMemo(
-    () => tasks.filter((task) => !task.isDone && !scheduledTaskIds.has(task.id)),
+    () => tasks.filter((task: CalendarTask) => !task.isDone && !scheduledTaskIds.has(task.id)),
     [tasks, scheduledTaskIds],
   );
 

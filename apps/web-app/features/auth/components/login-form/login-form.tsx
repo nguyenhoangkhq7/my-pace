@@ -22,7 +22,7 @@ import { getApiErrorMessage, post } from "@/lib/fetchClient";
 import {
   normalizeAuthSession,
   useAuthStore,
-} from "@/features/auth/store/auth.store";
+} from "../../store/auth.store";
 
 type LoginRequest = LoginValues;
 
@@ -52,7 +52,7 @@ export function LoginForm() {
       setSession(session);
 
       appToast.success("Logged in successfully", {
-        description: "Redirecting you to your dashboard.",
+        description: "Redirecting you to your overview.",
       });
 
       router.replace("/");
