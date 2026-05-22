@@ -48,11 +48,11 @@ export function MatrixQuadrant({
       </div>
 
       {/* Task list */}
-      <div className="mt-3 flex-1 overflow-y-auto scrollbar-thin max-h-[260px]">
+      <div className="mt-3 flex-1 overflow-y-auto scrollbar-thin max-h-65">
         {tasks.length > 0 ? (
           <div className="flex flex-col gap-1">
             {tasks.map((task) => (
-              <MatrixTaskItem key={task.id} task={task} onClick={() => onSelectTask(task)} />
+              <MatrixTaskItem key={task.id} task={task} onSelectTask={() => onSelectTask(task)} />
             ))}
           </div>
         ) : (

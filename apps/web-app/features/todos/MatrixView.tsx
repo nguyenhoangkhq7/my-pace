@@ -11,11 +11,11 @@ import {
   Cancel01Icon,
 } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
-import {BoardTask, CATEGORY_BADGE_COLORS, MatrixQuadrantType} from "./types/todo.type";
-import {useCategoryFilterStore} from "./stores/category-filter.store";
-import {useTasks} from "./hooks/useTasks";
-import {useCategories} from "./hooks/useCategories";
-import {MatrixQuadrant} from "./components/matrix/MatrixQuadrant";
+import { BoardTask, MatrixQuadrantType } from "./types/todo.type";
+import { useCategoryFilterStore } from "./stores/category-filter.store";
+import { useTasks } from "./hooks/useTasks";
+import { useCategories } from "./hooks/useCategories";
+import { MatrixQuadrant } from "./components/matrix/MatrixQuadrant";
 
 const QUADRANTS: {
   key: MatrixQuadrantType;
@@ -60,6 +60,7 @@ export function MatrixView() {
 
   const { tasks } = useTasks();
   const { categories } = useCategories();
+  const activeCategoryClasses = "bg-blue-500/20 text-blue-200 border border-blue-500/40";
 
   const [activeTask, setActiveTask] = useState<BoardTask | null>(null);
 
@@ -127,15 +128,6 @@ export function MatrixView() {
 
         {categories.map((cat) => {
           const isActive = selectedCategoryId === cat.id;
-          const colors = CATEGORY_BADGE_COLORS[cat.name] ?? {
-            bg: "bg-slate-500/20",
-            text: "text-slate-300",
-          };
-
-          // Derive border color from the bg class — e.g. "bg-blue-500/20" → "border-blue-500/40"
-          const borderColor = colors.bg
-            .replace("bg-", "border-")
-            .replace("/20", "/40");
 
           return (
             <button
@@ -144,7 +136,7 @@ export function MatrixView() {
               className={cn(
                 "rounded-full px-3 py-1 text-xs font-medium cursor-pointer transition",
                 isActive
-                  ? cn(colors.bg, colors.text, "border", borderColor)
+                  ? activeCategoryClasses
                   : "bg-transparent border border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200"
               )}
             >
@@ -209,7 +201,7 @@ export function MatrixView() {
                 {activeTask.title}
               </h3>
               {activeTask.description ? (
-                <p className="text-xs text-slate-400 bg-slate-850/40 rounded-lg p-3 border border-slate-800/40 leading-relaxed whitespace-pre-wrap max-h-[120px] overflow-y-auto">
+                  <p className="text-xs text-slate-400 bg-slate-850/40 rounded-lg p-3 border border-slate-800/40 leading-relaxed whitespace-pre-wrap max-h-30 overflow-y-auto">
                   {activeTask.description}
                 </p>
               ) : (

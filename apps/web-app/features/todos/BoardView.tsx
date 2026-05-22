@@ -3,7 +3,6 @@
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { BoardColumn } from "./components/board/BoardColumn";
-import { CATEGORY_BADGE_COLORS } from "./types/todo.type";
 import { useTasks } from "./hooks/useTasks";
 import { useCategories } from "./hooks/useCategories";
 import { useCategoryFilterStore } from "./stores/category-filter.store";
@@ -25,6 +24,7 @@ export function BoardView() {
 
   const { tasks } = useTasks();
   const { categories } = useCategories();
+  const activeCategoryClasses = "bg-blue-500/20 text-blue-200 border border-blue-500/40";
 
   // Filter tasks per column by selected category
   const filteredColumns = useMemo(() => {
@@ -57,15 +57,6 @@ export function BoardView() {
 
         {categories.map((cat) => {
           const isActive = selectedCategoryId === cat.id;
-          const colors = CATEGORY_BADGE_COLORS[cat.name] ?? {
-            bg: "bg-slate-500/20",
-            text: "text-slate-300",
-          };
-
-          // Derive border color from the bg class — e.g. "bg-blue-500/20" → "border-blue-500/40"
-          const borderColor = colors.bg
-            .replace("bg-", "border-")
-            .replace("/20", "/40");
 
           return (
             <button
@@ -74,7 +65,7 @@ export function BoardView() {
               className={cn(
                 "rounded-full px-3 py-1 text-xs font-medium cursor-pointer transition",
                 isActive
-                  ? cn(colors.bg, colors.text, "border", borderColor)
+                  ? activeCategoryClasses
                   : "bg-transparent border border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200",
               )}
             >

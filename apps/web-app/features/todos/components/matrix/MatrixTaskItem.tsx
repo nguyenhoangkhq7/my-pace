@@ -2,13 +2,8 @@
 
 import { cn } from "@/lib/utils";
 import type { BoardTask } from "../../types/todo.type";
-import { CATEGORY_BADGE_COLORS } from "../../types/todo.type";
 import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  CircleIcon,
-  CheckmarkCircle02Icon,
-  AlertCircleIcon,
-} from "@hugeicons/core-free-icons";
+import { CircleIcon, CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
 import { useTasks } from "../../hooks/useTasks";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -33,18 +28,16 @@ function formatDueDate(iso: string): string {
 
 type MatrixTaskItemProps = {
   task: BoardTask;
-  onClick?: () => void;
+  onSelectTask?: () => void;
 };
 
-export function MatrixTaskItem({ task, onClick }: MatrixTaskItemProps) {
+export function MatrixTaskItem({ task, onSelectTask }: MatrixTaskItemProps) {
   const { toggleTaskDone } = useTasks();
 
   const done = task.isDone;
+  const categoryBadgeClasses = "bg-blue-500/20 text-blue-200 border border-blue-500/20";
 
   const categoryName = task.category?.name ?? null;
-  const badgeColors = categoryName
-    ? CATEGORY_BADGE_COLORS[categoryName] ?? null
-    : null;
 
   const subtitle = task.dueDate
     ? formatDueDate(task.dueDate)
@@ -54,7 +47,7 @@ export function MatrixTaskItem({ task, onClick }: MatrixTaskItemProps) {
 
   return (
     <div
-      onClick={onClick}
+      onClick={onSelectTask}
       className={cn(
         "flex items-start gap-2 rounded-lg px-2 py-2 transition cursor-pointer",
         "hover:bg-slate-700/50",
@@ -96,12 +89,11 @@ export function MatrixTaskItem({ task, onClick }: MatrixTaskItemProps) {
       </div>
 
       {/* Category badge */}
-      {categoryName && badgeColors && (
+      {categoryName && (
         <span
           className={cn(
             "shrink-0 self-center rounded-full px-2 py-0.5 text-[10px] font-semibold",
-            badgeColors.bg,
-            badgeColors.text
+            categoryBadgeClasses
           )}
         >
           {categoryName}

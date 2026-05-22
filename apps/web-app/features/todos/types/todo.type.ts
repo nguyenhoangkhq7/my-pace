@@ -1,15 +1,15 @@
-export type BoardColumn = {
-  id: number;
-  name: string;
-  position: number;
-  tasks: BoardTask[];
-};
-
-export type Board = {
-  id: number;
-  name: string;
-  boardColumns: BoardColumn[];
-};
+// export type BoardColumn = {
+//   id: number;
+//   name: string;
+//   position: number;
+//   tasks: BoardTask[];
+// };
+//
+// export type Board = {
+//   id: number;
+//   name: string;
+//   boardColumns: BoardColumn[];
+// };
 
 export type EnergyLevel = "LOW" | "MEDIUM" | "HIGH";
 export type TaskStatus = "TODO" | "DOING" | "IN_REVIEW" | "DONE";
@@ -29,18 +29,10 @@ export const ENERGY_COLORS: Record<EnergyLevel, { bg: string; text: string }> = 
 export type Category = {
   id: number;
   name: string;
-  colorCode: string;
   preferredStartTime: string | null;
   preferredEndTime: string | null;
 };
 
-
-export const CATEGORY_BADGE_COLORS: Record<string, { bg: string; text: string }> = {
-  Work: { bg: "bg-blue-500/20", text: "text-blue-200" },
-  Personal: { bg: "bg-emerald-500/20", text: "text-emerald-200" },
-  Learning: { bg: "bg-violet-500/20", text: "text-violet-200" },
-  Health: { bg: "bg-teal-500/20", text: "text-teal-200" },
-};
 
 export type TaskBase = {
   id: number;
@@ -63,10 +55,10 @@ export type BoardTask = TaskBase & {
 };
 
 export type MatrixQuadrantType =
-  | "do-now" // Urgent + Important
-  | "schedule" // Not Urgent + Important
-  | "delegate" // Urgent + Not Important
-  | "eliminate"; // Not Urgent + Not Important
+  | "do-now"
+  | "schedule"
+  | "delegate"
+  | "eliminate";
 
 
 export type TaskMutationInput = {

@@ -15,7 +15,6 @@ import {
 
 import {
   BoardTask,
-  CATEGORY_BADGE_COLORS,
   ENERGY_COLORS,
   ENERGY_LABELS,
   EnergyLevel,
@@ -95,12 +94,7 @@ export function TaskCard({ task }: BoardCardProps) {
       ? ENERGY_COLORS[cleanEnergy]
       : null;
 
-  const categoryColors = task.category
-      ? CATEGORY_BADGE_COLORS[task.category.name] ?? {
-    bg: "bg-slate-500/20",
-    text: "text-slate-300",
-  }
-      : null;
+  const categoryBadgeClasses = "bg-blue-500/20 text-blue-200 border border-blue-500/20";
 
   const dueMeta = useMemo(
       () => (task.dueDate ? formatDueDate(task.dueDate) : null),
@@ -145,13 +139,13 @@ export function TaskCard({ task }: BoardCardProps) {
           onClick={handleCardClick}
           className={cn(
               "group relative cursor-pointer",
-              "rounded-2xl border-l-[2px]",
+              "rounded-2xl border-l-2",
               "border border-[#1f304d]",
-              "bg-gradient-to-b from-[#18263d] to-[#162235]",
+              "bg-linear-to-b from-[#18263d] to-[#162235]",
               "p-3",
               "shadow-[0_4px_20px_rgba(0,0,0,0.25)]",
               "transition-all duration-200",
-              "hover:-translate-y-[1px]",
+              "hover:-translate-y-px",
               "hover:border-[#34507c]",
               "hover:shadow-[0_10px_25px_rgba(0,0,0,0.35)]",
               showUrgent
@@ -180,14 +174,13 @@ export function TaskCard({ task }: BoardCardProps) {
         </button>
 
         {/* Category */}
-        {categoryColors && task.category && (
+        {task.category && (
             <div className="mb-2 flex flex-wrap items-center gap-1.5">
           <span
               className={cn(
                   "rounded-full px-2 py-0.5",
                   "text-[9px] font-semibold uppercase tracking-wider",
-                  categoryColors.bg,
-                  categoryColors.text,
+                  categoryBadgeClasses,
               )}
           >
             {task.category.name}
@@ -240,7 +233,7 @@ export function TaskCard({ task }: BoardCardProps) {
               <div className="flex-1 min-w-0">
                 <p
                     className={cn(
-                        "break-words text-sm font-medium leading-5",
+                                "wrap-break-word text-sm font-medium leading-5",
                         "text-[#f5f7fb]",
                         task.isDone &&
                         "text-[#5f7088] line-through",

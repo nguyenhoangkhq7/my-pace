@@ -31,5 +31,4 @@ export type {
 export {
   ENERGY_LABELS,
   ENERGY_COLORS,
-  CATEGORY_BADGE_COLORS,
 } from "./types/todo.type";
