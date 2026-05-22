@@ -7,6 +7,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   CircleIcon,
   CheckmarkCircle02Icon,
+  AlertCircleIcon,
 } from "@hugeicons/core-free-icons";
 import { useTasks } from "../../hooks/useTasks";
 
@@ -32,9 +33,10 @@ function formatDueDate(iso: string): string {
 
 type MatrixTaskItemProps = {
   task: BoardTask;
+  onClick?: () => void;
 };
 
-export function MatrixTaskItem({ task }: MatrixTaskItemProps) {
+export function MatrixTaskItem({ task, onClick }: MatrixTaskItemProps) {
   const { toggleTaskDone } = useTasks();
 
   const done = task.isDone;
@@ -52,6 +54,7 @@ export function MatrixTaskItem({ task }: MatrixTaskItemProps) {
 
   return (
     <div
+      onClick={onClick}
       className={cn(
         "flex items-start gap-2 rounded-lg px-2 py-2 transition cursor-pointer",
         "hover:bg-slate-700/50",
@@ -88,7 +91,7 @@ export function MatrixTaskItem({ task }: MatrixTaskItemProps) {
         </p>
 
         {subtitle && (
-          <p className="text-xs text-slate-400 mt-0.5 truncate">{subtitle}</p>
+          <p className="text-xs text-slate-400 mt-0.5 truncate pl-0.5">{subtitle}</p>
         )}
       </div>
 

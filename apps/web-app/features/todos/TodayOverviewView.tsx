@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ArrowRight01Icon,
@@ -13,8 +12,9 @@ import QuickNotes from "./components/overview/QuickNotes";
 import UpcomingEvents from "./components/overview/UpcomingEvents";
 
 export function TodayOverviewView() {
-  const [isExpanded, setIsExpanded] = useState(true);
   const activeView = useViewStore((s) => s.activeView);
+  const isExpanded = useViewStore((s) => s.isExpanded);
+  const setIsExpanded = useViewStore((s) => s.setIsExpanded);
 
   return (
     <div
@@ -26,7 +26,7 @@ export function TodayOverviewView() {
       {/* Toggle button */}
       <button
         type="button"
-        onClick={() => setIsExpanded((prev) => !prev)}
+        onClick={() => setIsExpanded(!isExpanded)}
         className="absolute -left-3 top-6 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-slate-700 bg-slate-800 transition hover:bg-slate-700 active:scale-95"
         aria-label={isExpanded ? "Collapse panel" : "Expand panel"}
       >

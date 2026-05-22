@@ -7,12 +7,7 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
+import { Field, FieldError } from "@/components/ui/field";
 import { useModalStore } from "../../stores/modal.store";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { StarIcon, StarOffIcon } from "@hugeicons/core-free-icons";
@@ -20,7 +15,7 @@ import type { EnergyLevel, TaskStatus, CreateTaskInput } from "../../types/todo.
 import { useCategories } from "../../hooks/useCategories";
 import { useTasks } from "../../hooks/useTasks";
 
-// ── Schema ──────────────────────────────────────────────────────────────────
+const ENERGY_OPTIONS = ["LOW", "MEDIUM", "HIGH"] as const;
 
 const newTaskSchema = z.object({
   title: z.string().min(1, "Title is required").max(255),
@@ -35,8 +30,6 @@ const newTaskSchema = z.object({
 
 type NewTaskValues = z.infer<typeof newTaskSchema>;
 
-// ── Component ───────────────────────────────────────────────────────────────
-
 type NewTaskFormProps = {
   onSuccessAction?: () => void;
 };
@@ -45,7 +38,6 @@ export function NewTaskForm({ onSuccessAction }: NewTaskFormProps) {
   const { categories } = useCategories();
   const { createTask } = useTasks();
   const defaultTaskStatus = useModalStore((s) => s.defaultTaskStatus);
-  const handleSuccess = onSuccessAction;
 
   const form = useForm<NewTaskValues>({
     resolver: zodResolver(newTaskSchema),
@@ -63,6 +55,17 @@ export function NewTaskForm({ onSuccessAction }: NewTaskFormProps) {
 
   const status = useWatch({ control: form.control, name: "status" });
   const isImportant = useWatch({ control: form.control, name: "isImportant" });
+  const energyRequired = useWatch({ control: form.control, name: "energyRequired" });
+  const estimatedMinutes = useWatch({ control: form.control, name: "estimatedMinutes" });
+  const categoryId = useWatch({ control: form.control, name: "categoryId" });
+  const dueDate = useWatch({ control: form.control, name: "dueDate" });
+
+  // Bộ tăng giảm thời gian nhảy 15 phút
+  const adjustMinutes = (amount: number) => {
+    const current = parseInt(estimatedMinutes || "0") || 0;
+    const updated = Math.max(0, current + amount);
+    form.setValue("estimatedMinutes", updated === 0 ? "" : String(updated), { shouldDirty: true });
+  };
 
   const onSubmit = async (data: NewTaskValues) => {
     const categoryIdVal = data.categoryId ? parseInt(data.categoryId) : null;
@@ -83,154 +86,208 @@ export function NewTaskForm({ onSuccessAction }: NewTaskFormProps) {
     const created = await createTask(payload);
     if (created) {
       form.reset();
-      handleSuccess?.();
+      onSuccessAction?.();
     }
   };
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-5">
-      {/* ── Two-column layout ── */}
-      <div className="grid grid-cols-2 gap-6">
-        {/* ── Left column: Title, Status, Description ── */}
-        <FieldGroup className="space-y-4">
-          <Field className="space-y-1.5">
-            <FieldLabel htmlFor="task-title">Title</FieldLabel>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {/* Title */}
+        <div className="space-y-3">
+          {/* Title Input */}
+          <div
+              className={cn(
+                  "rounded-2xl border border-transparent",
+                  "bg-[#0f1b2d]",
+                  "px-4 py-3",
+                  "transition-all duration-200",
+                  "focus-within:border-[#3f8cff]",
+                  "focus-within:bg-[#132238]",
+                  "focus-within:shadow-[0_0_0_3px_rgba(63,140,255,0.12)]",
+              )}
+          >
             <Input
-              {...form.register("title")}
-              id="task-title"
-              placeholder="What needs to be done?"
-              className="h-10 rounded-lg bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500 focus:border-pace-accent"
+                {...form.register("title")}
+                placeholder="Untitled task..."
+                className={cn(
+                    "h-auto border-none bg-transparent",
+                    "px-0 py-0",
+                    "text-[22px] font-semibold tracking-tight",
+                    "text-[#f8fbff]",
+                    "placeholder:text-[#60738f]",
+                    "shadow-none",
+                    "focus-visible:ring-0",
+                )}
             />
-            <FieldError>{form.formState.errors.title?.message}</FieldError>
-          </Field>
 
-          <Field className="space-y-1.5">
-            <FieldLabel>Status</FieldLabel>
-            <div className="flex flex-wrap gap-1.5">
-              {(["TODO", "DOING", "IN_REVIEW", "DONE"] as const).map((s) => (
+            {form.formState.errors.title?.message && (
+                <p className="mt-2 text-[11px] font-medium text-red-400">
+                  {form.formState.errors.title.message}
+                </p>
+            )}
+          </div>
+
+          {/* Status Selector */}
+          <div className="flex flex-wrap items-center gap-2">
+            {(["TODO", "DOING", "IN_REVIEW", "DONE"] as const).map((s) => (
                 <button
-                  key={s}
-                  type="button"
-                  onClick={() => form.setValue("status", s)}
-                  className={cn(
-                    "rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-150",
-                    status === s
-                      ? "bg-pace-accent text-slate-950 shadow-sm"
-                      : "bg-slate-800 text-slate-400 border border-slate-700 hover:border-slate-500 hover:text-slate-200",
-                  )}
+                    key={s}
+                    type="button"
+                    onClick={() => form.setValue("status", s)}
+                    className={cn(
+                        "rounded-xl border px-3 py-1.5",
+                        "text-[11px] font-semibold uppercase tracking-wider",
+                        "transition-all duration-150",
+                        "active:scale-[0.97]",
+
+                        status === s
+                            ? "border-[#4a90ff] bg-[#4a90ff]/15 text-[#7db4ff] shadow-[0_0_0_1px_rgba(74,144,255,0.25)]"
+                            : "border-[#1e314d] bg-[#101b2d] text-[#7d93b6] hover:border-[#34507c] hover:bg-[#16243a] hover:text-white"
+                    )}
                 >
-                  {s === "IN_REVIEW" ? "In Review" : s === "TODO" ? "To Do" : s === "DOING" ? "Doing" : "Done"}
+                  {s === "IN_REVIEW"
+                      ? "In Review"
+                      : s === "TODO"
+                          ? "To Do"
+                          : s === "DOING"
+                              ? "Doing"
+                              : "Done"}
                 </button>
-              ))}
+            ))}
+          </div>
+        </div>
+
+        <hr className="border-[#16243b]" />
+
+        {/* Grid Metadata (2 cột dọc) */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* Category */}
+          <div className="space-y-1">
+            <div className="flex justify-between items-center">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7d93b6]">Category</label>
+              {categoryId && (
+                  <button type="button" onClick={() => form.setValue("categoryId", "")} className="text-[10px] text-[#4ea1ff] hover:underline">Clear</button>
+              )}
             </div>
-          </Field>
-
-          <Field className="space-y-1.5 flex-1">
-            <FieldLabel htmlFor="task-description">
-              Description <span className="text-slate-500 font-normal">(optional)</span>
-            </FieldLabel>
-            <Textarea
-              {...form.register("description")}
-              id="task-description"
-              placeholder="Add more details…"
-              className="min-h-30 resize-none rounded-lg border-slate-700 bg-slate-800 text-sm text-slate-100 placeholder:text-slate-500 focus:border-pace-accent"
-            />
-          </Field>
-        </FieldGroup>
-
-        {/* ── Right column: Category, Important, Energy, Est, Due Date ── */}
-        <FieldGroup className="space-y-4">
-          <Field className="space-y-1.5">
-            <FieldLabel htmlFor="task-category">Category</FieldLabel>
             <select
-              {...form.register("categoryId")}
-              id="task-category"
-              className="h-10 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 text-sm text-slate-300 outline-none transition focus:border-pace-accent"
+                {...form.register("categoryId")}
+                className="h-9 w-full rounded-lg border border-[#1d314f] bg-[#101b2d] px-2.5 text-xs text-[#f5f7fb] outline-none transition-all focus:border-[#3f8cff]"
             >
               <option value="">None</option>
               {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
             </select>
-          </Field>
-
-          <Field className="space-y-1.5">
-            <FieldLabel>Important</FieldLabel>
-            <button
-              type="button"
-              onClick={() => form.setValue("isImportant", !isImportant, { shouldDirty: true })}
-              aria-pressed={isImportant}
-              className={cn(
-                "flex h-10 w-full items-center justify-between rounded-lg border px-3 text-sm font-medium transition",
-                "hover:bg-slate-800 hover:text-slate-100 active:scale-[0.98]",
-                isImportant
-                  ? "border-amber-400/40 bg-amber-500/15 text-amber-200"
-                  : "border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600",
-              )}
-            >
-              <span className="flex items-center gap-2">
-                <HugeiconsIcon icon={isImportant ? StarIcon : StarOffIcon} size={16} />
-                <span>Important</span>
-              </span>
-              <span className="text-xs uppercase tracking-wide">
-                {isImportant ? "On" : "Off"}
-              </span>
-            </button>
-          </Field>
-
-          <div className="grid grid-cols-2 gap-3">
-            <Field className="space-y-1.5">
-              <FieldLabel htmlFor="task-energy">Energy</FieldLabel>
-              <select
-                {...form.register("energyRequired")}
-                id="task-energy"
-                className="h-10 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 text-sm text-slate-300 outline-none transition focus:border-pace-accent"
-              >
-                <option value="">None</option>
-                <option value="LOW">⚡ Low</option>
-                <option value="MEDIUM">⚡⚡ Medium</option>
-                <option value="HIGH">⚡⚡⚡ High</option>
-              </select>
-            </Field>
-
-            <Field className="space-y-1.5">
-              <FieldLabel htmlFor="task-estimate">
-                Est. <span className="text-slate-500 font-normal">(min)</span>
-              </FieldLabel>
-              <Input
-                {...form.register("estimatedMinutes")}
-                id="task-estimate"
-                type="number"
-                min={1}
-                placeholder="e.g. 30"
-                className="h-10 rounded-lg bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500 focus:border-pace-accent"
-              />
-            </Field>
           </div>
 
-          <Field className="space-y-1.5">
-            <FieldLabel htmlFor="task-due">Due Date</FieldLabel>
+          {/* Due Date */}
+          <div className="space-y-1">
+            <div className="flex justify-between items-center">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7d93b6]">Due Date</label>
+              {dueDate && (
+                  <button type="button" onClick={() => form.setValue("dueDate", "")} className="text-[10px] text-[#4ea1ff] hover:underline">Clear</button>
+              )}
+            </div>
             <Input
-              {...form.register("dueDate")}
-              id="task-due"
-              type="datetime-local"
-              className="h-10 rounded-lg border-slate-700 bg-slate-800 text-slate-100 focus:border-pace-accent scheme-dark"
+                type="datetime-local"
+                {...form.register("dueDate")}
+                className="h-9 rounded-lg border-[#1d314f] bg-[#101b2d] px-2 text-xs text-[#f5f7fb] focus-visible:ring-0 focus:border-[#3f8cff]"
             />
-          </Field>
-        </FieldGroup>
-      </div>
+          </div>
 
-      {/* Submit (full width) */}
-      <Button
-        type="submit"
-        disabled={form.formState.isSubmitting}
-        className="h-10 w-full rounded-lg bg-pace-accent font-semibold text-slate-950 transition hover:brightness-110 active:scale-[0.98]"
-      >
-        {form.formState.isSubmitting ? "Creating..." : "Create Task"}
-      </Button>
-    </form>
+          {/* Energy Button Options */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7d93b6]">Energy</label>
+            <div className="flex gap-1">
+              {ENERGY_OPTIONS.map((level) => {
+                const active = energyRequired === level;
+                return (
+                    <button
+                        key={level}
+                        type="button"
+                        onClick={() => form.setValue("energyRequired", active ? "" : level)}
+                        className={cn(
+                            "flex-1 rounded-lg border py-1.5 text-[11px] font-medium transition-all",
+                            active
+                                ? "border-[#3f8cff] bg-[#3f8cff]/15 text-[#69a8ff]"
+                                : "border-[#1d314f] bg-[#101b2d] text-[#7d93b6] hover:border-[#34507c]"
+                        )}
+                    >
+                      {"⚡".repeat(level === "LOW" ? 1 : level === "MEDIUM" ? 2 : 3)}
+                    </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Estimate Input (+/- 15 mins) */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7d93b6]">Estimate (mins)</label>
+            <div className="flex rounded-lg border border-[#1d314f] bg-[#101b2d] overflow-hidden focus-within:border-[#3f8cff] transition-all">
+              <button
+                  type="button"
+                  onClick={() => adjustMinutes(-15)}
+                  className="px-2.5 text-[#7d93b6] hover:bg-[#16243b] hover:text-white text-sm transition-all font-mono"
+              >
+                -
+              </button>
+              <Input
+                  type="number"
+                  min={0}
+                  step={15}
+                  {...form.register("estimatedMinutes")}
+                  placeholder="0"
+                  className="h-8 border-none bg-transparent text-center text-xs text-[#f5f7fb] placeholder:text-[#617089] focus-visible:ring-0 shadow-none p-0 w-full"
+              />
+              <button
+                  type="button"
+                  onClick={() => adjustMinutes(15)}
+                  className="px-2.5 text-[#7d93b6] hover:bg-[#16243b] hover:text-white text-sm transition-all font-mono"
+              >
+                +
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Important Toggle */}
+        <button
+            type="button"
+            onClick={() => form.setValue("isImportant", !isImportant)}
+            className={cn(
+                "flex h-9 w-full items-center justify-between rounded-lg border px-3 transition-all",
+                isImportant
+                    ? "border-amber-400/30 bg-amber-500/8 text-[#ffd27d]"
+                    : "border-[#1d314f] bg-[#101b2d] text-[#7d93b6]"
+            )}
+        >
+        <span className="flex items-center gap-1.5 font-medium text-xs">
+          <HugeiconsIcon icon={isImportant ? StarIcon : StarOffIcon} size={14} />
+          Important Task
+        </span>
+          <span className="text-[9px] font-bold uppercase tracking-wider">
+          {isImportant ? "On" : "Off"}
+        </span>
+        </button>
+
+        {/* Description / Notes */}
+        <div className="space-y-1">
+          <label className="text-[10px] font-bold uppercase tracking-wider text-[#7d93b6]">Notes</label>
+          <Textarea
+              {...form.register("description")}
+              placeholder="Add notes..."
+              className="min-h-[80px] resize-none rounded-lg border-[#1d314f] bg-[#101b2d] px-3 py-2 text-xs leading-5 text-[#f5f7fb] placeholder:text-[#617089] focus-visible:ring-0 focus:border-[#3f8cff]"
+          />
+        </div>
+
+        {/* Submit Button */}
+        <Button
+            type="submit"
+            disabled={form.formState.isSubmitting}
+            className="h-9 w-full rounded-lg bg-[#4ea1ff] font-semibold text-[#071120] hover:brightness-110 active:scale-[0.98] text-xs"
+        >
+          {form.formState.isSubmitting ? "Creating..." : "Create Task"}
+        </Button>
+      </form>
   );
 }
-

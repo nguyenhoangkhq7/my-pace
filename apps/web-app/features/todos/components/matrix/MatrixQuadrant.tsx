@@ -11,6 +11,7 @@ type MatrixQuadrantProps = {
   icon: React.ReactNode;
   accentColor: string;
   tasks: BoardTask[];
+  onSelectTask: (task: BoardTask) => void;
 };
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -20,6 +21,7 @@ export function MatrixQuadrant({
   icon,
   accentColor,
   tasks,
+  onSelectTask,
 }: MatrixQuadrantProps) {
   return (
     <div className="bg-pace-card rounded-2xl border border-slate-800 p-4 flex flex-col">
@@ -50,7 +52,7 @@ export function MatrixQuadrant({
         {tasks.length > 0 ? (
           <div className="flex flex-col gap-1">
             {tasks.map((task) => (
-              <MatrixTaskItem key={task.id} task={task} />
+              <MatrixTaskItem key={task.id} task={task} onClick={() => onSelectTask(task)} />
             ))}
           </div>
         ) : (
