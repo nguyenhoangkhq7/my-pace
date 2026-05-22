@@ -1,26 +1,299 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+@custom-variant light (&:is(.light *));
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* ─────────────────────────────────────────────
+   * PACE DESIGN TOKENS
+   * Modern Deep Blue Dark Theme
+   * ───────────────────────────────────────────── */
+
+  --pace-bg: #050b14;
+  --pace-sidebar: #09111f;
+  --pace-panel: rgba(11, 23, 40, 0.92);
+
+  --pace-card: #162235;
+  --pace-card-hover: #1b2c46;
+
+  --pace-border: #1f304d;
+  --pace-border-strong: #34507c;
+
+  --pace-muted: #7d93b6;
+  --pace-muted-soft: #617089;
+
+  --pace-text: #f5f7fb;
+  --pace-text-soft: #d7deea;
+
+  --pace-accent: #4ea1ff;
+  --pace-accent-strong: #76b7ff;
+
+  --pace-danger: #ff5c7c;
+  --pace-warning: #ffcc66;
+  --pace-success: #72e6c8;
+
+  /* ─────────────────────────────────────────────
+   * SHADCN
+   * ───────────────────────────────────────────── */
+
+  --background: #050b14;
+  --foreground: #f5f7fb;
+
+  --card: #162235;
+  --card-foreground: #f5f7fb;
+
+  --popover: #132238;
+  --popover-foreground: #f5f7fb;
+
+  --primary: #4ea1ff;
+  --primary-foreground: #071120;
+
+  --secondary: #16243b;
+  --secondary-foreground: #f5f7fb;
+
+  --muted: #101a2b;
+  --muted-foreground: #7d93b6;
+
+  --accent: #16243b;
+  --accent-foreground: #f5f7fb;
+
+  --destructive: #ff5c7c;
+
+  --border: #1f304d;
+  --input: #1f304d;
+  --ring: #4ea1ff;
+
+  --sidebar: #09111f;
+  --sidebar-foreground: #f5f7fb;
+
+  --sidebar-primary: #4ea1ff;
+  --sidebar-primary-foreground: #071120;
+
+  --sidebar-accent: #16243b;
+  --sidebar-accent-foreground: #f5f7fb;
+
+  --sidebar-border: #1f304d;
+  --sidebar-ring: #4ea1ff;
+
+  --radius: 0.85rem;
+}
+
+.light {
+  --pace-bg: #f8fafc;
+  --pace-sidebar: #ffffff;
+  --pace-panel: rgba(255, 255, 255, 0.92);
+
+  --pace-card: #ffffff;
+  --pace-card-hover: #f1f5f9;
+
+  --pace-border: #dbe4f0;
+  --pace-border-strong: #b6c5d8;
+
+  --pace-muted: #64748b;
+  --pace-muted-soft: #94a3b8;
+
+  --pace-text: #0f172a;
+  --pace-text-soft: #334155;
+
+  --pace-accent: #2563eb;
+  --pace-accent-strong: #3b82f6;
+
+  --pace-danger: #e11d48;
+  --pace-warning: #d97706;
+  --pace-success: #059669;
+
+  --background: #f8fafc;
+  --foreground: #0f172a;
+
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+
+  --accent: #eff6ff;
+  --accent-foreground: #2563eb;
+
+  --destructive: #e11d48;
+
+  --border: #dbe4f0;
+  --input: #dbe4f0;
+  --ring: #2563eb;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0f172a;
+
+  --sidebar-primary: #2563eb;
+  --sidebar-primary-foreground: #ffffff;
+
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #0f172a;
+
+  --sidebar-border: #dbe4f0;
+  --sidebar-ring: #2563eb;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+
+  --color-pace-bg: var(--pace-bg);
+  --color-pace-sidebar: var(--pace-sidebar);
+  --color-pace-panel: var(--pace-panel);
+
+  --color-pace-card: var(--pace-card);
+  --color-pace-card-hover: var(--pace-card-hover);
+
+  --color-pace-border: var(--pace-border);
+  --color-pace-border-strong: var(--pace-border-strong);
+
+  --color-pace-muted: var(--pace-muted);
+  --color-pace-muted-soft: var(--pace-muted-soft);
+
+  --color-pace-text: var(--pace-text);
+  --color-pace-text-soft: var(--pace-text-soft);
+
+  --color-pace-accent: var(--pace-accent);
+  --color-pace-accent-strong: var(--pace-accent-strong);
+
+  --color-pace-danger: var(--pace-danger);
+  --color-pace-warning: var(--pace-warning);
+  --color-pace-success: var(--pace-success);
+
+  --font-sans: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   --font-mono: var(--font-geist-mono);
+
+  --radius-sm: calc(var(--radius) * 0.65);
+  --radius-md: calc(var(--radius) * 0.85);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    background:
+            radial-gradient(
+                    circle at top,
+                    rgba(78, 161, 255, 0.08),
+                    transparent 35%
+            ),
+            linear-gradient(
+                    to bottom,
+                    #050b14,
+                    #09111f
+            );
+
+    color: var(--foreground);
+
+    font-family: var(--font-geist-sans), Arial, sans-serif;
+
+    min-height: 100vh;
+
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ─────────────────────────────────────────────
+ * Scrollbar
+ * ───────────────────────────────────────────── */
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #34507c transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #243754;
+  border-radius: 9999px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #34507c;
+}
+
+/* ─────────────────────────────────────────────
+ * FullCalendar
+ * ───────────────────────────────────────────── */
+
+.fc {
+  --fc-border-color: #1f304d;
+
+  --fc-button-text-color: #f5f7fb;
+  --fc-button-bg-color: #16243b;
+  --fc-button-border-color: #1f304d;
+
+  --fc-button-hover-bg-color: #223555;
+  --fc-button-hover-border-color: #34507c;
+
+  --fc-button-active-bg-color: #4ea1ff;
+  --fc-button-active-border-color: #4ea1ff;
+
+  --fc-today-bg-color: rgba(78, 161, 255, 0.08);
+
+  background: transparent;
+  font-family: inherit;
+  height: 100%;
+}
+
+.fc .fc-toolbar-title {
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+  color: #f5f7fb;
+}
+
+.fc-col-header-cell-cushion,
+.fc-timegrid-slot-label-cushion {
+  font-size: 0.75rem !important;
+  font-weight: 600;
+  color: #7d93b6;
+}
+
+.fc-theme-standard td,
+.fc-theme-standard th {
+  border-color: #1f304d !important;
+}
+
+.fc .fc-scrollgrid,
+.fc .fc-scrollgrid-section > td,
+.fc .fc-scrollgrid-section > th {
+  border-color: #1f304d !important;
+}
+
+.fc-v-event {
+  border: none !important;
+  border-radius: 12px !important;
+
+  box-shadow:
+          0 10px 25px rgba(0, 0, 0, 0.25) !important;
 }
