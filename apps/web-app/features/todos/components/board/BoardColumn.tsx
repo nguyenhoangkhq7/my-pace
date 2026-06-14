@@ -112,8 +112,8 @@ export function BoardColumn({
           className={cn(
               "flex w-72 shrink-0 flex-col self-start",
               "rounded-3xl",
-              "border border-[#1b2a44]",
-              "bg-gradient-to-b from-[#071120] to-[#0b1728]",
+              "border border-pace-border",
+              "bg-slate-900/50",
               "shadow-[0_8px_30px_rgba(0,0,0,0.35)]",
               "p-4",
           )}
@@ -121,7 +121,7 @@ export function BoardColumn({
         {/* Header */}
         <header className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#f3f4f6]">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-pace-text">
             {title}
           </span>
 
@@ -129,8 +129,8 @@ export function BoardColumn({
                 className={cn(
                     "flex h-5 min-w-5 items-center justify-center",
                     "rounded-full px-1.5",
-                    "bg-[#16243b]",
-                    "text-[11px] text-[#8ba3c7]",
+                    "bg-pace-card",
+                    "text-[11px] text-pace-muted",
                 )}
             >
             {count}
@@ -141,9 +141,9 @@ export function BoardColumn({
               variant="ghost"
               size="icon-sm"
               className={cn(
-                  "text-[#6f85a8]",
-                  "hover:bg-[#16243b]",
-                  "hover:text-white",
+                  "text-pace-muted",
+                  "hover:bg-pace-card",
+                  "hover:text-pace-text",
               )}
           >
             <HugeiconsIcon icon={MoreHorizontalIcon} size={16} />
@@ -163,8 +163,8 @@ export function BoardColumn({
               <div
                   className={cn(
                       "flex flex-col gap-2 rounded-2xl",
-                      "border border-[#223555]",
-                      "bg-[#132238]",
+                      "border border-pace-border-strong",
+                      "bg-pace-sidebar",
                       "p-2.5",
                   )}
               >
@@ -177,14 +177,14 @@ export function BoardColumn({
                     disabled={isSubmitting}
                     className={cn(
                         "w-full rounded-xl",
-                        "border border-[#2a4267]",
-                        "bg-[#0f1b2d]",
+                        "border border-pace-border",
+                        "bg-pace-bg",
                         "px-3 py-2",
-                        "text-sm text-[#f3f4f6]",
-                        "placeholder:text-[#617089]",
+                        "text-sm text-pace-text",
+                        "placeholder:text-pace-muted-soft",
                         "outline-none transition-all",
-                        "focus:border-[#4ea1ff]",
-                        "focus:ring-1 focus:ring-[#4ea1ff]/30",
+                        "focus:border-pace-accent",
+                        "focus:ring-1 focus:ring-pace-accent/30",
                     )}
                 />
 
@@ -195,8 +195,8 @@ export function BoardColumn({
                       size="sm"
                       className={cn(
                           "h-8 flex-1 rounded-xl",
-                          "bg-[#4ea1ff]",
-                          "text-xs font-semibold text-[#071120]",
+                          "bg-pace-accent",
+                          "text-xs font-semibold text-slate-950",
                           "hover:brightness-110",
                           "disabled:cursor-not-allowed disabled:opacity-40",
                       )}
@@ -210,9 +210,9 @@ export function BoardColumn({
                       size="icon-sm"
                       className={cn(
                           "h-8 w-8",
-                          "text-[#7d93b6]",
-                          "hover:bg-[#16243b]",
-                          "hover:text-white",
+                          "text-pace-muted",
+                          "hover:bg-pace-card",
+                          "hover:text-pace-text",
                       )}
                   >
                     <HugeiconsIcon icon={Cancel01Icon} size={14} />
@@ -226,9 +226,9 @@ export function BoardColumn({
                   size="sm"
                   className={cn(
                       "w-full justify-start gap-2",
-                      "text-[13px] text-[#7d93b6]",
-                      "hover:bg-[#16243b]",
-                      "hover:text-white",
+                      "text-[13px] text-pace-muted",
+                      "hover:bg-pace-card",
+                      "hover:text-pace-text",
                   )}
               >
                 <HugeiconsIcon icon={PlusSignIcon} size={14} />

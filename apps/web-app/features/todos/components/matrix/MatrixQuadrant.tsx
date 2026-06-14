@@ -24,7 +24,7 @@ export function MatrixQuadrant({
   onSelectTask,
 }: MatrixQuadrantProps) {
   return (
-    <div className="bg-pace-card rounded-2xl border border-slate-800 p-4 flex flex-col">
+    <div className="bg-pace-card rounded-2xl border border-pace-border p-4 flex flex-col">
       {/* Header */}
       <div className="flex items-center gap-2">
         {icon}
@@ -39,8 +39,8 @@ export function MatrixQuadrant({
         <button
           aria-label={`Add task to ${title}`}
           className={cn(
-            "shrink-0 rounded-md p-1 text-slate-500",
-            "transition hover:bg-slate-700 hover:text-slate-100 active:scale-95"
+            "shrink-0 rounded-md p-1 text-pace-muted",
+            "transition hover:bg-pace-card-hover hover:text-pace-text active:scale-95"
           )}
         >
           <HugeiconsIcon icon={PlusSignIcon} size={16} />
@@ -56,7 +56,7 @@ export function MatrixQuadrant({
             ))}
           </div>
         ) : (
-          <p className="text-xs text-slate-500 text-center py-4">No tasks</p>
+          <p className="text-xs text-pace-muted-soft text-center py-4">No tasks</p>
         )}
       </div>
     </div>

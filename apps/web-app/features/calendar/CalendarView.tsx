@@ -5,7 +5,7 @@ import type { DateSelectArg, EventClickArg, EventDropArg, EventInput } from "@fu
 import type { EventResizeDoneArg } from "@fullcalendar/interaction";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Loading03Icon } from "@hugeicons/core-free-icons";
-import {TaskBase, useTasks, useEvents} from "@/features/todos";
+import {useTasks, useEvents} from "@/features/todos";
 import {useScheduledTasks} from "./hooks/useScheduledTasks";
 import {CalendarTask, CalendarViewTab, ScheduledEventMeta} from "./types/calendar.type";
 import {CalendarScheduleSection} from "./components/CalendarScheduleSection";

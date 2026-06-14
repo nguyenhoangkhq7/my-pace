@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Field, FieldError } from "@/components/ui/field";
 import { useModalStore } from "../../stores/modal.store";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { StarIcon, StarOffIcon } from "@hugeicons/core-free-icons";
@@ -98,12 +97,12 @@ export function NewTaskForm({ onSuccessAction }: NewTaskFormProps) {
           <div
               className={cn(
                   "rounded-2xl border border-transparent",
-                  "bg-[#0f1b2d]",
+                  "bg-pace-bg",
                   "px-4 py-3",
                   "transition-all duration-200",
-                  "focus-within:border-[#3f8cff]",
-                  "focus-within:bg-[#132238]",
-                  "focus-within:shadow-[0_0_0_3px_rgba(63,140,255,0.12)]",
+                  "focus-within:border-pace-accent",
+                  "focus-within:bg-pace-sidebar",
+                  "focus-within:shadow-[0_0_0_3px_rgba(78,161,255,0.12)]",
               )}
           >
             <Input
@@ -113,8 +112,8 @@ export function NewTaskForm({ onSuccessAction }: NewTaskFormProps) {
                     "h-auto border-none bg-transparent",
                     "px-0 py-0",
                     "text-[22px] font-semibold tracking-tight",
-                    "text-[#f8fbff]",
-                    "placeholder:text-[#60738f]",
+                    "text-pace-text",
+                    "placeholder:text-pace-muted-soft",
                     "shadow-none",
                     "focus-visible:ring-0",
                 )}
@@ -141,8 +140,8 @@ export function NewTaskForm({ onSuccessAction }: NewTaskFormProps) {
                         "active:scale-[0.97]",
 
                         status === s
-                            ? "border-[#4a90ff] bg-[#4a90ff]/15 text-[#7db4ff] shadow-[0_0_0_1px_rgba(74,144,255,0.25)]"
-                            : "border-[#1e314d] bg-[#101b2d] text-[#7d93b6] hover:border-[#34507c] hover:bg-[#16243a] hover:text-white"
+                            ? "border-pace-accent bg-pace-accent/15 text-pace-accent shadow-[0_0_0_1px_rgba(78,161,255,0.25)]"
+                            : "border-pace-border bg-pace-bg text-pace-muted hover:border-pace-border-strong hover:bg-pace-card hover:text-pace-text"
                     )}
                 >
                   {s === "IN_REVIEW"
@@ -157,21 +156,21 @@ export function NewTaskForm({ onSuccessAction }: NewTaskFormProps) {
           </div>
         </div>
 
-        <hr className="border-[#16243b]" />
+        <hr className="border-pace-border" />
 
         {/* Grid Metadata (2 cột dọc) */}
         <div className="grid grid-cols-2 gap-3">
           {/* Category */}
           <div className="space-y-1">
             <div className="flex justify-between items-center">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7d93b6]">Category</label>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-pace-muted">Category</label>
               {categoryId && (
-                  <button type="button" onClick={() => form.setValue("categoryId", "")} className="text-[10px] text-[#4ea1ff] hover:underline">Clear</button>
+                  <button type="button" onClick={() => form.setValue("categoryId", "")} className="text-[10px] text-pace-accent hover:underline">Clear</button>
               )}
             </div>
             <select
                 {...form.register("categoryId")}
-                className="h-9 w-full rounded-lg border border-[#1d314f] bg-[#101b2d] px-2.5 text-xs text-[#f5f7fb] outline-none transition-all focus:border-[#3f8cff]"
+                className="h-9 w-full rounded-lg border border-pace-border bg-pace-bg px-2.5 text-xs text-pace-text outline-none transition-all focus:border-pace-accent"
             >
               <option value="">None</option>
               {categories.map((cat) => (
@@ -183,21 +182,21 @@ export function NewTaskForm({ onSuccessAction }: NewTaskFormProps) {
           {/* Due Date */}
           <div className="space-y-1">
             <div className="flex justify-between items-center">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7d93b6]">Due Date</label>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-pace-muted">Due Date</label>
               {dueDate && (
-                  <button type="button" onClick={() => form.setValue("dueDate", "")} className="text-[10px] text-[#4ea1ff] hover:underline">Clear</button>
+                  <button type="button" onClick={() => form.setValue("dueDate", "")} className="text-[10px] text-pace-accent hover:underline">Clear</button>
               )}
             </div>
             <Input
                 type="datetime-local"
                 {...form.register("dueDate")}
-                className="h-9 rounded-lg border-[#1d314f] bg-[#101b2d] px-2 text-xs text-[#f5f7fb] focus-visible:ring-0 focus:border-[#3f8cff]"
+                className="h-9 rounded-lg border-pace-border bg-pace-bg px-2 text-xs text-pace-text focus-visible:ring-0 focus:border-pace-accent"
             />
           </div>
 
           {/* Energy Button Options */}
           <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7d93b6]">Energy</label>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-pace-muted">Energy</label>
             <div className="flex gap-1">
               {ENERGY_OPTIONS.map((level) => {
                 const active = energyRequired === level;
@@ -209,8 +208,8 @@ export function NewTaskForm({ onSuccessAction }: NewTaskFormProps) {
                         className={cn(
                             "flex-1 rounded-lg border py-1.5 text-[11px] font-medium transition-all",
                             active
-                                ? "border-[#3f8cff] bg-[#3f8cff]/15 text-[#69a8ff]"
-                                : "border-[#1d314f] bg-[#101b2d] text-[#7d93b6] hover:border-[#34507c]"
+                                ? "border-pace-accent bg-pace-accent/15 text-pace-accent"
+                                : "border-pace-border bg-pace-bg text-pace-muted hover:border-pace-border-strong"
                         )}
                     >
                       {"⚡".repeat(level === "LOW" ? 1 : level === "MEDIUM" ? 2 : 3)}
@@ -222,12 +221,12 @@ export function NewTaskForm({ onSuccessAction }: NewTaskFormProps) {
 
           {/* Estimate Input (+/- 15 mins) */}
           <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7d93b6]">Estimate (mins)</label>
-            <div className="flex rounded-lg border border-[#1d314f] bg-[#101b2d] overflow-hidden focus-within:border-[#3f8cff] transition-all">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-pace-muted">Estimate (mins)</label>
+            <div className="flex rounded-lg border border-pace-border bg-pace-bg overflow-hidden focus-within:border-pace-accent transition-all">
               <button
                   type="button"
                   onClick={() => adjustMinutes(-15)}
-                  className="px-2.5 text-[#7d93b6] hover:bg-[#16243b] hover:text-white text-sm transition-all font-mono"
+                  className="px-2.5 text-pace-muted hover:bg-pace-card hover:text-pace-text text-sm transition-all font-mono"
               >
                 -
               </button>
@@ -237,12 +236,12 @@ export function NewTaskForm({ onSuccessAction }: NewTaskFormProps) {
                   step={15}
                   {...form.register("estimatedMinutes")}
                   placeholder="0"
-                  className="h-8 border-none bg-transparent text-center text-xs text-[#f5f7fb] placeholder:text-[#617089] focus-visible:ring-0 shadow-none p-0 w-full"
+                  className="h-8 border-none bg-transparent text-center text-xs text-pace-text placeholder:text-pace-muted-soft focus-visible:ring-0 shadow-none p-0 w-full"
               />
               <button
                   type="button"
                   onClick={() => adjustMinutes(15)}
-                  className="px-2.5 text-[#7d93b6] hover:bg-[#16243b] hover:text-white text-sm transition-all font-mono"
+                  className="px-2.5 text-pace-muted hover:bg-pace-card hover:text-pace-text text-sm transition-all font-mono"
               >
                 +
               </button>
@@ -257,8 +256,8 @@ export function NewTaskForm({ onSuccessAction }: NewTaskFormProps) {
             className={cn(
                 "flex h-9 w-full items-center justify-between rounded-lg border px-3 transition-all",
                 isImportant
-                    ? "border-amber-400/30 bg-amber-500/8 text-[#ffd27d]"
-                    : "border-[#1d314f] bg-[#101b2d] text-[#7d93b6]"
+                    ? "border-pace-warning/30 bg-pace-warning/8 text-pace-warning"
+                    : "border-pace-border bg-pace-bg text-pace-muted"
             )}
         >
         <span className="flex items-center gap-1.5 font-medium text-xs">
@@ -272,11 +271,11 @@ export function NewTaskForm({ onSuccessAction }: NewTaskFormProps) {
 
         {/* Description / Notes */}
         <div className="space-y-1">
-          <label className="text-[10px] font-bold uppercase tracking-wider text-[#7d93b6]">Notes</label>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-pace-muted">Notes</label>
           <Textarea
               {...form.register("description")}
               placeholder="Add notes..."
-              className="min-h-[80px] resize-none rounded-lg border-[#1d314f] bg-[#101b2d] px-3 py-2 text-xs leading-5 text-[#f5f7fb] placeholder:text-[#617089] focus-visible:ring-0 focus:border-[#3f8cff]"
+              className="min-h-[80px] resize-none rounded-lg border-pace-border bg-pace-bg px-3 py-2 text-xs leading-5 text-pace-text placeholder:text-pace-muted-soft focus-visible:ring-0 focus:border-pace-accent"
           />
         </div>
 
@@ -284,7 +283,7 @@ export function NewTaskForm({ onSuccessAction }: NewTaskFormProps) {
         <Button
             type="submit"
             disabled={form.formState.isSubmitting}
-            className="h-9 w-full rounded-lg bg-[#4ea1ff] font-semibold text-[#071120] hover:brightness-110 active:scale-[0.98] text-xs"
+            className="h-9 w-full rounded-lg bg-pace-accent font-semibold text-slate-950 hover:brightness-110 active:scale-[0.98] text-xs transition-all"
         >
           {form.formState.isSubmitting ? "Creating..." : "Create Task"}
         </Button>

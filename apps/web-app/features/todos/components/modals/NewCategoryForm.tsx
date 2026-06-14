@@ -3,7 +3,6 @@
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useCategories } from "../../hooks/useCategories";
@@ -63,21 +62,21 @@ export function NewCategoryForm({ onSuccessAction }: NewCategoryFormProps) {
           <Input
               {...form.register("name")}
               placeholder="Category name (e.g. Work, Personal)..."
-              className="h-auto border-none bg-transparent px-0 py-0 text-xl font-semibold tracking-tight text-[#f8fbff] placeholder:text-[#5d7395] shadow-none focus-visible:ring-0"
+              className="h-auto border-none bg-transparent px-0 py-0 text-xl font-semibold tracking-tight text-pace-text placeholder:text-pace-muted-soft shadow-none focus-visible:ring-0"
           />
           {form.formState.errors.name?.message && (
               <p className="text-[11px] text-red-400 font-medium">{form.formState.errors.name.message}</p>
           )}
         </div>
 
-        <hr className="border-[#16243b]" />
+        <hr className="border-pace-border" />
 
         {/* Preferred Time Box */}
-        <div className="rounded-xl border border-[#1d314f] bg-[#101b2d]/50 p-3.5 space-y-3">
+        <div className="rounded-xl border border-pace-border bg-pace-bg/50 p-3.5 space-y-3">
           <div>
             <div className="flex justify-between items-center">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#7d93b6]">
-                Preferred Time Window <span className="font-normal text-[#5d7395]">(optional)</span>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-pace-muted">
+                Preferred Time Window <span className="font-normal text-pace-muted-soft">(optional)</span>
               </p>
               {(startTime || endTime) && (
                   <button
@@ -86,13 +85,13 @@ export function NewCategoryForm({ onSuccessAction }: NewCategoryFormProps) {
                         form.setValue("preferredStartTime", "");
                         form.setValue("preferredEndTime", "");
                       }}
-                      className="text-[10px] text-[#4ea1ff] hover:underline"
+                      className="text-[10px] text-pace-accent hover:underline"
                   >
                     Clear Window
                   </button>
               )}
             </div>
-            <p className="text-[11px] text-[#617089] mt-0.5 leading-normal">
+            <p className="text-[11px] text-pace-muted-soft mt-0.5 leading-normal">
               The AI scheduler will prioritize placing tasks of this category within this specific time frame.
             </p>
           </div>
@@ -100,27 +99,27 @@ export function NewCategoryForm({ onSuccessAction }: NewCategoryFormProps) {
           <div className="grid grid-cols-2 gap-3">
             {/* Start Time */}
             <div className="space-y-1">
-              <label htmlFor="cat-start" className="text-[10px] font-bold uppercase tracking-wider text-[#7d93b6]">
+              <label htmlFor="cat-start" className="text-[10px] font-bold uppercase tracking-wider text-pace-muted">
                 Start Time
               </label>
               <Input
                   {...form.register("preferredStartTime")}
                   id="cat-start"
                   type="time"
-                  className="h-9 rounded-lg border-[#1d314f] bg-[#101b2d] px-2 text-xs text-[#f5f7fb] focus-visible:ring-0 focus:border-[#3f8cff] scheme-dark"
+                  className="h-9 rounded-lg border-pace-border bg-pace-bg px-2 text-xs text-pace-text focus-visible:ring-0 focus:border-pace-accent scheme-dark"
               />
             </div>
 
             {/* End Time */}
             <div className="space-y-1">
-              <label htmlFor="cat-end" className="text-[10px] font-bold uppercase tracking-wider text-[#7d93b6]">
+              <label htmlFor="cat-end" className="text-[10px] font-bold uppercase tracking-wider text-pace-muted">
                 End Time
               </label>
               <Input
                   {...form.register("preferredEndTime")}
                   id="cat-end"
                   type="time"
-                  className="h-9 rounded-lg border-[#1d314f] bg-[#101b2d] px-2 text-xs text-[#f5f7fb] focus-visible:ring-0 focus:border-[#3f8cff] scheme-dark"
+                  className="h-9 rounded-lg border-pace-border bg-pace-bg px-2 text-xs text-pace-text focus-visible:ring-0 focus:border-pace-accent scheme-dark"
               />
             </div>
           </div>
@@ -130,7 +129,7 @@ export function NewCategoryForm({ onSuccessAction }: NewCategoryFormProps) {
         <Button
             type="submit"
             disabled={form.formState.isSubmitting}
-            className="h-9 w-full rounded-lg bg-[#4ea1ff] font-semibold text-[#071120] hover:brightness-110 active:scale-[0.98] text-xs transition-all"
+            className="h-9 w-full rounded-lg bg-pace-accent font-semibold text-slate-950 hover:brightness-110 active:scale-[0.98] text-xs transition-all"
         >
           {form.formState.isSubmitting ? "Creating..." : "Create Category"}
         </Button>

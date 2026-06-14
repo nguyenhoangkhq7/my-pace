@@ -16,7 +16,7 @@ export default function AppLayout({
   const setIsNewItemModalOpen = useModalStore((s) => s.setIsNewItemModalOpen);
 
   return (
-    <div className="flex h-screen bg-pace-bg text-foreground">
+    <div className="flex h-screen overflow-hidden bg-pace-bg text-foreground">
       <Sidebar activeView={activeView} onViewChangeAction={setActiveView} />
       <main className="flex min-w-0 flex-1 flex-col overflow-y-auto px-8 py-6 scrollbar-thin">
         {children}

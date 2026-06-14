@@ -140,17 +140,17 @@ export function TaskCard({ task }: BoardCardProps) {
           className={cn(
               "group relative cursor-pointer",
               "rounded-2xl border-l-2",
-              "border border-[#1f304d]",
-              "bg-linear-to-b from-[#18263d] to-[#162235]",
+              "border border-pace-border",
+              "bg-linear-to-b from-pace-card/90 to-pace-card",
               "p-3",
               "shadow-[0_4px_20px_rgba(0,0,0,0.25)]",
               "transition-all duration-200",
               "hover:-translate-y-px",
-              "hover:border-[#34507c]",
+              "hover:border-pace-border-strong",
               "hover:shadow-[0_10px_25px_rgba(0,0,0,0.35)]",
               showUrgent
-                  ? "border-l-[#ff5c7c]"
-                  : "border-l-[#314866]",
+                  ? "border-l-pace-danger"
+                  : "border-l-pace-border-strong",
               task.isDone && "opacity-50",
           )}
       >
@@ -163,11 +163,11 @@ export function TaskCard({ task }: BoardCardProps) {
             }}
             className={cn(
                 "absolute right-2.5 top-2.5 z-10 rounded-md p-1",
-                "text-[#6f85a8]",
+                "text-pace-muted",
                 "opacity-0 transition-all duration-150",
                 "group-hover:opacity-100",
-                "hover:bg-[#1f304d]",
-                "hover:text-white",
+                "hover:bg-pace-border",
+                "hover:text-pace-text",
             )}
         >
           <HugeiconsIcon icon={PencilEdit01Icon} size={12} />
@@ -198,8 +198,8 @@ export function TaskCard({ task }: BoardCardProps) {
               className={cn(
                   "mt-0.5 shrink-0 transition-all",
                   task.isDone
-                      ? "text-emerald-400"
-                      : "text-[#6f85a8] hover:text-white",
+                      ? "text-pace-success"
+                      : "text-pace-muted hover:text-pace-text",
               )}
           >
             <HugeiconsIcon
@@ -222,10 +222,10 @@ export function TaskCard({ task }: BoardCardProps) {
                   onBlur={commitEdit}
                   className={cn(
                       "flex-1 rounded-lg",
-                      "border border-[#4ea1ff]/60",
-                      "bg-[#0f1b2d]",
+                      "border border-pace-accent/60",
+                      "bg-pace-bg",
                       "px-2 py-1",
-                      "text-sm text-[#f5f7fb]",
+                      "text-sm text-pace-text",
                       "outline-none",
                   )}
               />
@@ -233,16 +233,16 @@ export function TaskCard({ task }: BoardCardProps) {
               <div className="flex-1 min-w-0">
                 <p
                     className={cn(
-                                "wrap-break-word text-sm font-medium leading-5",
-                        "text-[#f5f7fb]",
+                        "wrap-break-word text-sm font-medium leading-5",
+                        "text-pace-text",
                         task.isDone &&
-                        "text-[#5f7088] line-through",
+                        "text-pace-muted-soft line-through",
                     )}
                 >
                   {task.title}
 
                   {!task.isDone && isImportant && (
-                      <span className="ml-1.5 inline-flex align-middle text-[#ff5c7c]">
+                      <span className="ml-1.5 inline-flex align-middle text-pace-danger">
                   <HugeiconsIcon
                       icon={AlertCircleIcon}
                       size={13}
@@ -259,7 +259,7 @@ export function TaskCard({ task }: BoardCardProps) {
             <div
                 className={cn(
                     "mt-3 flex items-center justify-between",
-                    "border-t border-[#22324d]",
+                    "border-t border-pace-border",
                     "pt-2 text-[10.5px]",
                 )}
             >
@@ -269,8 +269,8 @@ export function TaskCard({ task }: BoardCardProps) {
                         className={cn(
                             "inline-flex items-center gap-1 font-medium",
                             dueMeta.overdue
-                                ? "text-[#ff5c7c]"
-                                : "text-[#8aa0c2]",
+                                ? "text-pace-danger"
+                                : "text-pace-muted",
                         )}
                     >
                 <HugeiconsIcon

@@ -1,16 +1,3 @@
-// export type BoardColumn = {
-//   id: number;
-//   name: string;
-//   position: number;
-//   tasks: BoardTask[];
-// };
-//
-// export type Board = {
-//   id: number;
-//   name: string;
-//   boardColumns: BoardColumn[];
-// };
-
 export type EnergyLevel = "LOW" | "MEDIUM" | "HIGH";
 export type TaskStatus = "TODO" | "DOING" | "IN_REVIEW" | "DONE";
 
@@ -36,7 +23,6 @@ export type Category = {
 
 export type TaskBase = {
   id: number;
-  categoryId: number | null;
   category: Category | null;
   parentId: number | null;
   title: string;
