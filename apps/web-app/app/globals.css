@@ -1,26 +1,238 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+@custom-variant light (&:is(.light *));
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Tông màu Slate-950 cực kỳ tối giản, giảm thiểu gánh nặng nhận thức */
+  --background: #020617; /* Slate 950 */
+  --foreground: #f8fafc; /* Slate 50 */
+
+  /* Thẻ Card nổi bật trên nền tối (Slate 900) */
+  --card: #0f172a; 
+  --card-foreground: #f8fafc;
+
+  --popover: #0f172a;
+  --popover-foreground: #f8fafc;
+
+  /* Màu chủ đạo (Accent/Primary) dịu mắt, không quá chói */
+  --primary: #3b82f6; /* Blue 500 */
+  --primary-foreground: #ffffff;
+
+  --secondary: #1e293b; /* Slate 800 */
+  --secondary-foreground: #f8fafc;
+
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8; /* Slate 400 - Text phụ mờ vừa đủ */
+
+  --accent: #1e293b;
+  --accent-foreground: #f8fafc;
+
+  --destructive: #ef4444; /* Red 500 */
+  --destructive-foreground: #ffffff;
+
+/* BỔ SUNG: Dải màu Ngữ nghĩa Trạng thái (Task Status) */
+  --success: #10b981; /* Emerald 500 - Đã hoàn thành/Thành công */
+  --success-foreground: #ffffff;
+  
+  --warning: #f59e0b; /* Amber 500 - Đang tiến hành/Cần chú ý */
+  --warning-foreground: #ffffff;
+
+  --info: #0ea5e9; /* Sky 500 - Thông tin chung/Lịch trình */
+  --info-foreground: #ffffff;
+
+  /* BỔ SUNG: Dải màu Năng lượng/Ưu tiên (Nền nhạt để highlight Card) */
+  --energy-high-bg: rgba(239, 68, 68, 0.1); /* Đỏ nhạt - Task tốn sức */
+  --energy-low-bg: rgba(16, 185, 129, 0.1); /* Xanh lá nhạt - Task thư giãn */
+
+  /* Viền tinh tế, không làm chia cắt không gian quá gắt */
+  --border: #1e293b; /* Slate 800 */
+  --input: #1e293b;
+  --ring: #3b82f6;
+
+  /* Sidebar đồng bộ với Card */
+  --sidebar: #0f172a;
+  --sidebar-foreground: #f8fafc;
+  --sidebar-primary: #3b82f6;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1e293b;
+  --sidebar-accent-foreground: #f8fafc;
+  --sidebar-border: #1e293b;
+  --sidebar-ring: #3b82f6;
+
+  --radius: 0.3rem; /* Bo góc mềm mại hơn */
 }
 
+/* Tùy chọn Light mode sạch sẽ nếu người dùng muốn đổi gió */
+.light {
+  --background: #f8fafc;
+  --foreground: #020617;
+
+  --card: #ffffff;
+  --card-foreground: #020617;
+
+  --popover: #ffffff;
+  --popover-foreground: #020617;
+
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #2563eb;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #020617;
+  --sidebar-primary: #2563eb;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #0f172a;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #2563eb;
+}
+
+/* Ánh xạ biến của Tailwind v4 */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --font-sans: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   --font-mono: var(--font-geist-mono);
+
+  --radius-sm: calc(var(--radius) * 0.65);
+  --radius-md: calc(var(--radius) * 0.85);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    /* Ép chạy dark mode mặc định từ hệ thống */
+    color-scheme: dark; 
+  }
+
+  body {
+    /* Đã gỡ bỏ gradient rườm rà, trả lại background phẳng */
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 }
 
-body {
-  background: var(--background);
+/* ─────────────────────────────────────────────
+ * Scrollbar & FullCalendar (Giữ nguyên logic của bạn, chỉ tinh chỉnh màu viền)
+ * ───────────────────────────────────────────── */
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--secondary);
+  border-radius: 9999px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+.fc {
+  --fc-border-color: var(--border);
+  --fc-button-text-color: var(--foreground);
+  --fc-button-bg-color: var(--secondary);
+  --fc-button-border-color: var(--border);
+  --fc-button-hover-bg-color: var(--muted);
+  --fc-button-hover-border-color: var(--border);
+  --fc-button-active-bg-color: var(--primary);
+  --fc-button-active-border-color: var(--primary);
+  --fc-today-bg-color: rgba(59, 130, 246, 0.1); /* Blue nhạt cho ngày hiện tại */
+  
+  background: transparent;
+  font-family: inherit;
+  height: 100%;
+}
+
+.fc .fc-toolbar-title {
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+.fc-col-header-cell-cushion,
+.fc-timegrid-slot-label-cushion {
+  font-size: 0.75rem !important;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
+.fc-theme-standard td,
+.fc-theme-standard th,
+.fc .fc-scrollgrid,
+.fc .fc-scrollgrid-section > td,
+.fc .fc-scrollgrid-section > th {
+  border-color: var(--border) !important;
+}
+
+.fc-v-event {
+  border: none !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
 }
