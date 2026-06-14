@@ -134,11 +134,11 @@ export function OtpUserDataStep() {
                             Create your profile
                         </CardTitle>
 
-                        <CardDescription className="mx-auto max-w-md text-base leading-relaxed text-slate-300">
+                        <CardDescription className="mx-auto max-w-md text-base leading-relaxed text-muted-foreground">
                             Complete your registration for:
                         </CardDescription>
 
-                        <p className="text-sm font-medium text-slate-100">
+                        <p className="text-sm font-medium text-foreground">
                             {registerFormData.email || "your@email.com"}
                         </p>
                     </div>
@@ -171,7 +171,7 @@ export function OtpUserDataStep() {
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-100"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
                                 >
                                     <HugeiconsIcon
                                         icon={showPassword ? ViewOffSlashIcon : ViewIcon}
@@ -195,7 +195,7 @@ export function OtpUserDataStep() {
                                 <button
                                     type="button"
                                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-100"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
                                 >
                                     <HugeiconsIcon
                                         icon={showConfirmPassword ? ViewOffSlashIcon : ViewIcon}
@@ -226,10 +226,10 @@ export function OtpUserDataStep() {
                     />
                 )}
 
-                <div className="flex items-center justify-center gap-1 text-sm text-slate-400">
+                <div className="flex items-center justify-center gap-1 text-sm text-muted-foreground">
                     <span>Already have an account?</span>
 
-                    <Button variant="link" className="h-auto p-0 text-sm font-medium text-slate-100 hover:text-slate-200" type="button" asChild>
+                    <Button variant="link" className="h-auto p-0 text-sm font-medium text-foreground hover:text-foreground/80" type="button" asChild>
                         <Link href="/login">Login</Link>
                     </Button>
                 </div>

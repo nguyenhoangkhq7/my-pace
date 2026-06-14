@@ -11,10 +11,10 @@ interface AppAlertProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const variantStyles: Record<AppAlertVariant, string> = {
-    success: "border-emerald-500/30 bg-slate-900/95 text-white",
-    error: "border-rose-500/30 bg-slate-900/95 text-white",
-    info: "border-primary/30 bg-slate-900/95 text-white",
-    loading: "border-slate-700 bg-slate-900/95 text-white",
+    success: "bg-emerald-950/50 border-emerald-800 text-emerald-400",
+    error: "bg-rose-950/50 border-rose-800 text-rose-400",
+    info: "border-border bg-card text-foreground",
+    loading: "border-border bg-card text-muted-foreground",
 };
 
 export function AppAlert({
@@ -43,7 +43,7 @@ export function AppAlert({
                 </p>
 
                 {description ? (
-                    <div className="text-sm leading-relaxed text-white/80">
+                    <div className="text-sm leading-relaxed text-muted-foreground">
                         {description}
                     </div>
                 ) : null}

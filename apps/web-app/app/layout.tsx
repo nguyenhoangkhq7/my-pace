@@ -32,7 +32,7 @@ export default function RootLayout({
       lang="en"
       className={cn("h-full antialiased", inter.variable, geistMono.variable)}
     >
-      <body className="min-h-screen bg-pace-bg text-foreground">
+      <body className="min-h-screen bg-background text-foreground">
         <AuthProvider>
           {children}
           <AppToastHost />

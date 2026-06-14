@@ -27,14 +27,14 @@ export default function QuickNotes() {
 
   return (
     <div>
-      <h3 className="text-base font-semibold text-slate-100 mb-3">
+      <h3 className="text-base font-semibold text-foreground mb-3">
         Quick Notes
       </h3>
       <Textarea
         placeholder="Jot down thoughts or reminders..."
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        className="bg-slate-800/80 border-slate-700 rounded-xl text-sm text-slate-300 resize-none min-h-20 focus:border-pace-accent"
+        className="bg-muted/80 border-border rounded-xl text-sm text-foreground resize-none min-h-20 focus:border-primary"
       />
     </div>
   );

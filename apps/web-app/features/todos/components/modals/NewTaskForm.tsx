@@ -16,6 +16,13 @@ import { useTasks } from "../../hooks/useTasks";
 
 const ENERGY_OPTIONS = ["LOW", "MEDIUM", "HIGH"] as const;
 
+const STATUS_OPTIONS: { value: TaskStatus; label: string }[] = [
+  { value: "TODO", label: "To Do" },
+  { value: "DOING", label: "Doing" },
+  { value: "IN_REVIEW", label: "Review" },
+  { value: "DONE", label: "Done" },
+];
+
 const newTaskSchema = z.object({
   title: z.string().min(1, "Title is required").max(255),
   categoryId: z.string().optional(),
@@ -56,8 +63,6 @@ export function NewTaskForm({ onSuccessAction }: NewTaskFormProps) {
   const isImportant = useWatch({ control: form.control, name: "isImportant" });
   const energyRequired = useWatch({ control: form.control, name: "energyRequired" });
   const estimatedMinutes = useWatch({ control: form.control, name: "estimatedMinutes" });
-  const categoryId = useWatch({ control: form.control, name: "categoryId" });
-  const dueDate = useWatch({ control: form.control, name: "dueDate" });
 
   // Bộ tăng giảm thời gian nhảy 15 phút
   const adjustMinutes = (amount: number) => {
@@ -90,203 +95,170 @@ export function NewTaskForm({ onSuccessAction }: NewTaskFormProps) {
   };
 
   return (
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {/* Title */}
-        <div className="space-y-3">
-          {/* Title Input */}
-          <div
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col">
+        {/* Title — prominent input */}
+        <div className="px-5 pt-5 pb-3">
+          <Input
+              {...form.register("title")}
+              autoFocus
+              placeholder="Task name..."
               className={cn(
-                  "rounded-2xl border border-transparent",
-                  "bg-pace-bg",
-                  "px-4 py-3",
-                  "transition-all duration-200",
-                  "focus-within:border-pace-accent",
-                  "focus-within:bg-pace-sidebar",
-                  "focus-within:shadow-[0_0_0_3px_rgba(78,161,255,0.12)]",
+                  "h-auto border-none bg-transparent",
+                  "px-0 py-0",
+                  "text-lg font-semibold tracking-tight",
+                  "text-foreground",
+                  "placeholder:text-muted-foreground/50",
+                  "shadow-none",
+                  "focus-visible:ring-0",
+              )}
+          />
+          {form.formState.errors.title?.message && (
+              <p className="mt-1.5 text-[11px] font-medium text-red-400">
+                {form.formState.errors.title.message}
+              </p>
+          )}
+        </div>
+
+        {/* Status pills — compact row */}
+        <div className="flex items-center gap-1.5 px-5 pb-4">
+          {STATUS_OPTIONS.map((opt) => (
+              <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => form.setValue("status", opt.value)}
+                  className={cn(
+                      "rounded-md px-2.5 py-1 text-[11px] font-medium transition-all duration-100",
+                      status === opt.value
+                          ? "bg-blue-500/15 text-blue-400"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
+                  )}
+              >
+                {opt.label}
+              </button>
+          ))}
+        </div>
+
+        {/* Metadata section */}
+        <div className="border-t border-border px-5 py-4 space-y-3">
+          {/* Row 1: Category + Due Date */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Category</label>
+              <select
+                  {...form.register("categoryId")}
+                  className="h-8 w-full rounded-lg border border-border bg-transparent px-2.5 text-xs text-foreground outline-none transition focus:border-primary"
+              >
+                <option value="">None</option>
+                {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Due Date</label>
+              <Input
+                  type="datetime-local"
+                  {...form.register("dueDate")}
+                  className="h-8 rounded-lg border-border bg-transparent px-2 text-xs text-foreground focus-visible:ring-0 focus:border-primary"
+              />
+            </div>
+          </div>
+
+          {/* Row 2: Energy + Estimate */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Energy</label>
+              <div className="flex gap-1">
+                {ENERGY_OPTIONS.map((level) => {
+                  const active = energyRequired === level;
+                  return (
+                      <button
+                          key={level}
+                          type="button"
+                          onClick={() => form.setValue("energyRequired", active ? "" : level)}
+                          className={cn(
+                              "flex-1 rounded-lg py-1.5 text-[11px] font-medium transition-all duration-100",
+                              active
+                                  ? "bg-blue-500/15 text-blue-400"
+                                  : "bg-muted/30 text-muted-foreground hover:text-foreground",
+                          )}
+                      >
+                        {"⚡".repeat(level === "LOW" ? 1 : level === "MEDIUM" ? 2 : 3)}
+                      </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Estimate</label>
+              <div className="flex h-8 items-center rounded-lg border border-border overflow-hidden">
+                <button
+                    type="button"
+                    onClick={() => adjustMinutes(-15)}
+                    className="px-2 text-muted-foreground hover:text-foreground hover:bg-muted text-sm font-mono h-full transition"
+                >
+                  −
+                </button>
+                <Input
+                    type="number"
+                    min={0}
+                    step={15}
+                    {...form.register("estimatedMinutes")}
+                    placeholder="min"
+                    className="h-full border-none bg-transparent text-center text-xs text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-0 shadow-none p-0 w-full"
+                />
+                <button
+                    type="button"
+                    onClick={() => adjustMinutes(15)}
+                    className="px-2 text-muted-foreground hover:text-foreground hover:bg-muted text-sm font-mono h-full transition"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Important toggle — inline */}
+          <button
+              type="button"
+              onClick={() => form.setValue("isImportant", !isImportant)}
+              className={cn(
+                  "flex h-8 w-full items-center gap-2 rounded-lg px-3 transition-all duration-100",
+                  isImportant
+                      ? "bg-amber-500/10 text-amber-400"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted",
               )}
           >
-            <Input
-                {...form.register("title")}
-                placeholder="Untitled task..."
-                className={cn(
-                    "h-auto border-none bg-transparent",
-                    "px-0 py-0",
-                    "text-[22px] font-semibold tracking-tight",
-                    "text-pace-text",
-                    "placeholder:text-pace-muted-soft",
-                    "shadow-none",
-                    "focus-visible:ring-0",
-                )}
-            />
+            <HugeiconsIcon icon={isImportant ? StarIcon : StarOffIcon} size={14} />
+            <span className="text-xs font-medium">Important</span>
+            <span className="ml-auto text-[10px] font-semibold uppercase tracking-wider opacity-70">
+              {isImportant ? "On" : "Off"}
+            </span>
+          </button>
 
-            {form.formState.errors.title?.message && (
-                <p className="mt-2 text-[11px] font-medium text-red-400">
-                  {form.formState.errors.title.message}
-                </p>
-            )}
-          </div>
-
-          {/* Status Selector */}
-          <div className="flex flex-wrap items-center gap-2">
-            {(["TODO", "DOING", "IN_REVIEW", "DONE"] as const).map((s) => (
-                <button
-                    key={s}
-                    type="button"
-                    onClick={() => form.setValue("status", s)}
-                    className={cn(
-                        "rounded-xl border px-3 py-1.5",
-                        "text-[11px] font-semibold uppercase tracking-wider",
-                        "transition-all duration-150",
-                        "active:scale-[0.97]",
-
-                        status === s
-                            ? "border-pace-accent bg-pace-accent/15 text-pace-accent shadow-[0_0_0_1px_rgba(78,161,255,0.25)]"
-                            : "border-pace-border bg-pace-bg text-pace-muted hover:border-pace-border-strong hover:bg-pace-card hover:text-pace-text"
-                    )}
-                >
-                  {s === "IN_REVIEW"
-                      ? "In Review"
-                      : s === "TODO"
-                          ? "To Do"
-                          : s === "DOING"
-                              ? "Doing"
-                              : "Done"}
-                </button>
-            ))}
-          </div>
-        </div>
-
-        <hr className="border-pace-border" />
-
-        {/* Grid Metadata (2 cột dọc) */}
-        <div className="grid grid-cols-2 gap-3">
-          {/* Category */}
+          {/* Notes */}
           <div className="space-y-1">
-            <div className="flex justify-between items-center">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-pace-muted">Category</label>
-              {categoryId && (
-                  <button type="button" onClick={() => form.setValue("categoryId", "")} className="text-[10px] text-pace-accent hover:underline">Clear</button>
-              )}
-            </div>
-            <select
-                {...form.register("categoryId")}
-                className="h-9 w-full rounded-lg border border-pace-border bg-pace-bg px-2.5 text-xs text-pace-text outline-none transition-all focus:border-pace-accent"
-            >
-              <option value="">None</option>
-              {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Due Date */}
-          <div className="space-y-1">
-            <div className="flex justify-between items-center">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-pace-muted">Due Date</label>
-              {dueDate && (
-                  <button type="button" onClick={() => form.setValue("dueDate", "")} className="text-[10px] text-pace-accent hover:underline">Clear</button>
-              )}
-            </div>
-            <Input
-                type="datetime-local"
-                {...form.register("dueDate")}
-                className="h-9 rounded-lg border-pace-border bg-pace-bg px-2 text-xs text-pace-text focus-visible:ring-0 focus:border-pace-accent"
+            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Notes</label>
+            <Textarea
+                {...form.register("description")}
+                placeholder="Add notes..."
+                className="min-h-[60px] resize-none rounded-lg border border-border bg-transparent px-3 py-2 text-xs leading-relaxed text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-0 focus:border-primary"
             />
           </div>
-
-          {/* Energy Button Options */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-pace-muted">Energy</label>
-            <div className="flex gap-1">
-              {ENERGY_OPTIONS.map((level) => {
-                const active = energyRequired === level;
-                return (
-                    <button
-                        key={level}
-                        type="button"
-                        onClick={() => form.setValue("energyRequired", active ? "" : level)}
-                        className={cn(
-                            "flex-1 rounded-lg border py-1.5 text-[11px] font-medium transition-all",
-                            active
-                                ? "border-pace-accent bg-pace-accent/15 text-pace-accent"
-                                : "border-pace-border bg-pace-bg text-pace-muted hover:border-pace-border-strong"
-                        )}
-                    >
-                      {"⚡".repeat(level === "LOW" ? 1 : level === "MEDIUM" ? 2 : 3)}
-                    </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Estimate Input (+/- 15 mins) */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-pace-muted">Estimate (mins)</label>
-            <div className="flex rounded-lg border border-pace-border bg-pace-bg overflow-hidden focus-within:border-pace-accent transition-all">
-              <button
-                  type="button"
-                  onClick={() => adjustMinutes(-15)}
-                  className="px-2.5 text-pace-muted hover:bg-pace-card hover:text-pace-text text-sm transition-all font-mono"
-              >
-                -
-              </button>
-              <Input
-                  type="number"
-                  min={0}
-                  step={15}
-                  {...form.register("estimatedMinutes")}
-                  placeholder="0"
-                  className="h-8 border-none bg-transparent text-center text-xs text-pace-text placeholder:text-pace-muted-soft focus-visible:ring-0 shadow-none p-0 w-full"
-              />
-              <button
-                  type="button"
-                  onClick={() => adjustMinutes(15)}
-                  className="px-2.5 text-pace-muted hover:bg-pace-card hover:text-pace-text text-sm transition-all font-mono"
-              >
-                +
-              </button>
-            </div>
-          </div>
         </div>
 
-        {/* Important Toggle */}
-        <button
-            type="button"
-            onClick={() => form.setValue("isImportant", !isImportant)}
-            className={cn(
-                "flex h-9 w-full items-center justify-between rounded-lg border px-3 transition-all",
-                isImportant
-                    ? "border-pace-warning/30 bg-pace-warning/8 text-pace-warning"
-                    : "border-pace-border bg-pace-bg text-pace-muted"
-            )}
-        >
-        <span className="flex items-center gap-1.5 font-medium text-xs">
-          <HugeiconsIcon icon={isImportant ? StarIcon : StarOffIcon} size={14} />
-          Important Task
-        </span>
-          <span className="text-[9px] font-bold uppercase tracking-wider">
-          {isImportant ? "On" : "Off"}
-        </span>
-        </button>
-
-        {/* Description / Notes */}
-        <div className="space-y-1">
-          <label className="text-[10px] font-bold uppercase tracking-wider text-pace-muted">Notes</label>
-          <Textarea
-              {...form.register("description")}
-              placeholder="Add notes..."
-              className="min-h-[80px] resize-none rounded-lg border-pace-border bg-pace-bg px-3 py-2 text-xs leading-5 text-pace-text placeholder:text-pace-muted-soft focus-visible:ring-0 focus:border-pace-accent"
-          />
+        {/* Footer */}
+        <div className="border-t border-border px-5 py-3">
+          <Button
+              type="submit"
+              disabled={form.formState.isSubmitting}
+              className="h-9 w-full rounded-lg bg-blue-600 font-semibold text-white hover:bg-blue-500 active:scale-[0.98] text-xs transition-all disabled:opacity-40"
+          >
+            {form.formState.isSubmitting ? "Creating..." : "Create Task"}
+          </Button>
         </div>
-
-        {/* Submit Button */}
-        <Button
-            type="submit"
-            disabled={form.formState.isSubmitting}
-            className="h-9 w-full rounded-lg bg-pace-accent font-semibold text-slate-950 hover:brightness-110 active:scale-[0.98] text-xs transition-all"
-        >
-          {form.formState.isSubmitting ? "Creating..." : "Create Task"}
-        </Button>
       </form>
   );
 }

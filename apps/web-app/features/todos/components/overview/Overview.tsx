@@ -32,7 +32,7 @@ export default function Overview() {
 
   return (
     <div>
-      <h3 className="text-base font-semibold text-slate-100">
+      <h3 className="text-base font-semibold text-foreground">
         Today&apos;s Overview
       </h3>
 
@@ -65,7 +65,7 @@ export default function Overview() {
             fill="none"
             stroke="currentColor"
             strokeWidth={8}
-            className="text-slate-800"
+            className="text-border"
           />
 
           {/* Progress circle */}
@@ -88,7 +88,7 @@ export default function Overview() {
             y={56}
             textAnchor="middle"
             dominantBaseline="middle"
-            className="fill-slate-100 text-2xl font-bold"
+            className="fill-foreground text-2xl font-bold"
             fontSize={24}
             fontWeight={700}
           >
@@ -99,7 +99,7 @@ export default function Overview() {
             y={72}
             textAnchor="middle"
             dominantBaseline="middle"
-            className="fill-slate-400"
+            className="fill-muted-foreground"
             fontSize={10}
           >
             Completed
@@ -110,18 +110,18 @@ export default function Overview() {
       {/* Stats row */}
       <div className="flex items-center justify-center gap-6 mt-4">
         <div className="flex flex-col items-center">
-          <span className="text-lg font-bold text-slate-100">{total}</span>
-          <span className="text-[10px] text-slate-400">Total</span>
+          <span className="text-lg font-bold text-foreground">{total}</span>
+          <span className="text-[10px] text-muted-foreground">Total</span>
         </div>
         <div className="flex flex-col items-center">
           <span className="text-lg font-bold text-emerald-400">
             {completed}
           </span>
-          <span className="text-[10px] text-slate-400">Done</span>
+          <span className="text-[10px] text-muted-foreground">Done</span>
         </div>
         <div className="flex flex-col items-center">
           <span className="text-lg font-bold text-rose-400">{overdue}</span>
-          <span className="text-[10px] text-slate-400">Overdue</span>
+          <span className="text-[10px] text-muted-foreground">Overdue</span>
         </div>
       </div>
     </div>

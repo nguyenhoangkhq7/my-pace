@@ -67,11 +67,11 @@ export function LoginForm() {
       <form onSubmit={loginForm.handleSubmit(onSubmit)}>
         <Card className="w-full min-h-136 overflow-hidden rounded-3xl border-none shadow-2xl">
           <CardHeader className="space-y-2 pb-6 text-center">
-            <CardTitle className="text-3xl font-bold tracking-tight text-slate-100">
+            <CardTitle className="text-3xl font-bold tracking-tight text-foreground">
               Login
             </CardTitle>
 
-            <CardDescription className="text-base text-slate-300">
+            <CardDescription className="text-base text-muted-foreground">
               Welcome back to my space
             </CardDescription>
           </CardHeader>
@@ -129,12 +129,12 @@ export function LoginForm() {
               />
             )}
 
-            <div className="flex items-center justify-center gap-1 text-sm text-slate-400">
+            <div className="flex items-center justify-center gap-1 text-sm text-muted-foreground">
               <span>Don&apos;t have an account?</span>
 
               <Button
                   variant="link"
-                  className="h-auto p-0 text-sm text-slate-100 hover:text-slate-200"
+                  className="h-auto p-0 text-sm text-foreground hover:text-foreground/80"
                   asChild
               >
                 <Link href="/register">Register</Link>

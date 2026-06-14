@@ -132,7 +132,7 @@ export function CalendarView() {
   if (scheduledLoading && events.length === 0 && tasks.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <HugeiconsIcon icon={Loading03Icon} size={28} className="animate-spin text-pace-accent" />
+        <HugeiconsIcon icon={Loading03Icon} size={28} className="animate-spin text-primary" />
       </div>
     );
   }

@@ -64,8 +64,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (!isInitialized || (!isAuthRoute && !hasSession)) {
         return (
-            <div className="flex h-screen w-screen items-center justify-center bg-pace-bg">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-800 border-t-pace-accent" />
+            <div className="flex h-screen w-screen items-center justify-center bg-background">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-primary" />
             </div>
         );
     }

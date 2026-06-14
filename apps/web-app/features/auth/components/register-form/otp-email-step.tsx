@@ -100,7 +100,7 @@ export function OtpEmailStep({
                         Create account
                     </CardTitle>
 
-                    <CardDescription className="text-base leading-relaxed text-slate-300">
+                    <CardDescription className="text-base leading-relaxed text-muted-foreground">
                         Enter your email address to receive a
                         verification code
                     </CardDescription>

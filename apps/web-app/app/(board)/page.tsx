@@ -25,11 +25,11 @@ export default function DashboardPage() {
       {activeView === "board" && <BoardView />}
       {activeView === "calendar" && <CalendarView />}
       {activeView !== "matrix" && activeView !== "board" && activeView !== "calendar" && (
-        <div className="flex flex-col items-center justify-center flex-1 h-full min-h-75 text-center p-8 bg-pace-card rounded-2xl border border-slate-800">
-          <p className="text-lg font-semibold text-slate-100 uppercase tracking-wider">
+        <div className="flex flex-col items-center justify-center flex-1 h-full min-h-75 text-center p-8 bg-card rounded-2xl border border-border">
+          <p className="text-lg font-semibold text-foreground uppercase tracking-wider">
             {activeView} View
           </p>
-          <p className="text-sm text-slate-400 mt-2">
+          <p className="text-sm text-muted-foreground mt-2">
             This module is currently under development. Stay tuned!
           </p>
         </div>

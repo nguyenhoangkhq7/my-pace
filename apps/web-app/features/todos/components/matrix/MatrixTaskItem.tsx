@@ -35,7 +35,7 @@ export function MatrixTaskItem({ task, onSelectTask }: MatrixTaskItemProps) {
   const { toggleTaskDone } = useTasks();
 
   const done = task.isDone;
-  const categoryBadgeClasses = "bg-pace-accent/20 text-pace-accent-strong border border-pace-accent/20";
+  const categoryBadgeClasses = "bg-primary/20 text-primary border border-primary/20";
 
   const categoryName = task.category?.name ?? null;
 
@@ -50,7 +50,7 @@ export function MatrixTaskItem({ task, onSelectTask }: MatrixTaskItemProps) {
       onClick={onSelectTask}
       className={cn(
         "flex items-start gap-2 rounded-lg px-2 py-2 transition cursor-pointer",
-        "hover:bg-pace-card-hover/50",
+        "hover:bg-muted/50",
         done && "opacity-50"
       )}
     >
@@ -63,7 +63,7 @@ export function MatrixTaskItem({ task, onSelectTask }: MatrixTaskItemProps) {
         aria-label={done ? "Mark incomplete" : "Mark complete"}
         className={cn(
           "mt-0.5 shrink-0 transition-all duration-150 hover:scale-110 active:scale-95",
-          done ? "text-pace-success" : "text-pace-muted hover:text-pace-text"
+          done ? "text-emerald-400" : "text-muted-foreground hover:text-foreground"
         )}
       >
         <HugeiconsIcon
@@ -76,15 +76,15 @@ export function MatrixTaskItem({ task, onSelectTask }: MatrixTaskItemProps) {
       <div className="flex-1 min-w-0">
         <p
           className={cn(
-            "text-sm text-pace-text leading-5 truncate",
-            done && "line-through text-pace-muted"
+            "text-sm text-foreground leading-5 truncate",
+            done && "line-through text-muted-foreground"
           )}
         >
           {task.title}
         </p>
 
         {subtitle && (
-          <p className="text-xs text-pace-muted mt-0.5 truncate pl-0.5">{subtitle}</p>
+          <p className="text-xs text-muted-foreground mt-0.5 truncate pl-0.5">{subtitle}</p>
         )}
       </div>
 

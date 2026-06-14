@@ -54,23 +54,23 @@ export function CalendarTaskSidebar({
   );
 
   return (
-    <aside className="order-2 flex w-80 shrink-0 flex-col overflow-hidden rounded-2xl border border-slate-800 bg-pace-sidebar p-4">
+    <aside className="order-2 flex w-80 shrink-0 flex-col overflow-hidden rounded-2xl border border-border bg-sidebar p-4">
       <div className="mb-4 flex items-center gap-2">
-        <HugeiconsIcon icon={Calendar01Icon} size={20} className="text-pace-accent" />
+        <HugeiconsIcon icon={Calendar01Icon} size={20} className="text-primary" />
         <div>
-          <h2 className="text-base font-semibold text-slate-100">Calendar</h2>
-          <p className="text-xs text-slate-400">Kéo task vào lịch hoặc auto-schedule.</p>
+          <h2 className="text-base font-semibold text-foreground">Calendar</h2>
+          <p className="text-xs text-muted-foreground">Kéo task vào lịch hoặc auto-schedule.</p>
         </div>
       </div>
 
-      <div className="mb-3 flex rounded-xl bg-slate-900/60 p-1">
+      <div className="mb-3 flex rounded-xl bg-muted/60 p-1">
         <button
           onClick={() => onTabChangeAction("unscheduled")}
           className={cn(
             "flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition",
             activeTab === "unscheduled"
-              ? "bg-pace-card text-pace-accent"
-              : "text-slate-400 hover:text-slate-100",
+              ? "bg-card text-primary"
+              : "text-muted-foreground hover:text-foreground",
           )}
         >
           Chưa lên lịch ({unscheduledTasks.length})
@@ -80,8 +80,8 @@ export function CalendarTaskSidebar({
           className={cn(
             "flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition",
             activeTab === "all"
-              ? "bg-pace-card text-pace-accent"
-              : "text-slate-400 hover:text-slate-100",
+              ? "bg-card text-primary"
+              : "text-muted-foreground hover:text-foreground",
           )}
         >
           Tất cả ({tasks.filter((task) => !task.isDone).length})
@@ -96,14 +96,14 @@ export function CalendarTaskSidebar({
             data-title={task.title}
             data-minutes={task.estimatedMinutes || 30}
             className={cn(
-              "draggable-task-item group relative flex cursor-grab flex-col gap-2 rounded-xl border border-slate-800 bg-pace-card/60 p-3 transition",
-              "hover:bg-slate-800/80 active:cursor-grabbing",
+              "draggable-task-item group relative flex cursor-grab flex-col gap-2 rounded-xl border border-border bg-card/60 p-3 transition",
+              "hover:bg-accent/50 active:cursor-grabbing",
             )}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-slate-100">{task.title}</p>
-                <div className="mt-1 flex items-center gap-2 text-[11px] text-slate-400">
+                <p className="truncate text-sm font-medium text-foreground">{task.title}</p>
+                <div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground">
                   <HugeiconsIcon icon={Clock01Icon} size={10} />
                   <span>{formatMinutes(task.estimatedMinutes || 30)}</span>
                 </div>
@@ -113,22 +113,22 @@ export function CalendarTaskSidebar({
                   e.stopPropagation();
                   void onAutoScheduleAction(task.id);
                 }}
-                className="rounded-lg bg-pace-accent/15 p-2 text-pace-accent opacity-0 transition group-hover:opacity-100 hover:bg-pace-accent hover:text-slate-950"
+                className="rounded-lg bg-primary/15 p-2 text-primary opacity-0 transition group-hover:opacity-100 hover:bg-primary hover:text-primary-foreground"
                 title="Auto-Schedule"
               >
                 <HugeiconsIcon icon={MagicWand01Icon} size={14} />
               </button>
             </div>
 
-            <div className="flex items-center justify-between text-[10px] text-slate-400">
-              <span className="rounded-full bg-slate-900 px-2 py-0.5">Task #{task.id}</span>
-              {task.category && <span className="rounded-full bg-slate-900 px-2 py-0.5">{task.category.name}</span>}
+            <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+              <span className="rounded-full bg-muted px-2 py-0.5">Task #{task.id}</span>
+              {task.category && <span className="rounded-full bg-muted px-2 py-0.5">{task.category.name}</span>}
             </div>
           </div>
         ))}
 
         {visibleTasks.length === 0 && (
-          <p className="py-8 text-center text-xs text-slate-500">Không còn task nào cần lên lịch.</p>
+          <p className="py-8 text-center text-xs text-muted-foreground">Không còn task nào cần lên lịch.</p>
         )}
       </div>
     </aside>

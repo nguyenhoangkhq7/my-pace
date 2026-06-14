@@ -25,13 +25,13 @@ export function CalendarScheduleSection({
   onEventClickAction,
 }: CalendarScheduleSectionProps) {
   return (
-    <section className="order-1 flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-800 bg-pace-sidebar p-5 shadow-inner">
+    <section className="order-1 flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-inner">
       <div className="mb-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <HugeiconsIcon icon={Task01Icon} size={18} className="text-pace-accent" />
-          <h2 className="text-base font-semibold text-slate-100">Lịch biểu</h2>
+          <HugeiconsIcon icon={Task01Icon} size={18} className="text-primary" />
+          <h2 className="text-base font-semibold text-foreground">Lịch biểu</h2>
         </div>
-        <p className="text-xs text-slate-400">Drag & drop task vào khung giờ trống</p>
+        <p className="text-xs text-muted-foreground">Drag & drop task vào khung giờ trống</p>
       </div>
 
       <div className="min-h-0 flex-1">

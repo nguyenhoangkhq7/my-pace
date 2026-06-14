@@ -24,7 +24,7 @@ export function BoardView() {
 
   const { tasks } = useTasks();
   const { categories } = useCategories();
-  const activeCategoryClasses = "bg-blue-500/20 text-blue-200 border border-blue-500/40";
+  const activeCategoryClasses = "bg-primary/20 text-primary border border-primary/30";
 
   // Filter tasks per column by selected category
   const filteredColumns = useMemo(() => {
@@ -48,8 +48,8 @@ export function BoardView() {
           className={cn(
             "rounded-full px-3 py-1 text-xs font-medium cursor-pointer transition",
             selectedCategoryId === null
-              ? "bg-slate-500/20 text-slate-100 border border-slate-400/40"
-              : "bg-transparent border border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200",
+              ? "bg-primary/20 text-foreground border border-primary/30"
+              : "bg-transparent border border-border text-muted-foreground hover:border-border hover:text-foreground",
           )}
         >
           All
@@ -66,7 +66,7 @@ export function BoardView() {
                 "rounded-full px-3 py-1 text-xs font-medium cursor-pointer transition",
                 isActive
                   ? activeCategoryClasses
-                  : "bg-transparent border border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200",
+                  : "bg-transparent border border-border text-muted-foreground hover:border-border hover:text-foreground",
               )}
             >
               {cat.name}

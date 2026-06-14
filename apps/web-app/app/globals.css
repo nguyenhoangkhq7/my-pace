@@ -33,7 +33,7 @@
   --destructive: #ef4444; /* Red 500 */
   --destructive-foreground: #ffffff;
 
-  /* BỔ SUNG: Dải màu Ngữ nghĩa Trạng thái (Task Status) */
+/* BỔ SUNG: Dải màu Ngữ nghĩa Trạng thái (Task Status) */
   --success: #10b981; /* Emerald 500 - Đã hoàn thành/Thành công */
   --success-foreground: #ffffff;
   

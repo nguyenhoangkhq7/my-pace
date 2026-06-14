@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { useCategories } from "../../hooks/useCategories";
 
 // ── Schema ──────────────────────────────────────────────────────────────────
@@ -38,7 +39,6 @@ export function NewCategoryForm({ onSuccessAction }: NewCategoryFormProps) {
     },
   });
 
-  // Theo dõi giá trị để hiển thị nút Clear hợp lý
   const startTime = useWatch({ control: form.control, name: "preferredStartTime" });
   const endTime = useWatch({ control: form.control, name: "preferredEndTime" });
 
@@ -56,83 +56,90 @@ export function NewCategoryForm({ onSuccessAction }: NewCategoryFormProps) {
   };
 
   return (
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {/* Category Name Input */}
-        <div className="space-y-1">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col">
+        {/* Name — prominent input */}
+        <div className="px-5 pt-5 pb-4">
           <Input
               {...form.register("name")}
-              placeholder="Category name (e.g. Work, Personal)..."
-              className="h-auto border-none bg-transparent px-0 py-0 text-xl font-semibold tracking-tight text-pace-text placeholder:text-pace-muted-soft shadow-none focus-visible:ring-0"
+              autoFocus
+              placeholder="Category name..."
+              className={cn(
+                  "h-auto border-none bg-transparent",
+                  "px-0 py-0",
+                  "text-lg font-semibold tracking-tight",
+                  "text-foreground",
+                  "placeholder:text-muted-foreground/50",
+                  "shadow-none",
+                  "focus-visible:ring-0",
+              )}
           />
           {form.formState.errors.name?.message && (
-              <p className="text-[11px] text-red-400 font-medium">{form.formState.errors.name.message}</p>
+              <p className="mt-1.5 text-[11px] font-medium text-red-400">
+                {form.formState.errors.name.message}
+              </p>
           )}
         </div>
 
-        <hr className="border-pace-border" />
-
-        {/* Preferred Time Box */}
-        <div className="rounded-xl border border-pace-border bg-pace-bg/50 p-3.5 space-y-3">
-          <div>
-            <div className="flex justify-between items-center">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-pace-muted">
-                Preferred Time Window <span className="font-normal text-pace-muted-soft">(optional)</span>
-              </p>
-              {(startTime || endTime) && (
-                  <button
-                      type="button"
-                      onClick={() => {
-                        form.setValue("preferredStartTime", "");
-                        form.setValue("preferredEndTime", "");
-                      }}
-                      className="text-[10px] text-pace-accent hover:underline"
-                  >
-                    Clear Window
-                  </button>
-              )}
-            </div>
-            <p className="text-[11px] text-pace-muted-soft mt-0.5 leading-normal">
-              The AI scheduler will prioritize placing tasks of this category within this specific time frame.
+        {/* Time window */}
+        <div className="border-t border-border px-5 py-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Preferred Time Window
             </p>
+            {(startTime || endTime) && (
+                <button
+                    type="button"
+                    onClick={() => {
+                      form.setValue("preferredStartTime", "");
+                      form.setValue("preferredEndTime", "");
+                    }}
+                    className="text-[10px] text-blue-400 hover:text-blue-300 transition"
+                >
+                  Clear
+                </button>
+            )}
           </div>
 
+          <p className="text-[11px] text-muted-foreground leading-normal">
+            AI scheduler will prioritize this time frame for tasks in this category.
+          </p>
+
           <div className="grid grid-cols-2 gap-3">
-            {/* Start Time */}
             <div className="space-y-1">
-              <label htmlFor="cat-start" className="text-[10px] font-bold uppercase tracking-wider text-pace-muted">
-                Start Time
+              <label htmlFor="cat-start" className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Start
               </label>
               <Input
                   {...form.register("preferredStartTime")}
                   id="cat-start"
                   type="time"
-                  className="h-9 rounded-lg border-pace-border bg-pace-bg px-2 text-xs text-pace-text focus-visible:ring-0 focus:border-pace-accent scheme-dark"
+                  className="h-8 rounded-lg border-border bg-transparent px-2.5 text-xs text-foreground focus-visible:ring-0 focus:border-primary scheme-dark"
               />
             </div>
-
-            {/* End Time */}
             <div className="space-y-1">
-              <label htmlFor="cat-end" className="text-[10px] font-bold uppercase tracking-wider text-pace-muted">
-                End Time
+              <label htmlFor="cat-end" className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                End
               </label>
               <Input
                   {...form.register("preferredEndTime")}
                   id="cat-end"
                   type="time"
-                  className="h-9 rounded-lg border-pace-border bg-pace-bg px-2 text-xs text-pace-text focus-visible:ring-0 focus:border-pace-accent scheme-dark"
+                  className="h-8 rounded-lg border-border bg-transparent px-2.5 text-xs text-foreground focus-visible:ring-0 focus:border-primary scheme-dark"
               />
             </div>
           </div>
         </div>
 
-        {/* Submit Button */}
-        <Button
-            type="submit"
-            disabled={form.formState.isSubmitting}
-            className="h-9 w-full rounded-lg bg-pace-accent font-semibold text-slate-950 hover:brightness-110 active:scale-[0.98] text-xs transition-all"
-        >
-          {form.formState.isSubmitting ? "Creating..." : "Create Category"}
-        </Button>
+        {/* Footer */}
+        <div className="border-t border-border px-5 py-3">
+          <Button
+              type="submit"
+              disabled={form.formState.isSubmitting}
+              className="h-9 w-full rounded-lg bg-blue-600 font-semibold text-white hover:bg-blue-500 active:scale-[0.98] text-xs transition-all disabled:opacity-40"
+          >
+            {form.formState.isSubmitting ? "Creating..." : "Create Category"}
+          </Button>
+        </div>
       </form>
   );
 }

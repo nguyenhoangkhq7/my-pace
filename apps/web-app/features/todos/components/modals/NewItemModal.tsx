@@ -3,16 +3,13 @@
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NewTaskForm } from "./NewTaskForm";
 import { NewCategoryForm } from "./NewCategoryForm";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Task01Icon, GridTableIcon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
+import { VisuallyHidden } from "radix-ui";
 
 type NewItemModalProps = {
   open: boolean;
@@ -28,43 +25,52 @@ export function NewItemModal({ open, onOpenChangeAction }: NewItemModalProps) {
       <Dialog open={open} onOpenChange={onOpenChangeAction}>
         <DialogContent
             className={cn(
-                "top-[8%]! translate-y-0!",
-                "w-[520px]! max-w-[94vw]!", // Thu nhỏ bằng kích thước modal chi tiết
+                "top-[10%]! translate-y-0!",
+                "w-[480px]! max-w-[92vw]!",
                 "overflow-hidden rounded-2xl",
-                "border border-[#1a2a44] bg-[#08101d] p-0",
-                "shadow-[0_30px_70px_rgba(0,0,0,0.5)]"
+                "border border-border bg-card p-0",
+                "shadow-2xl shadow-black/40",
             )}
         >
-          <DialogHeader className="px-5 pt-4 pb-2">
-            <DialogTitle className="text-lg font-semibold tracking-tight text-[#f8fbff]">
-              Create New
-            </DialogTitle>
-            <DialogDescription className="text-xs text-[#7187ab] mt-0.5">
-              Add a new task or category to your workspace.
-            </DialogDescription>
-          </DialogHeader>
+          <VisuallyHidden.Root>
+            <DialogTitle>Create New</DialogTitle>
+          </VisuallyHidden.Root>
 
           <Tabs defaultValue="task" className="w-full">
-            <div className="px-5">
-              <TabsList className="grid w-full grid-cols-2 rounded-xl bg-[#101b2d] p-1 border border-[#1d314f]">
+            {/* Compact tab header */}
+            <div className="flex items-center border-b border-border px-1">
+              <TabsList className="h-10 bg-transparent p-0 gap-0">
                 <TabsTrigger
                     value="task"
-                    className="flex items-center justify-center gap-2 rounded-lg py-1.5 text-xs font-semibold tracking-wide text-[#7d93b6] data-[state=active]:bg-[#3f8cff]/15 data-[state=active]:text-[#69a8ff] data-[state=active]:border data-[state=active]:border-[#3f8cff]"
+                    className={cn(
+                        "relative h-10 rounded-none border-b-2 border-transparent px-4",
+                        "text-[13px] font-medium text-muted-foreground",
+                        "transition-colors duration-150",
+                        "data-[state=active]:border-primary data-[state=active]:text-foreground",
+                        "data-[state=active]:bg-transparent data-[state=active]:shadow-none",
+                        "hover:text-foreground",
+                    )}
                 >
-                  <HugeiconsIcon icon={Task01Icon} size={14} />
                   Task
                 </TabsTrigger>
                 <TabsTrigger
                     value="category"
-                    className="flex items-center justify-center gap-2 rounded-lg py-1.5 text-xs font-semibold tracking-wide text-[#7d93b6] data-[state=active]:bg-[#3f8cff]/15 data-[state=active]:text-[#69a8ff] data-[state=active]:border data-[state=active]:border-[#3f8cff]"
+                    className={cn(
+                        "relative h-10 rounded-none border-b-2 border-transparent px-4",
+                        "text-[13px] font-medium text-muted-foreground",
+                        "transition-colors duration-150",
+                        "data-[state=active]:border-primary data-[state=active]:text-foreground",
+                        "data-[state=active]:bg-transparent data-[state=active]:shadow-none",
+                        "hover:text-foreground",
+                    )}
                 >
-                  <HugeiconsIcon icon={GridTableIcon} size={14} />
                   Category
                 </TabsTrigger>
               </TabsList>
             </div>
 
-            <div className="px-5 py-4 max-h-[65vh] overflow-y-auto custom-scrollbar">
+            {/* Tab content */}
+            <div className="max-h-[70vh] overflow-y-auto scrollbar-thin">
               <TabsContent value="task" className="mt-0 outline-none">
                 <NewTaskForm onSuccessAction={handleSuccess} />
               </TabsContent>

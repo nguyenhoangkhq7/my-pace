@@ -16,11 +16,12 @@ import { StarIcon, StarOffIcon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
 import { useCategories } from "../../hooks/useCategories";
 import { useTasks } from "../../hooks/useTasks";
+import { VisuallyHidden } from "radix-ui";
 
 const STATUS_OPTIONS: { value: TaskStatus; label: string }[] = [
   { value: "TODO", label: "To Do" },
   { value: "DOING", label: "Doing" },
-  { value: "IN_REVIEW", label: "In Review" },
+  { value: "IN_REVIEW", label: "Review" },
   { value: "DONE", label: "Done" },
 ];
 
@@ -101,61 +102,58 @@ function TaskDetailModalInner({ task, onClose }: TaskDetailModalInnerProps) {
 
   return (
     <>
-      {/* Header - Thu nhỏ padding */}
-      <div className="border-b border-pace-border px-5 py-4">
-        <DialogTitle className="text-lg font-semibold tracking-tight text-pace-text">
-          Edit Task
-        </DialogTitle>
+      <VisuallyHidden.Root>
+        <DialogTitle>Edit Task</DialogTitle>
+      </VisuallyHidden.Root>
+
+      {/* Title — prominent input */}
+      <div className="px-5 pt-5 pb-3">
+        <Input
+          autoFocus
+          value={formData.title}
+          onChange={(e) => updateField("title", e.target.value)}
+          placeholder="Task name..."
+          className={cn(
+              "h-auto border-none bg-transparent",
+              "px-0 py-0",
+              "text-lg font-semibold tracking-tight",
+              "text-foreground",
+              "placeholder:text-muted-foreground/50",
+              "shadow-none",
+              "focus-visible:ring-0",
+          )}
+        />
       </div>
 
-      {/* Body - Tối ưu mật độ hiển thị */}
-      <div className="space-y-4 px-5 py-4 max-h-[65vh] overflow-y-auto scrollbar-thin">
-        {/* Title */}
-        <div className="space-y-2">
-          <Input
-            autoFocus
-            value={formData.title}
-            onChange={(e) => updateField("title", e.target.value)}
-            placeholder="Untitled task..."
-            className="h-auto border-none bg-transparent px-0 py-0 text-xl font-semibold tracking-tight text-pace-text placeholder:text-pace-muted-soft shadow-none focus-visible:ring-0"
-          />
+      {/* Status pills */}
+      <div className="flex items-center gap-1.5 px-5 pb-4">
+        {STATUS_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => updateField("status", opt.value)}
+            className={cn(
+                "rounded-md px-2.5 py-1 text-[11px] font-medium transition-all duration-100",
+                formData.status === opt.value
+                    ? "bg-blue-500/15 text-blue-400"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
+            )}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
 
-          {/* Status Selector */}
-          <div className="flex flex-wrap items-center gap-1">
-            {STATUS_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => updateField("status", opt.value)}
-                className={cn(
-                  "rounded-md border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider transition-all",
-                  formData.status === opt.value
-                    ? "border-pace-accent bg-pace-accent/15 text-pace-accent-strong"
-                    : "border-pace-border bg-pace-sidebar text-pace-muted hover:border-pace-border-strong hover:text-pace-text"
-                )}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <hr className="border-pace-border" />
-
-        {/* Grid Metadata - Chuyển sang dạng 2 cột dọc gọn gàng */}
+      {/* Metadata section */}
+      <div className="border-t border-border px-5 py-4 space-y-3 max-h-[55vh] overflow-y-auto scrollbar-thin">
+        {/* Row 1: Category + Due Date */}
         <div className="grid grid-cols-2 gap-3">
-          {/* Category */}
           <div className="space-y-1">
-            <div className="flex justify-between items-center">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-pace-muted">Category</label>
-              {formData.categoryId && (
-                <button onClick={() => updateField("categoryId", "")} className="text-[10px] text-pace-accent hover:underline">Clear</button>
-              )}
-            </div>
+            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Category</label>
             <select
               value={formData.categoryId}
               onChange={(e) => updateField("categoryId", e.target.value)}
-              className="h-9 w-full rounded-lg border border-pace-border bg-pace-sidebar px-2.5 text-xs text-pace-text outline-none transition-all focus:border-pace-accent"
+              className="h-8 w-full rounded-lg border border-border bg-transparent px-2.5 text-xs text-foreground outline-none transition focus:border-primary"
             >
               <option value="">None</option>
               {categories.map((cat) => (
@@ -164,25 +162,21 @@ function TaskDetailModalInner({ task, onClose }: TaskDetailModalInnerProps) {
             </select>
           </div>
 
-          {/* Due Date */}
           <div className="space-y-1">
-            <div className="flex justify-between items-center">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-pace-muted">Due Date</label>
-              {formData.dueDate && (
-                <button onClick={() => updateField("dueDate", "")} className="text-[10px] text-pace-accent hover:underline">Clear</button>
-              )}
-            </div>
+            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Due Date</label>
             <Input
               type="datetime-local"
               value={formData.dueDate}
               onChange={(e) => updateField("dueDate", e.target.value)}
-              className="h-9 rounded-lg border-pace-border bg-pace-sidebar px-2 text-xs text-pace-text focus-visible:ring-0 focus:border-pace-accent"
+              className="h-8 rounded-lg border-border bg-transparent px-2 text-xs text-foreground focus-visible:ring-0 focus:border-primary"
             />
           </div>
+        </div>
 
-          {/* Energy */}
+        {/* Row 2: Energy + Estimate */}
+        <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-pace-muted">Energy</label>
+            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Energy</label>
             <div className="flex gap-1">
               {ENERGY_OPTIONS.map((level) => {
                 const active = formData.energyRequired === level;
@@ -192,10 +186,10 @@ function TaskDetailModalInner({ task, onClose }: TaskDetailModalInnerProps) {
                     type="button"
                     onClick={() => updateField("energyRequired", active ? "" : level)}
                     className={cn(
-                      "flex-1 rounded-lg border py-1.5 text-[11px] font-medium transition-all",
-                      active
-                        ? "border-pace-accent bg-pace-accent/15 text-pace-accent-strong"
-                        : "border-pace-border bg-pace-sidebar text-pace-muted hover:border-pace-border-strong"
+                        "flex-1 rounded-lg py-1.5 text-[11px] font-medium transition-all duration-100",
+                        active
+                            ? "bg-blue-500/15 text-blue-400"
+                            : "bg-muted/30 text-muted-foreground hover:text-foreground",
                     )}
                   >
                     {"⚡".repeat(level === "LOW" ? 1 : level === "MEDIUM" ? 2 : 3)}
@@ -205,16 +199,15 @@ function TaskDetailModalInner({ task, onClose }: TaskDetailModalInnerProps) {
             </div>
           </div>
 
-          {/* Estimate với cụm nút tăng giảm 15 phút */}
           <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-pace-muted">Estimate (mins)</label>
-            <div className="flex rounded-lg border border-pace-border bg-pace-sidebar overflow-hidden focus-within:border-pace-accent transition-all">
+            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Estimate</label>
+            <div className="flex h-8 items-center rounded-lg border border-border overflow-hidden">
               <button
                 type="button"
                 onClick={() => adjustMinutes(-15)}
-                className="px-2.5 text-pace-muted hover:bg-pace-card hover:text-pace-text text-sm transition-all font-mono"
+                className="px-2 text-muted-foreground hover:text-foreground hover:bg-muted text-sm font-mono h-full transition"
               >
-                -
+                −
               </button>
               <Input
                 type="number"
@@ -222,13 +215,13 @@ function TaskDetailModalInner({ task, onClose }: TaskDetailModalInnerProps) {
                 step={15}
                 value={formData.estimatedMinutes}
                 onChange={(e) => updateField("estimatedMinutes", e.target.value)}
-                placeholder="0"
-                className="h-8 border-none bg-transparent text-center text-xs text-pace-text placeholder:text-pace-muted-soft focus-visible:ring-0 shadow-none p-0 w-full"
+                placeholder="min"
+                className="h-full border-none bg-transparent text-center text-xs text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-0 shadow-none p-0 w-full"
               />
               <button
                 type="button"
                 onClick={() => adjustMinutes(15)}
-                className="px-2.5 text-pace-muted hover:bg-pace-card hover:text-pace-text text-sm transition-all font-mono"
+                className="px-2 text-muted-foreground hover:text-foreground hover:bg-muted text-sm font-mono h-full transition"
               >
                 +
               </button>
@@ -236,57 +229,52 @@ function TaskDetailModalInner({ task, onClose }: TaskDetailModalInnerProps) {
           </div>
         </div>
 
-        {/* Important Toggle */}
+        {/* Important toggle */}
         <button
           type="button"
           onClick={() => updateField("isImportant", !formData.isImportant)}
           className={cn(
-            "flex h-9 w-full items-center justify-between rounded-lg border px-3 transition-all",
-            formData.isImportant
-              ? "border-pace-warning/30 bg-pace-warning/8 text-pace-warning"
-              : "border-pace-border bg-pace-sidebar text-pace-muted"
+              "flex h-8 w-full items-center gap-2 rounded-lg px-3 transition-all duration-100",
+              formData.isImportant
+                  ? "bg-amber-500/10 text-amber-400"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted",
           )}
         >
-          <span className="flex items-center gap-1.5 font-medium text-xs">
-            <HugeiconsIcon icon={formData.isImportant ? StarIcon : StarOffIcon} size={14} />
-            Important Task
-          </span>
-          <span className="text-[9px] font-bold uppercase tracking-wider">
+          <HugeiconsIcon icon={formData.isImportant ? StarIcon : StarOffIcon} size={14} />
+          <span className="text-xs font-medium">Important</span>
+          <span className="ml-auto text-[10px] font-semibold uppercase tracking-wider opacity-70">
             {formData.isImportant ? "On" : "Off"}
           </span>
         </button>
 
         {/* Notes */}
         <div className="space-y-1">
-          <label className="text-[10px] font-bold uppercase tracking-wider text-pace-muted">Notes</label>
+          <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Notes</label>
           <Textarea
             value={formData.description}
             onChange={(e) => updateField("description", e.target.value)}
             placeholder="Add notes..."
-            className="min-h-[80px] resize-none rounded-lg border-pace-border bg-pace-sidebar px-3 py-2 text-xs leading-5 text-pace-text placeholder:text-pace-muted-soft focus-visible:ring-0 focus:border-pace-accent"
+            className="min-h-[60px] resize-none rounded-lg border border-border bg-transparent px-3 py-2 text-xs leading-relaxed text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-0 focus:border-primary"
           />
         </div>
       </div>
 
-      {/* Footer - Tiết kiệm không gian */}
-      <div className="flex items-center justify-between border-t border-pace-border bg-pace-sidebar px-5 py-3">
-        <p className="text-[10px] text-pace-muted-soft">Manual save</p>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            onClick={onClose}
-            className="text-pace-muted hover:bg-pace-card hover:text-pace-text text-xs h-8 px-3"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSave}
-            disabled={isSubmitting || !formData.title.trim()}
-            className="h-8 rounded-lg px-4 bg-pace-accent font-semibold text-slate-950 hover:brightness-110 text-xs"
-          >
-            {isSubmitting ? "Saving..." : "Save"}
-          </Button>
-        </div>
+      {/* Footer */}
+      <div className="border-t border-border px-5 py-3 flex items-center justify-end gap-2">
+        <Button
+          variant="ghost"
+          onClick={onClose}
+          className="text-muted-foreground hover:text-foreground hover:bg-muted text-xs h-8 px-3"
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={handleSave}
+          disabled={isSubmitting || !formData.title.trim()}
+          className="h-8 rounded-lg px-5 bg-blue-600 font-semibold text-white hover:bg-blue-500 text-xs transition-all disabled:opacity-40"
+        >
+          {isSubmitting ? "Saving..." : "Save"}
+        </Button>
       </div>
     </>
   );
@@ -301,11 +289,11 @@ export function TaskDetailModal() {
     <Dialog open={task !== null} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent
         className={cn(
-          "top-[8%]! translate-y-0!",
-          "w-[520px]! max-w-[94vw]!",
+          "top-[10%]! translate-y-0!",
+          "w-[480px]! max-w-[92vw]!",
           "overflow-hidden rounded-2xl",
-          "border border-pace-border bg-pace-sidebar p-0",
-          "shadow-[0_30px_70px_rgba(0,0,0,0.5)]"
+          "border border-border bg-card p-0",
+          "shadow-2xl shadow-black/40",
         )}
       >
         {task && (

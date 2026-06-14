@@ -27,20 +27,20 @@ export function TodayOverviewView() {
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="absolute -left-3 top-6 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-slate-700 bg-slate-800 transition hover:bg-slate-700 active:scale-95"
+        className="absolute -left-3 top-6 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-card transition hover:bg-accent active:scale-95"
         aria-label={isExpanded ? "Collapse panel" : "Expand panel"}
       >
         <HugeiconsIcon
           icon={isExpanded ? ArrowRight01Icon : ArrowLeft01Icon}
           size={12}
-          className="text-slate-400"
+          className="text-muted-foreground"
         />
       </button>
 
       {/* Panel content */}
       <div
         className={cn(
-          "w-72 h-full border-l border-slate-800 bg-pace-sidebar px-5 py-6 overflow-y-auto scrollbar-thin transition-opacity duration-300",
+          "w-72 h-full border-l border-border bg-sidebar px-5 py-6 overflow-y-auto scrollbar-thin transition-opacity duration-300",
           isExpanded
             ? "opacity-100"
             : "overflow-hidden opacity-0 pointer-events-none"
