@@ -3,16 +3,10 @@
 import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useAuthStore } from "@/features/auth";
-import { useModalStore } from "@/features/todos";
 import {
   Grid02Icon,
-  Calendar01Icon,
-  ChartHistogramIcon,
-  Archive01Icon,
   Settings01Icon,
   Logout03Icon,
-  PlusSignIcon,
-  Task01Icon,
 } from "@hugeicons/core-free-icons";
 
 type NavItem = {
@@ -22,21 +16,12 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { id: "matrix", label: "Today", icon: Grid02Icon },
-  { id: "board", label: "Board", icon: Task01Icon },
-  { id: "calendar", label: "Calendar", icon: Calendar01Icon },
-  { id: "analytics", label: "Analytics", icon: ChartHistogramIcon },
-  { id: "archive", label: "Archive", icon: Archive01Icon },
+  { id: "dashboard", label: "Dashboard", icon: Grid02Icon },
 ];
 
-type SidebarProps = {
-  activeView: string;
-  onViewChangeAction: (view: string) => void;
-};
-
-export function Sidebar({ activeView, onViewChangeAction }: SidebarProps) {
+export function Sidebar() {
   const clearSession = useAuthStore((s) => s.clearSession);
-  const setIsNewItemModalOpen = useModalStore((s) => s.setIsNewItemModalOpen);
+  const activeView = "dashboard";
 
   const handleLogout = () => {
     clearSession();
@@ -45,36 +30,15 @@ export function Sidebar({ activeView, onViewChangeAction }: SidebarProps) {
 
   return (
     <aside className="flex h-screen w-60 shrink-0 flex-col border-r border-border bg-sidebar px-4 py-6">
-{/* ── Logo ─────────────────────────────────────────────────────── */}
-      <div className="mb-1 px-2">
-        {/* Đổi text-slate-100 thành text-foreground để tự động sáng/tối */}
+      {/* ── Logo ─────────────────────────────────────────────────────── */}
+      <div className="mb-6 px-2">
         <div className="text-xl font-bold tracking-wide text-foreground">
           My<span className="text-primary">PACE</span>
         </div>
-        {/* Đổi pace-muted thành muted-foreground */}
         <p className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
           Productive Calm
         </p>
       </div>
-
-      {/* ── + New button ─────────────────────────────────────────────── */}
-      <button
-        onClick={() => setIsNewItemModalOpen(true)}
-        className={cn(
-          "mt-5 flex w-full items-center justify-center gap-2",
-          // Chuyển nền sang primary
-          "mb-6 flex w-full items-center justify-center gap-2",
-          "rounded-xl bg-primary px-4 py-2.5",
-          "text-sm font-semibold text-primary-foreground",
-          "shadow-sm shadow-primary/20",
-          "transition-all duration-150",
-          "hover:brightness-110 hover:shadow-md hover:shadow-primary/30",
-          "active:scale-[0.97]"
-        )}
-      >
-        <HugeiconsIcon icon={PlusSignIcon} size={16} />
-        <span>New</span>
-      </button>
 
       {/* ── Navigation ── */}
       <nav className="flex flex-col gap-1">
@@ -88,7 +52,6 @@ export function Sidebar({ activeView, onViewChangeAction }: SidebarProps) {
           return (
             <button
               key={item.id}
-              onClick={() => onViewChangeAction(item.id)}
               className={cn(
                 "flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5",
                 "text-sm font-medium",

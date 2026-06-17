@@ -4,6 +4,7 @@ export interface AuthUser {
   id: string | number;
   name: string;
   email: string;
+  role?: string;
 }
 
 export interface AuthSession {
@@ -28,7 +29,8 @@ function isAuthUser(value: unknown): value is AuthUser {
   return (
     (typeof candidate.id === "string" || typeof candidate.id === "number") &&
     typeof candidate.name === "string" &&
-    typeof candidate.email === "string"
+    typeof candidate.email === "string" &&
+    (candidate.role === undefined || typeof candidate.role === "string")
   );
 }
 
