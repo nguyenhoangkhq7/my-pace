@@ -1,10 +1,4 @@
 package nhk.user;
 
-import lombok.Data;
-
-@Data
-public class UserDto {
-   public Integer id;
-   public String email;
-   private String fullName;
+public record UserDto(Integer id, String email, String fullName) {
 }

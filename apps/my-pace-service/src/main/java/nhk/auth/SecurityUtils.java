@@ -15,8 +15,8 @@ public class SecurityUtils {
       }
 
       Object principal = authentication.getPrincipal();
-      if(principal instanceof UserDetailsCustom userDetailsCustom) {
-         return Optional.of(userDetailsCustom.getUser());
+      if(principal instanceof UserDetailsCustom(User user1)) {
+         return Optional.of(user1);
       }
       if(principal instanceof User user) {
          return Optional.of(user);

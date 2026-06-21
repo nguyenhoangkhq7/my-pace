@@ -13,6 +13,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Slf4j
 @Service
@@ -42,8 +43,8 @@ class AuthService {
             throw new EmailRegistered("Email is already registered");
         }
         var user = userMapper.toEntity(request);
-        user.setPassword(passwordEncoder.encode(request.password));
-        user.setCreatedAt(LocalDateTime.now());
+        user.setPasswordHash(passwordEncoder.encode(request.password));
+        user.setCreatedAt(OffsetDateTime.now());
         return userRepository.save(user);
     }
 

@@ -65,14 +65,6 @@ public class AuthController {
       return ResponseEntity.ok(jwtResponse);
    }
 
-//   private void setRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
-//      var cookie = new Cookie("refreshToken", refreshToken);
-//      cookie.setHttpOnly(true);
-//      cookie.setPath("/auth/refresh");
-//      cookie.setMaxAge(jwtConfig.getRefreshTokenExpiration());
-//      cookie.setSecure(true);
-//      response.addCookie(cookie);
-//   }
    private void setRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
       ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
               .httpOnly(true)
