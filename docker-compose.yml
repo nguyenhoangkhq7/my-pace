@@ -1,30 +1,57 @@
 services:
   db:
-    image: mysql:latest
+    image: postgres:17-alpine
     container_name: my-pace-db
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - db_data:/var/lib/mysql
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: my-pace-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   api:
     build:
-      context: ./apps/services/my-pace-service
+      context: ./apps/my-pace-service
     container_name: my-pace-api
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/${MYSQL_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO}
+      JWT_SECRET: ${JWT_SECRET}
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      SPRING_DATA_REDIS_HOST: ${REDIS_HOST}
+      SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
     ports:
       - "8080:8080"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   web:
     build:
@@ -35,7 +62,9 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - api
+      api:
+        condition: service_started
 
 volumes:
   db_data:
+  redis_data:
