@@ -2,14 +2,17 @@ spring:
   application:
     name: my-pace-service
   datasource:
-    url: jdbc:mysql://localhost:3306/my_pace_db
-    username: root
-    password: 22718451
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/my_pace_db}
+    username: ${SPRING_DATASOURCE_USERNAME:my_pace}
+    password: ${SPRING_DATASOURCE_PASSWORD:my_pace_pass}
+    driver-class-name: org.postgresql.Driver
   jpa:
     show-sql: true
     hibernate:
-      ddl-auto: validate
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:validate}
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
   jwt:
     secret: ${JWT_SECRET}
     access-token-expiration: 3600 # 1 hour in seconds
@@ -28,5 +31,5 @@ spring:
             required: true
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
