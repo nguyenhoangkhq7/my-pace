@@ -5,8 +5,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.ColumnDefault;
-
+import org.hibernate.annotations.Generated;
+import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.generator.EventType;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -17,8 +18,8 @@ import java.util.UUID;
 @Table(name = "users")
 public class User {
     @Id
-    @ColumnDefault("uuid_generate_v4()")
-    @Column(name = "id", nullable = false)
+    @UuidGenerator
+    @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
 
     @Size(max = 255)
@@ -37,7 +38,6 @@ public class User {
     private String fullName;
 
     @Enumerated(EnumType.STRING)
-    @ColumnDefault("'USER'")
     @Column(name = "role", length = 20)
     private Role role = Role.USER;
 
@@ -48,25 +48,19 @@ public class User {
     private LocalTime sleepTime;
 
     @NotNull
-    @ColumnDefault("20")
     @Column(name = "buffer_pct", nullable = false)
-    private Integer bufferPct;
+    private Integer bufferPct = 20;
 
     @Size(max = 50)
     @NotNull
-    @ColumnDefault("'Asia/Ho_Chi_Minh'")
     @Column(name = "timezone", nullable = false, length = 50)
-    private String timezone;
+    private String timezone = "Asia/Ho_Chi_Minh";
 
-    @NotNull
-    @ColumnDefault("now()")
     @Column(name = "created_at", nullable = false)
+    @Generated(event = EventType.INSERT)
     private OffsetDateTime createdAt;
 
-    @NotNull
-    @ColumnDefault("now()")
     @Column(name = "updated_at", nullable = false)
+    @Generated(event = {EventType.INSERT, EventType.UPDATE})
     private OffsetDateTime updatedAt;
-
-
 }
