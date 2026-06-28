@@ -12,8 +12,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 
 @Slf4j
 @Service
@@ -44,7 +42,6 @@ class AuthService {
         }
         var user = userMapper.toEntity(request);
         user.setPasswordHash(passwordEncoder.encode(request.password));
-        user.setCreatedAt(OffsetDateTime.now());
         return userRepository.save(user);
     }
 
