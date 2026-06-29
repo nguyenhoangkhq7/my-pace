@@ -5,6 +5,9 @@ export interface AuthUser {
   name: string;
   email: string;
   role?: string;
+  wakeTime?: string | null;
+  sleepTime?: string | null;
+  bufferPct?: number;
 }
 
 export interface AuthSession {
@@ -30,7 +33,10 @@ function isAuthUser(value: unknown): value is AuthUser {
     (typeof candidate.id === "string" || typeof candidate.id === "number") &&
     typeof candidate.name === "string" &&
     typeof candidate.email === "string" &&
-    (candidate.role === undefined || typeof candidate.role === "string")
+    (candidate.role === undefined || typeof candidate.role === "string") &&
+    (candidate.wakeTime === undefined || candidate.wakeTime === null || typeof candidate.wakeTime === "string") &&
+    (candidate.sleepTime === undefined || candidate.sleepTime === null || typeof candidate.sleepTime === "string") &&
+    (candidate.bufferPct === undefined || typeof candidate.bufferPct === "number")
   );
 }
 

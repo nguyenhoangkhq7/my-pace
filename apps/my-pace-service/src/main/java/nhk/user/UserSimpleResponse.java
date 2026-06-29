@@ -1,4 +1,14 @@
 package nhk.user;
 
-public record UserSimpleResponse (String id, String name, String email, String role) {
+import java.time.LocalTime;
+
+public record UserSimpleResponse (
+    String id,
+    String name,
+    String email,
+    String role,
+    LocalTime wakeTime,
+    LocalTime sleepTime,
+    Integer bufferPct
+) {
 }

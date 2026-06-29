@@ -7,6 +7,7 @@ import nhk.user.Role;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.UUID;
 
 @AllArgsConstructor
 public class Jwt {
@@ -17,8 +18,8 @@ public class Jwt {
       return claims.getExpiration().before(new Date());
    }
 
-   public Integer getUserIdFromToken() {
-      return Integer.parseInt(claims.getSubject());
+   public UUID getUserIdFromToken() {
+      return UUID.fromString(claims.getSubject());
    }
    public String getRoleFromToken() {
       return Role.valueOf(claims.get("role").toString()).name();
