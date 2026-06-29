@@ -17,9 +17,9 @@ public class UserController {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
 
-    @PutMapping("/profile/setup")
-    public ResponseEntity<UserSimpleResponse> updateProfileSetup(
-            @Valid @RequestBody UserProfileSetupRequest request,
+    @PutMapping("/profile")
+    public ResponseEntity<UserSimpleResponse> updateProfile(
+            @Valid @RequestBody UserProfileUpdateRequest request,
             @AuthenticationPrincipal UserDetailsCustom userDetails
     ) {
         if (userDetails == null) {
@@ -28,7 +28,7 @@ public class UserController {
         User user = userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new EntityNotFoundException("User not found with email: " + userDetails.getUsername()));
 
-        userMapper.updateFromSetupRequest(request, user);
+        userMapper.updateFromUpdateRequest(request, user);
         User savedUser = userRepository.save(user);
 
         return ResponseEntity.ok(userMapper.toUserSimpleResponse(savedUser));

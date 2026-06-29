@@ -50,7 +50,7 @@ export function InitialSetupForm() {
     };
 
     try {
-      const response = await put<any, typeof payload>("users/profile/setup", payload);
+      const response = await put<any, typeof payload>("users/profile", payload);
 
       if (response.data && accessToken) {
         setSession({

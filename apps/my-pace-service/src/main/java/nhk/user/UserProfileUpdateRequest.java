@@ -5,7 +5,9 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalTime;
 
-public record UserProfileSetupRequest(
+public record UserProfileUpdateRequest(
+    String fullName,
+
     @NotNull(message = "Wake time cannot be null")
     LocalTime wakeTime,
 

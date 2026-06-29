@@ -79,4 +79,19 @@ class AuthService {
          }
          stringRedisTemplate.delete("otp:" + request.email());
     }
+
+    public void logout(String token) {
+        var jwt = jwtService.parseToken(token);
+        if (jwt != null && !jwt.isExpirated()) {
+            java.util.Date expiration = jwt.getExpiration();
+            long remainingMillis = expiration.getTime() - System.currentTimeMillis();
+            if (remainingMillis > 0) {
+                stringRedisTemplate.opsForValue().set(
+                    "blacklist:token:" + token,
+                    "true",
+                    java.time.Duration.ofMillis(remainingMillis)
+                );
+            }
+        }
+    }
 }

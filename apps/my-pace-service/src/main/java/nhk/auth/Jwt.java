@@ -21,6 +21,9 @@ public class Jwt {
    public UUID getUserIdFromToken() {
       return UUID.fromString(claims.getSubject());
    }
+   public Date getExpiration() {
+      return claims.getExpiration();
+   }
    public String getRoleFromToken() {
       return Role.valueOf(claims.get("role").toString()).name();
    }

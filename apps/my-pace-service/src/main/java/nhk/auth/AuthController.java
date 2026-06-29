@@ -65,6 +65,29 @@ public class AuthController {
       return ResponseEntity.ok(jwtResponse);
    }
 
+   @PostMapping("/logout")
+   public ResponseEntity<?> logout(
+           @RequestHeader(name = "Authorization", required = false) String authHeader,
+           HttpServletResponse response
+   ) {
+       if (authHeader != null && authHeader.startsWith("Bearer ")) {
+           String token = authHeader.replace("Bearer ", "");
+           authService.logout(token);
+       }
+
+       // Clear refresh token cookie
+       ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
+               .httpOnly(true)
+               .secure(true)
+               .path("/api/auth/refresh")
+               .maxAge(0) // immediately expired
+               .sameSite("None")
+               .build();
+       response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+       return ResponseEntity.ok().build();
+   }
+
    private void setRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
       ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
               .httpOnly(true)
