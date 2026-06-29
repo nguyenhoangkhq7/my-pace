@@ -11,6 +11,7 @@ export function OnboardingModal() {
     isOpen,
     currentSlide,
     hasCompletedOnboarding,
+    isHelpMode,
     startOnboarding,
     nextSlide,
     prevSlide,
@@ -36,12 +37,11 @@ export function OnboardingModal() {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
-      // Do not allow closing by clicking outside/pressing ESC unless completed
-      if (!open && hasCompletedOnboarding) {
+      if (!open) {
         completeOnboarding();
       }
     }}>
-      <DialogContent showCloseButton={false} className="sm:max-w-md max-w-lg rounded-3xl p-6 border-none bg-card shadow-2xl overflow-hidden duration-300">
+      <DialogContent showCloseButton={isHelpMode} className="sm:max-w-md max-w-lg rounded-3xl p-6 border-none bg-card shadow-2xl overflow-hidden duration-300">
         <div className="flex flex-col items-center text-center space-y-6 py-4">
           
           {/* Animated Illustration Container */}
@@ -96,13 +96,25 @@ export function OnboardingModal() {
             </DialogTitle>
             <DialogDescription className="text-sm leading-relaxed text-muted-foreground min-h-[72px]">
               {currentSlide === 0 ? (
-                <>
-                  Thay vì gồng gánh một danh sách dài vô tận gây quá tải, mỗi ngày bạn chỉ nên cam kết hoàn thành <span className="text-foreground font-semibold">1 đến 3 việc thực sự quan trọng (MITs)</span> trước. Điều này giúp bảo vệ tiêu điểm và duy trì động lực tốt nhất.
-                </>
+                isHelpMode ? (
+                  <>
+                    <strong className="text-foreground">Triết lý MITs (Most Important Tasks)</strong> giúp loại bỏ sự phân tâm. Bằng cách giới hạn từ 1-3 việc quan trọng nhất mỗi ngày, bạn đảm bảo năng lượng của mình tập trung vào những mục tiêu tạo ra tác động lớn nhất, tránh bị cuốn vào các việc vặt vãnh.
+                  </>
+                ) : (
+                  <>
+                    Thay vì gồng gánh một danh sách dài vô tận gây quá tải, mỗi ngày bạn chỉ nên cam kết hoàn thành <span className="text-foreground font-semibold">1 đến 3 việc thực sự quan trọng (MITs)</span> trước. Điều này giúp bảo vệ tiêu điểm và duy trì động lực tốt nhất.
+                  </>
+                )
               ) : (
-                <>
-                  MyPACE tự động phân loại công việc của bạn. Hãy tập trung đầu tư dài hạn vào <span className="text-emerald-400 font-semibold">Vùng Q2 (Quan trọng × Không khẩn cấp)</span>. Đây là chiếc chìa khoá giúp bạn làm chủ mục tiêu và hạn chế tối đa các khủng hoảng.
-                </>
+                isHelpMode ? (
+                  <>
+                    <strong className="text-emerald-400">Vùng Q2 (Quan trọng & Không khẩn cấp)</strong> là không gian của sự phát triển dài hạn. MyPACE khuyên bạn tập trung 80% sức lực vào đây (lập kế hoạch, học tập, cải tiến) để giảm thiểu tối đa các sự cố khẩn cấp phát sinh ở Vùng Q1.
+                  </>
+                ) : (
+                  <>
+                    MyPACE tự động phân loại công việc của bạn. Hãy tập trung đầu tư dài hạn vào <span className="text-emerald-400 font-semibold">Vùng Q2 (Quan trọng × Không khẩn cấp)</span>. Đây là chiếc chìa khoá giúp bạn làm chủ mục tiêu và hạn chế tối đa các khủng hoảng.
+                  </>
+                )
               )}
             </DialogDescription>
           </div>
@@ -138,7 +150,7 @@ export function OnboardingModal() {
             onClick={handleNext}
             className="h-11 px-6 rounded-xl font-semibold bg-primary text-primary-foreground transition-all active:scale-[0.98]"
           >
-            {currentSlide === totalSlides - 1 ? "Bắt đầu lên kế hoạch" : "Tiếp tục"}
+            {currentSlide === totalSlides - 1 ? (isHelpMode ? "Đóng" : "Bắt đầu lên kế hoạch") : "Tiếp tục"}
           </Button>
         </DialogFooter>
       </DialogContent>
