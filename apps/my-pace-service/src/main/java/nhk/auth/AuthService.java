@@ -12,6 +12,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -49,7 +50,7 @@ class AuthService {
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
                 request.getEmail(),
                 request.getPassword()
-        ));
+          ));
 
         return userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() ->
@@ -65,7 +66,7 @@ class AuthService {
         if(jwt.isExpirated()) {
             throw new TokenInvalid("Token is expired");
         }
-        Integer id = jwt.getUserIdFromToken();
+        UUID id = jwt.getUserIdFromToken();
         var user = userRepository.findById(id).orElseThrow();
         String newAccessToken = jwtService.generateAccessToken(user).toString();
         return new JwtResponse(newAccessToken, userMapper.toUserSimpleResponse(user));
