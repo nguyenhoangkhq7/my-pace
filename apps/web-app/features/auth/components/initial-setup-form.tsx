@@ -1,0 +1,186 @@
+"use client";
+
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Clock01Icon, InformationCircleIcon } from "@hugeicons/core-free-icons";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { put, getApiErrorMessage } from "@/lib/fetchClient";
+import { useAuthStore } from "../store/auth.store";
+import { appToast } from "@/components/feedback/app-toast";
+import { AppAlert } from "@/components/feedback/app-alert";
+import { cn } from "@/lib/utils";
+
+interface SetupFormValues {
+  wakeTime: string;
+  sleepTime: string;
+  bufferPct: number;
+}
+
+export function InitialSetupForm() {
+  const { user, accessToken, setSession } = useAuthStore();
+  const [buffer, setBuffer] = useState(20); // default 20%
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isValid },
+  } = useForm<SetupFormValues>({
+    defaultValues: {
+      wakeTime: "07:00",
+      sleepTime: "23:00",
+    },
+    mode: "onChange",
+  });
+
+  const onSubmit = async (data: SetupFormValues) => {
+    setIsSubmitting(true);
+    setError(null);
+
+    const payload = {
+      wakeTime: data.wakeTime.length === 5 ? `${data.wakeTime}:00` : data.wakeTime,
+      sleepTime: data.sleepTime.length === 5 ? `${data.sleepTime}:00` : data.sleepTime,
+      bufferPct: buffer,
+    };
+
+    try {
+      const response = await put<any, typeof payload>("users/profile/setup", payload);
+
+      if (response.data && accessToken) {
+        setSession({
+          accessToken,
+          user: response.data,
+        });
+
+        appToast.success("Profile setup completed", {
+          description: "Your available time has been calculated.",
+        });
+      }
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const bufferOptions = [10, 15, 20, 25, 30];
+
+  return (
+    <Card className="w-full max-w-lg overflow-hidden rounded-3xl border-none shadow-2xl bg-card">
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <CardHeader className="space-y-4 text-center pb-2">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+            <HugeiconsIcon
+              icon={Clock01Icon}
+              size={30}
+              className="text-primary animate-pulse"
+            />
+          </div>
+          <div className="space-y-2">
+            <CardTitle className="text-3xl font-bold tracking-tight text-foreground">
+              Setup your Day
+            </CardTitle>
+            <CardDescription className="text-sm text-muted-foreground">
+              Define your daily schedule to compute your real available hours.
+            </CardDescription>
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-6 pt-4">
+          {/* Wake Time & Sleep Time */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="wakeTime" className="text-sm font-semibold">Wake Time</Label>
+              <Input
+                {...register("wakeTime", { required: "Required" })}
+                id="wakeTime"
+                type="time"
+                className="h-12 rounded-xl text-center bg-muted/40 font-mono text-base focus:bg-background"
+              />
+              {errors.wakeTime && (
+                <p className="text-xs text-rose-500 mt-1">{errors.wakeTime.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="sleepTime" className="text-sm font-semibold">Sleep Time</Label>
+              <Input
+                {...register("sleepTime", { required: "Required" })}
+                id="sleepTime"
+                type="time"
+                className="h-12 rounded-xl text-center bg-muted/40 font-mono text-base focus:bg-background"
+              />
+              {errors.sleepTime && (
+                <p className="text-xs text-rose-500 mt-1">{errors.sleepTime.message}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Buffer Time selector */}
+          <div className="space-y-3">
+            <Label className="text-sm font-semibold flex items-center justify-between">
+              <span>Buffer Time</span>
+              <span className="text-primary font-bold text-base">{buffer}%</span>
+            </Label>
+            <div className="grid grid-cols-5 gap-2">
+              {bufferOptions.map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => setBuffer(opt)}
+                  className={cn(
+                    "h-12 rounded-xl border text-sm font-semibold transition-all active:scale-95",
+                    buffer === opt
+                      ? "bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/25"
+                      : "bg-muted/30 border-transparent text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                  )}
+                >
+                  {opt}%
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Friendly Copy / Description Alert */}
+          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 flex gap-3">
+            <HugeiconsIcon
+              icon={InformationCircleIcon}
+              size={20}
+              className="text-primary shrink-0 mt-0.5"
+            />
+            <div className="space-y-1">
+              <h4 className="text-xs font-semibold text-foreground">Tại sao chúng tôi cần thông tin này?</h4>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                MyPACE sẽ dùng nó để tính toán chính xác số giờ bạn thực sự có thể làm việc mỗi ngày, sau khi đã trừ đi ~{buffer}% thời gian cho việc di chuyển, chờ đợi, chuyển đổi context và các việc lặt vặt phát sinh.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+
+        <CardFooter className="flex flex-col gap-4 pt-2 pb-6">
+          <Button
+            type="submit"
+            disabled={isSubmitting || !isValid}
+            className="h-12 w-full rounded-xl text-base font-semibold transition-all active:scale-[0.98]"
+          >
+            {isSubmitting ? "Saving setup..." : "Complete Setup & Begin"}
+          </Button>
+
+          {error && (
+            <AppAlert
+              variant="error"
+              title="Setup failed"
+              description={error}
+            />
+          )}
+        </CardFooter>
+      </form>
+    </Card>
+  );
+}

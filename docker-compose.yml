@@ -2,16 +2,14 @@ services:
   db:
     image: postgres:17-alpine
     container_name: my-pace-db
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+    env_file:
+      - ./apps/my-pace-service/.env
     ports:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      test: ["CMD-SHELL", "pg_isready -U my_pace -d my_pace_db"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -33,18 +31,8 @@ services:
     build:
       context: ./apps/my-pace-service
     container_name: my-pace-api
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO}
-      JWT_SECRET: ${JWT_SECRET}
-      MAIL_HOST: ${MAIL_HOST}
-      MAIL_PORT: ${MAIL_PORT}
-      MAIL_USERNAME: ${MAIL_USERNAME}
-      MAIL_PASSWORD: ${MAIL_PASSWORD}
-      SPRING_DATA_REDIS_HOST: ${REDIS_HOST}
-      SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
+    env_file:
+      - ./apps/my-pace-service/.env
     ports:
       - "8080:8080"
     depends_on:
@@ -57,6 +45,8 @@ services:
     build:
       context: ./apps/web-app
     container_name: my-pace-web
+    env_file:
+      - ./apps/web-app/.env
     environment:
       NEXT_TELEMETRY_DISABLED: "1"
     ports:
