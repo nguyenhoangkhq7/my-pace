@@ -25,6 +25,9 @@ export interface Goal {
   updatedAt: string;
   timeBoxedGoal?: TimeBoxedGoal;
   milestones?: Milestone[];
+  progressPercentage?: number;
+  currentValue?: number;
+  targetValue?: number;
 }
 
 export interface GoalCreateRequest {
