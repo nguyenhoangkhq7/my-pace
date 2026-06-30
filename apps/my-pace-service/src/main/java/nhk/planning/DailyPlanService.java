@@ -1,0 +1,116 @@
+package nhk.planning;
+
+import lombok.RequiredArgsConstructor;
+import jakarta.persistence.EntityNotFoundException;
+import nhk.task.Task;
+import nhk.task.TaskRepository;
+import nhk.user.UserDetailsCustom;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class DailyPlanService {
+    private final DailyPlanRepository dailyPlanRepository;
+    private final DailyPlanTaskRepository dailyPlanTaskRepository;
+    private final TaskRepository taskRepository;
+    private final DailyPlanMapper dailyPlanMapper;
+
+    @Transactional(readOnly = true)
+    public DailyPlanDto getDailyPlan(LocalDate planDate, UserDetailsCustom userDetails) {
+        return dailyPlanRepository.findByUserIdAndPlanDate(userDetails.user().getId(), planDate)
+                .map(plan -> {
+                    DailyPlanDto dto = dailyPlanMapper.toDto(plan);
+                    List<DailyPlanTask> planTasks = dailyPlanTaskRepository.findByDailyPlanIdOrderBySortOrderAsc(plan.getId());
+                    dto.setTasks(planTasks.stream().map(dailyPlanMapper::toDto).collect(Collectors.toList()));
+                    return dto;
+                })
+                .orElse(null);
+    }
+
+    @Transactional
+    public DailyPlanDto planMyDay(PlanMyDayRequest request, UserDetailsCustom userDetails) {
+        DailyPlan plan = dailyPlanRepository.findByUserIdAndPlanDate(userDetails.user().getId(), request.getPlanDate())
+                .orElseGet(() -> {
+                    DailyPlan newPlan = new DailyPlan();
+                    newPlan.setUserId(userDetails.user().getId());
+                    newPlan.setPlanDate(request.getPlanDate());
+                    return newPlan;
+                });
+
+        plan.setAvailableMinutes(request.getAvailableMinutes() != null ? request.getAvailableMinutes() : 0);
+        plan = dailyPlanRepository.save(plan);
+
+        // Clear existing tasks for this plan
+        dailyPlanTaskRepository.deleteByDailyPlanId(plan.getId());
+
+        // Add new tasks
+        if (request.getTasks() != null) {
+            for (PlanMyDayRequest.PlanTaskItem item : request.getTasks()) {
+                Task task = taskRepository.findById(item.getTaskId())
+                        .filter(t -> t.getUserId().equals(userDetails.user().getId()))
+                        .orElseThrow(() -> new EntityNotFoundException("Task not found"));
+
+                DailyPlanTask planTask = new DailyPlanTask();
+                planTask.setDailyPlanId(plan.getId());
+                planTask.setTask(task);
+                planTask.setIsMit(item.getIsMit() != null ? item.getIsMit() : false);
+                planTask.setSortOrder(item.getSortOrder() != null ? item.getSortOrder() : 0);
+                dailyPlanTaskRepository.save(planTask);
+
+                if (!"Done".equals(task.getStatus())) {
+                    task.setStatus("Picked for Today");
+                    taskRepository.save(task);
+                }
+            }
+        }
+
+        return getDailyPlan(request.getPlanDate(), userDetails);
+    }
+
+    @Transactional
+    public void cancelPlan(LocalDate planDate, UserDetailsCustom userDetails) {
+        dailyPlanRepository.findByUserIdAndPlanDate(userDetails.user().getId(), planDate)
+                .ifPresent(plan -> {
+                    List<DailyPlanTask> planTasks = dailyPlanTaskRepository.findByDailyPlanIdOrderBySortOrderAsc(plan.getId());
+                    for (DailyPlanTask pt : planTasks) {
+                        Task task = pt.getTask();
+                        if (!"Done".equals(task.getStatus())) {
+                            task.setStatus("Backlog");
+                            taskRepository.save(task);
+                        }
+                    }
+                    dailyPlanTaskRepository.deleteByDailyPlanId(plan.getId());
+                    dailyPlanRepository.delete(plan);
+                });
+    }
+
+    @Transactional
+    public void toggleTaskDone(UUID dailyPlanTaskId, UserDetailsCustom userDetails) {
+        DailyPlanTask planTask = dailyPlanTaskRepository.findById(dailyPlanTaskId)
+                .orElseThrow(() -> new EntityNotFoundException("Plan task not found"));
+        
+        DailyPlan plan = dailyPlanRepository.findById(planTask.getDailyPlanId())
+                .orElseThrow(() -> new EntityNotFoundException("Plan not found"));
+                
+        if (!plan.getUserId().equals(userDetails.user().getId())) {
+            throw new EntityNotFoundException("Plan task not found");
+        }
+
+        Task task = planTask.getTask();
+        if ("Done".equals(task.getStatus())) {
+            task.setStatus("Picked for Today");
+            task.setDoneAt(null);
+        } else {
+            task.setStatus("Done");
+            task.setDoneAt(OffsetDateTime.now());
+        }
+        taskRepository.save(task);
+    }
+}
