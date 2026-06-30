@@ -33,11 +33,11 @@ export function FlowZenZone() {
 
   const getEmbedUrl = () => {
     if (listId && videoId) {
-      return `https://www.youtube.com/embed/${videoId}?list=${listId}&autoplay=1`;
+      return `https://www.youtube.com/embed/${videoId}?list=${listId}`;
     } else if (listId) {
-      return `https://www.youtube.com/embed/videoseries?list=${listId}&autoplay=1`;
+      return `https://www.youtube.com/embed/videoseries?list=${listId}`;
     } else if (videoId) {
-      return `https://www.youtube.com/embed/${videoId}?autoplay=1&loop=1&playlist=${videoId}`;
+      return `https://www.youtube.com/embed/${videoId}?loop=1&playlist=${videoId}`;
     }
     return null;
   };

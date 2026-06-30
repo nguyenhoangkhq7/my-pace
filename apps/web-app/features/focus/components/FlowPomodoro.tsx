@@ -5,6 +5,7 @@ import { useBoardStore } from "@/features/board/store/board.store";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PlayIcon, PauseIcon, StopIcon, Tick01Icon } from "@hugeicons/core-free-icons";
+import { useRouter } from "next/navigation";
 
 export function FlowPomodoro() {
   const { 
@@ -18,13 +19,36 @@ export function FlowPomodoro() {
   } = useFocusStore();
 
   const { timeLeft, currentSession, totalSessions } = usePomodoro();
-  const { tasks, toggleTaskDone, updateTask } = useBoardStore();
+  const { tasks, toggleTaskDone, updateTask, dailyPlanToday } = useBoardStore();
   const [isFinishing, setIsFinishing] = useState(false);
+  const router = useRouter();
 
   const activeTask = tasks.find(t => t.id === activeTaskId);
 
   // Empty state if no task is selected
   if (!activeTaskId || !activeTask) {
+    const allDone = !!dailyPlanToday?.tasks && dailyPlanToday.tasks.length > 0 && dailyPlanToday.tasks.every(t => t.task.status === "Done");
+
+    if (allDone) {
+      return (
+        <div className="h-full flex flex-col items-center justify-center bg-slate-950 p-6 relative">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-green-900/20 via-slate-950 to-slate-950"></div>
+          <div className="max-w-md text-center space-y-6 relative z-10">
+            <div className="w-24 h-24 bg-green-500/10 rounded-full flex items-center justify-center mx-auto text-5xl shadow-[0_0_50px_rgba(34,197,94,0.15)] border border-green-500/20 text-green-500">
+              🎉
+            </div>
+            <h2 className="text-2xl font-semibold text-slate-100">Kế hoạch hoàn tất!</h2>
+            <p className="text-slate-400">
+              Bạn đã hoàn thành tất cả công việc cho hôm nay. Tuyệt vời!
+            </p>
+            <Button onClick={() => router.push('/')} className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-full mt-4">
+              Hoàn tất ngày làm việc
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="h-full flex flex-col items-center justify-center bg-slate-950 p-6 relative">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-900/50 via-slate-950 to-slate-950"></div>
@@ -45,15 +69,34 @@ export function FlowPomodoro() {
     if (!activeTaskId || !activePlanTaskId || isFinishing) return;
     setIsFinishing(true);
     try {
-      const actualMinutes = Math.round(accumulatedFocusTime / 60);
-      await updateTask(activeTaskId, { actualMinutes, status: "Done" });
+      const actualMinutes = Math.floor(accumulatedFocusTime / 60);
+      if (actualMinutes > 0) {
+        await updateTask(activeTaskId, { actualMinutes });
+      }
       
       const todayStr = new Date().toISOString().split('T')[0];
       await toggleTaskDone(todayStr, activePlanTaskId);
       
-      // Stop timer and return to empty state
       pauseTimer();
-      closeFocusMode(); // This sets activeTaskId to null, reverting to empty state
+      
+      // Auto switch to next task
+      const { dailyPlanToday } = useBoardStore.getState();
+      const currentTaskIndex = dailyPlanToday?.tasks.findIndex(t => t.id === activePlanTaskId) ?? -1;
+      
+      if (dailyPlanToday && currentTaskIndex !== -1) {
+        // Look for the next task that is not Done, starting after the current one
+        const remainingTasks = dailyPlanToday.tasks.slice(currentTaskIndex + 1).concat(dailyPlanToday.tasks.slice(0, currentTaskIndex));
+        const nextTask = remainingTasks.find(t => t.task.status !== "Done" && t.id !== activePlanTaskId);
+        
+        if (nextTask) {
+          useFocusStore.getState().openFocusMode(nextTask.task.id, nextTask.id, nextTask.task.estimatedMinutes || 25);
+        } else {
+          closeFocusMode();
+        }
+      } else {
+        closeFocusMode();
+      }
+      
     } catch (err) {
       console.error(err);
     } finally {

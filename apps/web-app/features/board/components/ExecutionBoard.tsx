@@ -6,51 +6,56 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Calendar01Icon, PlayIcon } from "@hugeicons/core-free-icons";
+import { Calendar01Icon, PlayIcon, Tick01Icon } from "@hugeicons/core-free-icons";
 import { StartMyDayModal } from "./StartMyDayModal";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import { useRouter } from "next/navigation";
 
-export function ExecutionBoard({ currentDate }: { currentDate: string }) {
+export function ExecutionBoard({ currentDate, tomorrowDate }: { currentDate: string; tomorrowDate: string }) {
   const router = useRouter();
   const { 
     tasks, 
     dailyPlanToday, 
+    dailyPlanTomorrow,
     isPlanningMode, 
+    planningTarget,
     setPlanningMode, 
     plannedTaskIds, 
     removePlannedTaskLocally,
     savePlan,
-    cancelPlanToday,
+    cancelPlan,
     isStarted
   } = useBoardStore();
   
   const { openFocusMode } = useFocusStore();
-  const availableTimeData = useAvailableTimeStore(s => s.data);
+  const { dataToday, dataTomorrow } = useAvailableTimeStore(s => s);
   const [activeTab, setActiveTab] = useState("today");
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isStartMyDayOpen, setIsStartMyDayOpen] = useState(false);
 
+  const currentPlan = activeTab === "today" ? dailyPlanToday : dailyPlanTomorrow;
+  const targetDate = activeTab === "today" ? currentDate : tomorrowDate;
+
   // Time calculations
-  const baseAvailable = availableTimeData?.availableMinutes || 0;
+  const baseAvailable = (activeTab === "today" ? dataToday?.availableMinutes : dataTomorrow?.availableMinutes) || 0;
   
   const currentAvailable = useMemo(() => {
     if (!isPlanningMode) {
-      return dailyPlanToday ? dailyPlanToday.availableMinutes : baseAvailable;
+      return currentPlan ? currentPlan.availableMinutes : baseAvailable;
     }
     
     // In planning mode, deduct the sum of planned tasks
     const plannedTasks = tasks.filter(t => plannedTaskIds.includes(t.id));
     const usedTime = plannedTasks.reduce((acc, t) => acc + (t.estimatedMinutes || 0), 0);
     return Math.max(0, baseAvailable - usedTime);
-  }, [isPlanningMode, baseAvailable, dailyPlanToday, plannedTaskIds, tasks]);
+  }, [isPlanningMode, baseAvailable, currentPlan, plannedTaskIds, tasks]);
 
   const handleSavePlan = () => {
-    savePlan(currentDate, currentAvailable);
+    savePlan(targetDate, currentAvailable, activeTab as 'today' | 'tomorrow');
   };
 
   const handleCancelPlan = () => {
-    cancelPlanToday(currentDate);
+    cancelPlan(targetDate, activeTab as 'today' | 'tomorrow');
     setIsCancelModalOpen(false);
   };
 
@@ -156,23 +161,33 @@ export function ExecutionBoard({ currentDate }: { currentDate: string }) {
   };
 
   const renderExecutionMode = () => {
-    if (!dailyPlanToday || !dailyPlanToday.tasks || dailyPlanToday.tasks.length === 0) {
+    if (!currentPlan || !currentPlan.tasks || currentPlan.tasks.length === 0) {
       return (
         <div className="flex-1 flex flex-col items-center justify-center space-y-4">
           <div className="w-16 h-16 rounded-full bg-slate-900 flex items-center justify-center text-3xl">📝</div>
           <div className="text-center">
             <h3 className="text-lg font-medium text-slate-200">No Plan Yet</h3>
-            <p className="text-sm text-slate-500 mt-1 max-w-[200px]">Create a plan for today to stay focused and productive.</p>
+            <p className="text-sm text-slate-500 mt-1 max-w-[200px]">Create a plan for {activeTab === 'today' ? 'today' : 'tomorrow'} to stay focused and productive.</p>
           </div>
-          <Button onClick={() => setPlanningMode(true)} className="bg-primary hover:bg-primary/90 text-white mt-4">
-            Plan My Day
+          <Button onClick={() => setPlanningMode(true, activeTab as 'today' | 'tomorrow')} className="bg-primary hover:bg-primary/90 text-white mt-4">
+            Plan {activeTab === 'today' ? 'My Day' : 'Tomorrow'}
           </Button>
         </div>
       );
     }
 
-    const mits = dailyPlanToday.tasks.filter(t => t.isMit);
-    const regular = dailyPlanToday.tasks.filter(t => !t.isMit);
+    if (activeTab === 'today' && currentPlan.tasks.length > 0 && currentPlan.tasks.every(t => t.task.status === "Done")) {
+      return (
+        <div className="flex-1 flex flex-col items-center justify-center space-y-4">
+          <div className="w-20 h-20 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center text-4xl border border-green-500/20 shadow-[0_0_30px_rgba(34,197,94,0.15)]">🎉</div>
+          <h3 className="text-2xl font-bold text-slate-100">Tuyệt vời!</h3>
+          <p className="text-sm text-slate-400">Bạn đã hoàn thành xuất sắc tất cả công việc hôm nay.</p>
+        </div>
+      );
+    }
+
+    const mits = currentPlan.tasks.filter(t => t.isMit);
+    const regular = currentPlan.tasks.filter(t => !t.isMit);
 
     return (
       <div className="flex-1 flex flex-col space-y-6">
@@ -180,12 +195,12 @@ export function ExecutionBoard({ currentDate }: { currentDate: string }) {
           <div>
             <div className="text-xs text-slate-500 uppercase tracking-wider">Available Time</div>
             <div className="text-lg font-bold text-slate-300">
-              {Math.floor(dailyPlanToday.availableMinutes / 60)}h {dailyPlanToday.availableMinutes % 60}m
+              {Math.floor(currentPlan.availableMinutes / 60)}h {currentPlan.availableMinutes % 60}m
             </div>
           </div>
-          {!isStarted && (
-            <Button variant="outline" size="sm" onClick={() => setPlanningMode(true)} className="border-slate-800 text-slate-300">
-              Edit My Day
+          {(!isStarted || activeTab === 'tomorrow') && (
+            <Button variant="outline" size="sm" onClick={() => setPlanningMode(true, activeTab as 'today' | 'tomorrow')} className="border-slate-800 text-slate-300">
+              Edit {activeTab === 'today' ? 'My Day' : 'Tomorrow'}
             </Button>
           )}
         </div>
@@ -196,30 +211,12 @@ export function ExecutionBoard({ currentDate }: { currentDate: string }) {
               <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Most Important Tasks (MITs)</h3>
               {mits.map(pt => (
                 <div key={pt.id} className="p-3 bg-slate-900 border border-primary/30 rounded-lg flex items-start space-x-3">
-                  <Checkbox 
-                    checked={pt.task.status === "Done"} 
-                    onCheckedChange={() => useBoardStore.getState().toggleTaskDone(currentDate, pt.id)}
-                    className="mt-1 border-primary/50 data-[state=checked]:bg-primary"
-                  />
                   <div className="flex-1">
                     <div className={`font-medium text-sm ${pt.task.status === "Done" ? "text-slate-500 line-through" : "text-slate-100"}`}>
                       {pt.task.title}
                     </div>
                     {renderTaskDetails(pt.task as any)}
                   </div>
-                  {isStarted && pt.task.status !== "Done" && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-8 w-8 p-0 text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-full"
-                      onClick={() => {
-                        openFocusMode(pt.task.id, pt.id, pt.task.estimatedMinutes || 25);
-                        router.push('/flow');
-                      }}
-                    >
-                      <HugeiconsIcon icon={PlayIcon} size={16} />
-                    </Button>
-                  )}
                 </div>
               ))}
             </div>
@@ -230,30 +227,12 @@ export function ExecutionBoard({ currentDate }: { currentDate: string }) {
               <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Other Tasks</h3>
               {regular.map(pt => (
                 <div key={pt.id} className="p-3 bg-slate-950 border border-slate-800 rounded-lg flex items-start space-x-3">
-                  <Checkbox 
-                    checked={pt.task.status === "Done"} 
-                    onCheckedChange={() => useBoardStore.getState().toggleTaskDone(currentDate, pt.id)}
-                    className="mt-1 border-slate-600 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                  />
                   <div className="flex-1">
                     <div className={`text-sm ${pt.task.status === "Done" ? "text-slate-600 line-through" : "text-slate-300"}`}>
                       {pt.task.title}
                     </div>
                     {renderTaskDetails(pt.task as any)}
                   </div>
-                  {isStarted && pt.task.status !== "Done" && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-8 w-8 p-0 text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-full"
-                      onClick={() => {
-                        openFocusMode(pt.task.id, pt.id, pt.task.estimatedMinutes || 25);
-                        router.push('/flow');
-                      }}
-                    >
-                      <HugeiconsIcon icon={PlayIcon} size={16} />
-                    </Button>
-                  )}
                 </div>
               ))}
             </div>
@@ -261,22 +240,28 @@ export function ExecutionBoard({ currentDate }: { currentDate: string }) {
         </div>
 
         <div className="pt-4 border-t border-slate-800 flex flex-col gap-2">
-          {!isStarted ? (
-            <>
-              <Button
-                onClick={() => setIsStartMyDayOpen(true)}
-                className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-2.5 rounded-xl shadow-lg shadow-primary/20 transition-all"
-              >
-                🚀 Start My Day
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => setIsCancelModalOpen(true)} className="text-red-400 hover:text-red-300 hover:bg-red-400/10">
-                Cancel Plan
-              </Button>
-            </>
+          {activeTab === 'today' ? (
+            !isStarted ? (
+              <>
+                <Button
+                  onClick={() => setIsStartMyDayOpen(true)}
+                  className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-2.5 rounded-xl shadow-lg shadow-primary/20 transition-all"
+                >
+                  🚀 Start My Day
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setIsCancelModalOpen(true)} className="text-red-400 hover:text-red-300 hover:bg-red-400/10">
+                  Cancel Plan
+                </Button>
+              </>
+            ) : (
+              <div className="text-center text-xs text-green-400/90 font-medium py-2 bg-green-500/5 rounded-xl border border-green-500/10">
+                ✓ Kế hoạch hôm nay đang thực thi
+              </div>
+            )
           ) : (
-            <div className="text-center text-xs text-green-400/90 font-medium py-2 bg-green-500/5 rounded-xl border border-green-500/10">
-              ✓ Kế hoạch hôm nay đang thực thi
-            </div>
+            <Button variant="ghost" size="sm" onClick={() => setIsCancelModalOpen(true)} className="text-red-400 hover:text-red-300 hover:bg-red-400/10">
+              Cancel Plan
+            </Button>
           )}
         </div>
       </div>
@@ -294,30 +279,20 @@ export function ExecutionBoard({ currentDate }: { currentDate: string }) {
         </div>
         
         <TabsContent value="today" className="flex-1 mt-0 outline-none flex flex-col h-full overflow-hidden">
-          {isPlanningMode ? renderPlanningMode() : renderExecutionMode()}
+          {isPlanningMode && planningTarget === 'today' ? renderPlanningMode() : (activeTab === 'today' && renderExecutionMode())}
         </TabsContent>
         
-        <TabsContent value="tomorrow" className="flex-1 mt-0 outline-none flex flex-col h-full">
-          <div className="flex-1 flex flex-col items-center justify-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-slate-900 flex items-center justify-center text-3xl">🌅</div>
-            <div className="text-center">
-              <h3 className="text-lg font-medium text-slate-200">Tomorrow</h3>
-              <p className="text-sm text-slate-500 mt-1 max-w-[200px]">
-                {(!dailyPlanToday || !dailyPlanToday.isConfirmed) 
-                  ? "Finish today's plan before preparing for tomorrow."
-                  : "Plan for tomorrow is locked."}
-              </p>
-            </div>
-          </div>
+        <TabsContent value="tomorrow" className="flex-1 mt-0 outline-none flex flex-col h-full overflow-hidden">
+          {isPlanningMode && planningTarget === 'tomorrow' ? renderPlanningMode() : (activeTab === 'tomorrow' && renderExecutionMode())}
         </TabsContent>
       </Tabs>
 
       <Dialog open={isCancelModalOpen} onOpenChange={setIsCancelModalOpen}>
         <DialogContent className="sm:max-w-[425px] bg-slate-950 text-slate-50 border-slate-800">
           <DialogHeader>
-            <DialogTitle>Cancel Today's Plan?</DialogTitle>
+            <DialogTitle>Cancel {activeTab === 'today' ? "Today's" : "Tomorrow's"} Plan?</DialogTitle>
             <DialogDescription className="text-slate-400 pt-2">
-              Bạn có chắc chắn muốn hủy kế hoạch hôm nay? Các task chưa hoàn thành sẽ được trả về Backlog.
+              Bạn có chắc chắn muốn hủy kế hoạch {activeTab === 'today' ? 'hôm nay' : 'ngày mai'}? Các task chưa hoàn thành sẽ được trả về Backlog.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-4">

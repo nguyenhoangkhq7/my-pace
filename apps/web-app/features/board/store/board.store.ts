@@ -12,6 +12,7 @@ interface BoardState {
   isStarted: boolean;
   isLoading: boolean;
   isPlanningMode: boolean;
+  planningTarget: 'today' | 'tomorrow' | null;
   plannedTaskIds: string[];
 
   fetchTasks: () => Promise<void>;
@@ -24,13 +25,13 @@ interface BoardState {
   fetchDailyPlanToday: (date: string) => Promise<void>;
   fetchDailyPlanTomorrow: (date: string) => Promise<void>;
 
-  setPlanningMode: (isPlanning: boolean) => void;
+  setPlanningMode: (isPlanning: boolean, target?: 'today' | 'tomorrow') => void;
   addPlannedTaskLocally: (task: Task) => void;
   removePlannedTaskLocally: (taskId: string) => void;
 
-  savePlan: (date: string, availableMinutes: number) => Promise<void>;
+  savePlan: (date: string, availableMinutes: number, target: 'today' | 'tomorrow') => Promise<void>;
   confirmPlan: (date: string) => Promise<void>;
-  cancelPlanToday: (date: string) => Promise<void>;
+  cancelPlan: (date: string, target: 'today' | 'tomorrow') => Promise<void>;
   toggleTaskDone: (date: string, planTaskId: string) => Promise<void>;
   saveTimeBlocks: (blocks: Omit<TaskTimeBlock, 'id'>[]) => Promise<TaskTimeBlock[]>;
 }
@@ -45,6 +46,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   isStarted: false,
   isLoading: false,
   isPlanningMode: false,
+  planningTarget: null,
   plannedTaskIds: [],
 
   setFilter: (categoryId) => set({ selectedFilterId: categoryId }),
@@ -116,11 +118,10 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     }
   },
 
-  setPlanningMode: (isPlanning) => {
-    set({ isPlanningMode: isPlanning });
+  setPlanningMode: (isPlanning, target = 'today') => {
+    set({ isPlanningMode: isPlanning, planningTarget: isPlanning ? target : null });
     if (isPlanning) {
-      // Initialize plannedTaskIds from current today's plan
-      const plan = get().dailyPlanToday;
+      const plan = target === 'today' ? get().dailyPlanToday : get().dailyPlanTomorrow;
       if (plan && plan.tasks) {
         set({ plannedTaskIds: plan.tasks.map(t => t.task.id) });
       } else {
@@ -144,7 +145,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     }));
   },
 
-  savePlan: async (date, availableMinutes) => {
+  savePlan: async (date, availableMinutes, target) => {
     set({ isLoading: true });
     try {
       const { plannedTaskIds } = get();
@@ -162,7 +163,13 @@ export const useBoardStore = create<BoardState>((set, get) => ({
         availableMinutes,
         tasks: planTasks
       });
-      set({ dailyPlanToday: res.data, isPlanningMode: false, isStarted: res.data?.isConfirmed ?? false });
+      
+      if (target === 'today') {
+        set({ dailyPlanToday: res.data, isPlanningMode: false, planningTarget: null, isStarted: res.data?.isConfirmed ?? false });
+      } else {
+        set({ dailyPlanTomorrow: res.data, isPlanningMode: false, planningTarget: null });
+      }
+      
       await get().fetchTasks(); // refresh backlog
     } catch (err) {
       console.error(err);
@@ -183,11 +190,15 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     }
   },
 
-  cancelPlanToday: async (date) => {
+  cancelPlan: async (date, target) => {
     set({ isLoading: true });
     try {
       await boardApi.cancelPlan(date);
-      set({ dailyPlanToday: null, isPlanningMode: false, plannedTaskIds: [], timeBlocks: [], isStarted: false });
+      if (target === 'today') {
+        set({ dailyPlanToday: null, isPlanningMode: false, planningTarget: null, plannedTaskIds: [], timeBlocks: [], isStarted: false });
+      } else {
+        set({ dailyPlanTomorrow: null, isPlanningMode: false, planningTarget: null, plannedTaskIds: [] });
+      }
       await get().fetchTasks();
     } catch (err) {
       console.error(err);
