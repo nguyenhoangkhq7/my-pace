@@ -97,6 +97,16 @@ public class DailyPlanService {
     }
 
     @Transactional
+    public DailyPlanDto confirmPlan(LocalDate planDate, UserDetailsCustom userDetails) {
+        DailyPlan plan = dailyPlanRepository.findByUserIdAndPlanDate(userDetails.user().getId(), planDate)
+                .orElseThrow(() -> new EntityNotFoundException("Daily plan not found"));
+        plan.setIsConfirmed(true);
+        plan.setConfirmedAt(OffsetDateTime.now());
+        dailyPlanRepository.save(plan);
+        return getDailyPlan(planDate, userDetails);
+    }
+
+    @Transactional
     public void cancelPlan(LocalDate planDate, UserDetailsCustom userDetails) {
         dailyPlanRepository.findByUserIdAndPlanDate(userDetails.user().getId(), planDate)
                 .ifPresent(plan -> {

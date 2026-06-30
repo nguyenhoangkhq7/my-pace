@@ -94,12 +94,17 @@ public class FixedEventService {
         java.time.ZoneId zoneId = java.time.ZoneId.of(user.getTimezone());
         LocalTime windowStart;
         if (checkedIn) {
-            // Recalculated workday starts exactly at check-in time
-            windowStart = checkinTime;
+            // Recalculated workday starts at checkinTime + 15 mins
+            windowStart = checkinTime.plusMinutes(15);
         } else {
             LocalTime now = LocalTime.now(zoneId);
-            windowStart = date.equals(LocalDate.now()) && now.isAfter(user.getWakeTime())
-                    ? now : user.getWakeTime();
+            if (date.equals(LocalDate.now(zoneId))) {
+                // Planning for Today: Start_Time = Current_Time + 15 mins
+                windowStart = now.plusMinutes(15);
+            } else {
+                // Planning for Tomorrow: Start_Time = Wake_Time + 15 mins
+                windowStart = user.getWakeTime().plusMinutes(15);
+            }
         }
         LocalTime windowEnd = user.getSleepTime();
 

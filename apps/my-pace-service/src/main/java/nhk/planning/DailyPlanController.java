@@ -28,6 +28,12 @@ public class DailyPlanController {
         return dailyPlanService.planMyDay(request, userDetails);
     }
 
+    @PostMapping("/{date}/confirm")
+    public DailyPlanDto confirmPlan(@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+                                    @AuthenticationPrincipal UserDetailsCustom userDetails) {
+        return dailyPlanService.confirmPlan(date, userDetails);
+    }
+
     @PostMapping("/{date}/cancel")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void cancelPlan(@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,

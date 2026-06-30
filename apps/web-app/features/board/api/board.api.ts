@@ -9,6 +9,7 @@ export const boardApi = {
 
   getDailyPlan: (date: string) => fetchClient.get<DailyPlan>(`daily-plans/${date}`),
   planMyDay: (data: any) => fetchClient.post<DailyPlan, any>("daily-plans/plan-my-day", data),
+  confirmPlan: (date: string) => fetchClient.post<DailyPlan, Record<string, never>>(`daily-plans/${date}/confirm`, {}),
   cancelPlan: (date: string) => fetchClient.post<unknown, Record<string, never>>(`daily-plans/${date}/cancel`, {}),
   toggleTaskDone: (planTaskId: string) => fetchClient.put<unknown, Record<string, never>>(`daily-plans/tasks/${planTaskId}/toggle-done`, {}),
 
