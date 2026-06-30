@@ -49,8 +49,15 @@ my-pace-app/
 ## 3. Coding Guidelines & Best Practices
 
 ### General
-- Store all configurations and sensitive credentials in the root `.env` file. Never hardcode secrets in code.
+- Store configurations and sensitive credentials in individual service-level `.env` files (e.g. `apps/web-app/.env` and `apps/my-pace-service/.env`). Do NOT use a shared root `.env` file. Never hardcode secrets in code.
 - Ensure cross-service compatibility (e.g., when adding a feature in frontend, ensure the backend endpoints match).
+
+### Security & Authentication (JWT & Redis Blacklist)
+- User IDs must always be represented as `UUID` on both the PostgreSQL schema and Java backend (e.g., in repositories, DTOs, mappers, and services) to prevent casting and consistency issues.
+- Logout flow must be handled securely on both client and server:
+  - **Client-side**: Call `POST /api/auth/logout` first, then clear the Zustand store session (`clearSession`), and redirect the user to `/login`.
+  - **Backend-side**: Expose `POST /api/auth/logout` which parses the token, calculates its remaining TTL, saves it in Redis with key prefix `blacklist:token:{token}`, and clears the `refreshToken` HTTP-only cookie.
+  - **Filter interceptor**: The `JwtAuthFilter` must query Redis for `blacklist:token:{token}` and block any blacklisted requests before authentication details are set in the security context.
 
 ### Frontend (Next.js / TypeScript)
 - Use standard functional components with TypeScript typings.
