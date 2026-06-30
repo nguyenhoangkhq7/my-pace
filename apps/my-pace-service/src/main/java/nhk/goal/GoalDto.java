@@ -18,4 +18,7 @@ public class GoalDto {
     private OffsetDateTime updatedAt;
     private TimeBoxedGoalDto timeBoxedGoal;
     private List<MilestoneDto> milestones;
+    private Double progressPercentage;
+    private Integer currentValue;
+    private Integer targetValue;
 }
