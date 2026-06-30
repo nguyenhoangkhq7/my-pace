@@ -8,7 +8,7 @@ import type { DateSelectArg, EventClickArg, DatesSetArg, EventInput, EventDropAr
 import interactionPlugin, { Draggable } from "@fullcalendar/interaction";
 import type { EventReceiveArg } from "@fullcalendar/interaction";
 import { useCalendarEvents } from "@/features/calendar";
-import { useAvailableTime, AvailableTimeWidget } from "@/features/available-time";
+import { useAvailableTime } from "@/features/available-time";
 import { EventModal } from "@/features/calendar/components/EventModal";
 import type { FixedEventOccurrence, ModalMode, UpdateOccurrencePayload } from "@/features/calendar/types";
 import { useAuthStore } from "@/features/auth";
@@ -330,7 +330,6 @@ export default function CalendarPage() {
 
   return (
     <div className="flex flex-col gap-4 h-full">
-      <AvailableTimeWidget data={availableTime} isLoading={isLoadingAvailableTime} />
 
       <div className="flex gap-4 flex-1 min-h-0">
         {/* ── Todo Today Sidebar ── */}
@@ -513,17 +512,21 @@ export default function CalendarPage() {
           font-size: 0.75rem !important;
           cursor: pointer !important;
         }
-        .calendar-wrapper .fc-highlight { background: ${EVENT_HIGHLIGHT} !important; }
-        .calendar-wrapper .fc-day-today { background-color: ${EVENT_HIGHLIGHT} !important; }
+        .calendar-wrapper .fc-highlight { background: rgba(14, 165, 233, 0.05) !important; }
+        .calendar-wrapper .fc-day-today { background-color: rgba(255, 255, 255, 0.01) !important; }
         .calendar-wrapper .fc-col-header-cell-cushion,
         .calendar-wrapper .fc-timegrid-axis-cushion,
         .calendar-wrapper .fc-timegrid-slot-label-cushion {
           color: hsl(var(--muted-foreground));
+          opacity: 0.8;
           font-size: 0.7rem;
-          font-weight: 600;
+          font-weight: 500;
         }
-        .calendar-wrapper .fc-scrollgrid { border-color: hsl(var(--border)) !important; }
-        .calendar-wrapper td, .calendar-wrapper th { border-color: hsl(var(--border)) !important; }
+        /* Mờ hóa các đường viền chia ô và trục thời gian để lịch dịu mắt hơn */
+        .calendar-wrapper .fc-scrollgrid { border-color: rgba(255, 255, 255, 0.06) !important; }
+        .calendar-wrapper td, .calendar-wrapper th { border-color: rgba(255, 255, 255, 0.04) !important; }
+        .calendar-wrapper .fc-timegrid-slots td { border-color: rgba(255, 255, 255, 0.03) !important; }
+        
         /* Dragging ghost style */
         .fc-event-dragging { opacity: 0.85 !important; }
       `}</style>

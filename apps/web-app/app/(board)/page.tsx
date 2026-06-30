@@ -6,9 +6,11 @@ import { BacklogMatrix } from "@/features/board/components/BacklogMatrix";
 import { ExecutionBoard } from "@/features/board/components/ExecutionBoard";
 import { useBoardStore } from "@/features/board/store/board.store";
 import { useAvailableTimeStore } from "@/features/available-time/store/available-time.store";
+import { useAppVisibility } from "@/features/available-time";
 
 
 export default function DashboardPage() {
+  useAppVisibility();
   const user = useAuthStore((s) => s.user);
   const { fetchTasks, fetchDailyPlanToday, fetchCategories } = useBoardStore();
   const { fetchAvailableTime } = useAvailableTimeStore();

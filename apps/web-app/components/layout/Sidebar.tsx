@@ -126,37 +126,14 @@ export function Sidebar() {
           })}
         </nav>
 
-        {/* ── Daily Check-in Section ── */}
-        <div className="mt-6 pt-5 border-t border-border/50">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground block mb-2 px-2">
-            Daily Check-in
-          </span>
-          {availableTime?.checkedIn ? (
-            <div className="flex items-center gap-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-3 py-2.5">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <div className="flex flex-col min-w-0">
-                <span className="text-xs font-semibold text-foreground">Đang hoạt động</span>
-                <span className="text-[10px] text-muted-foreground mt-0.5">Bắt đầu lúc {availableTime.checkinTime}</span>
-              </div>
-            </div>
-          ) : (
-            <button
-              onClick={handleCheckin}
-              disabled={isLoading}
-              className={cn(
-                "w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition-all duration-200",
-                "bg-gradient-to-r from-sky-500 to-indigo-600 text-white shadow-md shadow-sky-500/10 hover:shadow-sky-500/20 hover:from-sky-400 hover:to-indigo-500 active:scale-[0.97]",
-                "disabled:opacity-50 disabled:pointer-events-none"
-              )}
-            >
-              <span className="text-base shrink-0">✨</span>
-              <span className="truncate">{isLoading ? "Đang xử lý..." : "Bắt đầu ngày mới"}</span>
-            </button>
-          )}
-        </div>
+        {/* ── Start Time Label ── */}
+        {availableTime?.checkedIn && availableTime.checkinTime && (
+          <div className="mt-6 pt-5 border-t border-border/50 px-2">
+            <span className="text-xs text-muted-foreground block">
+              Hôm nay bắt đầu lúc: <span className="font-semibold text-foreground">{availableTime.checkinTime}</span>
+            </span>
+          </div>
+        )}
 
         {/* ── Spacer ───────────────────────────────────────────────────── */}
         <div className="flex-1" />

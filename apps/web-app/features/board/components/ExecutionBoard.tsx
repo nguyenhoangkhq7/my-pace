@@ -18,7 +18,8 @@ export function ExecutionBoard({ currentDate }: { currentDate: string }) {
     plannedTaskIds, 
     removePlannedTaskLocally,
     savePlan,
-    cancelPlanToday
+    cancelPlanToday,
+    isStarted
   } = useBoardStore();
   
   const availableTimeData = useAvailableTimeStore(s => s.data);
@@ -178,9 +179,11 @@ export function ExecutionBoard({ currentDate }: { currentDate: string }) {
               {Math.floor(dailyPlanToday.availableMinutes / 60)}h {dailyPlanToday.availableMinutes % 60}m
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={() => setPlanningMode(true)} className="border-slate-800 text-slate-300">
-            Edit My Day
-          </Button>
+          {!isStarted && (
+            <Button variant="outline" size="sm" onClick={() => setPlanningMode(true)} className="border-slate-800 text-slate-300">
+              Edit My Day
+            </Button>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto space-y-6 pr-2">
@@ -228,15 +231,23 @@ export function ExecutionBoard({ currentDate }: { currentDate: string }) {
         </div>
 
         <div className="pt-4 border-t border-slate-800 flex flex-col gap-2">
-          <Button
-            onClick={() => setIsStartMyDayOpen(true)}
-            className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-2.5 rounded-xl shadow-lg shadow-primary/20 transition-all"
-          >
-            🚀 Start My Day
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => setIsCancelModalOpen(true)} className="text-red-400 hover:text-red-300 hover:bg-red-400/10">
-            Cancel Plan
-          </Button>
+          {!isStarted ? (
+            <>
+              <Button
+                onClick={() => setIsStartMyDayOpen(true)}
+                className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-2.5 rounded-xl shadow-lg shadow-primary/20 transition-all"
+              >
+                🚀 Start My Day
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setIsCancelModalOpen(true)} className="text-red-400 hover:text-red-300 hover:bg-red-400/10">
+                Cancel Plan
+              </Button>
+            </>
+          ) : (
+            <div className="text-center text-xs text-green-400/90 font-medium py-2 bg-green-500/5 rounded-xl border border-green-500/10">
+              ✓ Kế hoạch hôm nay đang thực thi
+            </div>
+          )}
         </div>
       </div>
     );
