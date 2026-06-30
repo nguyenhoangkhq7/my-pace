@@ -1,9 +1,11 @@
 import { create } from "zustand";
-import { Task, DailyPlan } from "../types";
+import { Task, DailyPlan, Category } from "../types";
 import { boardApi } from "../api/board.api";
 
 interface BoardState {
   tasks: Task[];
+  categories: Category[];
+  selectedFilterId: string | null;
   dailyPlanToday: DailyPlan | null;
   dailyPlanTomorrow: DailyPlan | null;
   isLoading: boolean;
@@ -11,6 +13,9 @@ interface BoardState {
   plannedTaskIds: string[];
 
   fetchTasks: () => Promise<void>;
+  fetchCategories: () => Promise<void>;
+  createCategory: (category: Partial<Category>) => Promise<Category>;
+  setFilter: (categoryId: string | null) => void;
   createTask: (task: Partial<Task>) => Promise<Task>;
   updateTask: (id: string, task: Partial<Task>) => Promise<Task>;
   
@@ -28,11 +33,30 @@ interface BoardState {
 
 export const useBoardStore = create<BoardState>((set, get) => ({
   tasks: [],
+  categories: [],
+  selectedFilterId: null,
   dailyPlanToday: null,
   dailyPlanTomorrow: null,
   isLoading: false,
   isPlanningMode: false,
   plannedTaskIds: [],
+
+  setFilter: (categoryId) => set({ selectedFilterId: categoryId }),
+
+  fetchCategories: async () => {
+    try {
+      const res = await boardApi.getCategories();
+      set({ categories: res.data });
+    } catch (err) {
+      console.error(err);
+    }
+  },
+
+  createCategory: async (category) => {
+    const res = await boardApi.createCategory(category);
+    set(state => ({ categories: [...state.categories, res.data] }));
+    return res.data;
+  },
 
   fetchTasks: async () => {
     set({ isLoading: true });

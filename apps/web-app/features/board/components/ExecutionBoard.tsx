@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Calendar01Icon } from "@hugeicons/core-free-icons";
 
 export function ExecutionBoard({ currentDate }: { currentDate: string }) {
   const { 
@@ -45,6 +47,38 @@ export function ExecutionBoard({ currentDate }: { currentDate: string }) {
     setIsCancelModalOpen(false);
   };
 
+  const renderTaskDetails = (task: typeof tasks[0]) => (
+    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+      {task.goalId ? (
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+          Goal
+        </span>
+      ) : task.category ? (
+        <span 
+          className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border"
+          style={{ 
+            backgroundColor: `${task.category.color}15`, 
+            color: task.category.color,
+            borderColor: `${task.category.color}30`
+          }}
+        >
+          {task.category.name}
+        </span>
+      ) : null}
+
+      {task.dueDate && (
+        <span className="inline-flex items-center text-[10px] text-slate-400">
+          <HugeiconsIcon icon={Calendar01Icon} size={10} className="mr-1" />
+          {new Date(task.dueDate).toLocaleDateString()}
+        </span>
+      )}
+      
+      {task.estimatedMinutes > 0 && (
+        <div className="text-xs text-slate-500">{task.estimatedMinutes}m</div>
+      )}
+    </div>
+  );
+
   const renderPlanningMode = () => {
     const plannedTasks = plannedTaskIds.map(id => tasks.find(t => t.id === id)).filter(Boolean) as typeof tasks;
     const mits = plannedTasks.filter(t => t.isImportant);
@@ -75,7 +109,10 @@ export function ExecutionBoard({ currentDate }: { currentDate: string }) {
               <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Most Important Tasks (MITs)</h3>
               {mits.map(task => (
                 <div key={task.id} className="p-3 bg-slate-900 border border-slate-700 rounded-lg flex justify-between items-center group">
-                  <div className="font-medium text-sm text-slate-100">{task.title}</div>
+                  <div className="flex-1">
+                    <div className="font-medium text-sm text-slate-100">{task.title}</div>
+                    {renderTaskDetails(task)}
+                  </div>
                   <Button variant="ghost" size="sm" onClick={() => removePlannedTaskLocally(task.id)} className="h-6 px-2 text-slate-500 opacity-0 group-hover:opacity-100 hover:text-red-400">
                     Remove
                   </Button>
@@ -89,7 +126,10 @@ export function ExecutionBoard({ currentDate }: { currentDate: string }) {
               <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Other Tasks</h3>
               {regularTasks.map(task => (
                 <div key={task.id} className="p-3 bg-slate-950 border border-slate-800 rounded-lg flex justify-between items-center group">
-                  <div className="text-sm text-slate-300">{task.title}</div>
+                  <div className="flex-1">
+                    <div className="text-sm text-slate-300">{task.title}</div>
+                    {renderTaskDetails(task)}
+                  </div>
                   <Button variant="ghost" size="sm" onClick={() => removePlannedTaskLocally(task.id)} className="h-6 px-2 text-slate-500 opacity-0 group-hover:opacity-100 hover:text-red-400">
                     Remove
                   </Button>
@@ -152,13 +192,11 @@ export function ExecutionBoard({ currentDate }: { currentDate: string }) {
                     onCheckedChange={() => useBoardStore.getState().toggleTaskDone(currentDate, pt.id)}
                     className="mt-1 border-primary/50 data-[state=checked]:bg-primary"
                   />
-                  <div>
+                  <div className="flex-1">
                     <div className={`font-medium text-sm ${pt.task.status === "Done" ? "text-slate-500 line-through" : "text-slate-100"}`}>
                       {pt.task.title}
                     </div>
-                    {pt.task.estimatedMinutes > 0 && (
-                      <div className="text-xs text-slate-500 mt-0.5">{pt.task.estimatedMinutes}m</div>
-                    )}
+                    {renderTaskDetails(pt.task as any)}
                   </div>
                 </div>
               ))}
@@ -175,8 +213,11 @@ export function ExecutionBoard({ currentDate }: { currentDate: string }) {
                     onCheckedChange={() => useBoardStore.getState().toggleTaskDone(currentDate, pt.id)}
                     className="mt-1 border-slate-600 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                   />
-                  <div className={`text-sm ${pt.task.status === "Done" ? "text-slate-600 line-through" : "text-slate-300"}`}>
-                    {pt.task.title}
+                  <div className="flex-1">
+                    <div className={`text-sm ${pt.task.status === "Done" ? "text-slate-600 line-through" : "text-slate-300"}`}>
+                      {pt.task.title}
+                    </div>
+                    {renderTaskDetails(pt.task as any)}
                   </div>
                 </div>
               ))}
