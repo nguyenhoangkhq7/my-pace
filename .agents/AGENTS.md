@@ -73,7 +73,7 @@ my-pace-app/
   - Planning tomorrow: `Start_Time = Wake_Time + 15 minutes`.
 - **First Check-in Freeze**: The `checkinTime` is recorded automatically on the user's first app access and remains frozen once stored. Focus changes or page refreshes do not overwrite it.
 - **Auto Check-in Hook**: Next.js hook `useAppVisibility` runs silently, posting check-in times in the background when the app is first opened on a new day. It also recalculates remaining available time when window focus changes.
-- **Frontend Hybrid Architecture**: State is managed globally via Zustand stores (`useAvailableTimeStore` and `useCalendarStore`) but exposed to UI components via custom hooks.
+- **Frontend Hybrid Architecture**: State is managed globally via Zustand stores (`useAvailableTimeStore` and `useCalendarStore`) but exposed to UI components via custom hooks. `useAvailableTimeStore` maintains separate `dataToday` and `dataTomorrow` objects to prevent today's decaying available time from bleeding into tomorrow's plan.
 
 ### Timeboxing & Scheduled Time Blocks
 - **Task Time Blocks Table (`task_time_blocks`)**: Tracks scheduled times for tasks. Single source of truth (do not store scheduled time directly in task or daily plan task tables).
@@ -83,6 +83,11 @@ my-pace-app/
   - Simulated Fixed Events: Manual time blocks are converted to occupied slots when running auto-schedule again to avoid overlapping.
 - **Cascade Unschedule**: Removing a scheduled time block from the calendar (via drag-to-unschedule or modal button) automatically clears all other chunks associated with that task ID.
 - **Execution Mode UI Locking (`isStarted` / `isConfirmed`)**: When `isConfirmed` is true, the user is locked into execution mode. Editing and cancelling plan buttons are hidden, and planning interactions (like adding tasks from backlog to today) are completely disabled.
+
+### Daily Lifecycle & Multi-Day Planning
+- **Read-Only Execution Board**: The "Hôm nay" (Today) tab does not allow direct checkbox completion. Completion must be driven via the **Flow** tab.
+- **Completion Flow**: When all daily tasks are marked `Done`, the Flow tab displays a completion celebration screen with a "Complete my day" action, and the Today tab displays a full-page celebratory screen instead of the task list.
+- **Tomorrow Planning**: Users can prepare for the next day. The "Ngày mai" (Tomorrow) tab lets users toggle planning mode specifically for tomorrow (`planningTarget: 'today' | 'tomorrow'`), fetching tomorrow's available time and saving the plan with tomorrow's date.
 
 ### Frontend (Next.js / TypeScript)
 - Use standard functional components with TypeScript typings.

@@ -10,8 +10,9 @@ import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function BacklogMatrix() {
-  const { tasks, isPlanningMode, plannedTaskIds, addPlannedTaskLocally, removePlannedTaskLocally, createTask, updateTask, isStarted } = useBoardStore();
-  const { data: availableTimeData } = useAvailableTimeStore();
+  const { tasks, isPlanningMode, plannedTaskIds, addPlannedTaskLocally, removePlannedTaskLocally, createTask, updateTask, isStarted, planningTarget, dailyPlanTomorrow } = useBoardStore();
+  const { dataToday, dataTomorrow } = useAvailableTimeStore();
+  const availableTimeData = planningTarget === 'today' ? dataToday : dataTomorrow;
   const availableMinutes = availableTimeData?.availableMinutes || 0;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
@@ -28,9 +29,8 @@ export function BacklogMatrix() {
   };
 
   const checkTimeLimit = (newEstimatedMinutes: number) => {
-    const usedTime = plannedTaskIds
-      .map(id => tasks.find(t => t.id === id))
-      .reduce((acc, t) => acc + (t?.estimatedMinutes || 0), 0);
+    const plannedTasks = tasks.filter(t => plannedTaskIds.includes(t.id));
+    const usedTime = plannedTasks.reduce((acc, t) => acc + (t.estimatedMinutes || 0), 0);
       
     if (usedTime + newEstimatedMinutes > availableMinutes) {
       toast.warning("Task này vượt quá thời gian trống còn lại trong ngày!");
@@ -39,7 +39,8 @@ export function BacklogMatrix() {
 
   const handleTaskClick = (task: Task) => {
     if (isPlanningMode) {
-      if (isStarted) {
+      const isTargetStarted = planningTarget === 'today' ? isStarted : (dailyPlanTomorrow?.isConfirmed ?? false);
+      if (isTargetStarted) {
         toast.error("Kế hoạch đã chốt và đang thực thi, không thể chỉnh sửa.");
         return;
       }

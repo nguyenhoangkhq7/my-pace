@@ -10,16 +10,16 @@ function getTodayStr() {
 }
 
 export function useAppVisibility() {
-  const fetchAvailableTime = useAvailableTimeStore((s) => s.fetchAvailableTime);
+  const fetchAvailableTimeToday = useAvailableTimeStore((s) => s.fetchAvailableTimeToday);
   const checkin = useAvailableTimeStore((s) => s.checkin);
-  const data = useAvailableTimeStore((s) => s.data);
+  const dataToday = useAvailableTimeStore((s) => s.dataToday);
   const { dailyPlanToday, fetchDailyPlanToday } = useBoardStore();
 
   const lastCheckedDate = useRef<string>("");
 
   const refreshAll = () => {
     const today = getTodayStr();
-    fetchAvailableTime(today);
+    fetchAvailableTimeToday(today);
     fetchDailyPlanToday(today);
   };
 
@@ -33,12 +33,12 @@ export function useAppVisibility() {
 
       // If we already loaded the daily plan and it is null (meaning no plan created yet)
       // and we haven't checked in yet today (checkedIn is false)
-      if (dailyPlanToday === null && (!data || !data.checkedIn)) {
+      if (dailyPlanToday === null && (!dataToday || !dataToday.checkedIn)) {
         // Auto checkin in background
         checkin(today);
       }
     }
-  }, [dailyPlanToday, data, checkin]);
+  }, [dailyPlanToday, dataToday, checkin]);
 
   // 2. Realtime Recalculation on window focus or visibility change
   useEffect(() => {
@@ -55,5 +55,5 @@ export function useAppVisibility() {
       window.removeEventListener("focus", handleFocusOrVisible);
       document.removeEventListener("visibilitychange", handleFocusOrVisible);
     };
-  }, [fetchAvailableTime, fetchDailyPlanToday]);
+  }, [fetchAvailableTimeToday, fetchDailyPlanToday]);
 }
