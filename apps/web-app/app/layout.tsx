@@ -5,6 +5,7 @@ import "sonner/dist/styles.css";
 import { cn } from "@/lib/utils";
 import { AppToastHost } from "@/components/feedback/toast-host";
 import { AuthProvider } from "@/features/auth";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import React from "react";
 
 const inter = Inter({
@@ -34,8 +35,10 @@ export default function RootLayout({
     >
       <body className="min-h-screen bg-background text-foreground">
         <AuthProvider>
-          {children}
-          <AppToastHost />
+          <TooltipProvider>
+            {children}
+            <AppToastHost />
+          </TooltipProvider>
         </AuthProvider>
       </body>
     </html>
