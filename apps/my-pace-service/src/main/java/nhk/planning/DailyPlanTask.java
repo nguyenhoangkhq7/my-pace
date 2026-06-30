@@ -7,7 +7,6 @@ import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
 import nhk.task.Task;
 
-import java.time.LocalTime;
 import java.util.UUID;
 
 @Getter
@@ -36,10 +35,4 @@ public class DailyPlanTask {
     @NotNull
     @Column(name = "sort_order", nullable = false)
     private Integer sortOrder = 0;
-
-    @Column(name = "scheduled_start_time")
-    private LocalTime scheduledStartTime;
-
-    @Column(name = "scheduled_end_time")
-    private LocalTime scheduledEndTime;
 }

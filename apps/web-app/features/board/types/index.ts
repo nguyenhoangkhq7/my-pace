@@ -20,14 +20,22 @@ export interface Task {
   notes?: string;
 }
 
+export interface TaskTimeBlock {
+  id: string;
+  taskId: string;
+  dailyPlanId: string;
+  startTime: string; // ISO datetime string
+  endTime: string;
+  partIndex: number;
+  totalParts: number;
+}
+
 export interface DailyPlanTask {
   id: string;
   dailyPlanId: string;
   task: Task;
   isMit: boolean;
   sortOrder: number;
-  scheduledStartTime?: string;
-  scheduledEndTime?: string;
 }
 
 export interface DailyPlan {
@@ -37,4 +45,6 @@ export interface DailyPlan {
   availableMinutes: number;
   isConfirmed: boolean;
   tasks: DailyPlanTask[];
+  timeBlocks: TaskTimeBlock[];
 }
+
