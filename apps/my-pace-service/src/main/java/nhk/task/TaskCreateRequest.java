@@ -10,6 +10,7 @@ public class TaskCreateRequest {
     @NotBlank(message = "Title is required")
     private String title;
     private UUID goalId;
+    private UUID categoryId;
     private Integer estimatedMinutes;
     private Boolean isUrgent;
     private Boolean isImportant;

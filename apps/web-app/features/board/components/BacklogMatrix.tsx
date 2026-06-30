@@ -1,12 +1,13 @@
 import { useBoardStore } from "../store/board.store";
 import { Task } from "../types";
 import { TaskFormModal } from "./TaskFormModal";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { PlusSignIcon, FilterIcon } from "@hugeicons/core-free-icons";
+import { PlusSignIcon, FilterIcon, Calendar01Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { useAvailableTimeStore } from "../../available-time/store/available-time.store";
 import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function BacklogMatrix() {
   const { tasks, isPlanningMode, plannedTaskIds, addPlannedTaskLocally, removePlannedTaskLocally, createTask, updateTask } = useBoardStore();
@@ -66,12 +67,26 @@ export function BacklogMatrix() {
   };
 
   const renderQuadrant = (title: string, isUrgent: boolean, isImportant: boolean, colorClass: string) => {
-    const qTasks = tasks.filter(t => 
+    let qTasks = tasks.filter(t => 
       t.status === "Backlog" && 
       t.isUrgent === isUrgent && 
       t.isImportant === isImportant &&
       !(isPlanningMode && plannedTaskIds.includes(t.id))
     );
+    
+    const { selectedFilterId } = useBoardStore.getState();
+    if (selectedFilterId === "goal") {
+      qTasks = qTasks.filter(t => !!t.goalId);
+    } else if (selectedFilterId && selectedFilterId !== "none") {
+      qTasks = qTasks.filter(t => t.categoryId === selectedFilterId);
+    }
+
+    qTasks.sort((a, b) => {
+      if (!a.dueDate && !b.dueDate) return 0;
+      if (!a.dueDate) return 1;
+      if (!b.dueDate) return -1;
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    });
     
     return (
       <div className="flex flex-col border border-slate-800 rounded-xl overflow-hidden bg-slate-900/30">
@@ -90,9 +105,36 @@ export function BacklogMatrix() {
               }`}
             >
               <div className="font-medium line-clamp-2">{task.title}</div>
-              {task.estimatedMinutes > 0 && (
-                <div className="text-xs text-slate-500 mt-1">{task.estimatedMinutes}m</div>
-              )}
+              
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                {task.goalId ? (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                    Goal
+                  </span>
+                ) : task.category ? (
+                  <span 
+                    className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border"
+                    style={{ 
+                      backgroundColor: `${task.category.color}15`, 
+                      color: task.category.color,
+                      borderColor: `${task.category.color}30`
+                    }}
+                  >
+                    {task.category.name}
+                  </span>
+                ) : null}
+
+                {task.dueDate && (
+                  <span className="inline-flex items-center text-[10px] text-slate-400">
+                    <HugeiconsIcon icon={Calendar01Icon} size={12} className="mr-1" />
+                    {new Date(task.dueDate).toLocaleDateString()}
+                  </span>
+                )}
+                
+                {task.estimatedMinutes > 0 && (
+                  <div className="text-xs text-slate-500">{task.estimatedMinutes}m</div>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -105,10 +147,26 @@ export function BacklogMatrix() {
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-slate-100 tracking-tight">Eisenhower Matrix</h2>
         <div className="flex space-x-2">
-          <Button variant="outline" size="sm" className="h-8 border-slate-800 bg-slate-950 text-slate-300 hover:text-white">
-            <HugeiconsIcon icon={FilterIcon} size={16} className="mr-2" />
-            Filter
-          </Button>
+          <Select 
+            value={useBoardStore.getState().selectedFilterId || "none"} 
+            onValueChange={(val) => useBoardStore.getState().setFilter(val === "none" ? null : val)}
+          >
+            <SelectTrigger className="h-8 border-slate-800 bg-slate-950 text-slate-300 w-[140px]">
+              <div className="flex items-center">
+                <HugeiconsIcon icon={FilterIcon} size={16} className="mr-2" />
+                <SelectValue placeholder="Filter" />
+              </div>
+            </SelectTrigger>
+            <SelectContent className="bg-slate-950 border-slate-800 text-slate-200">
+              <SelectItem value="none">All Tasks</SelectItem>
+              <SelectItem value="goal">Goal</SelectItem>
+              {useBoardStore.getState().categories.map(c => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Button size="sm" className="h-8 bg-primary hover:bg-primary/90 text-white" onClick={() => { setEditingTask(undefined); setIsModalOpen(true); }}>
             <HugeiconsIcon icon={PlusSignIcon} size={16} className="mr-2" />
             New Task

@@ -1,7 +1,15 @@
+export interface Category {
+  id: string;
+  name: string;
+  color: string;
+}
+
 export interface Task {
   id: string;
   userId: string;
   goalId?: string;
+  categoryId?: string;
+  category?: Category;
   title: string;
   estimatedMinutes: number;
   actualMinutes: number;

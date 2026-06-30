@@ -29,6 +29,13 @@ public class Task {
     @Column(name = "goal_id")
     private UUID goalId;
 
+    @Column(name = "category_id")
+    private UUID categoryId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", insertable = false, updatable = false)
+    private nhk.category.Category category;
+
     @Size(max = 255)
     @NotNull
     @Column(name = "title", nullable = false)

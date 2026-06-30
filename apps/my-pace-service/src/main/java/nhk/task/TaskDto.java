@@ -10,6 +10,8 @@ public class TaskDto {
     private UUID id;
     private UUID userId;
     private UUID goalId;
+    private UUID categoryId;
+    private nhk.category.CategoryDto category;
     private String title;
     private Integer estimatedMinutes;
     private Integer actualMinutes;

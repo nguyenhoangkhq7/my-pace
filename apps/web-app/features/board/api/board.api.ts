@@ -1,5 +1,5 @@
 import { fetchClient } from "@/lib/fetchClient";
-import { Task, DailyPlan } from "../types";
+import { Task, DailyPlan, Category } from "../types";
 
 export const boardApi = {
   getTasks: () => fetchClient.get<Task[]>("tasks"),
@@ -11,4 +11,7 @@ export const boardApi = {
   planMyDay: (data: any) => fetchClient.post<DailyPlan, any>("daily-plans/plan-my-day", data),
   cancelPlan: (date: string) => fetchClient.post<unknown, Record<string, never>>(`daily-plans/${date}/cancel`, {}),
   toggleTaskDone: (planTaskId: string) => fetchClient.put<unknown, Record<string, never>>(`daily-plans/tasks/${planTaskId}/toggle-done`, {}),
+
+  getCategories: () => fetchClient.get<Category[]>("categories"),
+  createCategory: (data: Partial<Category>) => fetchClient.post<Category, Partial<Category>>("categories", data),
 };
