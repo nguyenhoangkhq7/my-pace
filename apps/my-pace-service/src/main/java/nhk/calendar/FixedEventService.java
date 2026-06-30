@@ -139,9 +139,6 @@ public class FixedEventService {
                 .build();
     }
 
-    /**
-     * Records a daily check-in and returns the updated available time.
-     */
     @Transactional
     public AvailableTimeResponse checkin(UUID userId, LocalDate date, LocalTime checkinTime) {
         User user = userRepo.findById(userId)
@@ -153,8 +150,11 @@ public class FixedEventService {
                         .checkinDate(date)
                         .build());
 
-        checkin.setCheckinTime(checkinTime != null ? checkinTime : LocalTime.now(java.time.ZoneId.of(user.getTimezone())));
-        checkinRepo.save(checkin);
+        // Freeze checkinTime once recorded. Do not overwrite if already set.
+        if (checkin.getCheckinTime() == null) {
+            checkin.setCheckinTime(checkinTime != null ? checkinTime : LocalTime.now(java.time.ZoneId.of(user.getTimezone())));
+            checkinRepo.save(checkin);
+        }
 
         return getAvailableTime(userId, date);
     }

@@ -24,7 +24,7 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { id: "dashboard", label: "Dashboard", href: "/", icon: Grid02Icon },
+  { id: "dashboard", label: "Plan your day", href: "/", icon: Grid02Icon },
   { id: "calendar", label: "Calendar", href: "/calendar", icon: Calendar03Icon },
 ];
 
