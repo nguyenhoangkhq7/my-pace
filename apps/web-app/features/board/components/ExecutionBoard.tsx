@@ -6,10 +6,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Calendar01Icon } from "@hugeicons/core-free-icons";
+import { Calendar01Icon, PlayIcon } from "@hugeicons/core-free-icons";
 import { StartMyDayModal } from "./StartMyDayModal";
+import { useFocusStore } from "@/features/focus/store/focus.store";
+import { useRouter } from "next/navigation";
 
 export function ExecutionBoard({ currentDate }: { currentDate: string }) {
+  const router = useRouter();
   const { 
     tasks, 
     dailyPlanToday, 
@@ -22,6 +25,7 @@ export function ExecutionBoard({ currentDate }: { currentDate: string }) {
     isStarted
   } = useBoardStore();
   
+  const { openFocusMode } = useFocusStore();
   const availableTimeData = useAvailableTimeStore(s => s.data);
   const [activeTab, setActiveTab] = useState("today");
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
@@ -203,6 +207,19 @@ export function ExecutionBoard({ currentDate }: { currentDate: string }) {
                     </div>
                     {renderTaskDetails(pt.task as any)}
                   </div>
+                  {isStarted && pt.task.status !== "Done" && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0 text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-full"
+                      onClick={() => {
+                        openFocusMode(pt.task.id, pt.id, pt.task.estimatedMinutes || 25);
+                        router.push('/flow');
+                      }}
+                    >
+                      <HugeiconsIcon icon={PlayIcon} size={16} />
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
@@ -224,6 +241,19 @@ export function ExecutionBoard({ currentDate }: { currentDate: string }) {
                     </div>
                     {renderTaskDetails(pt.task as any)}
                   </div>
+                  {isStarted && pt.task.status !== "Done" && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0 text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-full"
+                      onClick={() => {
+                        openFocusMode(pt.task.id, pt.id, pt.task.estimatedMinutes || 25);
+                        router.push('/flow');
+                      }}
+                    >
+                      <HugeiconsIcon icon={PlayIcon} size={16} />
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>

@@ -38,6 +38,7 @@ my-pace-app/
   - `nhk.auth`: Security and authentication configurations, controllers, services.
   - `nhk.user`: User profile, credentials, and settings controllers, services, repositories.
   - `nhk.calendar`: Fixed events management, daily check-ins, and available time calculations.
+  - `nhk.timeblock`: Task time boxing and scheduled time blocks controllers, services, repositories.
   - `nhk.mail`: Email sending features (configured for Gmail SMTP).
   - `nhk.common`: Common utilities and shared helpers.
 - **Database & JPA:** Spring Data JPA with PostgreSQL.
@@ -67,8 +68,21 @@ my-pace-app/
 
 ### Available Time & Daily Check-in
 - **Union-Interval Engine**: Recalculate available time using the union of overlapping fixed events to prevent duplicate reductions.
-- **Daily Check-in**: Recalculate workday availability starting from check-in time instead of default `wakeTime`. Stored in the `daily_checkins` database table.
-- **Frontend Hybrid Architecture**: State is managed globally via Zustand stores (`useAvailableTimeStore` and `useCalendarStore`) but exposed to UI components via custom hooks (`useAvailableTime` and `useCalendarEvents`). This keeps UI components presentational and modular while allowing cross-page planning features to access the cached state globally.
+- **+15m Buffer for Start Time**: 
+  - Planning today: `Start_Time = Current_Time + 15 minutes` (accounts for plan creation lag).
+  - Planning tomorrow: `Start_Time = Wake_Time + 15 minutes`.
+- **First Check-in Freeze**: The `checkinTime` is recorded automatically on the user's first app access and remains frozen once stored. Focus changes or page refreshes do not overwrite it.
+- **Auto Check-in Hook**: Next.js hook `useAppVisibility` runs silently, posting check-in times in the background when the app is first opened on a new day. It also recalculates remaining available time when window focus changes.
+- **Frontend Hybrid Architecture**: State is managed globally via Zustand stores (`useAvailableTimeStore` and `useCalendarStore`) but exposed to UI components via custom hooks.
+
+### Timeboxing & Scheduled Time Blocks
+- **Task Time Blocks Table (`task_time_blocks`)**: Tracks scheduled times for tasks. Single source of truth (do not store scheduled time directly in task or daily plan task tables).
+- **Auto-Schedule Algorithm**: Client-side TypeScript algorithm with time-splitting capabilities. 
+  - Priority: Eisenhower Matrix (Q1 > Q2 > Q3 > Q4) -> Due Date Ascending -> Estimated Duration Descending.
+  - Minimum chunk limit: Blocks must not be split below 30 minutes. Gaps below 30 minutes are ignored.
+  - Simulated Fixed Events: Manual time blocks are converted to occupied slots when running auto-schedule again to avoid overlapping.
+- **Cascade Unschedule**: Removing a scheduled time block from the calendar (via drag-to-unschedule or modal button) automatically clears all other chunks associated with that task ID.
+- **Execution Mode UI Locking (`isStarted` / `isConfirmed`)**: When `isConfirmed` is true, the user is locked into execution mode. Editing and cancelling plan buttons are hidden, and planning interactions (like adding tasks from backlog to today) are completely disabled.
 
 ### Frontend (Next.js / TypeScript)
 - Use standard functional components with TypeScript typings.
