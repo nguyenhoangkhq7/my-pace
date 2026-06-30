@@ -37,6 +37,7 @@ my-pace-app/
 - **Package Structure:** Base package `nhk`
   - `nhk.auth`: Security and authentication configurations, controllers, services.
   - `nhk.user`: User profile, credentials, and settings controllers, services, repositories.
+  - `nhk.calendar`: Fixed events management, daily check-ins, and available time calculations.
   - `nhk.mail`: Email sending features (configured for Gmail SMTP).
   - `nhk.common`: Common utilities and shared helpers.
 - **Database & JPA:** Spring Data JPA with PostgreSQL.
@@ -58,6 +59,16 @@ my-pace-app/
   - **Client-side**: Call `POST /api/auth/logout` first, then clear the Zustand store session (`clearSession`), and redirect the user to `/login`.
   - **Backend-side**: Expose `POST /api/auth/logout` which parses the token, calculates its remaining TTL, saves it in Redis with key prefix `blacklist:token:{token}`, and clears the `refreshToken` HTTP-only cookie.
   - **Filter interceptor**: The `JwtAuthFilter` must query Redis for `blacklist:token:{token}` and block any blacklisted requests before authentication details are set in the security context.
+
+### Fixed Events & Calendar
+- **FullCalendar Integration**: FullCalendar v6 (React wrapper) is used for rendering. Avoid rendering complex recurrence rules on the client. The backend expands recurring events into flat occurrence records within range requests.
+- **Exceptions Table**: Multi-occurrence modifications (editing "only this occurrence") must use a separate exceptions table (`fixed_event_exceptions`) mapping date overrides, avoiding cloning full series templates.
+- **Timezone Safety**: Any server-side calculations involving `LocalTime.now()` or time boundary adjustments must be resolved relative to the user's profile timezone (e.g., `LocalTime.now(ZoneId.of(user.getTimezone()))`) to prevent container-default UTC mismatches.
+
+### Available Time & Daily Check-in
+- **Union-Interval Engine**: Recalculate available time using the union of overlapping fixed events to prevent duplicate reductions.
+- **Daily Check-in**: Recalculate workday availability starting from check-in time instead of default `wakeTime`. Stored in the `daily_checkins` database table.
+- **Frontend Hybrid Architecture**: State is managed globally via Zustand stores (`useAvailableTimeStore` and `useCalendarStore`) but exposed to UI components via custom hooks (`useAvailableTime` and `useCalendarEvents`). This keeps UI components presentational and modular while allowing cross-page planning features to access the cached state globally.
 
 ### Frontend (Next.js / TypeScript)
 - Use standard functional components with TypeScript typings.
