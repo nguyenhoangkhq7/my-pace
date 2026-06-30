@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PlayIcon, PauseIcon, StopIcon, Tick01Icon } from "@hugeicons/core-free-icons";
 import { useRouter } from "next/navigation";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 
 export function FlowPomodoro() {
   const { 
@@ -19,8 +20,9 @@ export function FlowPomodoro() {
   } = useFocusStore();
 
   const { timeLeft, currentSession, totalSessions } = usePomodoro();
-  const { tasks, toggleTaskDone, updateTask, dailyPlanToday } = useBoardStore();
+  const { tasks, toggleTaskDone, updateTask, dailyPlanToday, reviewDailyPlan } = useBoardStore();
   const [isFinishing, setIsFinishing] = useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const router = useRouter();
 
   const activeTask = tasks.find(t => t.id === activeTaskId);
@@ -30,21 +32,84 @@ export function FlowPomodoro() {
     const allDone = !!dailyPlanToday?.tasks && dailyPlanToday.tasks.length > 0 && dailyPlanToday.tasks.every(t => t.task.status === "Done");
 
     if (allDone) {
+      const totalMinutes = dailyPlanToday.tasks.reduce((sum, pt) => sum + (pt.task.actualMinutes || 0), 0);
+      const totalEstimated = dailyPlanToday.tasks.reduce((sum, pt) => sum + (pt.task.estimatedMinutes || 0), 0);
+      const completedCount = dailyPlanToday.tasks.length;
+      const isReviewed = dailyPlanToday?.isReviewed || false;
+
       return (
         <div className="h-full flex flex-col items-center justify-center bg-slate-950 p-6 relative">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-green-900/20 via-slate-950 to-slate-950"></div>
           <div className="max-w-md text-center space-y-6 relative z-10">
-            <div className="w-24 h-24 bg-green-500/10 rounded-full flex items-center justify-center mx-auto text-5xl shadow-[0_0_50px_rgba(34,197,94,0.15)] border border-green-500/20 text-green-500">
-              🎉
-            </div>
-            <h2 className="text-2xl font-semibold text-slate-100">Kế hoạch hoàn tất!</h2>
-            <p className="text-slate-400">
-              Bạn đã hoàn thành tất cả công việc cho hôm nay. Tuyệt vời!
-            </p>
-            <Button onClick={() => router.push('/')} className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-full mt-4">
-              Hoàn tất ngày làm việc
-            </Button>
+            {isReviewed ? (
+              <>
+                <div className="w-24 h-24 bg-green-500/10 rounded-full flex items-center justify-center mx-auto text-5xl shadow-[0_0_50px_rgba(34,197,94,0.15)] border border-green-500/20 text-green-500">
+                  🎉
+                </div>
+                <h2 className="text-2xl font-semibold text-slate-100">Tuyệt vời!</h2>
+                <p className="text-slate-400">
+                  Bạn đã hoàn thành tất cả công việc cho hôm nay. Tuyệt vời!
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="w-24 h-24 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto text-5xl shadow-[0_0_50px_rgba(99,102,241,0.15)] border border-indigo-500/20 text-indigo-500">
+                  📊
+                </div>
+                <h2 className="text-2xl font-semibold text-slate-100">Kế hoạch hoàn tất!</h2>
+                <p className="text-slate-400">
+                  Hãy nhìn lại những gì bạn đã đạt được trong ngày hôm nay.
+                </p>
+                <Button onClick={() => setIsReviewModalOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-full mt-4">
+                  End-of-Day Review
+                </Button>
+              </>
+            )}
           </div>
+
+          <Dialog open={isReviewModalOpen} onOpenChange={setIsReviewModalOpen}>
+            <DialogContent className="sm:max-w-[500px] bg-slate-950 text-slate-50 border-slate-800">
+              <DialogHeader>
+                <DialogTitle className="text-2xl text-center">Tổng kết cuối ngày 🌟</DialogTitle>
+                <DialogDescription className="text-center pt-2 text-slate-400">
+                  Dưới đây là những gì bạn đã làm được hôm nay:
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="grid grid-cols-2 gap-4 py-6">
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 text-center">
+                  <div className="text-4xl font-bold text-indigo-400 mb-2">{completedCount}</div>
+                  <div className="text-sm text-slate-400 uppercase tracking-widest">Tasks Done</div>
+                </div>
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 text-center">
+                  <div className="text-4xl font-bold text-emerald-400 mb-2">{totalMinutes}</div>
+                  <div className="text-sm text-slate-400 uppercase tracking-widest">Focus Minutes</div>
+                </div>
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 text-center col-span-2">
+                  <div className="text-2xl font-bold text-amber-400 mb-2">{totalEstimated}m</div>
+                  <div className="text-sm text-slate-400 uppercase tracking-widest">Estimated Time Originally</div>
+                </div>
+              </div>
+
+              <div className="text-center text-sm text-slate-500 italic pb-4">
+                "Thành công không phải là đích đến, mà là chặng đường bạn đã nỗ lực mỗi ngày."
+              </div>
+
+              <DialogFooter className="flex justify-center sm:justify-center border-t border-slate-800 pt-4">
+                <Button 
+                  onClick={() => {
+                    setIsReviewModalOpen(false);
+                    if (dailyPlanToday) {
+                      reviewDailyPlan(dailyPlanToday.planDate);
+                    }
+                  }} 
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white w-full rounded-full"
+                >
+                  Tuyệt vời, Đóng lại
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       );
     }

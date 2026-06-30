@@ -147,4 +147,13 @@ public class DailyPlanService {
         }
         taskRepository.save(task);
     }
+
+    @Transactional
+    public DailyPlanDto reviewPlan(LocalDate planDate, UserDetailsCustom userDetails) {
+        DailyPlan plan = dailyPlanRepository.findByUserIdAndPlanDate(userDetails.user().getId(), planDate)
+                .orElseThrow(() -> new EntityNotFoundException("Daily plan not found"));
+        plan.setIsReviewed(true);
+        dailyPlanRepository.save(plan);
+        return getDailyPlan(planDate, userDetails);
+    }
 }

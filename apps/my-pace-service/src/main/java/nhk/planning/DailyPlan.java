@@ -40,4 +40,8 @@ public class DailyPlan {
 
     @Column(name = "confirmed_at")
     private OffsetDateTime confirmedAt;
+
+    @NotNull
+    @Column(name = "is_reviewed", nullable = false)
+    private Boolean isReviewed = false;
 }

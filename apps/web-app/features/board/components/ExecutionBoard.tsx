@@ -178,10 +178,8 @@ export function ExecutionBoard({ currentDate, tomorrowDate }: { currentDate: str
 
     if (activeTab === 'today' && currentPlan.tasks.length > 0 && currentPlan.tasks.every(t => t.task.status === "Done")) {
       return (
-        <div className="flex-1 flex flex-col items-center justify-center space-y-4">
-          <div className="w-20 h-20 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center text-4xl border border-green-500/20 shadow-[0_0_30px_rgba(34,197,94,0.15)]">🎉</div>
-          <h3 className="text-2xl font-bold text-slate-100">Tuyệt vời!</h3>
-          <p className="text-sm text-slate-400">Bạn đã hoàn thành xuất sắc tất cả công việc hôm nay.</p>
+        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-400">
+          <span className="text-lg">🎉 Bạn đã hoàn thành tất cả công việc cho hôm nay. Tuyệt vời!</span>
         </div>
       );
     }

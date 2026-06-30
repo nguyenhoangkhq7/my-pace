@@ -17,6 +17,7 @@ public class DailyPlanDto {
     private Integer availableMinutes;
     private Boolean isConfirmed;
     private OffsetDateTime confirmedAt;
+    private Boolean isReviewed;
     private List<DailyPlanTaskDto> tasks;
     private List<TaskTimeBlockDto> timeBlocks;
 }
