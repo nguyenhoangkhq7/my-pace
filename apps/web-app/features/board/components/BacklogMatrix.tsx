@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function BacklogMatrix() {
-  const { tasks, isPlanningMode, plannedTaskIds, addPlannedTaskLocally, removePlannedTaskLocally, createTask, updateTask } = useBoardStore();
+  const { tasks, isPlanningMode, plannedTaskIds, addPlannedTaskLocally, removePlannedTaskLocally, createTask, updateTask, isStarted } = useBoardStore();
   const { data: availableTimeData } = useAvailableTimeStore();
   const availableMinutes = availableTimeData?.availableMinutes || 0;
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -39,6 +39,10 @@ export function BacklogMatrix() {
 
   const handleTaskClick = (task: Task) => {
     if (isPlanningMode) {
+      if (isStarted) {
+        toast.error("Kế hoạch đã chốt và đang thực thi, không thể chỉnh sửa.");
+        return;
+      }
       if (plannedTaskIds.includes(task.id)) {
         removePlannedTaskLocally(task.id);
       } else {

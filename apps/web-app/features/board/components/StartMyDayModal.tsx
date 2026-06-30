@@ -19,13 +19,19 @@ interface StartMyDayModalProps {
 export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalProps) {
   const router = useRouter();
   const [isScheduling, setIsScheduling] = useState(false);
-  const { dailyPlanToday, saveTimeBlocks } = useBoardStore();
+  const { dailyPlanToday, saveTimeBlocks, confirmPlan } = useBoardStore();
   const { events: fixedEvents } = useCalendarStore();
   const user = useAuthStore((s) => s.user);
 
-  const handleManualSchedule = () => {
-    onClose();
-    router.push(`/calendar?view=day&date=${todayStr}`);
+  const handleManualSchedule = async () => {
+    try {
+      await confirmPlan(todayStr);
+      onClose();
+      router.push(`/calendar?view=day&date=${todayStr}`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Không thể chốt kế hoạch.");
+    }
   };
 
   const handleAutoSchedule = async () => {
@@ -52,6 +58,7 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
       }
 
       await saveTimeBlocks(blocks);
+      await confirmPlan(todayStr);
       toast.success("Đã tự động sắp xếp lịch thành công!");
       onClose();
       router.push(`/calendar?view=day&date=${todayStr}`);

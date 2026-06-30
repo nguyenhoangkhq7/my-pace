@@ -103,8 +103,9 @@ export function autoSchedule(
   const dayEnd = new Date(now);
   dayEnd.setHours(sh, sm, 0, 0);
 
-  // Start from the later of "now" or "wake time"
-  const windowStart = now > dayStart ? now : dayStart;
+  // Start from the later of "now" or "wake time", then add 15 minutes buffer
+  let windowStart = now > dayStart ? now : dayStart;
+  windowStart = new Date(windowStart.getTime() + 15 * 60 * 1000);
 
   if (windowStart >= dayEnd) return []; // No time left today
 
