@@ -3,29 +3,37 @@ import type { AvailableTimeData } from "../types";
 import { availableTimeApi } from "../api/available-time.api";
 
 interface AvailableTimeState {
-  data: AvailableTimeData | null;
+  dataToday: AvailableTimeData | null;
+  dataTomorrow: AvailableTimeData | null;
   isLoading: boolean;
-  setData: (data: AvailableTimeData | null) => void;
-  setIsLoading: (isLoading: boolean) => void;
-  fetchAvailableTime: (date: string) => Promise<void>;
+  fetchAvailableTimeToday: (date: string) => Promise<void>;
+  fetchAvailableTimeTomorrow: (date: string) => Promise<void>;
   checkin: (date: string, checkinTime?: string) => Promise<void>;
 }
 
 export const useAvailableTimeStore = create<AvailableTimeState>((set) => ({
-  data: null,
+  dataToday: null,
+  dataTomorrow: null,
   isLoading: false,
-  setData: (data) => set({ data }),
-  setIsLoading: (isLoading) => set({ isLoading }),
 
-  fetchAvailableTime: async (date) => {
+  fetchAvailableTimeToday: async (date) => {
     set({ isLoading: true });
     try {
       const res = await availableTimeApi.getAvailableTime(date);
-      set({ data: res.data });
+      set({ dataToday: res.data });
     } catch (err) {
-      console.error("Failed to fetch available time", err);
+      console.error("Failed to fetch available time today", err);
     } finally {
       set({ isLoading: false });
+    }
+  },
+
+  fetchAvailableTimeTomorrow: async (date) => {
+    try {
+      const res = await availableTimeApi.getAvailableTime(date);
+      set({ dataTomorrow: res.data });
+    } catch (err) {
+      console.error("Failed to fetch available time tomorrow", err);
     }
   },
 
@@ -33,7 +41,7 @@ export const useAvailableTimeStore = create<AvailableTimeState>((set) => ({
     set({ isLoading: true });
     try {
       const res = await availableTimeApi.checkin(date, checkinTime);
-      set({ data: res.data });
+      set({ dataToday: res.data });
     } catch (err) {
       console.error("Failed to record checkin", err);
     } finally {

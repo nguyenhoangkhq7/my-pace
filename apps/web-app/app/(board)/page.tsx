@@ -12,11 +12,17 @@ import { useAppVisibility } from "@/features/available-time";
 export default function DashboardPage() {
   useAppVisibility();
   const user = useAuthStore((s) => s.user);
-  const { fetchTasks, fetchDailyPlanToday, fetchCategories } = useBoardStore();
-  const { fetchAvailableTime } = useAvailableTimeStore();
+  const { fetchTasks, fetchDailyPlanToday, fetchDailyPlanTomorrow, fetchCategories } = useBoardStore();
+  const { fetchAvailableTimeToday, fetchAvailableTimeTomorrow } = useAvailableTimeStore();
   
   const [currentDate] = useState(() => {
     const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  });
+
+  const [tomorrowDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   });
 
@@ -25,9 +31,11 @@ export default function DashboardPage() {
       fetchCategories();
       fetchTasks();
       fetchDailyPlanToday(currentDate);
-      fetchAvailableTime(currentDate);
+      fetchDailyPlanTomorrow(tomorrowDate);
+      fetchAvailableTimeToday(currentDate);
+      fetchAvailableTimeTomorrow(tomorrowDate);
     }
-  }, [user, currentDate, fetchTasks, fetchDailyPlanToday, fetchAvailableTime, fetchCategories]);
+  }, [user, currentDate, tomorrowDate, fetchTasks, fetchDailyPlanToday, fetchDailyPlanTomorrow, fetchAvailableTimeToday, fetchAvailableTimeTomorrow, fetchCategories]);
 
   const showSetup = user && (!user.wakeTime || !user.sleepTime);
 
@@ -43,7 +51,7 @@ export default function DashboardPage() {
           <BacklogMatrix />
         </div>
         <div className="min-h-0 h-full">
-          <ExecutionBoard currentDate={currentDate} />
+          <ExecutionBoard currentDate={currentDate} tomorrowDate={tomorrowDate} />
         </div>
       </div>
     </div>

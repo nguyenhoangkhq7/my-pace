@@ -39,11 +39,12 @@ export function useCalendarEvents(options?: UseCalendarEventsOptions) {
       await fetchEvents(currentRange.start, currentRange.end);
     }
     
-    // Auto-refresh today's available time globally after calendar updates
+    // Auto-refresh today & tomorrow's available time globally after calendar updates
     const today = new Date().toISOString().split("T")[0];
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
     try {
-      const res = await availableTimeApi.getAvailableTime(today);
-      useAvailableTimeStore.getState().setData(res.data);
+      await useAvailableTimeStore.getState().fetchAvailableTimeToday(today);
+      await useAvailableTimeStore.getState().fetchAvailableTimeTomorrow(tomorrow);
     } catch (err) {
       console.error("Failed to auto-refresh available time", err);
     }
