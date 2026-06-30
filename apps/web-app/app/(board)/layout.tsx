@@ -3,6 +3,7 @@
 import React from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { useAuthStore } from "@/features/auth";
+import { OnboardingModal } from "@/features/auth";
 
 export default function AppLayout({
   children,
@@ -26,7 +27,8 @@ export default function AppLayout({
       <main className="flex min-w-0 flex-1 flex-col overflow-y-auto px-8 py-6 scrollbar-thin">
         {children}
       </main>
+      {/* Rendered here so it's accessible on all board routes via the Sidebar button */}
+      <OnboardingModal />
     </div>
   );
 }
-
