@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuthStore, InitialSetupForm, OnboardingModal } from "@/features/auth";
+import { useAuthStore, InitialSetupForm } from "@/features/auth";
 import { UserCircleIcon, Settings01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
@@ -102,7 +102,6 @@ export default function DashboardPage() {
           </p>
         </div>
       </div>
-      <OnboardingModal />
     </>
   );
 }

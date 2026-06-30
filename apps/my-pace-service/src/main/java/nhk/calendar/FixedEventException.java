@@ -1,0 +1,60 @@
+package nhk.calendar;
+
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.Generated;
+import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.generator.EventType;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.util.UUID;
+
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Entity
+@Table(name = "fixed_event_exceptions")
+public class FixedEventException {
+
+    @Id
+    @UuidGenerator
+    @Column(name = "id", nullable = false, updatable = false)
+    private UUID id;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "fixed_event_id", nullable = false)
+    private FixedEvent fixedEvent;
+
+    /** The specific date this exception applies to. */
+    @Column(name = "occurrence_date", nullable = false)
+    private LocalDate occurrenceDate;
+
+    /** If true, this occurrence is soft-deleted (hidden). */
+    @Builder.Default
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
+
+    @Column(name = "override_title", length = 255)
+    private String overrideTitle;
+
+    @Column(name = "override_notes")
+    private String overrideNotes;
+
+    @Column(name = "override_start_time")
+    private LocalTime overrideStartTime;
+
+    @Column(name = "override_end_time")
+    private LocalTime overrideEndTime;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    @Generated(event = EventType.INSERT)
+    private OffsetDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    @Generated(event = {EventType.INSERT, EventType.UPDATE})
+    private OffsetDateTime updatedAt;
+}
