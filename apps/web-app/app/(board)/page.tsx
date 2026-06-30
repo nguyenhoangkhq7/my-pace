@@ -10,7 +10,7 @@ import { useAvailableTimeStore } from "@/features/available-time/store/available
 
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
-  const { fetchTasks, fetchDailyPlanToday } = useBoardStore();
+  const { fetchTasks, fetchDailyPlanToday, fetchCategories } = useBoardStore();
   const { fetchAvailableTime } = useAvailableTimeStore();
   
   const [currentDate] = useState(() => {
@@ -20,11 +20,12 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (user) {
+      fetchCategories();
       fetchTasks();
       fetchDailyPlanToday(currentDate);
       fetchAvailableTime(currentDate);
     }
-  }, [user, currentDate, fetchTasks, fetchDailyPlanToday, fetchAvailableTime]);
+  }, [user, currentDate, fetchTasks, fetchDailyPlanToday, fetchAvailableTime, fetchCategories]);
 
   const showSetup = user && (!user.wakeTime || !user.sleepTime);
 
