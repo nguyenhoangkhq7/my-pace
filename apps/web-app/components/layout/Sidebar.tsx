@@ -12,6 +12,9 @@ import {
   Grid02Icon,
   Logout03Icon,
   UserCircleIcon,
+  Time02Icon,
+  ArrowLeft01Icon,
+  ArrowRight01Icon,
 } from "@hugeicons/core-free-icons";
 import { useAvailableTime } from "@/features/available-time";
 import { useEffect } from "react";
@@ -26,6 +29,7 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { id: "dashboard", label: "Plan your day", href: "/", icon: Grid02Icon },
   { id: "calendar", label: "Calendar", href: "/calendar", icon: Calendar03Icon },
+  { id: "flow", label: "Flow", href: "/flow", icon: Time02Icon },
 ];
 
 const HelpIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -52,6 +56,7 @@ export function Sidebar() {
   const router = useRouter();
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const today = new Date().toISOString().split("T")[0];
   const { data: availableTime, fetchAvailableTime, checkin, isLoading } = useAvailableTime();
@@ -77,22 +82,37 @@ export function Sidebar() {
 
   return (
     <>
-      <aside className="flex h-screen w-60 shrink-0 flex-col border-r border-border bg-sidebar px-4 py-6">
+      <aside className={cn(
+        "flex h-screen shrink-0 flex-col border-r border-border bg-sidebar py-6 transition-all duration-300",
+        isCollapsed ? "w-20 px-2" : "w-60 px-4"
+      )}>
         {/* ── Logo ─────────────────────────────────────────────────────── */}
-        <div className="mb-6 px-2">
-          <div className="text-xl font-bold tracking-wide text-foreground">
-            My<span className="text-primary">PACE</span>
-          </div>
-          <p className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-            Productive Calm
-          </p>
+        <div className={cn("mb-6 flex items-center", isCollapsed ? "justify-center px-1" : "justify-between px-2")}>
+          {!isCollapsed && (
+            <div>
+              <div className="text-xl font-bold tracking-wide text-foreground">
+                My<span className="text-primary">PACE</span>
+              </div>
+              <p className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                Productive Calm
+              </p>
+            </div>
+          )}
+          <button 
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+          >
+            <HugeiconsIcon icon={isCollapsed ? ArrowRight01Icon : ArrowLeft01Icon} size={18} />
+          </button>
         </div>
 
         {/* ── Navigation ── */}
         <nav className="flex flex-col gap-1">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-            Views
-          </span>
+          {!isCollapsed && (
+            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground px-2 mb-1">
+              Views
+            </span>
+          )}
 
           {NAV_ITEMS.map((item) => {
             const isActive = pathname === item.href ||
@@ -102,8 +122,10 @@ export function Sidebar() {
               <button
                 key={item.id}
                 onClick={() => router.push(item.href)}
+                title={isCollapsed ? item.label : undefined}
                 className={cn(
-                  "flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5",
+                  "flex w-full items-center rounded-xl py-2.5",
+                  isCollapsed ? "justify-center px-0" : "gap-2.5 px-3",
                   "text-sm font-medium",
                   "transition-all duration-150",
                   isActive
@@ -120,14 +142,14 @@ export function Sidebar() {
                     isActive ? "text-primary" : ""
                   )}
                 />
-                <span>{item.label}</span>
+                {!isCollapsed && <span>{item.label}</span>}
               </button>
             );
           })}
         </nav>
 
         {/* ── Start Time Label ── */}
-        {availableTime?.checkedIn && availableTime.checkinTime && (
+        {!isCollapsed && availableTime?.checkedIn && availableTime.checkinTime && (
           <div className="mt-6 pt-5 border-t border-border/50 px-2">
             <span className="text-xs text-muted-foreground block">
               Hôm nay bắt đầu lúc: <span className="font-semibold text-foreground">{availableTime.checkinTime}</span>
@@ -143,8 +165,10 @@ export function Sidebar() {
           {/* User Profile Button */}
           <button
             onClick={() => setIsProfileOpen(true)}
+            title={isCollapsed ? getShortName(user?.name) : undefined}
             className={cn(
-              "flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5",
+              "flex w-full items-center rounded-xl py-2.5",
+              isCollapsed ? "justify-center px-0" : "gap-2.5 px-3",
               "text-sm font-medium text-muted-foreground",
               "transition-all duration-150",
               "hover:bg-accent hover:text-foreground",
@@ -152,14 +176,16 @@ export function Sidebar() {
             )}
           >
             <HugeiconsIcon icon={UserCircleIcon} size={18} className="shrink-0" />
-            <span className="truncate">{getShortName(user?.name)}</span>
+            {!isCollapsed && <span className="truncate">{getShortName(user?.name)}</span>}
           </button>
 
           {/* Help Button */}
           <button
             onClick={() => startOnboarding(true)}
+            title={isCollapsed ? "Triết lý MyPACE" : undefined}
             className={cn(
-              "flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5",
+              "flex w-full items-center rounded-xl py-2.5",
+              isCollapsed ? "justify-center px-0" : "gap-2.5 px-3",
               "text-sm font-medium text-muted-foreground",
               "transition-all duration-150",
               "hover:bg-accent hover:text-foreground",
@@ -167,14 +193,16 @@ export function Sidebar() {
             )}
           >
             <HelpIcon className="w-[18px] h-[18px] shrink-0" />
-            <span>Triết lý MyPACE</span>
+            {!isCollapsed && <span>Triết lý MyPACE</span>}
           </button>
 
           {/* Logout Button */}
           <button
             onClick={handleLogout}
+            title={isCollapsed ? "Logout" : undefined}
             className={cn(
-              "flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5",
+              "flex w-full items-center rounded-xl py-2.5",
+              isCollapsed ? "justify-center px-0" : "gap-2.5 px-3",
               "text-sm font-medium text-muted-foreground",
               "transition-all duration-150",
               "hover:bg-rose-500/10 hover:text-rose-400",
@@ -182,7 +210,7 @@ export function Sidebar() {
             )}
           >
             <HugeiconsIcon icon={Logout03Icon} size={18} className="shrink-0" />
-            <span>Logout</span>
+            {!isCollapsed && <span>Logout</span>}
           </button>
         </div>
       </aside>

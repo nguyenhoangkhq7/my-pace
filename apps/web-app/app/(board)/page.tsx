@@ -38,7 +38,7 @@ export default function DashboardPage() {
   return (
     <div className="flex-1 flex flex-col w-full h-[calc(100vh-4rem)] p-4 sm:p-6 overflow-hidden">
       {/* 70/30 Split Pane */}
-      <div className="flex-1 grid grid-cols-[7fr_3fr] gap-6 min-h-0 w-full max-w-[1600px] mx-auto">
+      <div className="flex-1 grid grid-cols-[7fr_3fr] gap-6 min-h-0 w-full">
         <div className="min-h-0 h-full">
           <BacklogMatrix />
         </div>
