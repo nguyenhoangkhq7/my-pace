@@ -1,5 +1,5 @@
 import { fetchClient } from "@/lib/fetchClient";
-import { Task, DailyPlan, Category } from "../types";
+import { Task, DailyPlan, Category, TaskTimeBlock } from "../types";
 
 export const boardApi = {
   getTasks: () => fetchClient.get<Task[]>("tasks"),
@@ -14,4 +14,9 @@ export const boardApi = {
 
   getCategories: () => fetchClient.get<Category[]>("categories"),
   createCategory: (data: Partial<Category>) => fetchClient.post<Category, Partial<Category>>("categories", data),
+
+  getTimeBlocks: (planId: string) => fetchClient.get<TaskTimeBlock[]>(`time-blocks?planId=${planId}`),
+  saveTimeBlocks: (data: { dailyPlanId: string; blocks: Omit<TaskTimeBlock, 'id'>[] }) =>
+    fetchClient.post<TaskTimeBlock[], typeof data>("time-blocks/batch", data),
 };
+
