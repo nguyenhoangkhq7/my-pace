@@ -10,28 +10,46 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { useBoardStore } from "../store/board.store";
+import { useGoalStore } from "@/features/goal/store/goal.store";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Calendar01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
 
 interface TaskFormModalProps {
   isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (task: Partial<Task>) => void;
+  onOpenChange?: (open: boolean) => void;
+  onClose?: () => void;
+  onSubmit?: (task: Partial<Task>) => void;
   initialData?: Partial<Task>;
   requireDuration?: boolean;
+  prefilledGoalId?: string;
+  isUrgent?: boolean;
+  isImportant?: boolean;
 }
 
 const CATEGORY_COLORS = ["#64748b", "#ef4444", "#f97316", "#f59e0b", "#84cc16", "#22c55e", "#06b6d4", "#3b82f6", "#8b5cf6", "#d946ef", "#f43f5e"];
 
-export function TaskFormModal({ isOpen, onClose, onSubmit, initialData, requireDuration }: TaskFormModalProps) {
-  const { categories, createCategory } = useBoardStore();
+export function TaskFormModal({ 
+  isOpen, 
+  onOpenChange,
+  onClose, 
+  onSubmit, 
+  initialData, 
+  requireDuration,
+  prefilledGoalId,
+  isUrgent: prefilledUrgent,
+  isImportant: prefilledImportant
+}: TaskFormModalProps) {
+  const { categories, createCategory, createTask, updateTask } = useBoardStore();
+  const { goals, fetchGoals } = useGoalStore();
+  
   const [title, setTitle] = useState("");
   const [estimatedMinutes, setEstimatedMinutes] = useState("");
   const [notes, setNotes] = useState("");
   const [isUrgent, setIsUrgent] = useState(false);
   const [isImportant, setIsImportant] = useState(false);
   const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
+  const [goalId, setGoalId] = useState<string | undefined>(undefined);
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [error, setError] = useState("");
 
@@ -41,19 +59,29 @@ export function TaskFormModal({ isOpen, onClose, onSubmit, initialData, requireD
 
   useEffect(() => {
     if (isOpen) {
+      fetchGoals(); // Fetch goals to populate the dropdown
       setTitle(initialData?.title || "");
       setEstimatedMinutes(initialData?.estimatedMinutes ? String(initialData.estimatedMinutes) : "");
       setNotes(initialData?.notes || "");
-      setIsUrgent(initialData?.isUrgent || false);
-      setIsImportant(initialData?.isImportant || false);
+      
+      setIsUrgent(prefilledUrgent !== undefined ? prefilledUrgent : (initialData?.isUrgent || false));
+      setIsImportant(prefilledImportant !== undefined ? prefilledImportant : (initialData?.isImportant || false));
+      
       setCategoryId(initialData?.categoryId || undefined);
+      setGoalId(prefilledGoalId || initialData?.goalId || undefined);
       setDueDate(initialData?.dueDate ? new Date(initialData.dueDate) : undefined);
+      
       setError("");
       setIsCreatingCategory(false);
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, initialData, prefilledGoalId, prefilledUrgent, prefilledImportant, fetchGoals]);
 
-  const handleSubmit = () => {
+  const handleClose = () => {
+    if (onOpenChange) onOpenChange(false);
+    if (onClose) onClose();
+  };
+
+  const handleSubmitInternal = async () => {
     if (!title.trim()) {
       setError("Title is required.");
       return;
@@ -70,9 +98,25 @@ export function TaskFormModal({ isOpen, onClose, onSubmit, initialData, requireD
       isUrgent,
       isImportant,
       categoryId: categoryId === "none" ? undefined : categoryId,
+      goalId: goalId === "none" ? undefined : goalId,
       dueDate: dueDate ? format(dueDate, "yyyy-MM-dd") : undefined,
     };
-    onSubmit(taskData);
+
+    if (onSubmit) {
+      onSubmit(taskData);
+    } else {
+      // Default submission behavior if onSubmit is not provided
+      try {
+        if (initialData?.id) {
+          await updateTask(initialData.id, taskData);
+        } else {
+          await createTask(taskData);
+        }
+        handleClose();
+      } catch (err: any) {
+        setError(err.response?.data?.message || err.message);
+      }
+    }
   };
 
   const handleCreateCategory = async () => {
@@ -87,11 +131,13 @@ export function TaskFormModal({ isOpen, onClose, onSubmit, initialData, requireD
     }
   };
 
+  const inProgressGoals = goals.filter(g => g.status === "In Progress");
+
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[425px] bg-slate-950 text-slate-50 border-slate-800 max-h-[90vh] overflow-y-auto">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+      <DialogContent className="sm:max-w-[425px] bg-slate-950 text-slate-50 border-slate-800 max-h-[90vh] overflow-y-auto scrollbar-thin">
         <DialogHeader>
-          <DialogTitle>{initialData ? (requireDuration ? "Missing Information" : "Edit Task") : "Create Task"}</DialogTitle>
+          <DialogTitle>{initialData?.id ? (requireDuration ? "Missing Information" : "Edit Task") : "Create Task"}</DialogTitle>
           {requireDuration && (
             <DialogDescription className="text-slate-400">
               Please provide the estimated duration to add this task to your plan.
@@ -110,8 +156,9 @@ export function TaskFormModal({ isOpen, onClose, onSubmit, initialData, requireD
             />
           </div>
           
-          {!requireDuration && (
+          {!requireDuration && !prefilledGoalId && (
             <>
+              {/* Category Selection */}
               <div className="grid gap-2">
                 <Label>Category</Label>
                 {isCreatingCategory ? (
@@ -162,6 +209,32 @@ export function TaskFormModal({ isOpen, onClose, onSubmit, initialData, requireD
                 )}
               </div>
 
+              {/* Goal Selection */}
+              <div className="grid gap-2">
+                <Label>Goal</Label>
+                <Select 
+                  value={goalId || "none"} 
+                  onValueChange={(val) => setGoalId(val === "none" ? undefined : val)}
+                  disabled={!!prefilledGoalId}
+                >
+                  <SelectTrigger className="w-full bg-slate-900 border-slate-800">
+                    <SelectValue placeholder="Select Goal" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-950 border-slate-800 text-slate-200">
+                    <SelectItem value="none">No Goal</SelectItem>
+                    {inProgressGoals.map(g => (
+                      <SelectItem key={g.id} value={g.id}>
+                        {g.title}
+                      </SelectItem>
+                    ))}
+                    {/* Ensure prefilled goal shows even if it is not in the fetched list (rare) */}
+                    {prefilledGoalId && !inProgressGoals.find(g => g.id === prefilledGoalId) && (
+                      <SelectItem value={prefilledGoalId}>Goal được chọn</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="grid gap-2">
                 <Label>Due Date</Label>
                 <Popover>
@@ -202,28 +275,30 @@ export function TaskFormModal({ isOpen, onClose, onSubmit, initialData, requireD
             />
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex items-center space-x-2">
-              <input 
-                type="checkbox" 
-                id="urgent" 
-                checked={isUrgent}
-                onChange={(e) => setIsUrgent(e.target.checked)}
-                className="w-4 h-4 rounded border-slate-800 bg-slate-900 text-primary focus:ring-primary focus:ring-offset-slate-950"
-              />
-              <Label htmlFor="urgent" className="cursor-pointer">Urgent</Label>
+          {!requireDuration && !prefilledGoalId && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center space-x-2">
+                <input 
+                  type="checkbox" 
+                  id="urgent" 
+                  checked={isUrgent}
+                  onChange={(e) => setIsUrgent(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-800 bg-slate-900 text-primary focus:ring-primary focus:ring-offset-slate-950"
+                />
+                <Label htmlFor="urgent" className="cursor-pointer">Urgent</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input 
+                  type="checkbox" 
+                  id="important" 
+                  checked={isImportant}
+                  onChange={(e) => setIsImportant(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-800 bg-slate-900 text-primary focus:ring-primary focus:ring-offset-slate-950"
+                />
+                <Label htmlFor="important" className="cursor-pointer">Important</Label>
+              </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <input 
-                type="checkbox" 
-                id="important" 
-                checked={isImportant}
-                onChange={(e) => setIsImportant(e.target.checked)}
-                className="w-4 h-4 rounded border-slate-800 bg-slate-900 text-primary focus:ring-primary focus:ring-offset-slate-950"
-              />
-              <Label htmlFor="important" className="cursor-pointer">Important</Label>
-            </div>
-          </div>
+          )}
           
           <div className="grid gap-2">
             <Label htmlFor="notes">Notes</Label>
@@ -238,10 +313,10 @@ export function TaskFormModal({ isOpen, onClose, onSubmit, initialData, requireD
           {error && <p className="text-red-500 text-sm">{error}</p>}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} className="border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white">
+          <Button variant="outline" onClick={handleClose} className="border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white">
             Cancel
           </Button>
-          <Button onClick={handleSubmit} className="bg-primary hover:bg-primary/90 text-white">
+          <Button onClick={handleSubmitInternal} className="bg-primary hover:bg-primary/90 text-white">
             {requireDuration ? "Continue" : "Save"}
           </Button>
         </DialogFooter>

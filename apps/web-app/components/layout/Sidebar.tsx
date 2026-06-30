@@ -15,6 +15,7 @@ import {
   Time02Icon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
+  Target02Icon,
 } from "@hugeicons/core-free-icons";
 import { useAvailableTime } from "@/features/available-time";
 import { useEffect } from "react";
@@ -28,6 +29,7 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   { id: "dashboard", label: "Plan your day", href: "/", icon: Grid02Icon },
+  { id: "goals", label: "Goals", href: "/goals", icon: Target02Icon },
   { id: "calendar", label: "Calendar", href: "/calendar", icon: Calendar03Icon },
   { id: "flow", label: "Flow", href: "/flow", icon: Time02Icon },
 ];
