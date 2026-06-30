@@ -32,6 +32,7 @@ interface BoardState {
 
   savePlan: (date: string, availableMinutes: number, target: 'today' | 'tomorrow') => Promise<void>;
   confirmPlan: (date: string) => Promise<void>;
+  reviewDailyPlan: (date: string) => Promise<void>;
   cancelPlan: (date: string, target: 'today' | 'tomorrow') => Promise<void>;
   toggleTaskDone: (date: string, planTaskId: string) => Promise<void>;
   saveTimeBlocks: (blocks: Omit<TaskTimeBlock, 'id'>[]) => Promise<TaskTimeBlock[]>;
@@ -186,6 +187,18 @@ export const useBoardStore = create<BoardState>((set, get) => ({
       set({ dailyPlanToday: res.data, isStarted: true });
     } catch (err) {
       console.error("Failed to confirm plan", err);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  reviewDailyPlan: async (date) => {
+    set({ isLoading: true });
+    try {
+      const res = await boardApi.reviewPlan(date);
+      set({ dailyPlanToday: res.data });
+    } catch (err) {
+      console.error("Failed to review plan", err);
     } finally {
       set({ isLoading: false });
     }

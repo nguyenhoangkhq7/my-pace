@@ -44,6 +44,7 @@ export interface DailyPlan {
   planDate: string;
   availableMinutes: number;
   isConfirmed: boolean;
+  isReviewed: boolean;
   tasks: DailyPlanTask[];
   timeBlocks: TaskTimeBlock[];
 }

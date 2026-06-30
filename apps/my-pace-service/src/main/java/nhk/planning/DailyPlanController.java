@@ -41,6 +41,12 @@ public class DailyPlanController {
         dailyPlanService.cancelPlan(date, userDetails);
     }
 
+    @PostMapping("/{date}/review")
+    public DailyPlanDto reviewPlan(@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+                                   @AuthenticationPrincipal UserDetailsCustom userDetails) {
+        return dailyPlanService.reviewPlan(date, userDetails);
+    }
+
     @PutMapping("/tasks/{planTaskId}/toggle-done")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void toggleTaskDone(@PathVariable UUID planTaskId,
