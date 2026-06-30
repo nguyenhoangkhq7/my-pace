@@ -7,6 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Calendar01Icon } from "@hugeicons/core-free-icons";
+import { StartMyDayModal } from "./StartMyDayModal";
 
 export function ExecutionBoard({ currentDate }: { currentDate: string }) {
   const { 
@@ -23,6 +24,7 @@ export function ExecutionBoard({ currentDate }: { currentDate: string }) {
   const availableTimeData = useAvailableTimeStore(s => s.data);
   const [activeTab, setActiveTab] = useState("today");
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isStartMyDayOpen, setIsStartMyDayOpen] = useState(false);
 
   // Time calculations
   const baseAvailable = availableTimeData?.availableMinutes || 0;
@@ -225,7 +227,13 @@ export function ExecutionBoard({ currentDate }: { currentDate: string }) {
           )}
         </div>
 
-        <div className="pt-4 border-t border-slate-800 flex justify-center">
+        <div className="pt-4 border-t border-slate-800 flex flex-col gap-2">
+          <Button
+            onClick={() => setIsStartMyDayOpen(true)}
+            className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-2.5 rounded-xl shadow-lg shadow-primary/20 transition-all"
+          >
+            🚀 Start My Day
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => setIsCancelModalOpen(true)} className="text-red-400 hover:text-red-300 hover:bg-red-400/10">
             Cancel Plan
           </Button>
@@ -281,6 +289,12 @@ export function ExecutionBoard({ currentDate }: { currentDate: string }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <StartMyDayModal
+        isOpen={isStartMyDayOpen}
+        onClose={() => setIsStartMyDayOpen(false)}
+        todayStr={currentDate}
+      />
     </div>
   );
 }

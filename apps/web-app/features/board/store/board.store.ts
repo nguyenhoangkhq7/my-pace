@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { Task, DailyPlan, Category } from "../types";
+import { Task, DailyPlan, Category, TaskTimeBlock } from "../types";
 import { boardApi } from "../api/board.api";
 
 interface BoardState {
@@ -8,6 +8,7 @@ interface BoardState {
   selectedFilterId: string | null;
   dailyPlanToday: DailyPlan | null;
   dailyPlanTomorrow: DailyPlan | null;
+  timeBlocks: TaskTimeBlock[];
   isLoading: boolean;
   isPlanningMode: boolean;
   plannedTaskIds: string[];
@@ -18,17 +19,18 @@ interface BoardState {
   setFilter: (categoryId: string | null) => void;
   createTask: (task: Partial<Task>) => Promise<Task>;
   updateTask: (id: string, task: Partial<Task>) => Promise<Task>;
-  
+
   fetchDailyPlanToday: (date: string) => Promise<void>;
   fetchDailyPlanTomorrow: (date: string) => Promise<void>;
-  
+
   setPlanningMode: (isPlanning: boolean) => void;
   addPlannedTaskLocally: (task: Task) => void;
   removePlannedTaskLocally: (taskId: string) => void;
-  
+
   savePlan: (date: string, availableMinutes: number) => Promise<void>;
   cancelPlanToday: (date: string) => Promise<void>;
   toggleTaskDone: (date: string, planTaskId: string) => Promise<void>;
+  saveTimeBlocks: (blocks: Omit<TaskTimeBlock, 'id'>[]) => Promise<TaskTimeBlock[]>;
 }
 
 export const useBoardStore = create<BoardState>((set, get) => ({
@@ -37,6 +39,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   selectedFilterId: null,
   dailyPlanToday: null,
   dailyPlanTomorrow: null,
+  timeBlocks: [],
   isLoading: false,
   isPlanningMode: false,
   plannedTaskIds: [],
@@ -88,7 +91,11 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     set({ isLoading: true });
     try {
       const res = await boardApi.getDailyPlan(date);
-      set({ dailyPlanToday: res.data });
+      set({
+        dailyPlanToday: res.data,
+        // Sync timeBlocks from plan response so calendar page can use them
+        timeBlocks: res.data?.timeBlocks ?? [],
+      });
     } catch (err) {
       console.error(err);
     } finally {
@@ -164,7 +171,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     set({ isLoading: true });
     try {
       await boardApi.cancelPlan(date);
-      set({ dailyPlanToday: null, isPlanningMode: false, plannedTaskIds: [] });
+      set({ dailyPlanToday: null, isPlanningMode: false, plannedTaskIds: [], timeBlocks: [] });
       await get().fetchTasks();
     } catch (err) {
       console.error(err);
@@ -181,5 +188,13 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     } catch (err) {
       console.error(err);
     }
-  }
+  },
+
+  saveTimeBlocks: async (blocks) => {
+    const plan = get().dailyPlanToday;
+    if (!plan) throw new Error("No active plan");
+    const res = await boardApi.saveTimeBlocks({ dailyPlanId: plan.id, blocks });
+    set({ timeBlocks: res.data });
+    return res.data;
+  },
 }));

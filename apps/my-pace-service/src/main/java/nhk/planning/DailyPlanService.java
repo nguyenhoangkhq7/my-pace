@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import jakarta.persistence.EntityNotFoundException;
 import nhk.task.Task;
 import nhk.task.TaskRepository;
+import nhk.timeblock.TaskTimeBlockDto;
+import nhk.timeblock.TaskTimeBlockRepository;
 import nhk.user.UserDetailsCustom;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +23,7 @@ public class DailyPlanService {
     private final DailyPlanTaskRepository dailyPlanTaskRepository;
     private final TaskRepository taskRepository;
     private final DailyPlanMapper dailyPlanMapper;
+    private final TaskTimeBlockRepository timeBlockRepository;
 
     @Transactional(readOnly = true)
     public DailyPlanDto getDailyPlan(LocalDate planDate, UserDetailsCustom userDetails) {
@@ -29,6 +32,25 @@ public class DailyPlanService {
                     DailyPlanDto dto = dailyPlanMapper.toDto(plan);
                     List<DailyPlanTask> planTasks = dailyPlanTaskRepository.findByDailyPlanIdOrderBySortOrderAsc(plan.getId());
                     dto.setTasks(planTasks.stream().map(dailyPlanMapper::toDto).collect(Collectors.toList()));
+
+                    // Load time blocks for this plan
+                    List<TaskTimeBlockDto> timeBlocks = timeBlockRepository
+                            .findByDailyPlanIdOrderByStartTimeAsc(plan.getId())
+                            .stream()
+                            .map(tb -> {
+                                TaskTimeBlockDto tbDto = new TaskTimeBlockDto();
+                                tbDto.setId(tb.getId());
+                                tbDto.setTaskId(tb.getTaskId());
+                                tbDto.setDailyPlanId(tb.getDailyPlanId());
+                                tbDto.setStartTime(tb.getStartTime());
+                                tbDto.setEndTime(tb.getEndTime());
+                                tbDto.setPartIndex(tb.getPartIndex());
+                                tbDto.setTotalParts(tb.getTotalParts());
+                                return tbDto;
+                            })
+                            .collect(Collectors.toList());
+                    dto.setTimeBlocks(timeBlocks);
+
                     return dto;
                 })
                 .orElse(null);
@@ -86,6 +108,8 @@ public class DailyPlanService {
                             taskRepository.save(task);
                         }
                     }
+                    // Delete time blocks too
+                    timeBlockRepository.deleteByDailyPlanId(plan.getId());
                     dailyPlanTaskRepository.deleteByDailyPlanId(plan.getId());
                     dailyPlanRepository.delete(plan);
                 });

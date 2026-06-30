@@ -1,12 +1,13 @@
 package nhk.planning;
 
 import lombok.Data;
+import nhk.task.TaskDto;
+import nhk.timeblock.TaskTimeBlockDto;
+
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
-import nhk.task.TaskDto;
 
 @Data
 public class DailyPlanDto {
@@ -17,6 +18,7 @@ public class DailyPlanDto {
     private Boolean isConfirmed;
     private OffsetDateTime confirmedAt;
     private List<DailyPlanTaskDto> tasks;
+    private List<TaskTimeBlockDto> timeBlocks;
 }
 
 @Data
@@ -26,6 +28,4 @@ class DailyPlanTaskDto {
     private TaskDto task;
     private Boolean isMit;
     private Integer sortOrder;
-    private LocalTime scheduledStartTime;
-    private LocalTime scheduledEndTime;
 }
