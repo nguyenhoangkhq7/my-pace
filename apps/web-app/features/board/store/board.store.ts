@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { Task, DailyPlan, Category, TaskTimeBlock } from "../types";
 import { boardApi } from "../api/board.api";
+import { useGoalStore } from "@/features/goal/store/goal.store";
 
 interface BoardState {
   tasks: Task[];
@@ -212,6 +213,8 @@ export const useBoardStore = create<BoardState>((set, get) => ({
       await boardApi.toggleTaskDone(planTaskId);
       await get().fetchDailyPlanToday(date);
       await get().fetchTasks();
+      // Sync goals to update progress
+      useGoalStore.getState().fetchGoals().catch(console.error);
     } catch (err) {
       console.error(err);
     }
