@@ -3,6 +3,8 @@ package nhk.task;
 import lombok.RequiredArgsConstructor;
 import jakarta.persistence.EntityNotFoundException;
 import nhk.user.UserDetailsCustom;
+import nhk.goal.GoalRepository;
+import nhk.goal.Goal;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +17,7 @@ import java.util.stream.Collectors;
 public class TaskService {
     private final TaskRepository taskRepository;
     private final TaskMapper taskMapper;
+    private final GoalRepository goalRepository;
 
     @Transactional(readOnly = true)
     public List<TaskDto> getTasks(UserDetailsCustom userDetails) {
@@ -24,12 +27,24 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
 
+    private void validateGoal(UUID goalId, UUID userId) {
+        if (goalId != null) {
+            Goal goal = goalRepository.findById(goalId)
+                    .filter(g -> g.getUserId().equals(userId))
+                    .orElseThrow(() -> new EntityNotFoundException("Goal not found"));
+            if (!"In Progress".equals(goal.getStatus())) {
+                throw new IllegalArgumentException("Chỉ có thể liên kết Task với Goal đang In Progress.");
+            }
+        }
+    }
+
     @Transactional
     public TaskDto createTask(TaskCreateRequest request, UserDetailsCustom userDetails) {
+        validateGoal(request.getGoalId(), userDetails.user().getId());
+        
         Task task = taskMapper.toEntity(request);
         task.setUserId(userDetails.user().getId());
         
-
         if (task.getIsUrgent() == null) {
             task.setIsUrgent(false);
         }
@@ -44,6 +59,10 @@ public class TaskService {
 
     @Transactional
     public TaskDto updateTask(UUID taskId, TaskUpdateRequest request, UserDetailsCustom userDetails) {
+        if (request.getGoalId() != null) {
+            validateGoal(request.getGoalId(), userDetails.user().getId());
+        }
+
         Task task = taskRepository.findById(taskId)
                 .filter(t -> t.getUserId().equals(userDetails.user().getId()))
                 .orElseThrow(() -> new EntityNotFoundException("Task not found"));
