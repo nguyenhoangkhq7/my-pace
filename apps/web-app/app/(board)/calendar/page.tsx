@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { TaskTimeBlockModal } from "@/features/board/components/TaskTimeBlockModal";
 import type { Task } from "@/features/board/types";
+import { autoSchedule } from "@/features/board/utils/autoSchedule";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -79,6 +80,7 @@ export default function CalendarPage() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isBlockMit, setIsBlockMit] = useState(false);
   const [isUnscheduling, setIsUnscheduling] = useState(false);
+  const [isAutoScheduling, setIsAutoScheduling] = useState(false);
 
   // ── External Draggable setup ──────────────────────────────────────────────
   useEffect(() => {
@@ -288,6 +290,69 @@ export default function CalendarPage() {
     }
   }, [dailyPlanToday, timeBlocks, saveTimeBlocks]);
 
+  const handleAutoScheduleFromSidebar = useCallback(async () => {
+    if (!dailyPlanToday || !user?.wakeTime || !user?.sleepTime) {
+      toast.error("Không thể tự động lên lịch. Hãy kiểm tra lại cài đặt giờ thức/ngủ.");
+      return;
+    }
+
+    setIsAutoScheduling(true);
+    try {
+      const scheduledTaskIds = new Set(timeBlocks.map((b) => b.taskId));
+      const unscheduledPlanTasks = dailyPlanToday.tasks.filter((pt) => !scheduledTaskIds.has(pt.task.id));
+
+      if (unscheduledPlanTasks.length === 0) {
+        toast.info("Tất cả công việc đã được lên lịch!");
+        return;
+      }
+
+      // Gộp các fixedEvents và các timeBlocks hiện tại làm occupied slots (simulated fixed events)
+      const simulatedFixedEvents: FixedEventOccurrence[] = [
+        ...events.map((e) => ({
+          ...e,
+          startTime: e.startTime.substring(0, 5),
+          endTime: e.endTime.substring(0, 5),
+        })),
+        ...timeBlocks.map((tb) => {
+          const dateStr = tb.startTime.split("T")[0];
+          const sTime = tb.startTime.split("T")[1].substring(0, 5);
+          const eTime = tb.endTime.split("T")[1].substring(0, 5);
+          return {
+            id: `simulated-${tb.id || tb.taskId}`,
+            title: "Simulated Task Block",
+            occurrenceDate: dateStr,
+            startTime: sTime,
+            endTime: eTime,
+            recurrenceType: "NONE",
+          } as FixedEventOccurrence;
+        }),
+      ];
+
+      const newBlocks = autoSchedule(
+        unscheduledPlanTasks,
+        simulatedFixedEvents,
+        dailyPlanToday.id,
+        today,
+        user.wakeTime,
+        user.sleepTime
+      );
+
+      if (newBlocks.length === 0) {
+        toast.warning("Không còn đủ khoảng trống thời gian tối thiểu (30 phút) để xếp lịch tự động cho các task còn lại.");
+        return;
+      }
+
+      const existingCleanBlocks = timeBlocks.map(({ id, ...rest }) => rest as Omit<TaskTimeBlock, "id">);
+      await saveTimeBlocks([...existingCleanBlocks, ...newBlocks]);
+      toast.success("Đã tự động sắp xếp các công việc còn lại vào lịch!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Có lỗi xảy ra khi tự động xếp lịch.");
+    } finally {
+      setIsAutoScheduling(false);
+    }
+  }, [dailyPlanToday, timeBlocks, events, user, today, saveTimeBlocks]);
+
   const handleEventDragStop = useCallback((info: any) => {
     if (!info.event.extendedProps.isTimeBlock || !sidebarRef.current) return;
 
@@ -334,9 +399,21 @@ export default function CalendarPage() {
       <div className="flex gap-4 flex-1 min-h-0">
         {/* ── Todo Today Sidebar ── */}
         <div className="w-56 flex-shrink-0 flex flex-col rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-800">
-            <div className="text-xs font-bold text-slate-300 uppercase tracking-wider">Todo Today</div>
-            <div className="text-[10px] text-slate-500 mt-0.5">Kéo vào lịch để lên giờ</div>
+          <div className="px-4 py-3 border-b border-slate-800 flex flex-col gap-2">
+            <div>
+              <div className="text-xs font-bold text-slate-300 uppercase tracking-wider">Todo Today</div>
+              <div className="text-[10px] text-slate-500 mt-0.5">Kéo vào thả để xếp lịch</div>
+            </div>
+            {hasPlan && planTasks.some((pt) => !scheduledTaskIds.has(pt.task.id)) && (
+              <Button
+                size="sm"
+                onClick={handleAutoScheduleFromSidebar}
+                disabled={isAutoScheduling}
+                className="w-full bg-primary/20 border border-primary/30 hover:bg-primary/30 text-primary text-[11px] py-1 h-auto font-semibold rounded-lg"
+              >
+              {isAutoScheduling ? "Đang xếp lịch..." : "Tự động xếp lịch"}
+              </Button>
+            )}
           </div>
 
           {!hasPlan ? (
@@ -348,66 +425,69 @@ export default function CalendarPage() {
               </Button>
             </div>
           ) : (
-            <div ref={sidebarRef} className="flex-1 overflow-y-auto p-2.5 space-y-1.5">
-              {planTasks
-                .slice()
-                .sort((a, b) => (a.isMit === b.isMit ? 0 : a.isMit ? -1 : 1))
-                .map((pt) => {
-                  const isScheduled = scheduledTaskIds.has(pt.task.id);
-                  const catColor = pt.task.category?.color;
-                  // Determine card accent color: category > MIT purple > default
-                  const accentColor = catColor || (pt.isMit ? "#6366f1" : null);
+            <div ref={sidebarRef} className="flex-1 overflow-y-auto p-2.5 space-y-1.5 flex flex-col">
+              {(() => {
+                const unscheduledTasks = planTasks.filter((pt) => !scheduledTaskIds.has(pt.task.id));
 
+                if (unscheduledTasks.length === 0) {
                   return (
-                    <div
-                      key={pt.task.id}
-                      data-task-id={isScheduled ? undefined : pt.task.id}
-                      data-duration={pt.task.estimatedMinutes || 60}
-                      data-title={pt.task.title}
-                      data-mit={String(pt.isMit)}
-                      data-color={accentColor || ""}
-                      className={`p-2 rounded-lg border text-xs select-none transition-all ${
-                        isScheduled
-                          ? "opacity-40 bg-slate-900 border-slate-800 cursor-default"
-                          : "cursor-grab active:cursor-grabbing hover:brightness-110"
-                      }`}
-                      style={
-                        !isScheduled && accentColor
-                          ? {
-                              backgroundColor: `${accentColor}15`,
-                              borderColor: `${accentColor}40`,
-                              color: accentColor,
-                            }
-                          : !isScheduled
-                          ? undefined
-                          : undefined
-                      }
-                    >
-                      <div className="flex items-start gap-1">
-                        {pt.isMit && (
-                          <span
-                            className="text-[9px] px-1 py-0.5 rounded font-semibold shrink-0"
-                            style={
-                              accentColor
-                                ? { backgroundColor: `${accentColor}30`, color: accentColor }
-                                : { backgroundColor: "#6366f130", color: "#6366f1" }
-                            }
-                          >
-                            MIT
-                          </span>
-                        )}
-                        <span className="font-medium line-clamp-2 leading-snug">{pt.task.title}</span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-1 text-[10px] opacity-60">
-                        {pt.task.estimatedMinutes > 0 && <span>{pt.task.estimatedMinutes}m</span>}
-                        {pt.task.category && !pt.isMit && (
-                          <span style={{ color: catColor, opacity: 1 }}>{pt.task.category.name}</span>
-                        )}
-                        {isScheduled && <span className="text-green-400 opacity-100">✓ Đã lên lịch</span>}
-                      </div>
+                    <div className="flex-1 flex flex-col items-center justify-center p-4 text-center gap-3">
+                      <p className="text-xs font-semibold text-emerald-400">All todo are scheduled, let's do it.</p>
                     </div>
                   );
-                })}
+                }
+
+                return unscheduledTasks
+                  .slice()
+                  .sort((a, b) => (a.isMit === b.isMit ? 0 : a.isMit ? -1 : 1))
+                  .map((pt) => {
+                    const catColor = pt.task.category?.color;
+                    const accentColor = catColor || (pt.isMit ? "#6366f1" : null);
+
+                    return (
+                      <div
+                        key={pt.task.id}
+                        data-task-id={pt.task.id}
+                        data-duration={pt.task.estimatedMinutes || 60}
+                        data-title={pt.task.title}
+                        data-mit={String(pt.isMit)}
+                        data-color={accentColor || ""}
+                        className="p-2 rounded-lg border text-xs select-none transition-all cursor-grab active:cursor-grabbing hover:brightness-110"
+                        style={
+                          accentColor
+                            ? {
+                                backgroundColor: `${accentColor}15`,
+                                borderColor: `${accentColor}40`,
+                                color: accentColor,
+                              }
+                            : undefined
+                        }
+                      >
+                        <div className="flex items-start gap-1">
+                          {pt.isMit && (
+                            <span
+                              className="text-[9px] px-1 py-0.5 rounded font-semibold shrink-0"
+                              style={
+                                accentColor
+                                  ? { backgroundColor: `${accentColor}30`, color: accentColor }
+                                  : { backgroundColor: "#6366f130", color: "#6366f1" }
+                              }
+                            >
+                              MIT
+                            </span>
+                          )}
+                          <span className="font-medium line-clamp-2 leading-snug">{pt.task.title}</span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1 text-[10px] opacity-60">
+                          {pt.task.estimatedMinutes > 0 && <span>{pt.task.estimatedMinutes}m</span>}
+                          {pt.task.category && !pt.isMit && (
+                            <span style={{ color: catColor, opacity: 1 }}>{pt.task.category.name}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  });
+              })()}
             </div>
           )}
         </div>
