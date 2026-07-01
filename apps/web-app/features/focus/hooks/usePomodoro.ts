@@ -13,7 +13,7 @@ export function usePomodoro() {
     completeAllSessions
   } = useFocusStore();
 
-  const lastTickRef = useRef<number>(Date.now());
+  const lastTickRef = useRef<number>(0);
   const focusAudioRef = useRef<HTMLAudioElement | null>(null);
   const breakAudioRef = useRef<HTMLAudioElement | null>(null);
 
