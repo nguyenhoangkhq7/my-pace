@@ -111,7 +111,7 @@ export default function CalendarPage() {
       },
     });
     return () => draggableRef.current?.destroy();
-  }, [dailyPlanToday?.tasks.length]);
+  }, [dailyPlanToday?.tasks?.length]);
 
   // ── When task dropped from sidebar → save as new time block ──────────────
   const handleEventReceive = useCallback(async (info: EventReceiveArg) => {
