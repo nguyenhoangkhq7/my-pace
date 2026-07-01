@@ -39,7 +39,7 @@ export function FlowPomodoro() {
 
       return (
         <div className="h-full flex flex-col items-center justify-center bg-slate-950 p-6 relative">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-green-900/20 via-slate-950 to-slate-950"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-green-900/20 via-slate-950 to-slate-950 pointer-events-none"></div>
           <div className="max-w-md text-center space-y-6 relative z-10">
             {isReviewed ? (
               <>
@@ -116,7 +116,7 @@ export function FlowPomodoro() {
 
     return (
       <div className="h-full flex flex-col items-center justify-center bg-slate-950 p-6 relative">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-900/50 via-slate-950 to-slate-950"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-900/50 via-slate-950 to-slate-950 pointer-events-none"></div>
         <div className="max-w-md text-center space-y-6 relative z-10">
           <div className="w-24 h-24 bg-slate-900/50 rounded-full flex items-center justify-center mx-auto text-5xl shadow-[0_0_50px_rgba(0,0,0,0.5)] border border-slate-800/50 text-slate-600">
             ⏳

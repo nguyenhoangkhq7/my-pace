@@ -252,8 +252,21 @@ export default function CalendarPage() {
     }),
   ];
 
+  const [initialView, setInitialView] = useState("timeGridDay");
+  const [isCalendarMounted, setIsCalendarMounted] = useState(false);
+
+  // Restore saved view on mount
+  useEffect(() => {
+    const savedView = localStorage.getItem("myPaceCalendarView");
+    if (savedView) {
+      setInitialView(savedView);
+    }
+    setIsCalendarMounted(true);
+  }, []);
+
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleDatesSet = useCallback((arg: DatesSetArg) => {
+    localStorage.setItem("myPaceCalendarView", arg.view.type);
     fetchEvents(arg.startStr.split("T")[0], arg.endStr.split("T")[0]);
   }, [fetchEvents]);
 
@@ -504,10 +517,11 @@ export default function CalendarPage() {
           </div>
 
           <div className="flex-1 rounded-2xl border border-border bg-card overflow-hidden shadow-sm calendar-wrapper">
-            <FullCalendar
-              ref={calendarRef}
-              plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
-              initialView="timeGridDay"
+            {isCalendarMounted && (
+              <FullCalendar
+                ref={calendarRef}
+                plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
+                initialView={initialView}
               headerToolbar={{
                 left:   "prev,next today",
                 center: "title",
@@ -535,6 +549,7 @@ export default function CalendarPage() {
               eventDragStop={handleEventDragStop}
               height="100%"
             />
+            )}
           </div>
         </div>
       </div>
