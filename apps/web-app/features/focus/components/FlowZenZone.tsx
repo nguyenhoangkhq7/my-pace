@@ -14,7 +14,7 @@ export function FlowZenZone() {
     let videoId = null;
     let listId = null;
 
-    const vidRegExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const vidRegExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|live\/|watch\?v=|&v=)([^#&?]*).*/;
     const vidMatch = url.match(vidRegExp);
     if (vidMatch && vidMatch[2].length === 11) {
       videoId = vidMatch[2];
