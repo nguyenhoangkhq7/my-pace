@@ -60,6 +60,19 @@ export function Sidebar() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
+  useEffect(() => {
+    const saved = localStorage.getItem("sidebarCollapsed");
+    if (saved === "true") setIsCollapsed(true);
+  }, []);
+
+  const toggleCollapse = () => {
+    setIsCollapsed(prev => {
+      const next = !prev;
+      localStorage.setItem("sidebarCollapsed", String(next));
+      return next;
+    });
+  };
+
   const today = new Date().toISOString().split("T")[0];
   const { data: availableTime, fetchAvailableTime, checkin, isLoading } = useAvailableTime();
 
@@ -101,7 +114,7 @@ export function Sidebar() {
             </div>
           )}
           <button 
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={toggleCollapse}
             className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
           >
             <HugeiconsIcon icon={isCollapsed ? ArrowRight01Icon : ArrowLeft01Icon} size={18} />
