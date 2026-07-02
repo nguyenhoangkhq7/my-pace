@@ -13,9 +13,11 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { cn } from "@/lib/utils";
 
 export default function FlowPage() {
   const user = useAuthStore((s) => s.user);
+  const pomodoroState = useFocusStore((s) => s.pomodoroState);
   const { fetchTasks, fetchDailyPlanToday, fetchCategories, dailyPlanToday } = useBoardStore();
 
   const isLg = useMediaQuery("(min-width: 1024px)");
@@ -135,7 +137,7 @@ export default function FlowPage() {
         {isLg && (
           <>
             <ResizablePanel id="todo-panel" {...({ order: 1 } as any)} defaultSize={todoSize} minSize={10} collapsible={true} collapsedSize={0}>
-              <div className="h-full w-full overflow-y-auto">
+              <div className={cn("h-full w-full overflow-y-auto transition-opacity duration-700", pomodoroState === "focusing" ? "opacity-20 hover:opacity-100" : "")}>
                  <FlowTodoList />
               </div>
             </ResizablePanel>
@@ -157,7 +159,7 @@ export default function FlowPage() {
             <ResizableHandle withHandle />
             
             <ResizablePanel id="zenzone-panel" {...({ order: 3 } as any)} defaultSize={zenzoneSize} minSize={10} collapsible={true} collapsedSize={0}>
-              <div className="h-full w-full overflow-y-auto">
+              <div className={cn("h-full w-full overflow-y-auto transition-opacity duration-700", pomodoroState === "focusing" ? "opacity-20 hover:opacity-100" : "")}>
                  <FlowZenZone />
               </div>
             </ResizablePanel>

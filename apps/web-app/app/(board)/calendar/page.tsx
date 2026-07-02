@@ -81,6 +81,8 @@ export default function CalendarPage() {
   const [isBlockMit, setIsBlockMit] = useState(false);
   const [isUnscheduling, setIsUnscheduling] = useState(false);
   const [isAutoScheduling, setIsAutoScheduling] = useState(false);
+  
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // ── External Draggable setup ──────────────────────────────────────────────
   useEffect(() => {
@@ -111,7 +113,7 @@ export default function CalendarPage() {
       },
     });
     return () => draggableRef.current?.destroy();
-  }, [dailyPlanToday?.tasks?.length]);
+  }, [dailyPlanToday?.tasks?.length, timeBlocks.length, isSidebarOpen]);
 
   // ── When task dropped from sidebar → save as new time block ──────────────
   const handleEventReceive = useCallback(async (info: EventReceiveArg) => {
@@ -122,6 +124,13 @@ export default function CalendarPage() {
     const startTime = info.event.start;
     const endTime   = info.event.end;
     if (!startTime || !endTime) { info.revert(); return; }
+    
+    const droppedDate = new Date(startTime.getTime() - (startTime.getTimezoneOffset() * 60000)).toISOString().split("T")[0];
+    if (droppedDate !== dailyPlanToday.planDate) {
+      toast.error(`Chỉ được phép xếp lịch vào ngày của kế hoạch (${dailyPlanToday.planDate})`);
+      info.revert();
+      return;
+    }
 
     // Remove any existing blocks for this task (1 manual placement = 1 block)
     const existingBlocks = timeBlocks.filter((b) => b.taskId !== taskId)
@@ -168,6 +177,13 @@ export default function CalendarPage() {
     const startTime = info.event.start;
     const endTime   = info.event.end;
     if (!startTime || !endTime) { info.revert(); return; }
+    
+    const droppedDate = new Date(startTime.getTime() - (startTime.getTimezoneOffset() * 60000)).toISOString().split("T")[0];
+    if (droppedDate !== dailyPlanToday.planDate) {
+      toast.error(`Chỉ được phép dời lịch trong ngày của kế hoạch (${dailyPlanToday.planDate})`);
+      info.revert();
+      return;
+    }
 
     const updatedBlocks = timeBlocks.map((b) =>
       b.id === blockId
@@ -405,106 +421,16 @@ export default function CalendarPage() {
   // ── Render ─────────────────────────────────────────────────────────────────
   const planTasks = dailyPlanToday?.tasks || [];
   const hasPlan   = planTasks.length > 0;
+  
+  // Calculate scheduled tasks and unscheduled tasks for auto-hide
+  const unscheduledTasks = planTasks.filter((pt) => !scheduledTaskIds.has(pt.task.id));
+  const hasUnscheduled = hasPlan && unscheduledTasks.length > 0;
 
   return (
     <div className="flex flex-col gap-4 h-full">
 
       <div className="flex gap-4 flex-1 min-h-0">
-        {/* ── Todo Today Sidebar ── */}
-        <div className="w-56 flex-shrink-0 flex flex-col rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-800 flex flex-col gap-2">
-            <div>
-              <div className="text-xs font-bold text-slate-300 uppercase tracking-wider">Todo Today</div>
-              <div className="text-[10px] text-slate-500 mt-0.5">Kéo vào thả để xếp lịch</div>
-            </div>
-            {hasPlan && planTasks.some((pt) => !scheduledTaskIds.has(pt.task.id)) && (
-              <Button
-                size="sm"
-                onClick={handleAutoScheduleFromSidebar}
-                disabled={isAutoScheduling}
-                className="w-full bg-primary/20 border border-primary/30 hover:bg-primary/30 text-primary text-[11px] py-1 h-auto font-semibold rounded-lg"
-              >
-              {isAutoScheduling ? "Đang xếp lịch..." : "Tự động xếp lịch"}
-              </Button>
-            )}
-          </div>
-
-          {!hasPlan ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-4 text-center gap-3">
-              <div className="text-2xl">📝</div>
-              <p className="text-xs text-slate-400">Chưa có kế hoạch hôm nay</p>
-              <Button size="sm" className="bg-primary text-white text-xs" onClick={() => window.location.assign("/")}>
-                Plan your day
-              </Button>
-            </div>
-          ) : (
-            <div ref={sidebarRef} className="flex-1 overflow-y-auto p-2.5 space-y-1.5 flex flex-col">
-              {(() => {
-                const unscheduledTasks = planTasks.filter((pt) => !scheduledTaskIds.has(pt.task.id));
-
-                if (unscheduledTasks.length === 0) {
-                  return (
-                    <div className="flex-1 flex flex-col items-center justify-center p-4 text-center gap-3">
-                      <p className="text-xs font-semibold text-emerald-400">All todo are scheduled, let's do it.</p>
-                    </div>
-                  );
-                }
-
-                return unscheduledTasks
-                  .slice()
-                  .sort((a, b) => (a.isMit === b.isMit ? 0 : a.isMit ? -1 : 1))
-                  .map((pt) => {
-                    const catColor = pt.task.category?.color;
-                    const accentColor = catColor || (pt.isMit ? "#6366f1" : null);
-
-                    return (
-                      <div
-                        key={pt.task.id}
-                        data-task-id={pt.task.id}
-                        data-duration={pt.task.estimatedMinutes || 60}
-                        data-title={pt.task.title}
-                        data-mit={String(pt.isMit)}
-                        data-color={accentColor || ""}
-                        className="p-2 rounded-lg border text-xs select-none transition-all cursor-grab active:cursor-grabbing hover:brightness-110"
-                        style={
-                          accentColor
-                            ? {
-                                backgroundColor: `${accentColor}15`,
-                                borderColor: `${accentColor}40`,
-                                color: accentColor,
-                              }
-                            : undefined
-                        }
-                      >
-                        <div className="flex items-start gap-1">
-                          {pt.isMit && (
-                            <span
-                              className="text-[9px] px-1 py-0.5 rounded font-semibold shrink-0"
-                              style={
-                                accentColor
-                                  ? { backgroundColor: `${accentColor}30`, color: accentColor }
-                                  : { backgroundColor: "#6366f130", color: "#6366f1" }
-                              }
-                            >
-                              MIT
-                            </span>
-                          )}
-                          <span className="font-medium line-clamp-2 leading-snug">{pt.task.title}</span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1 text-[10px] opacity-60">
-                          {pt.task.estimatedMinutes > 0 && <span>{pt.task.estimatedMinutes}m</span>}
-                          {pt.task.category && !pt.isMit && (
-                            <span style={{ color: catColor, opacity: 1 }}>{pt.task.category.name}</span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  });
-              })()}
-            </div>
-          )}
-        </div>
-
+        
         {/* ── FullCalendar ── */}
         <div className="flex-1 flex flex-col min-h-0">
           <div className="flex items-center justify-between mb-3">
@@ -514,6 +440,16 @@ export default function CalendarPage() {
                 Kéo task từ sidebar → lịch · Click để tạo sự kiện · Kéo thả để di chuyển
               </p>
             </div>
+            {hasUnscheduled && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                className="text-xs h-8 border-slate-700 bg-slate-900/50 hover:bg-slate-800 text-slate-300 transition-colors"
+              >
+                {isSidebarOpen ? "Ẩn Todo" : "Hiện Todo"}
+              </Button>
+            )}
           </div>
 
           <div className="flex-1 rounded-2xl border border-border bg-card overflow-hidden shadow-sm calendar-wrapper">
@@ -552,6 +488,79 @@ export default function CalendarPage() {
             )}
           </div>
         </div>
+
+        {/* ── Todo Today Sidebar ── */}
+        {hasUnscheduled && isSidebarOpen && (
+          <div className="w-56 flex-shrink-0 flex flex-col rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-800 flex flex-col gap-2">
+              <div>
+                <div className="text-xs font-bold text-slate-300 uppercase tracking-wider">Todo Today</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">Kéo vào thả để xếp lịch</div>
+              </div>
+              <Button
+                size="sm"
+                onClick={handleAutoScheduleFromSidebar}
+                disabled={isAutoScheduling}
+                className="w-full bg-primary/20 border border-primary/30 hover:bg-primary/30 text-primary text-[11px] py-1 h-auto font-semibold rounded-lg"
+              >
+                {isAutoScheduling ? "Đang xếp lịch..." : "Tự động xếp lịch"}
+              </Button>
+            </div>
+
+            <div ref={sidebarRef} className="flex-1 overflow-y-auto p-2.5 space-y-1.5 flex flex-col">
+              {unscheduledTasks
+                .slice()
+                .sort((a, b) => (a.isMit === b.isMit ? 0 : a.isMit ? -1 : 1))
+                .map((pt) => {
+                  const catColor = pt.task.category?.color;
+                  const accentColor = catColor || (pt.isMit ? "#6366f1" : null);
+
+                  return (
+                    <div
+                      key={pt.task.id}
+                      data-task-id={pt.task.id}
+                      data-duration={pt.task.estimatedMinutes || 60}
+                      data-title={pt.task.title}
+                      data-mit={String(pt.isMit)}
+                      data-color={accentColor || ""}
+                      className="p-2 rounded-lg border text-xs select-none transition-all cursor-grab active:cursor-grabbing hover:brightness-110"
+                      style={
+                        accentColor
+                          ? {
+                              backgroundColor: `${accentColor}15`,
+                              borderColor: `${accentColor}40`,
+                              color: accentColor,
+                            }
+                          : undefined
+                      }
+                    >
+                      <div className="flex items-start gap-1">
+                        {pt.isMit && (
+                          <span
+                            className="text-[9px] px-1 py-0.5 rounded font-semibold shrink-0"
+                            style={
+                              accentColor
+                                ? { backgroundColor: `${accentColor}30`, color: accentColor }
+                                : { backgroundColor: "#6366f130", color: "#6366f1" }
+                            }
+                          >
+                            MIT
+                          </span>
+                        )}
+                        <span className="font-medium line-clamp-2 leading-snug">{pt.task.title}</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1 text-[10px] opacity-60">
+                        {pt.task.estimatedMinutes > 0 && <span>{pt.task.estimatedMinutes}m</span>}
+                        {pt.task.category && !pt.isMit && (
+                          <span style={{ color: catColor, opacity: 1 }}>{pt.task.category.name}</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        )}
       </div>
 
       <EventModal

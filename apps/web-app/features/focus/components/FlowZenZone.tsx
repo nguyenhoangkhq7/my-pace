@@ -65,11 +65,11 @@ export function FlowZenZone() {
     <div className="h-full flex flex-col border-l border-slate-800 bg-slate-950">
       {/* Top Half: YouTube Player */}
       <div className="p-4 border-b border-slate-800">
-        <div className="bg-black aspect-video rounded-xl overflow-hidden border border-slate-800 shadow-lg relative">
+        <div className="bg-black aspect-video rounded-xl overflow-hidden border border-slate-800 shadow-lg relative group cursor-pointer">
+          <div className="absolute inset-0 bg-black/40 group-hover:bg-transparent transition-colors duration-500 pointer-events-none z-10"></div>
           {embedUrl ? (
             <iframe
-              width="100%"
-              height="100%"
+              className="w-full h-full grayscale-[80%] group-hover:grayscale-0 transition-all duration-500"
               src={embedUrl}
               title="YouTube video player"
               frameBorder="0"
