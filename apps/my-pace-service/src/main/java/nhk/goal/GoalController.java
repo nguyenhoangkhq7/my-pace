@@ -42,11 +42,4 @@ public class GoalController {
         return ResponseEntity.ok().build();
     }
 
-    @PutMapping("/{goalId}/milestones/{milestoneId}")
-    public ResponseEntity<GoalDto> updateMilestone(@PathVariable UUID goalId,
-                                                   @PathVariable UUID milestoneId,
-                                                   @RequestBody MilestoneUpdateRequest request,
-                                                   @AuthenticationPrincipal UserDetailsCustom userDetails) {
-        return ResponseEntity.ok(goalService.updateMilestone(goalId, milestoneId, request.getIsDone() != null && request.getIsDone(), userDetails));
-    }
 }

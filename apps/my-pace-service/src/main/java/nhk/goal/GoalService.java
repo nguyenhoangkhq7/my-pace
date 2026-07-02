@@ -5,9 +5,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import nhk.user.UserDetailsCustom;
 import nhk.task.TaskRepository;
+import nhk.category.CategoryRepository;
 import jakarta.persistence.EntityNotFoundException;
-import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -18,85 +17,41 @@ public class GoalService {
     private final GoalRepository goalRepository;
     private final GoalMapper goalMapper;
     private final TaskRepository taskRepository;
+    private final CategoryRepository categoryRepository;
 
     @Transactional(readOnly = true)
     public List<GoalDto> getGoals(UserDetailsCustom userDetails) {
         return goalRepository.findByUserId(userDetails.user().getId())
                 .stream()
-                .map(goal -> {
-                    GoalDto dto = goalMapper.toDto(goal);
-                    calculateProgress(goal, dto);
-                    return dto;
-                })
+                .map(goalMapper::toDto)
                 .collect(Collectors.toList());
-    }
-
-    private void calculateProgress(Goal goal, GoalDto dto) {
-        if ("Binary".equals(goal.getGoalType())) {
-            dto.setTargetValue(1);
-            if ("Done".equals(goal.getStatus())) {
-                dto.setCurrentValue(1);
-                dto.setProgressPercentage(100.0);
-            } else {
-                dto.setCurrentValue(0);
-                dto.setProgressPercentage(0.0);
-            }
-        } else if ("Milestone".equals(goal.getGoalType())) {
-            if (goal.getMilestones() == null || goal.getMilestones().isEmpty()) {
-                dto.setTargetValue(0);
-                dto.setCurrentValue(0);
-                dto.setProgressPercentage(0.0);
-            } else {
-                int target = goal.getMilestones().size();
-                long current = goal.getMilestones().stream().filter(Milestone::getIsDone).count();
-                dto.setTargetValue(target);
-                dto.setCurrentValue((int) current);
-                dto.setProgressPercentage((double) current / target * 100.0);
-            }
-        } else if ("Time-boxed".equals(goal.getGoalType())) {
-            int current = taskRepository.sumActualMinutesByGoalId(goal.getId());
-            int target = 0;
-
-            if (goal.getTimeBoxedGoal() != null) {
-                int periodDays = goal.getTimeBoxedGoal().getPeriodDays() > 0 ? goal.getTimeBoxedGoal().getPeriodDays() : 1;
-                int targetMinutes = goal.getTimeBoxedGoal().getTargetMinutes();
-                
-                long totalDays = periodDays;
-                if (goal.getStartDate() != null && goal.getEndDate() != null) {
-                    totalDays = ChronoUnit.DAYS.between(goal.getStartDate(), goal.getEndDate()) + 1;
-                    if (totalDays <= 0) totalDays = periodDays;
-                }
-                target = (int) ((totalDays / (double) periodDays) * targetMinutes);
-            }
-
-            dto.setCurrentValue(current);
-            dto.setTargetValue(target);
-            if (target > 0) {
-                double pct = (double) current / target * 100.0;
-                dto.setProgressPercentage(Math.min(pct, 100.0)); // Cap at 100% just in case
-            } else {
-                dto.setProgressPercentage(0.0);
-            }
-        }
     }
 
     @Transactional
     public GoalDto createGoal(GoalCreateRequest request, UserDetailsCustom userDetails) {
+        if (request.getCategoryId() == null || !categoryRepository.existsById(request.getCategoryId())) {
+            throw new IllegalArgumentException("Invalid category ID");
+        }
+
         Goal goal = goalMapper.toEntity(request);
         goal.setUserId(userDetails.user().getId());
-        goal.setStatus("Freeze");
+        goal.setStatus(goal.getParentGoalId() != null ? "In Progress" : "Freeze");
+        goal.setProgressPct(0);
 
         if (goal.getTimeBoxedGoal() != null) {
             goal.getTimeBoxedGoal().setGoal(goal);
+            goal.getTimeBoxedGoal().setAccumulatedMinutes(0);
         }
-        if (goal.getMilestones() != null) {
-            goal.getMilestones().forEach(m -> m.setGoal(goal));
+        if (goal.getMilestoneGoal() != null) {
+            goal.getMilestoneGoal().setGoal(goal);
+            goal.getMilestoneGoal().setCurrentCount(0);
         }
 
         Goal saved = goalRepository.save(goal);
-        GoalDto dto = goalMapper.toDto(saved);
-        calculateProgress(saved, dto);
-        return dto;
+        if (saved.getParentGoalId() != null) {
+            recalculateBinaryGoalProgress(saved.getParentGoalId());
+        }
+        return goalMapper.toDto(saved);
     }
 
     @Transactional
@@ -104,6 +59,10 @@ public class GoalService {
         Goal goal = goalRepository.findById(goalId)
                 .filter(g -> g.getUserId().equals(userDetails.user().getId()))
                 .orElseThrow(() -> new EntityNotFoundException("Goal not found"));
+
+        if (request.getCategoryId() != null && !categoryRepository.existsById(request.getCategoryId())) {
+            throw new IllegalArgumentException("Invalid category ID");
+        }
 
         boolean wantsToActivate = "In Progress".equals(request.getStatus()) && !"In Progress".equals(goal.getStatus());
         if (wantsToActivate) {
@@ -118,36 +77,12 @@ public class GoalService {
         if (goal.getTimeBoxedGoal() != null) {
             goal.getTimeBoxedGoal().setGoal(goal);
         }
-        if (goal.getMilestones() != null) {
-            goal.getMilestones().forEach(m -> m.setGoal(goal));
+        if (goal.getMilestoneGoal() != null) {
+            goal.getMilestoneGoal().setGoal(goal);
         }
 
         Goal saved = goalRepository.save(goal);
-        GoalDto dto = goalMapper.toDto(saved);
-        calculateProgress(saved, dto);
-        return dto;
-    }
-
-    @Transactional
-    public GoalDto updateMilestone(UUID goalId, UUID milestoneId, boolean isDone, UserDetailsCustom userDetails) {
-        Goal goal = goalRepository.findById(goalId)
-                .filter(g -> g.getUserId().equals(userDetails.user().getId()))
-                .orElseThrow(() -> new EntityNotFoundException("Goal not found"));
-
-        if (goal.getMilestones() != null) {
-            goal.getMilestones().stream()
-                .filter(m -> m.getId().equals(milestoneId))
-                .findFirst()
-                .ifPresent(m -> {
-                    m.setIsDone(isDone);
-                    m.setDoneAt(isDone ? OffsetDateTime.now() : null);
-                });
-        }
-
-        Goal saved = goalRepository.save(goal);
-        GoalDto dto = goalMapper.toDto(saved);
-        calculateProgress(saved, dto);
-        return dto;
+        return goalMapper.toDto(saved);
     }
 
     @Transactional
@@ -161,6 +96,77 @@ public class GoalService {
             goalRepository.save(goal);
         } else {
             goalRepository.delete(goal);
+        }
+        
+        if (goal.getParentGoalId() != null) {
+            recalculateBinaryGoalProgress(goal.getParentGoalId());
+        }
+    }
+
+    @Transactional
+    public void updateGoalProgress(UUID goalId, int addedMinutes, int addedCount) {
+        if (goalId == null) return;
+
+        Goal goal = goalRepository.findById(goalId).orElse(null);
+        if (goal == null) return;
+
+        if ("Time-boxed".equals(goal.getGoalType()) && goal.getTimeBoxedGoal() != null) {
+            TimeBoxedGoal tb = goal.getTimeBoxedGoal();
+            tb.setAccumulatedMinutes(tb.getAccumulatedMinutes() + addedMinutes);
+            int target = tb.getTargetMinutes() * Math.max(tb.getPeriodDays(), 1); // Simple target calculation
+            if (target > 0) {
+                double pct = (double) tb.getAccumulatedMinutes() / target * 100.0;
+                goal.setProgressPct((int) Math.min(pct, 100.0));
+            }
+        } else if ("Milestone".equals(goal.getGoalType()) && goal.getMilestoneGoal() != null) {
+            MilestoneGoal mg = goal.getMilestoneGoal();
+            mg.setCurrentCount(mg.getCurrentCount() + addedCount);
+            if (mg.getTargetCount() > 0) {
+                double pct = (double) mg.getCurrentCount() / mg.getTargetCount() * 100.0;
+                goal.setProgressPct((int) Math.min(pct, 100.0));
+            }
+        }
+
+        if ("Binary".equals(goal.getGoalType())) {
+            recalculateBinaryGoalProgress(goal.getId());
+        } else {
+            if (goal.getProgressPct() >= 100) {
+                goal.setStatus("Done");
+            }
+            goalRepository.save(goal);
+        }
+
+        if (goal.getParentGoalId() != null) {
+            recalculateBinaryGoalProgress(goal.getParentGoalId());
+        }
+    }
+
+    private void recalculateBinaryGoalProgress(UUID parentGoalId) {
+        Goal parent = goalRepository.findById(parentGoalId).orElse(null);
+        if (parent == null || !"Binary".equals(parent.getGoalType())) return;
+
+        long totalTasks = taskRepository.countByGoalId(parentGoalId);
+        long totalSubgoals = goalRepository.countByParentGoalId(parentGoalId);
+        long totalItems = totalTasks + totalSubgoals;
+        
+        if (totalItems == 0) {
+            parent.setProgressPct(0);
+        } else {
+            long doneTasks = taskRepository.countByGoalIdAndStatus(parentGoalId, "Done");
+            long doneSubgoals = goalRepository.countByParentGoalIdAndStatus(parentGoalId, "Done");
+            long doneItems = doneTasks + doneSubgoals;
+            
+            parent.setProgressPct((int) ((double) doneItems / totalItems * 100));
+            if (parent.getProgressPct() >= 100) {
+                parent.setStatus("Done");
+            } else if ("Done".equals(parent.getStatus())) {
+                parent.setStatus("In Progress");
+            }
+        }
+        goalRepository.save(parent);
+
+        if (parent.getParentGoalId() != null) {
+            recalculateBinaryGoalProgress(parent.getParentGoalId());
         }
     }
 }

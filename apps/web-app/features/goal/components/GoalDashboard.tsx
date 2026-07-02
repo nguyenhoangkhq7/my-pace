@@ -14,11 +14,14 @@ import { toast } from "sonner";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Target02Icon, PlusSignIcon, InformationCircleIcon } from "@hugeicons/core-free-icons";
 
+import { GoalDetailModal } from "./GoalDetailModal";
+
 export function GoalDashboard() {
   const { goals, fetchGoals, isLoading, updateGoal, error } = useGoalStore();
   const [filterType, setFilterType] = useState<string>("ALL");
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
 
@@ -38,6 +41,7 @@ export function GoalDashboard() {
   }, [error]);
 
   const filteredGoals = goals.filter((g) => {
+    if (g.parentGoalId) return false;
     if (filterType !== "ALL" && g.goalType !== filterType) return false;
     if (filterStatus !== "ALL" && g.status !== filterStatus) return false;
     return true;
@@ -65,6 +69,11 @@ export function GoalDashboard() {
     } catch (e: any) {
       // Error is handled by store + useEffect
     }
+  };
+
+  const handleGoalClick = (goal: Goal) => {
+    setSelectedGoal(goal);
+    setIsDetailModalOpen(true);
   };
 
   return (
@@ -96,9 +105,9 @@ export function GoalDashboard() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">Tất cả loại</SelectItem>
-            <SelectItem value="Time-boxed">Time-boxed</SelectItem>
-            <SelectItem value="Milestone">Milestone</SelectItem>
-            <SelectItem value="Binary">Binary</SelectItem>
+            <SelectItem value="Binary">Dự án (Project)</SelectItem>
+            <SelectItem value="Time-boxed">Thói quen (Habit)</SelectItem>
+            <SelectItem value="Milestone">Mục tiêu (Target)</SelectItem>
           </SelectContent>
         </Select>
 
@@ -124,13 +133,14 @@ export function GoalDashboard() {
         ) : filteredGoals.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredGoals.map((goal) => (
-              <GoalCard 
-                key={goal.id} 
-                goal={goal} 
-                onEdit={handleEdit}
-                onStatusChange={handleStatusChange}
-                onCreateTask={handleCreateTaskFromGoal}
-              />
+              <div key={goal.id} className="cursor-pointer" onClick={() => handleGoalClick(goal)}>
+                <GoalCard 
+                  goal={goal} 
+                  onEdit={handleEdit}
+                  onStatusChange={handleStatusChange}
+                  onCreateTask={handleCreateTaskFromGoal}
+                />
+              </div>
             ))}
           </div>
         ) : (
@@ -140,6 +150,12 @@ export function GoalDashboard() {
           </div>
         )}
       </div>
+
+      <GoalDetailModal 
+        isOpen={isDetailModalOpen} 
+        onOpenChange={setIsDetailModalOpen} 
+        goal={selectedGoal} 
+      />
 
       <GoalFormModal 
         isOpen={isGoalModalOpen} 

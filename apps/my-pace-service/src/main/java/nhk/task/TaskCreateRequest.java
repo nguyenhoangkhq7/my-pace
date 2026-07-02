@@ -15,5 +15,6 @@ public class TaskCreateRequest {
     private Boolean isUrgent;
     private Boolean isImportant;
     private LocalDate dueDate;
+    private String status;
     private String notes;
 }

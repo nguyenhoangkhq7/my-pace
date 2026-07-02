@@ -16,9 +16,9 @@ public class GoalDto {
     private LocalDate endDate;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
+    private UUID categoryId;
+    private UUID parentGoalId;
+    private Integer progressPct;
     private TimeBoxedGoalDto timeBoxedGoal;
-    private List<MilestoneDto> milestones;
-    private Double progressPercentage;
-    private Integer currentValue;
-    private Integer targetValue;
+    private MilestoneGoalDto milestoneGoal;
 }

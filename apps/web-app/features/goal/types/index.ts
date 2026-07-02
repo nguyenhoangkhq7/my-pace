@@ -4,14 +4,12 @@ export type GoalStatus = 'Freeze' | 'In Progress' | 'Done' | 'Archived';
 export interface TimeBoxedGoal {
   targetMinutes: number;
   periodDays: number;
+  accumulatedMinutes?: number;
 }
 
-export interface Milestone {
-  id?: string;
-  title: string;
-  sortOrder: number;
-  isDone: boolean;
-  doneAt?: string;
+export interface MilestoneGoal {
+  targetCount: number;
+  currentCount?: number;
 }
 
 export interface Goal {
@@ -23,27 +21,31 @@ export interface Goal {
   endDate?: string;
   createdAt: string;
   updatedAt: string;
+  categoryId?: string;
+  parentGoalId?: string;
   timeBoxedGoal?: TimeBoxedGoal;
-  milestones?: Milestone[];
-  progressPercentage?: number;
-  currentValue?: number;
-  targetValue?: number;
+  milestoneGoal?: MilestoneGoal;
+  progressPct?: number;
 }
 
 export interface GoalCreateRequest {
   title: string;
   goalType: GoalType;
+  categoryId: string;
+  parentGoalId?: string;
   startDate?: string;
   endDate?: string;
   timeBoxedGoal?: TimeBoxedGoal;
-  milestones?: Milestone[];
+  milestoneGoal?: MilestoneGoal;
 }
 
 export interface GoalUpdateRequest {
   title?: string;
   status?: GoalStatus;
+  categoryId?: string;
+  parentGoalId?: string;
   startDate?: string;
   endDate?: string;
   timeBoxedGoal?: TimeBoxedGoal;
-  milestones?: Milestone[];
+  milestoneGoal?: MilestoneGoal;
 }

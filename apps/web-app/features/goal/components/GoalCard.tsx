@@ -4,7 +4,7 @@ import { Goal } from "../types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { PlayIcon, CheckmarkCircle01Icon, PauseIcon, Target02Icon, Archive02Icon, Edit01Icon } from "@hugeicons/core-free-icons";
+import { PlayIcon, CheckmarkCircle01Icon, PauseIcon, Target02Icon, Archive02Icon, Edit01Icon, Folder01Icon } from "@hugeicons/core-free-icons";
 import { useGoalStore } from "../store/goal.store";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
@@ -18,11 +18,10 @@ interface GoalCardProps {
 }
 
 export function GoalCard({ goal, onEdit, onStatusChange, onCreateTask }: GoalCardProps) {
-  const toggleMilestone = useGoalStore(s => s.toggleMilestone);
   const updateGoal = useGoalStore(s => s.updateGoal);
-  const prevPctRef = useRef(goal.progressPercentage || 0);
+  const prevPctRef = useRef(goal.progressPct || 0);
 
-  const pct = goal.progressPercentage || 0;
+  const pct = goal.progressPct || 0;
 
   useEffect(() => {
     if (pct >= 100 && prevPctRef.current < 100 && goal.status !== "Done") {
@@ -73,11 +72,12 @@ export function GoalCard({ goal, onEdit, onStatusChange, onCreateTask }: GoalCar
             {goal.status}
           </Badge>
           <Badge variant="secondary" className="bg-secondary/50 text-xs">
-            {goal.goalType}
+            {goal.goalType === 'Binary' && <HugeiconsIcon icon={Folder01Icon} size={12} className="mr-1 inline-block" />}
+            {goal.goalType === 'Binary' ? 'Dự án (Project)' : goal.goalType === 'Time-boxed' ? 'Thói quen (Habit)' : 'Mục tiêu (Target)'}
           </Badge>
         </div>
         <button
-          onClick={() => onEdit(goal)}
+          onClick={(e) => { e.stopPropagation(); onEdit(goal); }}
           className="text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
         >
           <HugeiconsIcon icon={Edit01Icon} size={16} />
@@ -109,7 +109,7 @@ export function GoalCard({ goal, onEdit, onStatusChange, onCreateTask }: GoalCar
             <div className="bg-primary h-2 rounded-full transition-all duration-500 ease-out" style={{ width: `${pct}%` }}></div>
           </div>
           <div className="text-[10px] text-right mb-3">
-            {goal.currentValue || 0} / {goal.targetValue || 0} phút
+            {goal.timeBoxedGoal.accumulatedMinutes || 0} phút
           </div>
           
           <div className="mt-auto bg-muted/30 p-2 rounded-md text-xs text-center border border-border/30">
@@ -118,66 +118,55 @@ export function GoalCard({ goal, onEdit, onStatusChange, onCreateTask }: GoalCar
         </div>
       )}
 
-      {goal.goalType === "Milestone" && goal.milestones && (
+      {goal.goalType === "Milestone" && goal.milestoneGoal && (
         <div className="text-sm text-muted-foreground mb-4 flex-1 flex flex-col">
           <div className="font-medium text-foreground mb-2 flex justify-between text-xs">
-            <span>Tiến độ ({goal.milestones.filter(m => m.isDone).length}/{goal.milestones.length})</span>
+            <span>Tiến độ ({goal.milestoneGoal.currentCount || 0}/{goal.milestoneGoal.targetCount})</span>
             <span className="text-primary font-bold">{Math.round(pct)}%</span>
           </div>
-          <div className="w-full bg-secondary/50 rounded-full h-2 mb-3 overflow-hidden">
-            <div className="bg-primary h-2 rounded-full transition-all duration-500 ease-out" style={{ width: `${pct}%` }}></div>
-          </div>
           
-          <ul className="space-y-2 mt-2">
-            {goal.milestones.slice(0, 4).map(m => (
-              <li key={m.id} className="flex items-center gap-2 text-xs">
-                <input 
-                  type="checkbox" 
-                  checked={m.isDone}
-                  onChange={(e) => m.id && toggleMilestone(goal.id, m.id, e.target.checked)}
-                  className="w-3.5 h-3.5 rounded border-slate-700 bg-slate-900 text-primary focus:ring-primary cursor-pointer accent-primary"
+          <div className="flex flex-wrap gap-1 mt-2 mb-3">
+            {Array.from({ length: Math.min(goal.milestoneGoal.targetCount, 20) }).map((_, i) => {
+              const isAchieved = i < (goal.milestoneGoal?.currentCount || 0);
+              return (
+                <div 
+                  key={i} 
+                  className={`w-4 h-4 rounded-sm border ${isAchieved ? 'bg-primary border-primary' : 'bg-secondary border-border'}`}
+                  title={isAchieved ? "Đã hoàn thành" : "Chưa hoàn thành"}
                 />
-                <span className={m.isDone ? "line-through opacity-50" : "text-foreground/90"}>{m.title}</span>
-              </li>
-            ))}
-            {goal.milestones.length > 4 && <li className="text-[10px] opacity-70 italic pl-5">+{goal.milestones.length - 4} cột mốc khác...</li>}
-          </ul>
+              )
+            })}
+            {goal.milestoneGoal.targetCount > 20 && (
+              <span className="text-[10px] opacity-70 ml-1 leading-4">+{goal.milestoneGoal.targetCount - 20}</span>
+            )}
+          </div>
         </div>
       )}
 
       {goal.goalType === "Binary" && (
         <div className="text-sm text-muted-foreground mb-4 flex-1 flex flex-col justify-center">
           <div className="font-medium text-foreground mb-2 flex justify-between text-xs">
-            <span>Trạng thái</span>
+            <span>Tiến độ dự án</span>
             <span className="text-primary font-bold">{Math.round(pct)}%</span>
           </div>
-          <div className="w-full bg-secondary/50 rounded-full h-2 mb-4 overflow-hidden">
+          <div className="w-full bg-secondary/50 rounded-full h-2 mb-4 overflow-hidden mt-auto">
             <div className="bg-primary h-2 rounded-full transition-all duration-500 ease-out" style={{ width: `${pct}%` }}></div>
           </div>
-          {goal.status !== "Done" && (
-            <Button 
-              variant="outline" 
-              size="sm"
-              className="w-full border-primary/40 hover:bg-primary/10 text-primary mt-auto"
-              onClick={() => updateGoal(goal.id, { status: "Done" })}
-            >
-              <HugeiconsIcon icon={CheckmarkCircle01Icon} size={16} className="mr-2" />
-              Mark as Achieved
-            </Button>
-          )}
         </div>
       )}
 
-      <div className="pt-3 flex gap-2 border-t border-border/50">
-        <Button 
-          variant="default" 
-          size="sm" 
-          className="w-full text-xs"
-          disabled={goal.status !== "In Progress"}
-          onClick={() => onCreateTask(goal.id)}
-        >
-          + Tạo Task từ Goal
-        </Button>
+      <div className="pt-3 flex gap-2 border-t border-border/50 mt-auto">
+        {goal.goalType !== 'Binary' && (
+          <Button 
+            variant="default" 
+            size="sm" 
+            className="w-full text-xs"
+            disabled={goal.status !== "In Progress"}
+            onClick={(e) => { e.stopPropagation(); onCreateTask(goal.id); }}
+          >
+            + Tạo Task từ Goal
+          </Button>
+        )}
       </div>
     </div>
   );

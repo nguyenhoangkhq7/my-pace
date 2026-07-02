@@ -26,6 +26,8 @@ interface TaskFormModalProps {
   prefilledGoalId?: string;
   isUrgent?: boolean;
   isImportant?: boolean;
+  planningTarget?: 'today' | 'tomorrow';
+  initialStatus?: 'Icebox' | 'Backlog' | 'Picked for Today' | 'Done';
 }
 
 const CATEGORY_COLORS = ["#64748b", "#ef4444", "#f97316", "#f59e0b", "#84cc16", "#22c55e", "#06b6d4", "#3b82f6", "#8b5cf6", "#d946ef", "#f43f5e"];
@@ -39,7 +41,9 @@ export function TaskFormModal({
   requireDuration,
   prefilledGoalId,
   isUrgent: prefilledUrgent,
-  isImportant: prefilledImportant
+  isImportant: prefilledImportant,
+  planningTarget,
+  initialStatus
 }: TaskFormModalProps) {
   const { tasks, categories, createCategory, createTask, updateTask, addChecklistItem, updateChecklistItem, deleteChecklistItem } = useBoardStore();
   const { goals, fetchGoals } = useGoalStore();
@@ -75,18 +79,49 @@ export function TaskFormModal({
       
       setCategoryId(initialData?.categoryId || undefined);
       setGoalId(prefilledGoalId || initialData?.goalId || undefined);
-      setDueDate(initialData?.dueDate ? new Date(initialData.dueDate) : undefined);
+      
+      if (initialData?.dueDate) {
+        setDueDate(new Date(initialData.dueDate));
+      } else if (planningTarget) {
+        const targetDate = new Date();
+        if (planningTarget === 'tomorrow') targetDate.setDate(targetDate.getDate() + 1);
+        setDueDate(targetDate);
+      } else if (prefilledGoalId && initialStatus !== 'Icebox' && !initialData?.id) {
+        // Default to today when creating from Habit/Target goal
+        setDueDate(new Date());
+      } else {
+        setDueDate(undefined);
+      }
       
       setError("");
       setIsCreatingCategory(false);
       setNewChecklistTitle("");
     }
-  }, [isOpen, initialData, prefilledGoalId, prefilledUrgent, prefilledImportant, fetchGoals]);
+  }, [isOpen, initialData, prefilledGoalId, prefilledUrgent, prefilledImportant, planningTarget, initialStatus, fetchGoals]);
 
   const handleClose = () => {
     if (onOpenChange) onOpenChange(false);
     if (onClose) onClose();
   };
+
+  useEffect(() => {
+    if (goalId && goalId !== "none") {
+      const selectedGoal = goals.find(g => g.id === goalId);
+      if (selectedGoal) {
+        if (selectedGoal.categoryId) {
+          setCategoryId(selectedGoal.categoryId);
+        }
+        if (!title && (selectedGoal.goalType === 'Time-boxed' || selectedGoal.goalType === 'Milestone')) {
+          setTitle(selectedGoal.title);
+        }
+        if (!estimatedMinutes && selectedGoal.goalType === 'Time-boxed' && selectedGoal.timeBoxedGoal) {
+          const target = selectedGoal.timeBoxedGoal.targetMinutes;
+          const period = Math.max(selectedGoal.timeBoxedGoal.periodDays, 1);
+          setEstimatedMinutes(String(Math.round(target / period)));
+        }
+      }
+    }
+  }, [goalId, goals]);
 
   const handleSubmitInternal = async () => {
     if (!title.trim()) {
@@ -108,6 +143,10 @@ export function TaskFormModal({
       goalId: goalId === "none" ? undefined : goalId,
       dueDate: dueDate ? format(dueDate, "yyyy-MM-dd") : undefined,
     };
+
+    if (initialStatus && !initialData?.id) {
+      taskData.status = initialStatus;
+    }
 
     if (onSubmit) {
       onSubmit(taskData);
@@ -282,7 +321,7 @@ export function TaskFormModal({
                   </div>
                 ) : (
                   <div className="flex space-x-2">
-                    <Select value={categoryId || "none"} onValueChange={(val) => setCategoryId(val === "none" ? undefined : val)}>
+                    <Select value={categoryId || "none"} onValueChange={(val) => setCategoryId(val === "none" ? undefined : val)} disabled={!!goalId && goalId !== "none"}>
                       <SelectTrigger className="w-full bg-slate-900 border-slate-800">
                         <SelectValue placeholder="Select Category" />
                       </SelectTrigger>
@@ -298,7 +337,7 @@ export function TaskFormModal({
                         ))}
                       </SelectContent>
                     </Select>
-                    <Button variant="outline" className="border-slate-800 bg-slate-900 text-slate-300 px-3 shrink-0" onClick={() => setIsCreatingCategory(true)}>
+                    <Button variant="outline" className="border-slate-800 bg-slate-900 text-slate-300 px-3 shrink-0" onClick={() => setIsCreatingCategory(true)} disabled={!!goalId && goalId !== "none"}>
                       <HugeiconsIcon icon={PlusSignIcon} className="w-4 h-4" />
                     </Button>
                   </div>
