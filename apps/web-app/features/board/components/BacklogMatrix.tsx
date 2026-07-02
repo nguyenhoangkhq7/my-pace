@@ -1,6 +1,7 @@
 import { useBoardStore } from "../store/board.store";
 import { Task } from "../types";
 import { TaskFormModal } from "./TaskFormModal";
+import { TaskCardChecklist } from "./TaskCardChecklist";
 import { useState, useEffect } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PlusSignIcon, FilterIcon, Calendar01Icon } from "@hugeicons/core-free-icons";
@@ -140,6 +141,8 @@ export function BacklogMatrix() {
                   <div className="text-xs text-slate-500">{task.estimatedMinutes}m</div>
                 )}
               </div>
+              
+              <TaskCardChecklist task={task} />
             </div>
           ))}
         </div>

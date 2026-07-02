@@ -4,6 +4,15 @@ export interface Category {
   color: string;
 }
 
+export interface TaskChecklistItem {
+  id: string;
+  taskId: string;
+  title: string;
+  isCompleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Task {
   id: string;
   userId: string;
@@ -18,6 +27,7 @@ export interface Task {
   status: 'Backlog' | 'Picked for Today' | 'Done';
   dueDate?: string;
   notes?: string;
+  checklists?: TaskChecklistItem[];
 }
 
 export interface TaskTimeBlock {

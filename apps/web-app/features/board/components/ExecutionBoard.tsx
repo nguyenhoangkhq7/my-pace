@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Calendar01Icon, PlayIcon, Tick01Icon } from "@hugeicons/core-free-icons";
 import { StartMyDayModal } from "./StartMyDayModal";
+import { TaskCardChecklist } from "./TaskCardChecklist";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import { useRouter } from "next/navigation";
 
@@ -88,6 +89,8 @@ export function ExecutionBoard({ currentDate, tomorrowDate }: { currentDate: str
       {task.estimatedMinutes > 0 && (
         <div className="text-xs text-slate-500">{task.estimatedMinutes}m</div>
       )}
+      
+      <TaskCardChecklist task={task} disabled={currentPlan?.isConfirmed} />
     </div>
   );
 

@@ -12,8 +12,9 @@ import { format } from "date-fns";
 import { useBoardStore } from "../store/board.store";
 import { useGoalStore } from "@/features/goal/store/goal.store";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Calendar01Icon } from "@hugeicons/core-free-icons";
+import { Calendar01Icon, Delete01Icon, PlusSignIcon, Tick01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface TaskFormModalProps {
   isOpen: boolean;
@@ -40,7 +41,7 @@ export function TaskFormModal({
   isUrgent: prefilledUrgent,
   isImportant: prefilledImportant
 }: TaskFormModalProps) {
-  const { categories, createCategory, createTask, updateTask } = useBoardStore();
+  const { tasks, categories, createCategory, createTask, updateTask, addChecklistItem, updateChecklistItem, deleteChecklistItem } = useBoardStore();
   const { goals, fetchGoals } = useGoalStore();
   
   const [title, setTitle] = useState("");
@@ -56,10 +57,15 @@ export function TaskFormModal({
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryColor, setNewCategoryColor] = useState(CATEGORY_COLORS[0]);
+  
+  const [newChecklistTitle, setNewChecklistTitle] = useState("");
+
+  const currentTask = initialData?.id ? tasks.find(t => t.id === initialData.id) : null;
+  const checklists = currentTask?.checklists || [];
 
   useEffect(() => {
     if (isOpen) {
-      fetchGoals(); // Fetch goals to populate the dropdown
+      fetchGoals();
       setTitle(initialData?.title || "");
       setEstimatedMinutes(initialData?.estimatedMinutes ? String(initialData.estimatedMinutes) : "");
       setNotes(initialData?.notes || "");
@@ -73,6 +79,7 @@ export function TaskFormModal({
       
       setError("");
       setIsCreatingCategory(false);
+      setNewChecklistTitle("");
     }
   }, [isOpen, initialData, prefilledGoalId, prefilledUrgent, prefilledImportant, fetchGoals]);
 
@@ -105,7 +112,6 @@ export function TaskFormModal({
     if (onSubmit) {
       onSubmit(taskData);
     } else {
-      // Default submission behavior if onSubmit is not provided
       try {
         if (initialData?.id) {
           await updateTask(initialData.id, taskData);
@@ -131,11 +137,27 @@ export function TaskFormModal({
     }
   };
 
+  const handleAddChecklist = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newChecklistTitle.trim() || !initialData?.id) return;
+    try {
+      await addChecklistItem(initialData.id, newChecklistTitle.trim());
+      setNewChecklistTitle("");
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const inProgressGoals = goals.filter(g => g.status === "In Progress");
+  const completedChecklistsCount = checklists.filter(c => c.isCompleted).length;
+  const progressPercentage = checklists.length > 0 ? Math.round((completedChecklistsCount / checklists.length) * 100) : 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="sm:max-w-[425px] bg-slate-950 text-slate-50 border-slate-800 max-h-[90vh] overflow-y-auto scrollbar-thin">
+      <DialogContent className={cn(
+        "bg-slate-950 text-slate-50 border-slate-800 max-h-[90vh] overflow-y-auto scrollbar-thin",
+        requireDuration ? "sm:max-w-[425px]" : "sm:max-w-[700px]"
+      )}>
         <DialogHeader>
           <DialogTitle>{initialData?.id ? (requireDuration ? "Missing Information" : "Edit Task") : "Create Task"}</DialogTitle>
           {requireDuration && (
@@ -144,21 +166,95 @@ export function TaskFormModal({
             </DialogDescription>
           )}
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="title">Title *</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="bg-slate-900 border-slate-800 focus:border-primary"
-              disabled={requireDuration && !!initialData?.title}
-            />
+        
+        <div className={cn("grid py-4", requireDuration ? "gap-4" : "grid-cols-1 md:grid-cols-3 gap-6")}>
+          {/* Main Content (Left Column) */}
+          <div className={cn("space-y-4", !requireDuration && "md:col-span-2")}>
+            <div className="grid gap-2">
+              <Label htmlFor="title">Title *</Label>
+              <Input
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="bg-slate-900 border-slate-800 focus:border-primary text-lg font-medium"
+                disabled={requireDuration && !!initialData?.title}
+              />
+            </div>
+            
+            {/* Checklist Section */}
+            {!requireDuration && initialData?.id && (
+              <div className="grid gap-3 pt-2">
+                <div className="flex items-center gap-2">
+                  <HugeiconsIcon icon={Tick01Icon} className="w-5 h-5 text-slate-400" />
+                  <h3 className="font-semibold">Việc cần làm</h3>
+                </div>
+                
+                {checklists.length > 0 && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs text-slate-400 w-8">{progressPercentage}%</span>
+                    <div className="flex-1 h-2 bg-slate-900 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-primary transition-all duration-300"
+                        style={{ width: `${progressPercentage}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  {checklists.map(item => (
+                    <div key={item.id} className="flex items-start gap-3 group">
+                      <Checkbox 
+                        checked={item.isCompleted} 
+                        onCheckedChange={(checked) => updateChecklistItem(initialData.id!, item.id, { isCompleted: checked === true })}
+                        className="mt-1 border-slate-700"
+                      />
+                      <span className={cn("flex-1 text-sm pt-0.5", item.isCompleted && "line-through text-slate-500")}>
+                        {item.title}
+                      </span>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-6 w-6 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-400"
+                        onClick={() => deleteChecklistItem(initialData.id!, item.id)}
+                      >
+                        <HugeiconsIcon icon={Delete01Icon} className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                <form onSubmit={handleAddChecklist} className="flex gap-2 mt-2">
+                  <Input 
+                    value={newChecklistTitle}
+                    onChange={e => setNewChecklistTitle(e.target.value)}
+                    placeholder="Thêm một mục"
+                    className="bg-slate-900 border-slate-800 h-9"
+                  />
+                  <Button type="submit" size="sm" variant="secondary" className="h-9">
+                    Thêm
+                  </Button>
+                </form>
+              </div>
+            )}
+            
+            {!requireDuration && (
+              <div className="grid gap-2 pt-2">
+                <Label htmlFor="notes">Notes</Label>
+                <Textarea
+                  id="notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="bg-slate-900 border-slate-800 focus:border-primary min-h-[100px]"
+                  placeholder="Add a more detailed description..."
+                />
+              </div>
+            )}
           </div>
-          
-          {!requireDuration && !prefilledGoalId && (
-            <>
-              {/* Category Selection */}
+
+          {/* Sidebar (Right Column) */}
+          <div className="space-y-4">
+            {!requireDuration && !prefilledGoalId && (
               <div className="grid gap-2">
                 <Label>Category</Label>
                 {isCreatingCategory ? (
@@ -180,8 +276,8 @@ export function TaskFormModal({
                       ))}
                     </div>
                     <div className="flex space-x-2 pt-1">
-                      <Button size="sm" variant="outline" className="h-7 text-xs border-slate-700 text-slate-300" onClick={() => setIsCreatingCategory(false)}>Cancel</Button>
-                      <Button size="sm" className="h-7 text-xs bg-primary text-white" onClick={handleCreateCategory}>Save Category</Button>
+                      <Button size="sm" variant="outline" className="h-7 text-xs border-slate-700 text-slate-300 w-full" onClick={() => setIsCreatingCategory(false)}>Cancel</Button>
+                      <Button size="sm" className="h-7 text-xs bg-primary text-white w-full" onClick={handleCreateCategory}>Save</Button>
                     </div>
                   </div>
                 ) : (
@@ -202,14 +298,15 @@ export function TaskFormModal({
                         ))}
                       </SelectContent>
                     </Select>
-                    <Button variant="outline" className="border-slate-800 bg-slate-900 text-slate-300 px-3" onClick={() => setIsCreatingCategory(true)}>
-                      +
+                    <Button variant="outline" className="border-slate-800 bg-slate-900 text-slate-300 px-3 shrink-0" onClick={() => setIsCreatingCategory(true)}>
+                      <HugeiconsIcon icon={PlusSignIcon} className="w-4 h-4" />
                     </Button>
                   </div>
                 )}
               </div>
+            )}
 
-              {/* Goal Selection */}
+            {!requireDuration && !prefilledGoalId && (
               <div className="grid gap-2">
                 <Label>Goal</Label>
                 <Select 
@@ -227,14 +324,15 @@ export function TaskFormModal({
                         {g.title}
                       </SelectItem>
                     ))}
-                    {/* Ensure prefilled goal shows even if it is not in the fetched list (rare) */}
                     {prefilledGoalId && !inProgressGoals.find(g => g.id === prefilledGoalId) && (
                       <SelectItem value={prefilledGoalId}>Goal được chọn</SelectItem>
                     )}
                   </SelectContent>
                 </Select>
               </div>
+            )}
 
+            {!requireDuration && (
               <div className="grid gap-2">
                 <Label>Due Date</Label>
                 <Popover>
@@ -260,59 +358,48 @@ export function TaskFormModal({
                   </PopoverContent>
                 </Popover>
               </div>
-            </>
-          )}
-          
-          <div className="grid gap-2">
-            <Label htmlFor="duration">Estimated Duration (minutes) {requireDuration && "*"}</Label>
-            <Input
-              id="duration"
-              type="number"
-              min="1"
-              value={estimatedMinutes}
-              onChange={(e) => setEstimatedMinutes(e.target.value)}
-              className="bg-slate-900 border-slate-800 focus:border-primary"
-            />
-          </div>
-          
-          {!requireDuration && !prefilledGoalId && (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center space-x-2">
-                <input 
-                  type="checkbox" 
-                  id="urgent" 
-                  checked={isUrgent}
-                  onChange={(e) => setIsUrgent(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-800 bg-slate-900 text-primary focus:ring-primary focus:ring-offset-slate-950"
-                />
-                <Label htmlFor="urgent" className="cursor-pointer">Urgent</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <input 
-                  type="checkbox" 
-                  id="important" 
-                  checked={isImportant}
-                  onChange={(e) => setIsImportant(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-800 bg-slate-900 text-primary focus:ring-primary focus:ring-offset-slate-950"
-                />
-                <Label htmlFor="important" className="cursor-pointer">Important</Label>
-              </div>
+            )}
+            
+            <div className="grid gap-2">
+              <Label htmlFor="duration">Duration (mins) {requireDuration && "*"}</Label>
+              <Input
+                id="duration"
+                type="number"
+                min="1"
+                value={estimatedMinutes}
+                onChange={(e) => setEstimatedMinutes(e.target.value)}
+                className="bg-slate-900 border-slate-800 focus:border-primary"
+              />
             </div>
-          )}
-          
-          <div className="grid gap-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="bg-slate-900 border-slate-800 focus:border-primary min-h-[80px]"
-            />
+            
+            {!requireDuration && !prefilledGoalId && (
+              <div className="grid grid-cols-2 gap-4 mt-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="urgent" 
+                    checked={isUrgent}
+                    onCheckedChange={(checked) => setIsUrgent(checked === true)}
+                    className="border-slate-700"
+                  />
+                  <Label htmlFor="urgent" className="cursor-pointer font-normal text-sm">Urgent</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="important" 
+                    checked={isImportant}
+                    onCheckedChange={(checked) => setIsImportant(checked === true)}
+                    className="border-slate-700"
+                  />
+                  <Label htmlFor="important" className="cursor-pointer font-normal text-sm">Important</Label>
+                </div>
+              </div>
+            )}
           </div>
           
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {error && <p className="text-red-500 text-sm md:col-span-3">{error}</p>}
         </div>
-        <DialogFooter>
+        
+        <DialogFooter className="mt-2">
           <Button variant="outline" onClick={handleClose} className="border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white">
             Cancel
           </Button>
