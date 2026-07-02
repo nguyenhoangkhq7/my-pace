@@ -14,7 +14,7 @@ public interface GoalMapper {
     TimeBoxedGoal toTimeBoxedGoalEntity(TimeBoxedGoalDto dto);
     void updateTimeBoxedGoalFromDto(TimeBoxedGoalDto dto, @MappingTarget TimeBoxedGoal timeBoxedGoal);
     
-    MilestoneDto toMilestoneDto(Milestone milestone);
-    Milestone toMilestoneEntity(MilestoneDto dto);
-    void updateMilestoneFromDto(MilestoneDto dto, @MappingTarget Milestone milestone);
+    MilestoneGoalDto toMilestoneGoalDto(MilestoneGoal milestoneGoal);
+    MilestoneGoal toMilestoneGoalEntity(MilestoneGoalDto dto);
+    void updateMilestoneGoalFromDto(MilestoneGoalDto dto, @MappingTarget MilestoneGoal milestoneGoal);
 }

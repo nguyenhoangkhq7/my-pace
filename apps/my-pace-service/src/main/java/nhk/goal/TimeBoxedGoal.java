@@ -27,4 +27,8 @@ public class TimeBoxedGoal {
     @NotNull
     @Column(name = "period_days", nullable = false)
     private Integer periodDays;
+
+    @NotNull
+    @Column(name = "accumulated_minutes", nullable = false)
+    private Integer accumulatedMinutes = 0;
 }

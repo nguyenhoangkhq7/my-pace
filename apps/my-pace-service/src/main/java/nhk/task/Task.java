@@ -80,6 +80,11 @@ public class Task {
     @Generated(event = {EventType.INSERT, EventType.UPDATE})
     private OffsetDateTime updatedAt;
 
+    @Size(max = 20)
+    @NotNull
+    @Column(name = "task_type", nullable = false)
+    private String taskType = "AD_HOC"; // 'AD_HOC', 'GOAL_SESSION'
+
     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TaskChecklistItem> checklists = new ArrayList<>();
 }

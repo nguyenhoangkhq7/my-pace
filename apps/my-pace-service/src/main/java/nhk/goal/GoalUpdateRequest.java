@@ -16,6 +16,9 @@ public class GoalUpdateRequest {
     private LocalDate startDate;
     private LocalDate endDate;
     
+    private java.util.UUID categoryId;
+    private java.util.UUID parentGoalId;
+    
     private TimeBoxedGoalDto timeBoxedGoal;
-    private List<MilestoneDto> milestones;
+    private MilestoneGoalDto milestoneGoal;
 }

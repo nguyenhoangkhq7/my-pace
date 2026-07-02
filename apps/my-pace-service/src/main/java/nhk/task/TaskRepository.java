@@ -17,4 +17,7 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
 
     @Query("SELECT COALESCE(SUM(t.actualMinutes), 0) FROM Task t WHERE t.goalId = :goalId AND t.status = 'Done'")
     Integer sumActualMinutesByGoalId(@Param("goalId") UUID goalId);
+
+    long countByGoalId(UUID goalId);
+    long countByGoalIdAndStatus(UUID goalId, String status);
 }
