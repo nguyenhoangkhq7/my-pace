@@ -4,9 +4,11 @@ import { usePomodoro } from "@/features/focus/hooks/usePomodoro";
 import { useBoardStore } from "@/features/board/store/board.store";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { PlayIcon, PauseIcon, StopIcon, Tick01Icon } from "@hugeicons/core-free-icons";
+import { PlayIcon, PauseIcon, StopIcon, Tick01Icon, CheckListIcon } from "@hugeicons/core-free-icons";
 import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 
 export function FlowPomodoro() {
   const { 
@@ -23,6 +25,7 @@ export function FlowPomodoro() {
   const { tasks, toggleTaskDone, updateTask, dailyPlanToday, reviewDailyPlan } = useBoardStore();
   const [isFinishing, setIsFinishing] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [isChecklistModalOpen, setIsChecklistModalOpen] = useState(false);
   const router = useRouter();
 
   const activeTask = tasks.find(t => t.id === activeTaskId);
@@ -204,12 +207,14 @@ export function FlowPomodoro() {
   };
 
   return (
-    <div className="h-full bg-slate-950 flex flex-col relative overflow-hidden items-center justify-center">
+    <div className="h-full bg-slate-950 flex flex-col relative overflow-hidden items-center justify-center p-4">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-950/20 via-slate-950 to-slate-950 pointer-events-none"></div>
 
-      <div className="w-full max-w-lg flex flex-col items-center relative z-10 px-4">
-        <div className="text-center mb-6">
-          <div className="text-slate-400 text-xs md:text-sm mb-2 font-medium uppercase tracking-widest">
+      <div className="w-full max-w-lg flex flex-col items-center relative z-10 px-4 h-full max-h-[90vh] py-6">
+        
+        {/* Top: Status, Title, Session */}
+        <div className="text-center mb-8 shrink-0">
+          <div className="text-indigo-400 text-xs md:text-sm mb-2 font-semibold uppercase tracking-widest">
             {getStatusText()}
           </div>
           <h2 className="text-2xl md:text-3xl font-bold text-slate-100 px-4 line-clamp-2 leading-snug">
@@ -220,8 +225,8 @@ export function FlowPomodoro() {
           </div>
         </div>
 
-        {/* Circular Timer */}
-        <div className="relative w-56 h-56 sm:w-64 sm:h-64 lg:w-72 lg:h-72 flex items-center justify-center transition-all">
+        {/* Middle: Circular Timer */}
+        <div className="relative w-56 h-56 sm:w-64 sm:h-64 lg:w-72 lg:h-72 flex items-center justify-center transition-all shrink-0">
           <svg
             viewBox={`0 0 ${radius * 2} ${radius * 2}`}
             className="transform -rotate-90 drop-shadow-2xl w-full h-full"
@@ -254,8 +259,8 @@ export function FlowPomodoro() {
           </div>
         </div>
 
-        {/* Controls */}
-        <div className="mt-8 flex items-center gap-6">
+        {/* Bottom: Controls */}
+        <div className="mt-8 flex items-center gap-6 shrink-0">
           <Button 
             variant="outline" 
             size="icon" 
@@ -287,23 +292,73 @@ export function FlowPomodoro() {
             variant="outline" 
             size="icon" 
             className="w-14 h-14 rounded-full border-green-500/30 text-green-500 hover:bg-green-500/10 hover:border-green-500/50 transition-colors"
-            onClick={handleComplete}
+            onClick={() => {
+              if (activeTask?.checklists && activeTask.checklists.length > 0) {
+                const allDone = activeTask.checklists.every(c => c.isCompleted);
+                if (allDone) {
+                  handleComplete();
+                } else {
+                  setIsChecklistModalOpen(true);
+                }
+              } else {
+                handleComplete();
+              }
+            }}
             disabled={isFinishing}
           >
-            <HugeiconsIcon icon={Tick01Icon} size={28} />
+            <HugeiconsIcon icon={activeTask?.checklists && activeTask.checklists.length > 0 ? CheckListIcon : Tick01Icon} size={28} />
           </Button>
         </div>
         
-        <div className="mt-6 text-sm text-slate-500 flex flex-col items-center gap-2">
+        <div className="mt-6 text-sm text-slate-500 flex flex-col items-center gap-2 shrink-0">
           <div className="bg-slate-900/80 px-4 py-1.5 rounded-full border border-slate-800/80 text-xs md:text-sm">
             Actual focused time: <span className="text-slate-300 font-medium">{Math.floor(accumulatedFocusTime / 60)} minutes</span>
           </div>
           {pomodoroState === "finished" && (
-            <div className="text-amber-500 mt-3 text-center max-w-sm bg-amber-500/10 px-4 py-3 rounded-xl border border-amber-500/20 font-medium text-xs md:text-sm">
+            <div className="text-amber-500 mt-2 text-center max-w-sm bg-amber-500/10 px-4 py-2 rounded-xl border border-amber-500/20 font-medium text-xs md:text-sm">
               Time is up! You can keep working, or mark the task as complete when you're ready.
             </div>
           )}
         </div>
+
+        {activeTask?.checklists && activeTask.checklists.length > 0 && (
+          <Dialog open={isChecklistModalOpen} onOpenChange={setIsChecklistModalOpen}>
+            <DialogContent className="sm:max-w-[425px] bg-slate-950 text-slate-50 border-slate-800">
+              <DialogHeader>
+                <DialogTitle>Hoàn thành Checklist</DialogTitle>
+                <DialogDescription className="text-slate-400">
+                  Hãy hoàn thành tất cả các bước trước khi đóng công việc này.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3 py-4 max-h-[60vh] overflow-y-auto scrollbar-thin">
+                {activeTask.checklists.map(item => (
+                  <div key={item.id} className="flex items-start gap-3 bg-slate-900/50 p-3 rounded-xl border border-slate-800/50 hover:bg-slate-800/80 transition-colors">
+                    <Checkbox 
+                      checked={item.isCompleted} 
+                      onCheckedChange={(checked) => {
+                         useBoardStore.getState().updateChecklistItem(activeTask.id, item.id, { isCompleted: checked === true });
+                         
+                         const allDone = (activeTask.checklists || []).every(c => 
+                           c.id === item.id ? checked === true : c.isCompleted
+                         );
+                         if (allDone) {
+                           setTimeout(() => {
+                             setIsChecklistModalOpen(false);
+                             handleComplete();
+                           }, 400);
+                         }
+                      }}
+                      className="mt-0.5 border-slate-600 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
+                    />
+                    <span className={cn("text-sm pt-0.5 leading-tight flex-1", item.isCompleted ? "line-through text-slate-500" : "text-slate-200")}>
+                      {item.title}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
     </div>
   );
