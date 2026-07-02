@@ -11,6 +11,8 @@ import org.hibernate.generator.EventType;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import java.util.List;
+import java.util.ArrayList;
 
 @Getter
 @Setter
@@ -77,4 +79,7 @@ public class Task {
     @Column(name = "updated_at", nullable = false)
     @Generated(event = {EventType.INSERT, EventType.UPDATE})
     private OffsetDateTime updatedAt;
+
+    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TaskChecklistItem> checklists = new ArrayList<>();
 }

@@ -78,4 +78,68 @@ public class TaskService {
                 .orElseThrow(() -> new EntityNotFoundException("Task not found"));
         taskRepository.delete(task);
     }
+
+    private Task getTaskByUserId(UUID taskId, UUID userId) {
+        return taskRepository.findById(taskId)
+                .filter(t -> t.getUserId().equals(userId))
+                .orElseThrow(() -> new EntityNotFoundException("Task not found"));
+    }
+
+    @Transactional
+    public TaskChecklistItemDto addChecklistItem(UUID taskId, TaskChecklistItemRequest request, UserDetailsCustom userDetails) {
+        Task task = getTaskByUserId(taskId, userDetails.user().getId());
+        
+        TaskChecklistItem item = new TaskChecklistItem();
+        item.setTaskId(task.getId());
+        item.setTask(task);
+        item.setTitle(request.getTitle());
+        item.setIsCompleted(request.getIsCompleted() != null ? request.getIsCompleted() : false);
+        
+        task.getChecklists().add(item);
+        taskRepository.save(task); // cascade will save item
+        
+        // Find the saved item to return
+        TaskChecklistItem savedItem = task.getChecklists().get(task.getChecklists().size() - 1);
+        return mapToChecklistItemDto(savedItem);
+    }
+
+    @Transactional
+    public TaskChecklistItemDto updateChecklistItem(UUID taskId, UUID checklistId, TaskChecklistItemRequest request, UserDetailsCustom userDetails) {
+        Task task = getTaskByUserId(taskId, userDetails.user().getId());
+        
+        TaskChecklistItem item = task.getChecklists().stream()
+                .filter(c -> c.getId().equals(checklistId))
+                .findFirst()
+                .orElseThrow(() -> new EntityNotFoundException("Checklist item not found"));
+                
+        if (request.getTitle() != null) {
+            item.setTitle(request.getTitle());
+        }
+        if (request.getIsCompleted() != null) {
+            item.setIsCompleted(request.getIsCompleted());
+        }
+        
+        taskRepository.save(task);
+        return mapToChecklistItemDto(item);
+    }
+
+    @Transactional
+    public void deleteChecklistItem(UUID taskId, UUID checklistId, UserDetailsCustom userDetails) {
+        Task task = getTaskByUserId(taskId, userDetails.user().getId());
+        boolean removed = task.getChecklists().removeIf(c -> c.getId().equals(checklistId));
+        if (removed) {
+            taskRepository.save(task);
+        }
+    }
+
+    private TaskChecklistItemDto mapToChecklistItemDto(TaskChecklistItem item) {
+        TaskChecklistItemDto dto = new TaskChecklistItemDto();
+        dto.setId(item.getId());
+        dto.setTaskId(item.getTaskId());
+        dto.setTitle(item.getTitle());
+        dto.setIsCompleted(item.getIsCompleted());
+        dto.setCreatedAt(item.getCreatedAt());
+        dto.setUpdatedAt(item.getUpdatedAt());
+        return dto;
+    }
 }

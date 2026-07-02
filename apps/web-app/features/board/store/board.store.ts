@@ -22,6 +22,10 @@ interface BoardState {
   setFilter: (categoryId: string | null) => void;
   createTask: (task: Partial<Task>) => Promise<Task>;
   updateTask: (id: string, task: Partial<Task>) => Promise<Task>;
+  
+  addChecklistItem: (taskId: string, title: string) => Promise<void>;
+  updateChecklistItem: (taskId: string, checklistId: string, data: { title?: string; isCompleted?: boolean }) => Promise<void>;
+  deleteChecklistItem: (taskId: string, checklistId: string) => Promise<void>;
 
   fetchDailyPlanToday: (date: string) => Promise<void>;
   fetchDailyPlanTomorrow: (date: string) => Promise<void>;
@@ -92,6 +96,36 @@ export const useBoardStore = create<BoardState>((set, get) => ({
       tasks: state.tasks.map(t => t.id === id ? res.data : t)
     }));
     return res.data;
+  },
+
+  addChecklistItem: async (taskId, title) => {
+    const res = await boardApi.addChecklistItem(taskId, { title });
+    set(state => ({
+      tasks: state.tasks.map(t => t.id === taskId ? {
+        ...t,
+        checklists: [...(t.checklists || []), res.data]
+      } : t)
+    }));
+  },
+
+  updateChecklistItem: async (taskId, checklistId, data) => {
+    const res = await boardApi.updateChecklistItem(taskId, checklistId, data);
+    set(state => ({
+      tasks: state.tasks.map(t => t.id === taskId ? {
+        ...t,
+        checklists: (t.checklists || []).map(c => c.id === checklistId ? res.data : c)
+      } : t)
+    }));
+  },
+
+  deleteChecklistItem: async (taskId, checklistId) => {
+    await boardApi.deleteChecklistItem(taskId, checklistId);
+    set(state => ({
+      tasks: state.tasks.map(t => t.id === taskId ? {
+        ...t,
+        checklists: (t.checklists || []).filter(c => c.id !== checklistId)
+      } : t)
+    }));
   },
 
   fetchDailyPlanToday: async (date) => {
