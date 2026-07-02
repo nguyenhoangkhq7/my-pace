@@ -6,4 +6,5 @@ import lombok.Data;
 public class TimeBoxedGoalDto {
     private Integer targetMinutes;
     private Integer periodDays;
+    private Integer accumulatedMinutes;
 }

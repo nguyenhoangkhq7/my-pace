@@ -51,29 +51,41 @@ export function GoalRulesModal({ isOpen, onOpenChange }: GoalRulesModalProps) {
             <h3 className="text-lg font-semibold text-primary border-b border-border pb-1">2. Ba Loại Goal (Goal Types)</h3>
             <div className="space-y-4">
               <div className="bg-muted/30 p-3 rounded-lg border border-border">
-                <h4 className="font-semibold text-foreground mb-1">⏳ Time-boxed (Đo bằng thời gian)</h4>
+                <h4 className="font-semibold text-foreground mb-1">📁 Dự án (Project)</h4>
                 <p className="text-muted-foreground">
-                  Thích hợp cho các mục tiêu thói quen hoặc tích luỹ giờ bay (ví dụ: Học IELTS, Tập Gym). 
-                  Bạn sẽ quy định: "Tôi muốn dành ra <strong>X phút</strong> trong vòng <strong>Y ngày</strong> cho mục tiêu này".
+                  Dự án có tính chất hoàn thành (ví dụ: Đi du học). Bạn có thể chia nhỏ Dự án thành tối đa <strong>3 cấp Dự án con (Subgoals)</strong>.
+                  Việc tạo <strong>Task</strong> được thực hiện trực tiếp, nhanh gọn bên trong Dự án (chỉ cần nhập Tên). Khi muốn tiến hành làm Task nào, bạn bấm nút <strong>"Đưa vào Backlog"</strong> để sẵn sàng lên kế hoạch. Tiến độ tự động tính theo % hoàn thành.
                 </p>
               </div>
 
               <div className="bg-muted/30 p-3 rounded-lg border border-border">
-                <h4 className="font-semibold text-foreground mb-1">🚩 Milestone (Đo bằng cột mốc)</h4>
+                <h4 className="font-semibold text-foreground mb-1">⏳ Thói quen (Habit)</h4>
                 <p className="text-muted-foreground">
-                  Dành cho các dự án lớn có thể chia nhỏ thành nhiều chặng. 
-                  Ví dụ mục tiêu "Làm Web App" có các mốc: 1. Làm UI, 2. Làm API, 3. Deploy. 
-                  Tiến độ sẽ được tính dựa trên số lượng cột mốc bạn check hoàn thành.
+                  Những hành động lặp đi lặp lại không có Task con (ví dụ: Học tiếng Anh). Bạn quy định: "Dành ra <strong>X phút</strong> trong vòng <strong>Y ngày</strong>". 
+                  Mỗi ngày, bạn tạo ra các "phiên làm việc" (Task thực thi) từ Backlog để hoàn thành mục tiêu thời gian này.
                 </p>
               </div>
 
               <div className="bg-muted/30 p-3 rounded-lg border border-border">
-                <h4 className="font-semibold text-foreground mb-1">🎯 Binary (Đạt hoặc Không)</h4>
+                <h4 className="font-semibold text-foreground mb-1">🎯 Mục tiêu (Target)</h4>
                 <p className="text-muted-foreground">
-                  Mục tiêu chỉ có 2 kết quả là Xong hoặc Chưa Xong, không cần theo dõi thời gian hay cột mốc trung gian.
-                  Ví dụ: "Thi đậu bằng lái xe B2". Bạn chỉ cần đổi trạng thái thành Done khi đã đạt.
+                  Cũng không có Task con, nhưng đo lường bằng số lượng (ví dụ: Gọi 50 cuộc khách hàng).
+                  Giống như Habit, bạn tạo ra các Task đơn lẻ mỗi ngày để hoàn thành mục tiêu số lượng.
                 </p>
               </div>
+            </div>
+          </div>
+
+          {/* Philosophy Section */}
+          <div className="space-y-3">
+            <h3 className="text-lg font-semibold text-primary border-b border-border pb-1">3. Triết Lý Thực Thi (Bottom-Up)</h3>
+            <div className="bg-primary/10 p-4 rounded-lg border border-primary/20 text-sm text-primary-foreground">
+              <p className="mb-2"><strong>Daily Plan (Kế hoạch ngày) là trung tâm của mọi hành động.</strong></p>
+              <p>Tiến độ của Dự án hay Mục tiêu đều được tích lũy từ chính những Task bạn hoàn thành mỗi ngày.</p>
+              <ul className="list-disc pl-5 mt-2 space-y-1 text-muted-foreground">
+                <li><strong>Với Dự án:</strong> Liệt kê các Task cần làm bên trong modal Dự án, sau đó "Đưa vào Backlog". Trong trang Lên Kế Hoạch, lấy Task từ Backlog Cá Nhân để xếp vào hôm nay.</li>
+                <li><strong>Với Habit / Target:</strong> Không cần liệt kê Task từ trước. Tại trang Lên Kế Hoạch, mở tab "Dự án" (Goal Backlog) và bấm nút "Tạo Task cho Hôm nay" để sinh ra một phiên làm việc.</li>
+              </ul>
             </div>
           </div>
         </div>

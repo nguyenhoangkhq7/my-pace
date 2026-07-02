@@ -56,10 +56,23 @@ public class Goal {
     @Column(name = "updated_at", nullable = false)
     @Generated(event = {EventType.INSERT, EventType.UPDATE})
     private OffsetDateTime updatedAt;
+    @Column(name = "category_id")
+    private UUID categoryId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", insertable = false, updatable = false)
+    private nhk.category.Category category;
+
+    @Column(name = "parent_goal_id")
+    private UUID parentGoalId;
+
+    @NotNull
+    @Column(name = "progress_pct", nullable = false)
+    private Integer progressPct = 0;
     
     @OneToOne(mappedBy = "goal", cascade = CascadeType.ALL, orphanRemoval = true)
     private TimeBoxedGoal timeBoxedGoal;
     
-    @OneToMany(mappedBy = "goal", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Milestone> milestones = new ArrayList<>();
+    @OneToOne(mappedBy = "goal", cascade = CascadeType.ALL, orphanRemoval = true)
+    private MilestoneGoal milestoneGoal;
 }

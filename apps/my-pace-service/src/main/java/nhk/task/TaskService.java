@@ -18,6 +18,7 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final TaskMapper taskMapper;
     private final GoalRepository goalRepository;
+    private final nhk.goal.GoalService goalService;
 
     @Transactional(readOnly = true)
     public List<TaskDto> getTasks(UserDetailsCustom userDetails) {
@@ -32,8 +33,8 @@ public class TaskService {
             Goal goal = goalRepository.findById(goalId)
                     .filter(g -> g.getUserId().equals(userId))
                     .orElseThrow(() -> new EntityNotFoundException("Goal not found"));
-            if (!"In Progress".equals(goal.getStatus())) {
-                throw new IllegalArgumentException("Chỉ có thể liên kết Task với Goal đang In Progress.");
+            if ("Freeze".equals(goal.getStatus()) || "Archived".equals(goal.getStatus())) {
+                throw new IllegalArgumentException("Chỉ có thể liên kết Task với Goal đang In Progress hoặc Done.");
             }
         }
     }
@@ -51,9 +52,16 @@ public class TaskService {
         if (task.getIsImportant() == null) {
             task.setIsImportant(false);
         }
-        task.setStatus("Backlog");
+        if (request.getStatus() != null && !request.getStatus().trim().isEmpty()) {
+            task.setStatus(request.getStatus());
+        } else {
+            task.setStatus("Backlog");
+        }
         
         Task saved = taskRepository.save(task);
+        if (task.getGoalId() != null) {
+            goalService.updateGoalProgress(task.getGoalId(), 0, 0);
+        }
         return taskMapper.toDto(saved);
     }
 
@@ -67,8 +75,27 @@ public class TaskService {
                 .filter(t -> t.getUserId().equals(userDetails.user().getId()))
                 .orElseThrow(() -> new EntityNotFoundException("Task not found"));
 
+        boolean wasDone = "Done".equals(task.getStatus());
+        int oldActualMinutes = task.getActualMinutes() != null ? task.getActualMinutes() : 0;
+        
         taskMapper.updateFromRequest(request, task);
-        return taskMapper.toDto(taskRepository.save(task));
+        
+        boolean isNowDone = "Done".equals(task.getStatus());
+        int newActualMinutes = task.getActualMinutes() != null ? task.getActualMinutes() : 0;
+
+        Task saved = taskRepository.save(task);
+
+        if (task.getGoalId() != null) {
+            if (!wasDone && isNowDone) {
+                goalService.updateGoalProgress(task.getGoalId(), newActualMinutes, 1);
+            } else if (wasDone && !isNowDone) {
+                goalService.updateGoalProgress(task.getGoalId(), -oldActualMinutes, -1);
+            } else if (wasDone && isNowDone && oldActualMinutes != newActualMinutes) {
+                goalService.updateGoalProgress(task.getGoalId(), newActualMinutes - oldActualMinutes, 0);
+            }
+        }
+
+        return taskMapper.toDto(saved);
     }
     
     @Transactional
@@ -77,6 +104,9 @@ public class TaskService {
                 .filter(t -> t.getUserId().equals(userDetails.user().getId()))
                 .orElseThrow(() -> new EntityNotFoundException("Task not found"));
         taskRepository.delete(task);
+        if (task.getGoalId() != null) {
+            goalService.updateGoalProgress(task.getGoalId(), 0, 0);
+        }
     }
 
     private Task getTaskByUserId(UUID taskId, UUID userId) {

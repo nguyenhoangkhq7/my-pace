@@ -20,11 +20,12 @@ export interface Task {
   categoryId?: string;
   category?: Category;
   title: string;
+  taskType: 'AD_HOC' | 'GOAL_SESSION';
   estimatedMinutes: number;
   actualMinutes: number;
   isUrgent: boolean;
   isImportant: boolean;
-  status: 'Backlog' | 'Picked for Today' | 'Done';
+  status: 'Icebox' | 'Backlog' | 'Picked for Today' | 'Done';
   dueDate?: string;
   notes?: string;
   checklists?: TaskChecklistItem[];
