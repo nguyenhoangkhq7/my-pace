@@ -164,12 +164,52 @@ export default function CalendarPage() {
       const newStart = info.event.start;
       const newEnd   = info.event.end;
       if (!newStart || !newEnd) { info.revert(); return; }
-      const newDate      = newStart.toISOString().split("T")[0];
+      
+      // Timezone-safe local date string format (YYYY-MM-DD)
+      const newDate = `${newStart.getFullYear()}-${String(newStart.getMonth() + 1).padStart(2, "0")}-${String(newStart.getDate()).padStart(2, "0")}`;
       const newStartTime = `${String(newStart.getHours()).padStart(2, "0")}:${String(newStart.getMinutes()).padStart(2, "0")}:00`;
       const newEndTime   = `${String(newEnd.getHours()).padStart(2, "0")}:${String(newEnd.getMinutes()).padStart(2, "0")}:00`;
+      
       try {
-        await updateSingleOccurrence(occ.seriesId, newDate, { overrideStartTime: newStartTime, overrideEndTime: newEndTime });
-      } catch { info.revert(); }
+        if (occ.recurrenceType === "NONE") {
+          // A single, non-recurring event: update the series eventDate and times directly
+          await updateAllOccurrences(occ.seriesId, {
+            title: occ.title,
+            notes: occ.notes || undefined,
+            startTime: newStartTime.substring(0, 5),
+            endTime: newEndTime.substring(0, 5),
+            eventDate: newDate,
+            recurrenceType: "NONE",
+          });
+          toast.success("Đã di chuyển sự kiện!");
+        } else {
+          // A recurring event occurrence
+          if (newDate !== occ.occurrenceDate) {
+            // Moved to a different day: soft-delete this occurrence and create a new standalone event
+            await deleteSingleOccurrence(occ.seriesId, occ.occurrenceDate);
+            await createEvent({
+              title: occ.title,
+              notes: occ.notes || undefined,
+              startTime: newStartTime.substring(0, 5),
+              endTime: newEndTime.substring(0, 5),
+              eventDate: newDate,
+              recurrenceType: "NONE",
+            });
+            toast.success("Đã dời lịch sự kiện sang ngày mới!");
+          } else {
+            // Moved within the same day: just update times via single occurrence exception
+            await updateSingleOccurrence(occ.seriesId, occ.occurrenceDate, {
+              overrideStartTime: newStartTime,
+              overrideEndTime: newEndTime,
+            });
+            toast.success("Đã cập nhật giờ sự kiện!");
+          }
+        }
+      } catch (err) {
+        console.error("Failed to move calendar event", err);
+        info.revert();
+        toast.error("Không thể di chuyển sự kiện.");
+      }
       return;
     }
 
@@ -195,7 +235,7 @@ export default function CalendarPage() {
       await saveTimeBlocks(updatedBlocks);
       toast.success("Đã cập nhật lịch!");
     } catch { info.revert(); }
-  }, [dailyPlanToday, timeBlocks, saveTimeBlocks, updateSingleOccurrence]);
+  }, [dailyPlanToday, timeBlocks, saveTimeBlocks, updateSingleOccurrence, updateAllOccurrences, createEvent, deleteSingleOccurrence]);
 
   const handleEventResize = useCallback(async (arg: { event: any; revert: () => void }) => {
     const blockId = arg.event.extendedProps?.blockId as string | undefined;
@@ -215,9 +255,21 @@ export default function CalendarPage() {
     const newEnd = arg.event.end as Date | null;
     if (!newEnd) { arg.revert(); return; }
     const newEndTime = `${String(newEnd.getHours()).padStart(2, "0")}:${String(newEnd.getMinutes()).padStart(2, "0")}:00`;
-    try { await updateSingleOccurrence(occ.seriesId, occ.occurrenceDate, { overrideEndTime: newEndTime }); }
-    catch { arg.revert(); }
-  }, [dailyPlanToday, timeBlocks, saveTimeBlocks, updateSingleOccurrence]);
+    try {
+      if (occ.recurrenceType === "NONE") {
+        await updateAllOccurrences(occ.seriesId, {
+          title: occ.title,
+          notes: occ.notes || undefined,
+          startTime: occ.startTime.substring(0, 5),
+          endTime: newEndTime.substring(0, 5),
+          eventDate: occ.occurrenceDate,
+          recurrenceType: "NONE",
+        });
+      } else {
+        await updateSingleOccurrence(occ.seriesId, occ.occurrenceDate, { overrideEndTime: newEndTime });
+      }
+    } catch { arg.revert(); }
+  }, [dailyPlanToday, timeBlocks, saveTimeBlocks, updateSingleOccurrence, updateAllOccurrences]);
 
   // ── FullCalendar events ────────────────────────────────────────────────────
   const scheduledTaskIds = new Set(timeBlocks.map((b) => b.taskId));

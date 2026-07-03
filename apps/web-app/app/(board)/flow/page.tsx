@@ -68,13 +68,20 @@ export default function FlowPage() {
     const saved = localStorage.getItem(`myPaceFlowSizes_${layoutKey}`);
     if (saved) {
       try {
-        setSizes(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        // Migrate old 15/70/15 default to new 20/60/20 layout
+        if (Array.isArray(parsed) && parsed.length === 3 && parsed[0] === 15 && parsed[1] === 70 && parsed[2] === 15) {
+          setSizes([20, 60, 20]);
+          localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify([20, 60, 20]));
+          return;
+        }
+        setSizes(parsed);
         return;
       } catch(e) {}
     }
     
     // Defaults if nothing saved
-    if (isXl) setSizes([15, 70, 15]);
+    if (isXl) setSizes([20, 60, 20]);
     else if (isLg) setSizes([25, 75]);
     else setSizes([100]);
   }, [layoutKey, resetKey]);
