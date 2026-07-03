@@ -12,9 +12,10 @@ import { format } from "date-fns";
 import { useBoardStore } from "../store/board.store";
 import { useGoalStore } from "@/features/goal/store/goal.store";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Calendar01Icon, Delete01Icon, PlusSignIcon, Tick01Icon } from "@hugeicons/core-free-icons";
+import { Calendar01Icon, Delete01Icon, PlusSignIcon, Tick01Icon, Settings01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ManageCategoriesModal } from "./ManageCategoriesModal";
 
 interface TaskFormModalProps {
   isOpen: boolean;
@@ -59,6 +60,7 @@ export function TaskFormModal({
   const [error, setError] = useState("");
 
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+  const [isManagingCategories, setIsManagingCategories] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryColor, setNewCategoryColor] = useState(CATEGORY_COLORS[0]);
   
@@ -188,6 +190,7 @@ export function TaskFormModal({
   };
 
   const inProgressGoals = goals.filter(g => g.status === "In Progress");
+  const associatedGoal = goals.find(g => g.id === (prefilledGoalId || initialData?.goalId));
   const completedChecklistsCount = checklists.filter(c => c.isCompleted).length;
   const progressPercentage = checklists.length > 0 ? Math.round((completedChecklistsCount / checklists.length) * 100) : 0;
 
@@ -195,7 +198,7 @@ export function TaskFormModal({
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className={cn(
         "bg-slate-950 text-slate-50 border-slate-800 max-h-[90vh] overflow-y-auto scrollbar-thin",
-        requireDuration ? "sm:max-w-[425px]" : "sm:max-w-[700px]"
+        requireDuration ? "sm:max-w-[425px]" : "sm:max-w-[800px]"
       )}>
         <DialogHeader>
           <DialogTitle>{initialData?.id ? (requireDuration ? "Missing Information" : "Edit Task") : "Create Task"}</DialogTitle>
@@ -304,23 +307,23 @@ export function TaskFormModal({
                       onChange={e => setNewCategoryName(e.target.value)} 
                       className="bg-slate-950 border-slate-800"
                     />
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1.5">
                       {CATEGORY_COLORS.map(c => (
                         <div 
                           key={c} 
                           onClick={() => setNewCategoryColor(c)}
-                          className={cn("w-6 h-6 rounded-full cursor-pointer ring-offset-slate-900", newCategoryColor === c ? "ring-2 ring-white" : "")}
+                          className={cn("w-5 h-5 rounded-full cursor-pointer ring-offset-slate-900", newCategoryColor === c ? "ring-2 ring-white" : "")}
                           style={{ backgroundColor: c }}
                         />
                       ))}
                     </div>
                     <div className="flex space-x-2 pt-1">
-                      <Button size="sm" variant="outline" className="h-7 text-xs border-slate-700 text-slate-300 w-full" onClick={() => setIsCreatingCategory(false)}>Cancel</Button>
-                      <Button size="sm" className="h-7 text-xs bg-primary text-white w-full" onClick={handleCreateCategory}>Save</Button>
+                      <Button size="sm" variant="outline" className="h-7 text-xs border-slate-700 text-slate-300 flex-1 px-2" onClick={() => setIsCreatingCategory(false)}>Cancel</Button>
+                      <Button size="sm" className="h-7 text-xs bg-primary text-white flex-1 px-2" onClick={handleCreateCategory}>Save</Button>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex space-x-2">
+                  <div className="flex space-x-1.5">
                     <Select value={categoryId || "none"} onValueChange={(val) => setCategoryId(val === "none" ? undefined : val)} disabled={!!goalId && goalId !== "none"}>
                       <SelectTrigger className="w-full bg-slate-900 border-slate-800">
                         <SelectValue placeholder="Select Category" />
@@ -337,37 +340,23 @@ export function TaskFormModal({
                         ))}
                       </SelectContent>
                     </Select>
-                    <Button variant="outline" className="border-slate-800 bg-slate-900 text-slate-300 px-3 shrink-0" onClick={() => setIsCreatingCategory(true)} disabled={!!goalId && goalId !== "none"}>
+                    <Button variant="outline" className="border-slate-800 bg-slate-900 text-slate-300 px-2 shrink-0" onClick={() => setIsCreatingCategory(true)} disabled={!!goalId && goalId !== "none"} title="Thêm Category">
                       <HugeiconsIcon icon={PlusSignIcon} className="w-4 h-4" />
+                    </Button>
+                    <Button variant="outline" className="border-slate-800 bg-slate-900 text-slate-300 px-2 shrink-0" onClick={() => setIsManagingCategories(true)} title="Quản lý Category">
+                      <HugeiconsIcon icon={Settings01Icon} className="w-4 h-4" />
                     </Button>
                   </div>
                 )}
               </div>
             )}
 
-            {!requireDuration && !prefilledGoalId && (
+            {!requireDuration && associatedGoal && (
               <div className="grid gap-2">
                 <Label>Goal</Label>
-                <Select 
-                  value={goalId || "none"} 
-                  onValueChange={(val) => setGoalId(val === "none" ? undefined : val)}
-                  disabled={!!prefilledGoalId}
-                >
-                  <SelectTrigger className="w-full bg-slate-900 border-slate-800">
-                    <SelectValue placeholder="Select Goal" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-950 border-slate-800 text-slate-200">
-                    <SelectItem value="none">No Goal</SelectItem>
-                    {inProgressGoals.map(g => (
-                      <SelectItem key={g.id} value={g.id}>
-                        {g.title}
-                      </SelectItem>
-                    ))}
-                    {prefilledGoalId && !inProgressGoals.find(g => g.id === prefilledGoalId) && (
-                      <SelectItem value={prefilledGoalId}>Goal được chọn</SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
+                <div className="p-2.5 bg-slate-900 border border-slate-800 rounded-md text-sm text-slate-300 font-medium">
+                  {associatedGoal.title}
+                </div>
               </div>
             )}
 
@@ -447,6 +436,7 @@ export function TaskFormModal({
           </Button>
         </DialogFooter>
       </DialogContent>
+      <ManageCategoriesModal isOpen={isManagingCategories} onClose={() => setIsManagingCategories(false)} />
     </Dialog>
   );
 }

@@ -20,6 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Settings01Icon } from "@hugeicons/core-free-icons";
+import { ManageCategoriesModal } from "@/features/board/components/ManageCategoriesModal";
 
 interface GoalFormModalProps {
   isOpen: boolean;
@@ -48,6 +51,7 @@ interface FormValues {
 export function GoalFormModal({ isOpen, onOpenChange, goal, prefilledParentGoalId }: GoalFormModalProps) {
   const { createGoal, updateGoal, goals } = useGoalStore();
   const { categories } = useBoardStore();
+  const [isManagingCategories, setIsManagingCategories] = useState(false);
 
   const { register, handleSubmit, watch, reset, setValue, control } = useForm<FormValues>({
     defaultValues: {
@@ -157,24 +161,30 @@ export function GoalFormModal({ isOpen, onOpenChange, goal, prefilledParentGoalI
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Category</label>
-            <Select
-              value={categoryId}
-              onValueChange={(val: string) => setValue("categoryId", val)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Chọn Category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map(c => (
-                  <SelectItem key={c.id} value={c.id}>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: c.color }} />
-                      <span>{c.name}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex space-x-1.5">
+              <Select
+                value={categoryId}
+                onValueChange={(val: string) => setValue("categoryId", val)}
+              >
+                <SelectTrigger className="w-full bg-slate-900 border-slate-800">
+                  <SelectValue placeholder="Chọn Category" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-950 border-slate-800 text-slate-200">
+                  <SelectItem value="none">Không có Category</SelectItem>
+                  {categories.map(c => (
+                    <SelectItem key={c.id} value={c.id}>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: c.color }} />
+                        <span>{c.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button type="button" variant="outline" className="border-slate-800 bg-slate-900 text-slate-300 px-2 shrink-0 h-9" onClick={() => setIsManagingCategories(true)} title="Quản lý Category">
+                <HugeiconsIcon icon={Settings01Icon} className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
 
           {/* Goal Cha (Optional) hidden from standard UI */}
@@ -272,6 +282,7 @@ export function GoalFormModal({ isOpen, onOpenChange, goal, prefilledParentGoalI
           </div>
         </form>
       </DialogContent>
+      <ManageCategoriesModal isOpen={isManagingCategories} onClose={() => setIsManagingCategories(false)} />
     </Dialog>
   );
 }
