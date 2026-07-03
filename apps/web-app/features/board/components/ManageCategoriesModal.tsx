@@ -93,6 +93,7 @@ export function ManageCategoriesModal({ isOpen, onClose }: ManageCategoriesModal
                 return (
                   <div key={c.id} className="space-y-3 p-3 bg-slate-900 border border-slate-800 rounded-md">
                     <Input
+                      autoFocus
                       placeholder="Tên Category"
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}

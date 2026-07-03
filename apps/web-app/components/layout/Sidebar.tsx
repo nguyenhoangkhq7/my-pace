@@ -6,11 +6,9 @@ import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useAuthStore, useOnboardingStore, ProfileDialog } from "@/features/auth";
 import { getShortName } from "@/lib/name-helper";
-import { post } from "@/lib/fetchClient";
 import {
   Calendar03Icon,
   Grid02Icon,
-  Logout03Icon,
   UserCircleIcon,
   Time02Icon,
   ArrowLeft01Icon,
@@ -51,7 +49,6 @@ const HelpIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 export function Sidebar() {
-  const clearSession = useAuthStore((s) => s.clearSession);
   const user = useAuthStore((s) => s.user);
   const startOnboarding = useOnboardingStore((s) => s.startOnboarding);
   const pathname = usePathname();
@@ -82,17 +79,6 @@ export function Sidebar() {
 
   const handleCheckin = async () => {
     await checkin(today);
-  };
-
-  const handleLogout = async () => {
-    try {
-      await post("auth/logout", {});
-    } catch (err) {
-      console.error("Logout failed at backend", err);
-    } finally {
-      clearSession();
-      window.location.href = "/login";
-    }
   };
 
   return (
@@ -211,22 +197,6 @@ export function Sidebar() {
             {!isCollapsed && <span>Triết lý MyPACE</span>}
           </button>
 
-          {/* Logout Button */}
-          <button
-            onClick={handleLogout}
-            title={isCollapsed ? "Logout" : undefined}
-            className={cn(
-              "flex w-full items-center rounded-xl py-2.5",
-              isCollapsed ? "justify-center px-0" : "gap-2.5 px-3",
-              "text-sm font-medium text-muted-foreground",
-              "transition-all duration-150",
-              "hover:bg-rose-500/10 hover:text-rose-400",
-              "active:scale-[0.97]"
-            )}
-          >
-            <HugeiconsIcon icon={Logout03Icon} size={18} className="shrink-0" />
-            {!isCollapsed && <span>Logout</span>}
-          </button>
         </div>
       </aside>
 

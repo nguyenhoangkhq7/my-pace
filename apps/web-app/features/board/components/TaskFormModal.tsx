@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +48,7 @@ export function TaskFormModal({
 }: TaskFormModalProps) {
   const { tasks, categories, createCategory, createTask, updateTask, addChecklistItem, updateChecklistItem, deleteChecklistItem } = useBoardStore();
   const { goals, fetchGoals } = useGoalStore();
+  const durationInputRef = useRef<HTMLInputElement>(null);
   
   const [title, setTitle] = useState("");
   const [estimatedMinutes, setEstimatedMinutes] = useState("");
@@ -198,7 +199,7 @@ export function TaskFormModal({
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className={cn(
         "bg-slate-950 text-slate-50 border-slate-800 max-h-[90vh] overflow-y-auto scrollbar-thin",
-        requireDuration ? "sm:max-w-[425px]" : "sm:max-w-[800px]"
+        requireDuration ? "sm:max-w-[425px]" : "sm:max-w-[840px]"
       )}>
         <DialogHeader>
           <DialogTitle>{initialData?.id ? (requireDuration ? "Missing Information" : "Edit Task") : "Create Task"}</DialogTitle>
@@ -209,9 +210,9 @@ export function TaskFormModal({
           )}
         </DialogHeader>
         
-        <div className={cn("grid py-4", requireDuration ? "gap-4" : "grid-cols-1 md:grid-cols-3 gap-6")}>
+        <div className={cn("grid py-4", requireDuration ? "gap-4" : "grid-cols-1 md:grid-cols-2 gap-6")}>
           {/* Main Content (Left Column) */}
-          <div className={cn("space-y-4", !requireDuration && "md:col-span-2")}>
+          <div className={cn("space-y-4")}>
             <div className="grid gap-2">
               <Label htmlFor="title">Title *</Label>
               <Input
@@ -302,6 +303,7 @@ export function TaskFormModal({
                 {isCreatingCategory ? (
                   <div className="space-y-3 p-3 bg-slate-900 border border-slate-800 rounded-md">
                     <Input 
+                      autoFocus
                       placeholder="Category Name" 
                       value={newCategoryName} 
                       onChange={e => setNewCategoryName(e.target.value)} 
@@ -389,14 +391,53 @@ export function TaskFormModal({
             )}
             
             <div className="grid gap-2">
-              <Label htmlFor="duration">Duration (mins) {requireDuration && "*"}</Label>
+              <Label htmlFor="duration">Thời gian thực hiện (phút) {requireDuration && "*"}</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {[30, 45, 60, 120, 180].map(mins => {
+                  const label = mins >= 60 ? `${mins / 60}h` : `${mins}m`;
+                  const isSelected = estimatedMinutes === String(mins);
+                  return (
+                    <Button
+                      key={mins}
+                      type="button"
+                      variant={isSelected ? "default" : "outline"}
+                      className={cn(
+                        "h-8 px-2.5 text-xs flex-1 min-w-[50px]",
+                        isSelected ? "bg-primary text-white" : "border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800"
+                      )}
+                      onClick={() => setEstimatedMinutes(String(mins))}
+                    >
+                      {label}
+                    </Button>
+                  );
+                })}
+                <Button
+                  type="button"
+                  variant={![30, 45, 60, 120, 180].includes(Number(estimatedMinutes)) && estimatedMinutes !== "" ? "default" : "outline"}
+                  className={cn(
+                    "h-8 px-2.5 text-xs flex-1 min-w-[65px]",
+                    ![30, 45, 60, 120, 180].includes(Number(estimatedMinutes)) && estimatedMinutes !== "" 
+                      ? "bg-primary text-white" 
+                      : "border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800"
+                  )}
+                  onClick={() => {
+                    durationInputRef.current?.focus();
+                    durationInputRef.current?.select();
+                  }}
+                >
+                  Tự nhập
+                </Button>
+              </div>
               <Input
+                ref={durationInputRef}
                 id="duration"
                 type="number"
                 min="1"
+                placeholder="Hoặc tự nhập số phút..."
                 value={estimatedMinutes}
                 onChange={(e) => setEstimatedMinutes(e.target.value)}
-                className="bg-slate-900 border-slate-800 focus:border-primary"
+                onFocus={(e) => e.target.select()}
+                className="bg-slate-900 border-slate-800 focus:border-primary h-9 mt-1"
               />
             </div>
             
