@@ -9,6 +9,7 @@ import { Goal } from "../types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskFormModal } from "@/features/board/components/TaskFormModal";
 import { toast } from "sonner";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -19,7 +20,7 @@ import { GoalDetailModal } from "./GoalDetailModal";
 export function GoalDashboard() {
   const { goals, fetchGoals, isLoading, updateGoal, error } = useGoalStore();
   const [filterType, setFilterType] = useState<string>("ALL");
-  const [filterStatus, setFilterStatus] = useState<string>("ALL");
+  const [filterStatus, setFilterStatus] = useState<string>("In Progress");
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
@@ -80,11 +81,11 @@ export function GoalDashboard() {
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-            <HugeiconsIcon icon={Target02Icon} className="text-primary" size={32} />
+          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+            <HugeiconsIcon icon={Target02Icon} className="text-primary" size={26} />
             Mục Tiêu
           </h1>
-          <p className="text-muted-foreground mt-2">Quản lý các mục tiêu dài hạn và theo dõi tiến độ</p>
+          <p className="text-sm text-muted-foreground mt-1.5">Quản lý các mục tiêu dài hạn và theo dõi tiến độ</p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" onClick={() => setIsRulesModalOpen(true)} className="text-muted-foreground">
@@ -98,29 +99,26 @@ export function GoalDashboard() {
         </div>
       </div>
 
-      <div className="flex gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <Tabs value={filterStatus} onValueChange={setFilterStatus} className="w-fit">
+          <TabsList className="bg-slate-900 border border-slate-800 text-slate-400 h-9 p-1">
+            <TabsTrigger value="In Progress" className="data-[state=active]:bg-primary data-[state=active]:text-white">Đang thực hiện</TabsTrigger>
+            <TabsTrigger value="Freeze" className="data-[state=active]:bg-primary data-[state=active]:text-white">Tạm hoãn</TabsTrigger>
+            <TabsTrigger value="Done" className="data-[state=active]:bg-primary data-[state=active]:text-white">Đã hoàn thành</TabsTrigger>
+            <TabsTrigger value="Archived" className="data-[state=active]:bg-primary data-[state=active]:text-white">Đã lưu trữ</TabsTrigger>
+            <TabsTrigger value="ALL" className="data-[state=active]:bg-primary data-[state=active]:text-white">Tất cả</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         <Select value={filterType} onValueChange={setFilterType}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-[180px] bg-slate-900 border-slate-800">
             <SelectValue placeholder="Loại Goal" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-slate-950 border-slate-800 text-slate-200">
             <SelectItem value="ALL">Tất cả loại</SelectItem>
             <SelectItem value="Binary">Dự án (Project)</SelectItem>
             <SelectItem value="Time-boxed">Thói quen (Habit)</SelectItem>
             <SelectItem value="Milestone">Mục tiêu (Target)</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Trạng thái" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
-            <SelectItem value="In Progress">In Progress</SelectItem>
-            <SelectItem value="Freeze">Freeze</SelectItem>
-            <SelectItem value="Done">Done</SelectItem>
-            <SelectItem value="Archived">Archived</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -131,18 +129,110 @@ export function GoalDashboard() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         ) : filteredGoals.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredGoals.map((goal) => (
-              <div key={goal.id} className="cursor-pointer" onClick={() => handleGoalClick(goal)}>
-                <GoalCard 
-                  goal={goal} 
-                  onEdit={handleEdit}
-                  onStatusChange={handleStatusChange}
-                  onCreateTask={handleCreateTaskFromGoal}
-                />
-              </div>
-            ))}
-          </div>
+          filterStatus !== "ALL" ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredGoals.map((goal) => (
+                <div key={goal.id} className="cursor-pointer" onClick={() => handleGoalClick(goal)}>
+                  <GoalCard 
+                    goal={goal} 
+                    onEdit={handleEdit}
+                    onStatusChange={handleStatusChange}
+                    onCreateTask={handleCreateTaskFromGoal}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {/* Group: In Progress */}
+              {filteredGoals.some(g => g.status === "In Progress") && (
+                <div className="space-y-4">
+                  <h2 className="text-lg font-semibold text-primary border-b border-slate-800 pb-2 flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-primary" />
+                    Đang thực hiện
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {filteredGoals.filter(g => g.status === "In Progress").map((goal) => (
+                      <div key={goal.id} className="cursor-pointer" onClick={() => handleGoalClick(goal)}>
+                        <GoalCard 
+                          goal={goal} 
+                          onEdit={handleEdit}
+                          onStatusChange={handleStatusChange}
+                          onCreateTask={handleCreateTaskFromGoal}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Group: Freeze */}
+              {filteredGoals.some(g => g.status === "Freeze") && (
+                <div className="space-y-4">
+                  <h2 className="text-lg font-semibold text-orange-400 border-b border-slate-800 pb-2 flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-orange-400" />
+                    Tạm hoãn
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {filteredGoals.filter(g => g.status === "Freeze").map((goal) => (
+                      <div key={goal.id} className="cursor-pointer" onClick={() => handleGoalClick(goal)}>
+                        <GoalCard 
+                          goal={goal} 
+                          onEdit={handleEdit}
+                          onStatusChange={handleStatusChange}
+                          onCreateTask={handleCreateTaskFromGoal}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Group: Done */}
+              {filteredGoals.some(g => g.status === "Done") && (
+                <div className="space-y-4">
+                  <h2 className="text-lg font-semibold text-green-400 border-b border-slate-800 pb-2 flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-green-400" />
+                    Đã hoàn thành
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {filteredGoals.filter(g => g.status === "Done").map((goal) => (
+                      <div key={goal.id} className="cursor-pointer" onClick={() => handleGoalClick(goal)}>
+                        <GoalCard 
+                          goal={goal} 
+                          onEdit={handleEdit}
+                          onStatusChange={handleStatusChange}
+                          onCreateTask={handleCreateTaskFromGoal}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Group: Archived */}
+              {filteredGoals.some(g => g.status === "Archived") && (
+                <div className="space-y-4">
+                  <h2 className="text-lg font-semibold text-slate-400 border-b border-slate-800 pb-2 flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-slate-400" />
+                    Đã lưu trữ
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {filteredGoals.filter(g => g.status === "Archived").map((goal) => (
+                      <div key={goal.id} className="cursor-pointer" onClick={() => handleGoalClick(goal)}>
+                        <GoalCard 
+                          goal={goal} 
+                          onEdit={handleEdit}
+                          onStatusChange={handleStatusChange}
+                          onCreateTask={handleCreateTaskFromGoal}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )
         ) : (
           <div className="text-center py-20 text-muted-foreground bg-muted/20 rounded-2xl border border-dashed border-border">
             <HugeiconsIcon icon={Target02Icon} size={48} className="mx-auto mb-4 opacity-20" />
