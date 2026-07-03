@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Target02Icon, PlusSignIcon, InformationCircleIcon } from "@hugeicons/core-free-icons";
 
+import { useBoardStore } from "@/features/board/store/board.store";
 import { GoalDetailModal } from "./GoalDetailModal";
 
 export function GoalDashboard() {
@@ -30,9 +31,12 @@ export function GoalDashboard() {
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [prefilledGoalId, setPrefilledGoalId] = useState<string | undefined>(undefined);
 
+  const { fetchCategories } = useBoardStore();
+
   useEffect(() => {
     fetchGoals();
-  }, [fetchGoals]);
+    fetchCategories();
+  }, [fetchGoals, fetchCategories]);
 
   // Handle errors from backend e.g. Limit Exceeded
   useEffect(() => {
@@ -66,7 +70,7 @@ export function GoalDashboard() {
   const handleStatusChange = async (goal: Goal, newStatus: string) => {
     try {
       await updateGoal(goal.id, { status: newStatus as any });
-      toast.success(`Đã cập nhật Goal thành ${newStatus}`);
+      toast.success(`Status updated to ${newStatus}`);
     } catch (e: any) {
       // Error is handled by store + useEffect
     }
@@ -94,7 +98,7 @@ export function GoalDashboard() {
           </Button>
           <Button onClick={handleCreateNew} size="lg" className="shadow-lg hover:shadow-primary/25 transition-all">
             <HugeiconsIcon icon={PlusSignIcon} size={18} className="mr-2" />
-            Tạo Goal
+            New Goal
           </Button>
         </div>
       </div>
@@ -102,11 +106,11 @@ export function GoalDashboard() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <Tabs value={filterStatus} onValueChange={setFilterStatus} className="w-fit">
           <TabsList className="bg-slate-900 border border-slate-800 text-slate-400 h-9 p-1">
-            <TabsTrigger value="In Progress" className="data-[state=active]:bg-primary data-[state=active]:text-white">Đang thực hiện</TabsTrigger>
-            <TabsTrigger value="Freeze" className="data-[state=active]:bg-primary data-[state=active]:text-white">Tạm hoãn</TabsTrigger>
-            <TabsTrigger value="Done" className="data-[state=active]:bg-primary data-[state=active]:text-white">Đã hoàn thành</TabsTrigger>
-            <TabsTrigger value="Archived" className="data-[state=active]:bg-primary data-[state=active]:text-white">Đã lưu trữ</TabsTrigger>
-            <TabsTrigger value="ALL" className="data-[state=active]:bg-primary data-[state=active]:text-white">Tất cả</TabsTrigger>
+            <TabsTrigger value="ALL" className="data-[state=active]:bg-primary data-[state=active]:text-white">All</TabsTrigger>
+            <TabsTrigger value="In Progress" className="data-[state=active]:bg-primary data-[state=active]:text-white">In Progress</TabsTrigger>
+            <TabsTrigger value="Freeze" className="data-[state=active]:bg-primary data-[state=active]:text-white">Freeze</TabsTrigger>
+            <TabsTrigger value="Done" className="data-[state=active]:bg-primary data-[state=active]:text-white">Done</TabsTrigger>
+            <TabsTrigger value="Archived" className="data-[state=active]:bg-primary data-[state=active]:text-white">Archived</TabsTrigger>
           </TabsList>
         </Tabs>
 
@@ -115,10 +119,10 @@ export function GoalDashboard() {
             <SelectValue placeholder="Loại Goal" />
           </SelectTrigger>
           <SelectContent className="bg-slate-950 border-slate-800 text-slate-200">
-            <SelectItem value="ALL">Tất cả loại</SelectItem>
-            <SelectItem value="Binary">Dự án (Project)</SelectItem>
-            <SelectItem value="Time-boxed">Thói quen (Habit)</SelectItem>
-            <SelectItem value="Milestone">Mục tiêu (Target)</SelectItem>
+            <SelectItem value="ALL">All types</SelectItem>
+            <SelectItem value="Binary">Project</SelectItem>
+            <SelectItem value="Time-boxed">Habit</SelectItem>
+            <SelectItem value="Milestone">Target</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -149,7 +153,7 @@ export function GoalDashboard() {
                 <div className="space-y-4">
                   <h2 className="text-lg font-semibold text-primary border-b border-slate-800 pb-2 flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-primary" />
-                    Đang thực hiện
+                    In Progress
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {filteredGoals.filter(g => g.status === "In Progress").map((goal) => (
@@ -171,7 +175,7 @@ export function GoalDashboard() {
                 <div className="space-y-4">
                   <h2 className="text-lg font-semibold text-orange-400 border-b border-slate-800 pb-2 flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-orange-400" />
-                    Tạm hoãn
+                    Freeze
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {filteredGoals.filter(g => g.status === "Freeze").map((goal) => (
@@ -193,7 +197,7 @@ export function GoalDashboard() {
                 <div className="space-y-4">
                   <h2 className="text-lg font-semibold text-green-400 border-b border-slate-800 pb-2 flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-green-400" />
-                    Đã hoàn thành
+                    Done
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {filteredGoals.filter(g => g.status === "Done").map((goal) => (
@@ -215,7 +219,7 @@ export function GoalDashboard() {
                 <div className="space-y-4">
                   <h2 className="text-lg font-semibold text-slate-400 border-b border-slate-800 pb-2 flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-slate-400" />
-                    Đã lưu trữ
+                    Archived
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {filteredGoals.filter(g => g.status === "Archived").map((goal) => (
@@ -251,6 +255,10 @@ export function GoalDashboard() {
         isOpen={isGoalModalOpen} 
         onOpenChange={setIsGoalModalOpen} 
         goal={selectedGoal} 
+        onSuccess={(g) => {
+          setFilterStatus(g.status);
+          toast.success(`Goal created/updated successfully! Switch to ${g.status} tab.`);
+        }}
       />
 
       <TaskFormModal

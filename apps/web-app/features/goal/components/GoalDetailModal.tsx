@@ -12,8 +12,9 @@ import { useGoalStore } from "../store/goal.store";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CheckmarkCircle01Icon, Calendar01Icon, Time02Icon, PlusSignIcon, Folder01Icon, ArrowDown01Icon, ArrowRight01Icon, InboxIcon, Archive02Icon } from "@hugeicons/core-free-icons";
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from "date-fns";
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, startOfMonth, endOfMonth, startOfYear, endOfYear, eachMonthOfInterval, isSameMonth, addWeeks, addMonths, addYears } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GoalFormModal } from "./GoalFormModal";
 import { TaskFormModal } from "@/features/board/components/TaskFormModal";
 import { toast } from "sonner";
@@ -36,12 +37,55 @@ export function GoalDetailModal({ isOpen, onOpenChange, goal }: GoalDetailModalP
   const [selectedTask, setSelectedTask] = useState<Task | undefined>(undefined);
   
   const [isEditingProject, setIsEditingProject] = useState(false);
+  const [timeFilter, setTimeFilter] = useState<'week' | 'month' | 'year'>('week');
+  const [referenceDate, setReferenceDate] = useState<Date>(new Date());
 
   React.useEffect(() => {
     if (!isOpen) {
       setIsEditingProject(false);
+      setTimeFilter('week');
+      setReferenceDate(new Date());
     }
   }, [isOpen]);
+
+  const handlePrev = () => {
+    setReferenceDate((prev) => {
+      if (timeFilter === 'week') return addWeeks(prev, -1);
+      if (timeFilter === 'month') return addMonths(prev, -1);
+      return addYears(prev, -1);
+    });
+  };
+
+  const handleNext = () => {
+    setReferenceDate((prev) => {
+      if (timeFilter === 'week') return addWeeks(prev, 1);
+      if (timeFilter === 'month') return addMonths(prev, 1);
+      return addYears(prev, 1);
+    });
+  };
+
+  const isFuturePeriod = () => {
+    const today = new Date();
+    if (timeFilter === 'week') {
+      return startOfWeek(referenceDate, { weekStartsOn: 1 }) >= startOfWeek(today, { weekStartsOn: 1 });
+    }
+    if (timeFilter === 'month') {
+      return startOfMonth(referenceDate) >= startOfMonth(today);
+    }
+    return startOfYear(referenceDate) >= startOfYear(today);
+  };
+
+  const getPeriodLabel = () => {
+    if (timeFilter === 'week') {
+      const start = startOfWeek(referenceDate, { weekStartsOn: 1 });
+      const end = endOfWeek(referenceDate, { weekStartsOn: 1 });
+      return `${format(start, "d MMM")} - ${format(end, "d MMM, yyyy")}`;
+    }
+    if (timeFilter === 'month') {
+      return `Tháng ${format(referenceDate, "M, yyyy")}`;
+    }
+    return `Năm ${format(referenceDate, "yyyy")}`;
+  };
 
   const goalTasks = useMemo(() => {
     if (!goal) return [];
@@ -53,29 +97,76 @@ export function GoalDetailModal({ isOpen, onOpenChange, goal }: GoalDetailModalP
     return goals.filter((g) => g.parentGoalId === goal.id);
   }, [goals, goal]);
 
-  const weeklyStats = useMemo(() => {
-    if (!goal || goal.goalType === 'Binary') return { chartData: [], totalWeeklyMinutes: 0, daysCompleted: 0, totalWeeklyCount: 0 };
-    const today = new Date();
-    const start = startOfWeek(today, { weekStartsOn: 1 });
-    const end = endOfWeek(today, { weekStartsOn: 1 });
-    const days = eachDayOfInterval({ start, end });
-    let totalWeeklyMinutes = 0;
-    let daysCompleted = 0;
-    let totalWeeklyCount = 0;
+  const stats = useMemo(() => {
+    if (!goal || goal.goalType === 'Binary') {
+      return { chartData: [], totalMinutes: 0, daysCompleted: 0, totalCount: 0 };
+    }
 
-    const chartData = days.map((day) => {
-      const tasksOnDay = goalTasks.filter((t) => t.dueDate && isSameDay(new Date(t.dueDate), day) && t.status === 'Done');
-      const minutes = tasksOnDay.reduce((acc, t) => acc + (t.actualMinutes || 0), 0);
-      const count = tasksOnDay.length;
-      if (minutes > 0) totalWeeklyMinutes += minutes;
-      if (count > 0) {
-        totalWeeklyCount += count;
-        daysCompleted += 1;
-      }
-      return { name: format(day, "EEE"), minutes, count };
-    });
-    return { chartData, totalWeeklyMinutes, daysCompleted, totalWeeklyCount };
-  }, [goalTasks, goal]);
+    let chartData: { name: string; minutes: number; count: number }[] = [];
+    let totalMinutes = 0;
+    let daysCompleted = 0;
+    let totalCount = 0;
+
+    if (timeFilter === 'week') {
+      const start = startOfWeek(referenceDate, { weekStartsOn: 1 });
+      const end = endOfWeek(referenceDate, { weekStartsOn: 1 });
+      const days = eachDayOfInterval({ start, end });
+
+      chartData = days.map((day) => {
+        const tasksOnDay = goalTasks.filter(
+          (t) => t.dueDate && isSameDay(new Date(t.dueDate), day) && t.status === 'Done'
+        );
+        const minutes = tasksOnDay.reduce((acc, t) => acc + (t.actualMinutes || 0), 0);
+        const count = tasksOnDay.length;
+        if (minutes > 0) totalMinutes += minutes;
+        if (count > 0) {
+          totalCount += count;
+          daysCompleted += 1;
+        }
+        return { name: format(day, "EEE"), minutes, count };
+      });
+
+    } else if (timeFilter === 'month') {
+      const start = startOfMonth(referenceDate);
+      const end = endOfMonth(referenceDate);
+      const days = eachDayOfInterval({ start, end });
+
+      chartData = days.map((day) => {
+        const tasksOnDay = goalTasks.filter(
+          (t) => t.dueDate && isSameDay(new Date(t.dueDate), day) && t.status === 'Done'
+        );
+        const minutes = tasksOnDay.reduce((acc, t) => acc + (t.actualMinutes || 0), 0);
+        const count = tasksOnDay.length;
+        if (minutes > 0) totalMinutes += minutes;
+        if (count > 0) {
+          totalCount += count;
+          daysCompleted += 1;
+        }
+        return { name: format(day, "d"), minutes, count };
+      });
+
+    } else if (timeFilter === 'year') {
+      const start = startOfYear(referenceDate);
+      const end = endOfYear(referenceDate);
+      const months = eachMonthOfInterval({ start, end });
+
+      chartData = months.map((month) => {
+        const tasksInMonth = goalTasks.filter(
+          (t) => t.dueDate && isSameMonth(new Date(t.dueDate), month) && t.status === 'Done'
+        );
+        const minutes = tasksInMonth.reduce((acc, t) => acc + (t.actualMinutes || 0), 0);
+        const count = tasksInMonth.length;
+        if (minutes > 0) totalMinutes += minutes;
+        if (count > 0) {
+          totalCount += count;
+          daysCompleted += 1;
+        }
+        return { name: format(month, "MMM"), minutes, count };
+      });
+    }
+
+    return { chartData, totalMinutes, daysCompleted, totalCount };
+  }, [goalTasks, goal, timeFilter, referenceDate]);
 
   if (!goal) return null;
 
@@ -264,7 +355,7 @@ export function GoalDetailModal({ isOpen, onOpenChange, goal }: GoalDetailModalP
             {level < 3 && (
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Dự án con (Subgoals)</h4>
+                  <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Subgoals</h4>
                   {isEditingProject && (
                     <Button 
                       size="sm" 
@@ -279,7 +370,7 @@ export function GoalDetailModal({ isOpen, onOpenChange, goal }: GoalDetailModalP
                   )}
                 </div>
                 {childrenSubgoals.length === 0 ? (
-                  <p className="text-xs text-slate-600 italic">Chưa có Dự án con nào.</p>
+                  <p className="text-xs text-slate-600 italic">No subgoals yet.</p>
                 ) : (
                   childrenSubgoals.map(child => (
                     <SubgoalAccordion key={child.id} subgoal={child} level={level + 1} />
@@ -304,7 +395,7 @@ export function GoalDetailModal({ isOpen, onOpenChange, goal }: GoalDetailModalP
       <div className="space-y-6">
         <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
           <div>
-            <h3 className="text-xs text-slate-400 mb-1 uppercase tracking-wider font-semibold">Tiến độ Dự án</h3>
+            <h3 className="text-xs text-slate-400 mb-1 uppercase tracking-wider font-semibold">Project Progress</h3>
             <div className="text-2xl font-bold text-slate-100">{doneItems} / {totalItems} <span className="text-sm font-normal text-slate-500">Mục</span></div>
           </div>
           <div className="text-right">
@@ -323,11 +414,11 @@ export function GoalDetailModal({ isOpen, onOpenChange, goal }: GoalDetailModalP
               className="bg-emerald-600 hover:bg-emerald-500 text-white w-full"
               onClick={async () => {
                 await updateGoal(goal.id, { status: "Done" });
-                toast.success("Chúc mừng bạn đã hoàn thành Dự án!");
+                toast.success("Congratulations! Project completed!");
               }}
             >
               <HugeiconsIcon icon={CheckmarkCircle01Icon} size={18} className="mr-2" />
-              Đánh dấu Hoàn thành Dự án
+              Mark Project as Done
             </Button>
           </div>
         )}
@@ -337,7 +428,7 @@ export function GoalDetailModal({ isOpen, onOpenChange, goal }: GoalDetailModalP
 
           <div>
             <div className="flex items-center justify-between mb-3 border-b border-slate-800/50 pb-2">
-              <h3 className="text-sm font-semibold text-slate-200">Dự án con (Subgoals)</h3>
+              <h3 className="text-sm font-semibold text-slate-200">Subgoals</h3>
               {isEditingProject && (
                 <Button 
                   size="sm" 
@@ -353,7 +444,7 @@ export function GoalDetailModal({ isOpen, onOpenChange, goal }: GoalDetailModalP
             </div>
             <div className="space-y-1">
               {subgoals.length === 0 ? (
-                <p className="text-sm text-slate-500 italic">Chưa có Dự án con nào.</p>
+                <p className="text-sm text-slate-500 italic">No subgoals yet.</p>
               ) : (
                 subgoals.map(g => (
                   <SubgoalAccordion key={g.id} subgoal={g} level={2} />
@@ -367,32 +458,59 @@ export function GoalDetailModal({ isOpen, onOpenChange, goal }: GoalDetailModalP
   };
 
   const renderHabitDetail = () => {
-    const targetMinsPerWeek = (goal.timeBoxedGoal?.targetMinutes || 0) * (7 / Math.max(goal.timeBoxedGoal?.periodDays || 1, 1));
+    const targetMins = goal.timeBoxedGoal?.targetMinutes || 0;
+    const periodDays = Math.max(goal.timeBoxedGoal?.periodDays || 1, 1);
+    
+    let targetMinsForPeriod = 0;
+    let label = "";
+    let daysLabel = "";
+
+    const isCurrent = isFuturePeriod();
+    if (timeFilter === 'week') {
+      targetMinsForPeriod = (targetMins / periodDays) * 7;
+      label = isCurrent ? "Tổng phút tuần này" : "Tổng phút tuần đã chọn";
+      daysLabel = "/ 7 ngày";
+    } else if (timeFilter === 'month') {
+      targetMinsForPeriod = (targetMins / periodDays) * 30;
+      label = isCurrent ? "Tổng phút tháng này" : "Tổng phút tháng đã chọn";
+      daysLabel = `/ ${new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 0).getDate()} ngày`;
+    } else if (timeFilter === 'year') {
+      targetMinsForPeriod = (targetMins / periodDays) * 365;
+      label = isCurrent ? "Tổng phút năm nay" : "Tổng phút năm đã chọn";
+      daysLabel = "/ 12 tháng";
+    }
+
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800">
             <h3 className="text-sm text-slate-400 mb-1 flex items-center">
-              <HugeiconsIcon icon={Time02Icon} size={14} className="mr-1" /> Tổng phút tuần này
+              <HugeiconsIcon icon={Time02Icon} size={14} className="mr-1" /> {label}
             </h3>
-            <div className="text-2xl font-bold text-slate-100">{weeklyStats.totalWeeklyMinutes} <span className="text-sm text-slate-500 font-normal">/ {Math.round(targetMinsPerWeek)} ph</span></div>
+            <div className="text-2xl font-bold text-slate-100">
+              {stats.totalMinutes} <span className="text-sm text-slate-500 font-normal">/ {Math.round(targetMinsForPeriod)} ph</span>
+            </div>
           </div>
           <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800">
             <h3 className="text-sm text-slate-400 mb-1 flex items-center">
               <HugeiconsIcon icon={Calendar01Icon} size={14} className="mr-1" /> Số ngày thực hiện
             </h3>
-            <div className="text-2xl font-bold text-slate-100">{weeklyStats.daysCompleted} <span className="text-sm text-slate-500 font-normal">/ 7 ngày</span></div>
+            <div className="text-2xl font-bold text-slate-100">
+              {stats.daysCompleted} <span className="text-sm text-slate-500 font-normal">{daysLabel}</span>
+            </div>
           </div>
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-slate-200 mb-4">Biểu đồ thời gian (Tuần này)</h3>
+          <h3 className="text-sm font-semibold text-slate-200 mb-4">
+            Biểu đồ thời gian ({timeFilter === 'week' ? (isCurrent ? 'Tuần này' : 'Tuần đã chọn') : timeFilter === 'month' ? (isCurrent ? 'Tháng này' : 'Tháng đã chọn') : (isCurrent ? 'Năm nay' : 'Năm đã chọn')})
+          </h3>
           <div className="h-[200px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={weeklyStats.chartData}>
+              <BarChart data={stats.chartData}>
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
                 <Tooltip cursor={{ fill: '#1e293b' }} contentStyle={{ backgroundColor: '#020617', borderColor: '#1e293b', borderRadius: '8px' }} itemStyle={{ color: '#38bdf8' }} formatter={(value) => [`${value} phút`, 'Thời gian']} />
                 <Bar dataKey="minutes" radius={[4, 4, 0, 0]}>
-                  {weeklyStats.chartData.map((entry, index) => (
+                  {stats.chartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.minutes > 0 ? '#38bdf8' : '#334155'} />
                   ))}
                 </Bar>
@@ -404,36 +522,52 @@ export function GoalDetailModal({ isOpen, onOpenChange, goal }: GoalDetailModalP
     );
   };
 
-  const renderTargetDetail = () => (
-    <div className="space-y-6">
-      <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
+  const renderTargetDetail = () => {
+    const isCurrent = isFuturePeriod();
+    let periodLabel = "";
+    if (timeFilter === 'week') {
+      periodLabel = isCurrent ? "Tuần này đạt được" : "Tuần đã chọn đạt được";
+    } else if (timeFilter === 'month') {
+      periodLabel = isCurrent ? "Tháng này đạt được" : "Tháng đã chọn đạt được";
+    } else if (timeFilter === 'year') {
+      periodLabel = isCurrent ? "Năm nay đạt được" : "Năm đã chọn đạt được";
+    }
+
+    return (
+      <div className="space-y-6">
+        <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
+          <div>
+            <h3 className="text-sm text-slate-400 mb-1">Tiến độ chung</h3>
+            <div className="text-2xl font-bold text-slate-100">
+              {goal.milestoneGoal?.currentCount || 0} / {goal.milestoneGoal?.targetCount || 0}
+            </div>
+          </div>
+          <div className="text-right">
+            <h3 className="text-sm text-slate-400 mb-1">{periodLabel}</h3>
+            <div className="text-2xl font-bold text-primary">+{stats.totalCount}</div>
+          </div>
+        </div>
         <div>
-          <h3 className="text-sm text-slate-400 mb-1">Tiến độ chung</h3>
-          <div className="text-2xl font-bold text-slate-100">{goal.milestoneGoal?.currentCount || 0} / {goal.milestoneGoal?.targetCount || 0}</div>
-        </div>
-        <div className="text-right">
-          <h3 className="text-sm text-slate-400 mb-1">Tuần này đạt được</h3>
-          <div className="text-2xl font-bold text-primary">+{weeklyStats.totalWeeklyCount}</div>
-        </div>
-      </div>
-      <div>
-        <h3 className="text-sm font-semibold text-slate-200 mb-4">Mức độ đạt được (Tuần này)</h3>
-        <div className="h-[200px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={weeklyStats.chartData}>
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
-              <Tooltip cursor={{ fill: '#1e293b' }} contentStyle={{ backgroundColor: '#020617', borderColor: '#1e293b', borderRadius: '8px' }} itemStyle={{ color: '#8b5cf6' }} formatter={(value) => [`${value}`, 'Số lượng']} />
-              <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                {weeklyStats.chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.count > 0 ? '#8b5cf6' : '#334155'} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <h3 className="text-sm font-semibold text-slate-200 mb-4">
+            Mức độ đạt được ({timeFilter === 'week' ? (isCurrent ? 'Tuần này' : 'Tuần đã chọn') : timeFilter === 'month' ? (isCurrent ? 'Tháng này' : 'Tháng đã chọn') : (isCurrent ? 'Năm nay' : 'Năm đã chọn')})
+          </h3>
+          <div className="h-[200px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={stats.chartData}>
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
+                <Tooltip cursor={{ fill: '#1e293b' }} contentStyle={{ backgroundColor: '#020617', borderColor: '#1e293b', borderRadius: '8px' }} itemStyle={{ color: '#8b5cf6' }} formatter={(value) => [`${value}`, 'Số lượng']} />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {stats.chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.count > 0 ? '#8b5cf6' : '#334155'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -443,7 +577,7 @@ export function GoalDetailModal({ isOpen, onOpenChange, goal }: GoalDetailModalP
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-800 text-slate-300 border border-slate-700">
-                  {goal.goalType === 'Binary' ? 'Dự án (Project)' : goal.goalType === 'Time-boxed' ? 'Thói quen (Habit)' : 'Mục tiêu (Target)'}
+                  {goal.goalType === 'Binary' ? 'Project' : goal.goalType === 'Time-boxed' ? 'Habit' : 'Target'}
                 </span>
                 <span className={`px-2 py-0.5 rounded text-[10px] font-medium border ${
                   goal.status === 'In Progress' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 
@@ -470,6 +604,44 @@ export function GoalDetailModal({ isOpen, onOpenChange, goal }: GoalDetailModalP
         </DialogHeader>
 
         <div className="p-6 pt-4 overflow-y-auto min-h-0 flex-1">
+          {goal.goalType !== 'Binary' && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 bg-slate-900/30 p-3 rounded-xl border border-slate-800/80">
+              {/* Navigation Controls */}
+              <div className="flex items-center gap-2">
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  size="icon" 
+                  className="w-7 h-7 border-slate-800 bg-slate-900 text-slate-400 hover:text-white"
+                  onClick={handlePrev}
+                >
+                  ◀
+                </Button>
+                <span className="text-xs font-semibold text-slate-300 min-w-[125px] text-center">
+                  {getPeriodLabel()}
+                </span>
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  size="icon" 
+                  className="w-7 h-7 border-slate-800 bg-slate-900 text-slate-400 hover:text-white"
+                  onClick={handleNext}
+                  disabled={isFuturePeriod()}
+                >
+                  ▶
+                </Button>
+              </div>
+
+              {/* Tabs */}
+              <Tabs value={timeFilter} onValueChange={(val: any) => { setTimeFilter(val); setReferenceDate(new Date()); }} className="w-fit">
+                <TabsList className="bg-slate-900 border border-slate-800 text-slate-400 h-8 p-1">
+                  <TabsTrigger value="week" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-white px-3 py-1">Tuần</TabsTrigger>
+                  <TabsTrigger value="month" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-white px-3 py-1">Tháng</TabsTrigger>
+                  <TabsTrigger value="year" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-white px-3 py-1">Năm</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+          )}
           {goal.goalType === 'Binary' && renderProjectDetail()}
           {goal.goalType === 'Time-boxed' && renderHabitDetail()}
           {goal.goalType === 'Milestone' && renderTargetDetail()}

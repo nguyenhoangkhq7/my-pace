@@ -50,7 +50,8 @@ public class DailyPlanController {
     @PutMapping("/tasks/{planTaskId}/toggle-done")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void toggleTaskDone(@PathVariable UUID planTaskId,
+                               @RequestParam(required = false) Integer addedCount,
                                @AuthenticationPrincipal UserDetailsCustom userDetails) {
-        dailyPlanService.toggleTaskDone(planTaskId, userDetails);
+        dailyPlanService.toggleTaskDone(planTaskId, addedCount, userDetails);
     }
 }
