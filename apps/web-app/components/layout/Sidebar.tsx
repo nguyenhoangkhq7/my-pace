@@ -14,9 +14,11 @@ import {
   ArrowLeft01Icon,
   ArrowRight01Icon,
   Target02Icon,
+  Analytics01Icon,
 } from "@hugeicons/core-free-icons";
 import { useAvailableTime } from "@/features/available-time";
 import { useEffect } from "react";
+import { FeedbackModal } from "../feedback/FeedbackModal";
 
 type NavItem = {
   id: string;
@@ -30,6 +32,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: "goals", label: "Goals", href: "/goals", icon: Target02Icon },
   { id: "calendar", label: "Calendar", href: "/calendar", icon: Calendar03Icon },
   { id: "flow", label: "Flow", href: "/flow", icon: Time02Icon },
+  { id: "stats", label: "Analytics", href: "/stats", icon: Analytics01Icon },
 ];
 
 const HelpIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -48,6 +51,20 @@ const HelpIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+const FeedbackIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+  </svg>
+);
+
 export function Sidebar() {
   const user = useAuthStore((s) => s.user);
   const startOnboarding = useOnboardingStore((s) => s.startOnboarding);
@@ -55,6 +72,7 @@ export function Sidebar() {
   const router = useRouter();
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
@@ -197,11 +215,29 @@ export function Sidebar() {
             {!isCollapsed && <span>Triết lý MyPACE</span>}
           </button>
 
+          {/* Feedback Button */}
+          <button
+            onClick={() => setIsFeedbackOpen(true)}
+            title={isCollapsed ? "Góp ý & Phản hồi" : undefined}
+            className={cn(
+              "flex w-full items-center rounded-xl py-2.5",
+              isCollapsed ? "justify-center px-0" : "gap-2.5 px-3",
+              "text-sm font-medium text-muted-foreground",
+              "transition-all duration-150",
+              "hover:bg-accent hover:text-foreground",
+              "active:scale-[0.97]"
+            )}
+          >
+            <FeedbackIcon className="w-[18px] h-[18px] shrink-0" />
+            {!isCollapsed && <span>Góp ý & Phản hồi</span>}
+          </button>
+
         </div>
       </aside>
 
       {/* Profile Edit Dialog */}
       <ProfileDialog isOpen={isProfileOpen} onOpenChange={setIsProfileOpen} />
+      <FeedbackModal isOpen={isFeedbackOpen} onOpenChange={setIsFeedbackOpen} />
     </>
   );
 }

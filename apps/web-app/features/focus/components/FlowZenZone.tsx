@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { YoutubeIcon, PlayIcon, Delete02Icon, PlusSignIcon } from "@hugeicons/core-free-icons";
+import { cn } from "@/lib/utils";
 
 export function FlowZenZone() {
   const { youtubeUrl, setYoutubeUrl, youtubeHistory, addToHistory, removeFromHistory } = useFocusStore();
@@ -62,14 +63,14 @@ export function FlowZenZone() {
   };
 
   return (
-    <div className="h-full flex flex-col border-l border-slate-800 bg-slate-950">
+    <div className="h-full flex flex-col border-l border-[#1e293b] bg-[#0a0f1e]">
       {/* Top Half: YouTube Player */}
-      <div className="p-4 border-b border-slate-800">
-        <div className="bg-black aspect-video rounded-xl overflow-hidden border border-slate-800 shadow-lg relative group cursor-pointer">
+      <div className="p-4 border-b border-[#1e293b]">
+        <div className="bg-black aspect-video rounded-xl overflow-hidden border border-[#1e293b] shadow-[0_4px_20px_rgba(0,0,0,0.5)] relative group cursor-pointer">
           <div className="absolute inset-0 bg-black/40 group-hover:bg-transparent transition-colors duration-500 pointer-events-none z-10"></div>
           {embedUrl ? (
             <iframe
-              className="w-full h-full grayscale-[80%] group-hover:grayscale-0 transition-all duration-500"
+              className="w-full h-full grayscale-[60%] group-hover:grayscale-0 transition-all duration-700"
               src={embedUrl}
               title="YouTube video player"
               frameBorder="0"
@@ -77,7 +78,7 @@ export function FlowZenZone() {
               allowFullScreen
             />
           ) : (
-            <div className="flex items-center justify-center h-full text-slate-500 text-sm">
+            <div className="flex items-center justify-center h-full text-slate-500 text-sm font-medium">
               Invalid YouTube URL
             </div>
           )}
@@ -86,11 +87,11 @@ export function FlowZenZone() {
 
       {/* Bottom Half: History */}
       <div className="flex-1 flex flex-col min-h-0">
-        <div className="p-4 pb-2 flex items-center justify-between">
-          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Saved Playlists</h3>
+        <div className="p-5 pb-3 flex items-center justify-between">
+          <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Soundscape</h3>
           <button 
             onClick={() => setIsAdding(!isAdding)}
-            className="text-slate-400 hover:text-slate-200 bg-slate-900 hover:bg-slate-800 p-1.5 rounded-lg transition-colors"
+            className="text-slate-400 hover:text-slate-200 bg-[#0f172a] hover:bg-[#131c31] border border-[#1e293b] p-1.5 rounded-lg transition-colors"
           >
             <HugeiconsIcon icon={PlusSignIcon} size={14} />
           </button>
@@ -98,13 +99,13 @@ export function FlowZenZone() {
 
         {isAdding && (
           <div className="px-4 pb-4">
-            <form onSubmit={handleAddSubmit} className="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-3">
+            <form onSubmit={handleAddSubmit} className="bg-[#0f172a] p-4 rounded-xl border border-[#1e293b] space-y-3 shadow-inner">
               <input 
                 type="text" 
                 value={inputUrl}
                 onChange={(e) => setInputUrl(e.target.value)}
                 placeholder="Paste YouTube link..."
-                className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-[#0a0f1e] border border-[#1e293b] rounded px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
                 required
               />
               <input 
@@ -112,13 +113,13 @@ export function FlowZenZone() {
                 value={inputTitle}
                 onChange={(e) => setInputTitle(e.target.value)}
                 placeholder="Title (e.g. Lofi Coding)..."
-                className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-[#0a0f1e] border border-[#1e293b] rounded px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
               />
-              <div className="flex justify-end space-x-2">
-                <button type="button" onClick={() => setIsAdding(false)} className="text-xs text-slate-500 hover:text-slate-300 px-2 py-1">
+              <div className="flex justify-end space-x-2 pt-1">
+                <button type="button" onClick={() => setIsAdding(false)} className="text-xs text-slate-400 hover:text-slate-200 px-3 py-1.5 font-medium transition-colors">
                   Cancel
                 </button>
-                <button type="submit" className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded shadow">
+                <button type="submit" className="text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-1.5 rounded shadow">
                   Save
                 </button>
               </div>
@@ -126,9 +127,9 @@ export function FlowZenZone() {
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2">
+        <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-3 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
           {youtubeHistory.length === 0 && !isAdding && (
-            <div className="text-center text-xs text-slate-500 py-4">
+            <div className="text-center text-xs font-medium text-slate-500 py-6">
               No saved playlists yet.
             </div>
           )}
@@ -137,12 +138,18 @@ export function FlowZenZone() {
             return (
               <div 
                 key={index} 
-                className={`flex items-center justify-between p-2.5 rounded-xl border group transition-colors
-                  ${isPlaying ? 'bg-indigo-900/20 border-indigo-500/30' : 'bg-slate-900/50 border-slate-800 hover:bg-slate-800 hover:border-slate-700'}
-                `}
+                className={cn(
+                  "flex items-center justify-between p-3 rounded-xl border group transition-all",
+                  isPlaying 
+                    ? "bg-[#0f172a] border-indigo-500/50 shadow-[0_0_15px_rgba(99,102,241,0.1)]" 
+                    : "bg-[#0f172a] border-[#1e293b] hover:border-slate-700 hover:bg-[#131c31]"
+                )}
               >
-                <div className="flex-1 min-w-0 pr-2">
-                  <div className={`text-sm truncate ${isPlaying ? 'text-indigo-300 font-medium' : 'text-slate-300'}`}>
+                <div className="flex-1 min-w-0 pr-3">
+                  <div className={cn(
+                    "text-sm truncate tracking-wide",
+                    isPlaying ? "text-indigo-300 font-bold" : "text-slate-300 font-medium"
+                  )}>
                     {item.title}
                   </div>
                 </div>
@@ -150,25 +157,25 @@ export function FlowZenZone() {
                   {!isPlaying && (
                     <button 
                       onClick={() => setYoutubeUrl(item.url)}
-                      className="text-slate-400 hover:text-indigo-400 p-1.5 rounded-lg hover:bg-indigo-500/10"
+                      className="text-slate-400 hover:text-indigo-400 p-1.5 rounded-lg hover:bg-indigo-500/10 transition-colors"
                       title="Play"
                     >
-                      <HugeiconsIcon icon={PlayIcon} size={14} />
+                      <HugeiconsIcon icon={PlayIcon} size={16} />
                     </button>
                   )}
                   <button 
                     onClick={() => removeFromHistory(item.url)}
-                    className="text-slate-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10"
+                    className="text-slate-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition-colors"
                     title="Remove"
                   >
-                    <HugeiconsIcon icon={Delete02Icon} size={14} />
+                    <HugeiconsIcon icon={Delete02Icon} size={16} />
                   </button>
                 </div>
                 {isPlaying && (
-                  <div className="shrink-0 flex space-x-0.5 px-1 group-hover:hidden">
-                    <div className="w-1 h-3 bg-indigo-400 rounded-full animate-[pulse_1s_ease-in-out_infinite]"></div>
-                    <div className="w-1 h-2 bg-indigo-400 rounded-full animate-[pulse_1s_ease-in-out_infinite_200ms]"></div>
-                    <div className="w-1 h-3.5 bg-indigo-400 rounded-full animate-[pulse_1s_ease-in-out_infinite_400ms]"></div>
+                  <div className="shrink-0 flex items-end space-x-0.5 px-1 h-3 group-hover:hidden">
+                    <div className="w-[3px] h-2 bg-indigo-400 rounded-full animate-[pulse_1s_ease-in-out_infinite]"></div>
+                    <div className="w-[3px] h-3 bg-indigo-400 rounded-full animate-[pulse_1s_ease-in-out_infinite_200ms]"></div>
+                    <div className="w-[3px] h-2.5 bg-indigo-400 rounded-full animate-[pulse_1s_ease-in-out_infinite_400ms]"></div>
                   </div>
                 )}
               </div>
