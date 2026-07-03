@@ -24,6 +24,7 @@ interface BoardState {
   setFilter: (categoryId: string | null) => void;
   createTask: (task: Partial<Task>) => Promise<Task>;
   updateTask: (id: string, task: Partial<Task>) => Promise<Task>;
+  deleteTask: (id: string) => Promise<void>;
   
   addChecklistItem: (taskId: string, title: string) => Promise<void>;
   updateChecklistItem: (taskId: string, checklistId: string, data: { title?: string; isCompleted?: boolean }) => Promise<void>;
@@ -40,7 +41,7 @@ interface BoardState {
   confirmPlan: (date: string) => Promise<void>;
   reviewDailyPlan: (date: string) => Promise<void>;
   cancelPlan: (date: string, target: 'today' | 'tomorrow') => Promise<void>;
-  toggleTaskDone: (date: string, planTaskId: string) => Promise<void>;
+  toggleTaskDone: (date: string, planTaskId: string, addedCount?: number) => Promise<void>;
   saveTimeBlocks: (blocks: Omit<TaskTimeBlock, 'id'>[]) => Promise<TaskTimeBlock[]>;
 }
 
@@ -118,6 +119,15 @@ export const useBoardStore = create<BoardState>((set, get) => ({
       tasks: state.tasks.map(t => t.id === id ? res.data : t)
     }));
     return res.data;
+  },
+
+  deleteTask: async (id) => {
+    await boardApi.deleteTask(id);
+    set(state => ({
+      tasks: state.tasks.filter(t => t.id !== id)
+    }));
+    // Sync goals to update progress
+    useGoalStore.getState().fetchGoals().catch(console.error);
   },
 
   addChecklistItem: async (taskId, title) => {
@@ -279,9 +289,9 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     }
   },
 
-  toggleTaskDone: async (date, planTaskId) => {
+  toggleTaskDone: async (date, planTaskId, addedCount) => {
     try {
-      await boardApi.toggleTaskDone(planTaskId);
+      await boardApi.toggleTaskDone(planTaskId, addedCount);
       await get().fetchDailyPlanToday(date);
       await get().fetchTasks();
       // Sync goals to update progress

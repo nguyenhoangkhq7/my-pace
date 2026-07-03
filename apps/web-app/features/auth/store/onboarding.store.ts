@@ -20,7 +20,7 @@ export const useOnboardingStore = create<OnboardingState>()(
       hasCompletedOnboarding: false,
       isHelpMode: false,
       startOnboarding: (isHelpMode = false) => set({ isOpen: true, currentSlide: 0, isHelpMode }),
-      nextSlide: () => set((state) => ({ currentSlide: Math.min(1, state.currentSlide + 1) })),
+      nextSlide: () => set((state) => ({ currentSlide: Math.min(2, state.currentSlide + 1) })),
       prevSlide: () => set((state) => ({ currentSlide: Math.max(0, state.currentSlide - 1) })),
       completeOnboarding: () => set({ isOpen: false, hasCompletedOnboarding: true }),
     }),

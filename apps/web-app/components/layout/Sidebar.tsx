@@ -149,19 +149,19 @@ export function Sidebar() {
           })}
         </nav>
 
+        {/* ── Spacer ───────────────────────────────────────────────────── */}
+        <div className="flex-1" />
+
         {/* ── Start Time Label ── */}
         {!isCollapsed && availableTime?.checkedIn && availableTime.checkinTime && (
-          <div className="mt-6 pt-5 border-t border-border/50 px-2">
+          <div className="px-2 pb-2">
             <span className="text-xs text-muted-foreground block">
               Hôm nay bắt đầu lúc: <span className="font-semibold text-foreground">{availableTime.checkinTime}</span>
             </span>
           </div>
         )}
 
-        {/* ── Spacer ───────────────────────────────────────────────────── */}
-        <div className="flex-1" />
-
-        {/* ── Bottom section ────────────────────────────────────────────── */}
+        {/* ── Bottom section ──────────────────────────────────────── */}
         <div className="flex flex-col gap-1 border-t border-border pt-4">
           {/* User Profile Button */}
           <button

@@ -7,6 +7,7 @@ import nhk.task.TaskRepository;
 import nhk.timeblock.TaskTimeBlockDto;
 import nhk.timeblock.TaskTimeBlockRepository;
 import nhk.user.UserDetailsCustom;
+import nhk.goal.GoalService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,7 @@ public class DailyPlanService {
     private final TaskRepository taskRepository;
     private final DailyPlanMapper dailyPlanMapper;
     private final TaskTimeBlockRepository timeBlockRepository;
+    private final GoalService goalService;
 
     @Transactional(readOnly = true)
     public DailyPlanDto getDailyPlan(LocalDate planDate, UserDetailsCustom userDetails) {
@@ -126,7 +128,7 @@ public class DailyPlanService {
     }
 
     @Transactional
-    public void toggleTaskDone(UUID dailyPlanTaskId, UserDetailsCustom userDetails) {
+    public void toggleTaskDone(UUID dailyPlanTaskId, Integer addedCount, UserDetailsCustom userDetails) {
         DailyPlanTask planTask = dailyPlanTaskRepository.findById(dailyPlanTaskId)
                 .orElseThrow(() -> new EntityNotFoundException("Plan task not found"));
         
@@ -138,7 +140,10 @@ public class DailyPlanService {
         }
 
         Task task = planTask.getTask();
-        if ("Done".equals(task.getStatus())) {
+        boolean wasDone = "Done".equals(task.getStatus());
+        int actualMinutes = task.getActualMinutes() != null ? task.getActualMinutes() : 0;
+
+        if (wasDone) {
             task.setStatus("Picked for Today");
             task.setDoneAt(null);
         } else {
@@ -146,6 +151,17 @@ public class DailyPlanService {
             task.setDoneAt(OffsetDateTime.now());
         }
         taskRepository.save(task);
+
+        if (task.getGoalId() != null) {
+            int countVal = addedCount != null ? addedCount : 1;
+            if (wasDone) {
+                // went from Done -> Not Done: subtract
+                goalService.updateGoalProgress(task.getGoalId(), -actualMinutes, -countVal);
+            } else {
+                // went from Not Done -> Done: add
+                goalService.updateGoalProgress(task.getGoalId(), actualMinutes, countVal);
+            }
+        }
     }
 
     @Transactional

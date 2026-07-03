@@ -19,7 +19,8 @@ export const boardApi = {
   confirmPlan: (date: string) => fetchClient.post<DailyPlan, Record<string, never>>(`daily-plans/${date}/confirm`, {}),
   reviewPlan: (date: string) => fetchClient.post<DailyPlan, Record<string, never>>(`daily-plans/${date}/review`, {}),
   cancelPlan: (date: string) => fetchClient.post<unknown, Record<string, never>>(`daily-plans/${date}/cancel`, {}),
-  toggleTaskDone: (planTaskId: string) => fetchClient.put<unknown, Record<string, never>>(`daily-plans/tasks/${planTaskId}/toggle-done`, {}),
+  toggleTaskDone: (planTaskId: string, addedCount?: number) => 
+    fetchClient.put<unknown, Record<string, never>>(`daily-plans/tasks/${planTaskId}/toggle-done${addedCount !== undefined ? `?addedCount=${addedCount}` : ''}`, {}),
 
   getCategories: () => fetchClient.get<Category[]>("categories"),
   createCategory: (data: Partial<Category>) => fetchClient.post<Category, Partial<Category>>("categories", data),
@@ -30,4 +31,3 @@ export const boardApi = {
   saveTimeBlocks: (data: { dailyPlanId: string; blocks: Omit<TaskTimeBlock, 'id'>[] }) =>
     fetchClient.post<TaskTimeBlock[], typeof data>("time-blocks/batch", data),
 };
-

@@ -73,7 +73,7 @@ export function GoalCard({ goal, onEdit, onStatusChange, onCreateTask }: GoalCar
           </Badge>
           <Badge variant="secondary" className="bg-secondary/50 text-xs">
             {goal.goalType === 'Binary' && <HugeiconsIcon icon={Folder01Icon} size={12} className="mr-1 inline-block" />}
-            {goal.goalType === 'Binary' ? 'Dự án (Project)' : goal.goalType === 'Time-boxed' ? 'Thói quen (Habit)' : 'Mục tiêu (Target)'}
+            {goal.goalType === 'Binary' ? 'Project' : goal.goalType === 'Time-boxed' ? 'Habit' : 'Target'}
           </Badge>
         </div>
         <button
