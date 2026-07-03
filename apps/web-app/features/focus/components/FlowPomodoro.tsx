@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import { usePomodoro } from "@/features/focus/hooks/usePomodoro";
 import { useBoardStore } from "@/features/board/store/board.store";
+import { useGoalStore } from "@/features/goal/store/goal.store";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PlayIcon, PauseIcon, StopIcon, Tick01Icon, CheckListIcon } from "@hugeicons/core-free-icons";
 import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 export function FlowPomodoro() {
@@ -23,10 +25,19 @@ export function FlowPomodoro() {
 
   const { timeLeft, currentSession, totalSessions } = usePomodoro();
   const { tasks, toggleTaskDone, updateTask, dailyPlanToday, reviewDailyPlan } = useBoardStore();
+  const { goals, fetchGoals } = useGoalStore();
+
   const [isFinishing, setIsFinishing] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isChecklistModalOpen, setIsChecklistModalOpen] = useState(false);
+  const [isQuantityDialogOpen, setIsQuantityDialogOpen] = useState(false);
+  const [quantityGoal, setQuantityGoal] = useState<any>(null);
+  const [addedCount, setAddedCount] = useState("1");
   const router = useRouter();
+
+  useEffect(() => {
+    fetchGoals().catch(console.error);
+  }, [fetchGoals]);
 
   const activeTask = tasks.find(t => t.id === activeTaskId);
 
@@ -133,7 +144,21 @@ export function FlowPomodoro() {
     );
   }
 
-  const handleComplete = async () => {
+  const handleCompleteClick = () => {
+    if (!activeTaskId || !activePlanTaskId || isFinishing) return;
+
+    // Check if task is associated with a Target (Milestone) goal
+    const associatedGoal = goals.find(g => g.id === activeTask?.goalId);
+    if (associatedGoal && associatedGoal.goalType === "Milestone") {
+      setQuantityGoal(associatedGoal);
+      setAddedCount("1");
+      setIsQuantityDialogOpen(true);
+    } else {
+      handleComplete(1);
+    }
+  };
+
+  const handleComplete = async (countVal: number = 1) => {
     if (!activeTaskId || !activePlanTaskId || isFinishing) return;
     setIsFinishing(true);
     try {
@@ -143,9 +168,11 @@ export function FlowPomodoro() {
       }
       
       const todayStr = new Date().toISOString().split('T')[0];
-      await toggleTaskDone(todayStr, activePlanTaskId);
+      await toggleTaskDone(todayStr, activePlanTaskId, countVal);
       
       pauseTimer();
+      setIsQuantityDialogOpen(false);
+      setQuantityGoal(null);
       
       // Auto switch to next task
       const { dailyPlanToday } = useBoardStore.getState();
@@ -296,12 +323,12 @@ export function FlowPomodoro() {
               if (activeTask?.checklists && activeTask.checklists.length > 0) {
                 const allDone = activeTask.checklists.every(c => c.isCompleted);
                 if (allDone) {
-                  handleComplete();
+                  handleCompleteClick();
                 } else {
                   setIsChecklistModalOpen(true);
                 }
               } else {
-                handleComplete();
+                handleCompleteClick();
               }
             }}
             disabled={isFinishing}
@@ -344,7 +371,7 @@ export function FlowPomodoro() {
                          if (allDone) {
                            setTimeout(() => {
                              setIsChecklistModalOpen(false);
-                             handleComplete();
+                             handleCompleteClick();
                            }, 400);
                          }
                       }}
@@ -359,6 +386,36 @@ export function FlowPomodoro() {
             </DialogContent>
           </Dialog>
         )}
+
+        {/* Target goal completion quantity dialog */}
+        <Dialog open={isQuantityDialogOpen} onOpenChange={setIsQuantityDialogOpen}>
+          <DialogContent className="sm:max-w-[400px] bg-slate-950 text-slate-100 border-slate-800">
+            <DialogHeader>
+              <DialogTitle>Cập nhật số lượng mục tiêu</DialogTitle>
+              <DialogDescription className="text-slate-400">
+                Hãy nhập số lượng hoàn thành cho mục tiêu: <span className="text-indigo-400 font-semibold">{quantityGoal?.title}</span>
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Số lượng</label>
+              <Input
+                type="number"
+                min="1"
+                value={addedCount}
+                onChange={e => setAddedCount(e.target.value)}
+                className="bg-slate-900 border-slate-800 text-slate-200"
+              />
+            </div>
+            <DialogFooter className="flex justify-end gap-2 border-t border-slate-800/50 pt-4">
+              <Button variant="outline" onClick={() => setIsQuantityDialogOpen(false)} disabled={isFinishing}>
+                Hủy
+              </Button>
+              <Button onClick={() => handleComplete(Number(addedCount) || 1)} disabled={isFinishing}>
+                Xác nhận
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

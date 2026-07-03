@@ -46,7 +46,7 @@ export function TaskFormModal({
   planningTarget,
   initialStatus
 }: TaskFormModalProps) {
-  const { tasks, categories, createCategory, createTask, updateTask, addChecklistItem, updateChecklistItem, deleteChecklistItem } = useBoardStore();
+  const { tasks, categories, createCategory, createTask, updateTask, deleteTask, addChecklistItem, updateChecklistItem, deleteChecklistItem } = useBoardStore();
   const { goals, fetchGoals } = useGoalStore();
   const durationInputRef = useRef<HTMLInputElement>(null);
   
@@ -160,6 +160,18 @@ export function TaskFormModal({
         } else {
           await createTask(taskData);
         }
+        handleClose();
+      } catch (err: any) {
+        setError(err.response?.data?.message || err.message);
+      }
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!initialData?.id) return;
+    if (confirm("Are you sure you want to delete this task?")) {
+      try {
+        await deleteTask(initialData.id);
         handleClose();
       } catch (err: any) {
         setError(err.response?.data?.message || err.message);
@@ -468,13 +480,28 @@ export function TaskFormModal({
           {error && <p className="text-red-500 text-sm md:col-span-3">{error}</p>}
         </div>
         
-        <DialogFooter className="mt-2">
-          <Button variant="outline" onClick={handleClose} className="border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white">
-            Cancel
-          </Button>
-          <Button onClick={handleSubmitInternal} className="bg-primary hover:bg-primary/90 text-white">
-            {requireDuration ? "Continue" : "Save"}
-          </Button>
+        <DialogFooter className="mt-2 flex flex-row items-center justify-between w-full">
+          <div>
+            {!requireDuration && initialData?.id && (
+              <Button 
+                type="button" 
+                variant="ghost" 
+                onClick={handleDelete}
+                className="text-rose-500 hover:bg-rose-950/20 hover:text-rose-400 font-medium gap-1 px-2 h-9"
+              >
+                <HugeiconsIcon icon={Delete01Icon} className="w-4 h-4" />
+                Delete Task
+              </Button>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleClose} className="border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white">
+              Cancel
+            </Button>
+            <Button onClick={handleSubmitInternal} className="bg-primary hover:bg-primary/90 text-white">
+              {requireDuration ? "Continue" : "Save"}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
       <ManageCategoriesModal isOpen={isManagingCategories} onClose={() => setIsManagingCategories(false)} />
