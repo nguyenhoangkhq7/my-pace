@@ -8,6 +8,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/categories")
@@ -25,5 +26,19 @@ public class CategoryController {
     public CategoryDto createCategory(@Valid @RequestBody CategoryCreateRequest request,
                                       @AuthenticationPrincipal UserDetailsCustom userDetails) {
         return categoryService.createCategory(request, userDetails);
+    }
+
+    @PutMapping("/{id}")
+    public CategoryDto updateCategory(@PathVariable UUID id,
+                                      @Valid @RequestBody CategoryUpdateRequest request,
+                                      @AuthenticationPrincipal UserDetailsCustom userDetails) {
+        return categoryService.updateCategory(id, request, userDetails);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteCategory(@PathVariable UUID id,
+                               @AuthenticationPrincipal UserDetailsCustom userDetails) {
+        categoryService.deleteCategory(id, userDetails);
     }
 }

@@ -19,6 +19,8 @@ interface BoardState {
   fetchTasks: () => Promise<void>;
   fetchCategories: () => Promise<void>;
   createCategory: (category: Partial<Category>) => Promise<Category>;
+  updateCategory: (id: string, category: Partial<Category>) => Promise<Category>;
+  deleteCategory: (id: string) => Promise<void>;
   setFilter: (categoryId: string | null) => void;
   createTask: (task: Partial<Task>) => Promise<Task>;
   updateTask: (id: string, task: Partial<Task>) => Promise<Task>;
@@ -70,6 +72,26 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     const res = await boardApi.createCategory(category);
     set(state => ({ categories: [...state.categories, res.data] }));
     return res.data;
+  },
+
+  updateCategory: async (id, category) => {
+    const res = await boardApi.updateCategory(id, category);
+    set(state => ({
+      categories: state.categories.map(c => c.id === id ? res.data : c),
+      tasks: state.tasks.map(t => t.categoryId === id ? { ...t, category: res.data } : t)
+    }));
+    return res.data;
+  },
+
+  deleteCategory: async (id) => {
+    await boardApi.deleteCategory(id);
+    set(state => ({
+      categories: state.categories.filter(c => c.id !== id),
+      tasks: state.tasks.map(t => t.categoryId === id ? { ...t, categoryId: undefined, category: undefined } : t),
+      selectedFilterId: state.selectedFilterId === id ? null : state.selectedFilterId
+    }));
+    // Sync goals to update category links
+    useGoalStore.getState().fetchGoals().catch(console.error);
   },
 
   fetchTasks: async () => {

@@ -23,6 +23,8 @@ export const boardApi = {
 
   getCategories: () => fetchClient.get<Category[]>("categories"),
   createCategory: (data: Partial<Category>) => fetchClient.post<Category, Partial<Category>>("categories", data),
+  updateCategory: (id: string, data: Partial<Category>) => fetchClient.put<Category, Partial<Category>>(`categories/${id}`, data),
+  deleteCategory: (id: string) => fetchClient.del<unknown>(`categories/${id}`),
 
   getTimeBlocks: (planId: string) => fetchClient.get<TaskTimeBlock[]>(`time-blocks?planId=${planId}`),
   saveTimeBlocks: (data: { dailyPlanId: string; blocks: Omit<TaskTimeBlock, 'id'>[] }) =>
