@@ -10,33 +10,45 @@ export function usePomodoro() {
     tick,
     transitionToBreak,
     transitionToFocus,
-    completeAllSessions
+    completeAllSessions,
+    soundEnabled
   } = useFocusStore();
 
   const lastTickRef = useRef<number>(0);
-  const focusAudioRef = useRef<HTMLAudioElement | null>(null);
-  const breakAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Initialize Audio
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      focusAudioRef.current = new Audio("/audio/tibetan-bowl.mp3");
-      breakAudioRef.current = new Audio("/audio/soft-chime.mp3");
-    }
-  }, []);
+  // Play a system beep using Web Audio API
+  const playSystemBeep = (frequency: number = 600, duration: number = 200, vol: number = 0.5) => {
+    if (!soundEnabled || typeof window === "undefined") return;
+    
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
 
-  const playFocusEnd = () => {
-    if (focusAudioRef.current) {
-      focusAudioRef.current.currentTime = 0;
-      focusAudioRef.current.play().catch(console.error);
+      oscillator.type = "sine";
+      oscillator.frequency.value = frequency;
+
+      gainNode.gain.setValueAtTime(vol, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration / 1000);
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + duration / 1000);
+    } catch (e) {
+      console.error("Audio beep failed", e);
     }
   };
 
+  const playFocusEnd = () => {
+    playSystemBeep(800, 300); // Higher pitch for focus end
+    setTimeout(() => playSystemBeep(800, 400), 400); // Double beep
+  };
+
   const playBreakEnd = () => {
-    if (breakAudioRef.current) {
-      breakAudioRef.current.currentTime = 0;
-      breakAudioRef.current.play().catch(console.error);
-    }
+    playSystemBeep(500, 250); // Lower pitch for break end
+    setTimeout(() => playSystemBeep(600, 300), 300);
   };
 
   useEffect(() => {
