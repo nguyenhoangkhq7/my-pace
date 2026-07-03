@@ -7,6 +7,7 @@ interface FocusState {
   // Session config
   focusMinutes: number;
   breakMinutes: number;
+  soundEnabled: boolean;
   
   // Current active task
   activeTaskId: string | null;
@@ -25,6 +26,10 @@ interface FocusState {
   youtubeUrl: string;
   youtubeHistory: { url: string; title: string }[];
 
+  // Modal control
+  isSettingsOpen: boolean;
+  setIsSettingsOpen: (open: boolean) => void;
+
   // Actions
   setYoutubeUrl: (url: string) => void;
   addToHistory: (url: string, title: string) => void;
@@ -39,6 +44,7 @@ interface FocusState {
   transitionToBreak: () => void;
   transitionToFocus: () => void;
   completeAllSessions: () => void;
+  updateConfig: (focusMin: number, breakMin: number, sound: boolean) => void;
 }
 
 export const useFocusStore = create<FocusState>()(
@@ -46,6 +52,7 @@ export const useFocusStore = create<FocusState>()(
     (set, get) => ({
       focusMinutes: 25,
       breakMinutes: 5,
+      soundEnabled: true,
       
       activeTaskId: null,
       activePlanTaskId: null,
@@ -59,8 +66,10 @@ export const useFocusStore = create<FocusState>()(
       youtubeHistory: [
         { url: "https://www.youtube.com/watch?v=jfKfPfyJRdk", title: "Lofi Girl (Default)" }
       ],
+      isSettingsOpen: false,
 
       setYoutubeUrl: (url) => set({ youtubeUrl: url }),
+      setIsSettingsOpen: (open) => set({ isSettingsOpen: open }),
       
       addToHistory: (url, title) => set((state) => {
         // Prevent duplicates
@@ -144,13 +153,24 @@ export const useFocusStore = create<FocusState>()(
           pomodoroState: "finished",
           timeLeft: 0,
         });
+      },
+
+      updateConfig: (focusMin, breakMin, sound) => {
+        set({
+          focusMinutes: focusMin,
+          breakMinutes: breakMin,
+          soundEnabled: sound,
+        });
       }
     }),
     {
       name: "focus-storage",
       partialize: (state) => ({ 
         youtubeUrl: state.youtubeUrl,
-        youtubeHistory: state.youtubeHistory 
+        youtubeHistory: state.youtubeHistory,
+        focusMinutes: state.focusMinutes,
+        breakMinutes: state.breakMinutes,
+        soundEnabled: state.soundEnabled,
       }), 
     }
   )
