@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useBoardStore } from "../store/board.store";
 import { useCalendarStore } from "@/features/calendar/store/calendar.store";
 import { useAuthStore } from "@/features/auth";
-import { autoSchedule } from "../utils/autoSchedule";
+import { autoSchedule, type OccupiedSlot } from "../utils/autoSchedule";
 import { toast } from "sonner";
 
 interface StartMyDayModalProps {
@@ -15,6 +15,16 @@ interface StartMyDayModalProps {
   onClose: () => void;
   todayStr: string;
 }
+
+const toLocalDateStr = (iso: string) => {
+  const date = new Date(iso);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+};
+
+const toLocalTimeStr = (iso: string) => {
+  const date = new Date(iso);
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+};
 
 export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalProps) {
   const router = useRouter();
@@ -42,26 +52,38 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
 
     setIsScheduling(true);
     try {
-      const blocks = autoSchedule(
-        dailyPlanToday.tasks,
-        fixedEvents,
-        dailyPlanToday.id,
-        todayStr,
-        user.wakeTime,
-        user.sleepTime
-      );
+        const occupiedSlots: OccupiedSlot[] = fixedEvents.map((event) => ({
+          date: event.occurrenceDate,
+          startTime: event.startTime.substring(0, 5),
+          endTime: event.endTime.substring(0, 5),
+        }));
 
-      if (blocks.length === 0) {
-        toast.warning("Không còn đủ thời gian trống hôm nay để lên lịch tự động.");
+        const existingBlocks = dailyPlanToday.timeBlocks.map((block) => ({
+          date: toLocalDateStr(block.startTime),
+          startTime: toLocalTimeStr(block.startTime),
+          endTime: toLocalTimeStr(block.endTime),
+        }));
+
+        const blocks = autoSchedule(
+          dailyPlanToday.tasks,
+          [...occupiedSlots, ...existingBlocks],
+          dailyPlanToday.id,
+          todayStr,
+          user.wakeTime,
+          user.sleepTime
+        );
+
+        if (blocks.length === 0) {
+          toast.warning("Không còn đủ thời gian trống hôm nay để lên lịch tự động.");
+          onClose();
+          return;
+        }
+
+        await saveTimeBlocks(blocks);
+        await confirmPlan(todayStr);
+        toast.success("Đã tự động sắp xếp lịch thành công!");
         onClose();
-        return;
-      }
-
-      await saveTimeBlocks(blocks);
-      await confirmPlan(todayStr);
-      toast.success("Đã tự động sắp xếp lịch thành công!");
-      onClose();
-      router.push(`/calendar?view=day&date=${todayStr}`);
+        router.push(`/calendar?view=day&date=${todayStr}`);
     } catch (err) {
       console.error(err);
       toast.error("Có lỗi xảy ra khi tự động lên lịch.");

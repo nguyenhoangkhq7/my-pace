@@ -6,6 +6,12 @@ interface ScheduleSlot {
   endTime: Date;
 }
 
+export interface OccupiedSlot {
+  date: string;
+  startTime: string;
+  endTime: string;
+}
+
 interface QueueItem {
   planTask: DailyPlanTask;
   remainingMinutes: number;
@@ -18,13 +24,13 @@ interface QueueItem {
  * Returns gaps sorted by start time.
  */
 function computeGaps(
-  fixedEvents: FixedEventOccurrence[],
+  occupiedSlots: OccupiedSlot[],
   dateStr: string,
   windowStart: Date,
   windowEnd: Date
 ): ScheduleSlot[] {
-  const occupied: ScheduleSlot[] = fixedEvents
-    .filter((e) => e.occurrenceDate === dateStr)
+  const occupied: ScheduleSlot[] = occupiedSlots
+    .filter((slot) => slot.date === dateStr)
     .map((e) => {
       const [sh, sm] = e.startTime.split(":").map(Number);
       const [eh, em] = e.endTime.split(":").map(Number);
@@ -88,7 +94,7 @@ function prioritySort(tasks: DailyPlanTask[]): DailyPlanTask[] {
  */
 export function autoSchedule(
   planTasks: DailyPlanTask[],
-  fixedEvents: FixedEventOccurrence[],
+  occupiedSlots: OccupiedSlot[],
   dailyPlanId: string,
   todayStr: string,
   wakeTimeStr: string,
@@ -109,7 +115,7 @@ export function autoSchedule(
 
   if (windowStart >= dayEnd) return []; // No time left today
 
-  const gaps = computeGaps(fixedEvents, todayStr, windowStart, dayEnd);
+  const gaps = computeGaps(occupiedSlots, todayStr, windowStart, dayEnd);
   const sorted = prioritySort(planTasks);
 
   // Build queue with remaining minutes tracked per task
