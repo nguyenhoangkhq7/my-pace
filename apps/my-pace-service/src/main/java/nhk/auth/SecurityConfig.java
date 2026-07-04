@@ -1,7 +1,8 @@
 package nhk.auth;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import nhk.common.LoggingFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -25,11 +26,14 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class SecurityConfig {
 
    private final JwtAuthFilter jwtAuthFilter;
    private final List<SecurityRules> featureSecurityRules;
+
+   @Value("${app.cors.allowed-origins}")
+   private List<String> allowedOrigins;
 
    @Bean
    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
@@ -64,11 +68,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(List.of(
-            "http://localhost:3000",
-            "https://my-pace-h27b.vercel.app",
-            "https://hoangkhaq.site"
-        ));
+        configuration.setAllowedOrigins(allowedOrigins);
 
         configuration.setAllowedMethods(List.of(
             HttpMethod.GET.name(),
@@ -79,11 +79,7 @@ public class SecurityConfig {
             HttpMethod.OPTIONS.name()
         ));
 
-        configuration.setAllowedHeaders(List.of(
-            "Authorization",
-            "Content-Type",
-            "Accept"
-        ));
+        configuration.setAllowedHeaders(List.of("*"));
 
         configuration.setAllowCredentials(true);
 

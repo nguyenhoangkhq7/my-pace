@@ -8,7 +8,7 @@ import nhk.auth.TokenInvalid;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.mail.MailException;
+import nhk.mail.EmailSendingException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -82,8 +82,8 @@ public class GlobalExceptionHandler {
       return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
    }
 
-   @ExceptionHandler(MailException.class)
-   public ResponseEntity<ErrorResponse> handleMailException(MailException ex) {
+   @ExceptionHandler(EmailSendingException.class)
+   public ResponseEntity<ErrorResponse> handleEmailSendingException(EmailSendingException ex) {
       log.error("Error sending email: ", ex);
       return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "There is error while sending email");
    }
