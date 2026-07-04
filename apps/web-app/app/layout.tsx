@@ -40,9 +40,10 @@ export default function RootLayout({
               (function() {
                 try {
                   var theme = localStorage.getItem('theme') || 'dark';
-                  document.documentElement.classList.remove('light', 'dark');
+                  document.documentElement.classList.remove('dark', 'light', 'graphite', 'nord', 'sage', 'rose');
                   document.documentElement.classList.add(theme);
-                  document.documentElement.style.colorScheme = theme;
+                  var dark = ['dark', 'graphite', 'nord', 'rose'];
+                  document.documentElement.style.colorScheme = dark.includes(theme) ? 'dark' : 'light';
                 } catch (e) {}
               })();
             `
