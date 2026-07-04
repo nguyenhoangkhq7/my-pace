@@ -65,44 +65,169 @@
   --radius: 0.3rem; /* Bo góc mềm mại hơn */
 }
 
-/* Tùy chọn Light mode sạch sẽ nếu người dùng muốn đổi gió */
+/* ──────────────────────────────────────────────────────
+ * Theme: Light (Ivory — kem ấm, thay thế trắng chói)
+ * ────────────────────────────────────────────────────── */
 .light {
-  --background: #f8fafc;
-  --foreground: #020617;
-
+  --background: #faf9f7;
+  --foreground: #1c1917;
   --card: #ffffff;
-  --card-foreground: #020617;
-
+  --card-foreground: #1c1917;
   --popover: #ffffff;
-  --popover-foreground: #020617;
-
+  --popover-foreground: #1c1917;
   --primary: #2563eb;
   --primary-foreground: #ffffff;
-
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
-
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-
-  --accent: #f1f5f9;
-  --accent-foreground: #0f172a;
-
+  --secondary: #f0ede8;
+  --secondary-foreground: #1c1917;
+  --muted: #f0ede8;
+  --muted-foreground: #78716c;
+  --accent: #f0ede8;
+  --accent-foreground: #1c1917;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-
-  --border: #e2e8f0;
-  --input: #e2e8f0;
+  --border: #e7e2db;
+  --input: #e7e2db;
   --ring: #2563eb;
-
-  --sidebar: #ffffff;
-  --sidebar-foreground: #020617;
+  --sidebar: #f5f3ef;
+  --sidebar-foreground: #1c1917;
   --sidebar-primary: #2563eb;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f1f5f9;
-  --sidebar-accent-foreground: #0f172a;
-  --sidebar-border: #e2e8f0;
+  --sidebar-accent: #ede9e3;
+  --sidebar-accent-foreground: #1c1917;
+  --sidebar-border: #e7e2db;
   --sidebar-ring: #2563eb;
+}
+
+/* ──────────────────────────────────────────────────────
+ * Theme: Graphite — Xám trung tính, đỡ chói hơn Midnight
+ * ────────────────────────────────────────────────────── */
+.graphite {
+  --background: #171717;
+  --foreground: #e5e5e5;
+  --card: #262626;
+  --card-foreground: #e5e5e5;
+  --popover: #262626;
+  --popover-foreground: #e5e5e5;
+  --primary: #818cf8;
+  --primary-foreground: #ffffff;
+  --secondary: #333333;
+  --secondary-foreground: #e5e5e5;
+  --muted: #333333;
+  --muted-foreground: #a3a3a3;
+  --accent: #333333;
+  --accent-foreground: #e5e5e5;
+  --destructive: #f87171;
+  --destructive-foreground: #ffffff;
+  --border: #3a3a3a;
+  --input: #3a3a3a;
+  --ring: #818cf8;
+  --sidebar: #1f1f1f;
+  --sidebar-foreground: #e5e5e5;
+  --sidebar-primary: #818cf8;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #2d2d2d;
+  --sidebar-accent-foreground: #e5e5e5;
+  --sidebar-border: #333333;
+  --sidebar-ring: #818cf8;
+}
+
+/* ──────────────────────────────────────────────────────
+ * Theme: Nord — Xanh băng Bắc Âu, thanh lịch và dịu mắt
+ * ────────────────────────────────────────────────────── */
+.nord {
+  --background: #2e3440;
+  --foreground: #eceff4;
+  --card: #3b4252;
+  --card-foreground: #eceff4;
+  --popover: #3b4252;
+  --popover-foreground: #eceff4;
+  --primary: #88c0d0;
+  --primary-foreground: #2e3440;
+  --secondary: #434c5e;
+  --secondary-foreground: #eceff4;
+  --muted: #434c5e;
+  --muted-foreground: #9199aa;
+  --accent: #434c5e;
+  --accent-foreground: #eceff4;
+  --destructive: #bf616a;
+  --destructive-foreground: #eceff4;
+  --border: #4c566a;
+  --input: #4c566a;
+  --ring: #88c0d0;
+  --sidebar: #353d4e;
+  --sidebar-foreground: #eceff4;
+  --sidebar-primary: #88c0d0;
+  --sidebar-primary-foreground: #2e3440;
+  --sidebar-accent: #404858;
+  --sidebar-accent-foreground: #eceff4;
+  --sidebar-border: #4c566a;
+  --sidebar-ring: #88c0d0;
+}
+
+/* ──────────────────────────────────────────────────────
+ * Theme: Sage — Xanh lá đất nhạt, tự nhiên & thư giãn
+ * ────────────────────────────────────────────────────── */
+.sage {
+  --background: #f0f4f0;
+  --foreground: #1a2e1a;
+  --card: #ffffff;
+  --card-foreground: #1a2e1a;
+  --popover: #ffffff;
+  --popover-foreground: #1a2e1a;
+  --primary: #16a34a;
+  --primary-foreground: #ffffff;
+  --secondary: #e4ede4;
+  --secondary-foreground: #1a2e1a;
+  --muted: #e4ede4;
+  --muted-foreground: #5c7a5c;
+  --accent: #e4ede4;
+  --accent-foreground: #1a2e1a;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #d4e2d4;
+  --input: #d4e2d4;
+  --ring: #16a34a;
+  --sidebar: #e8f0e8;
+  --sidebar-foreground: #1a2e1a;
+  --sidebar-primary: #16a34a;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #dde8dd;
+  --sidebar-accent-foreground: #1a2e1a;
+  --sidebar-border: #d4e2d4;
+  --sidebar-ring: #16a34a;
+}
+
+/* ──────────────────────────────────────────────────────
+ * Theme: Rosé — Hồng đất ấm áp, tinh tế
+ * ────────────────────────────────────────────────────── */
+.rose {
+  --background: #1a1014;
+  --foreground: #f5e6ea;
+  --card: #261419;
+  --card-foreground: #f5e6ea;
+  --popover: #261419;
+  --popover-foreground: #f5e6ea;
+  --primary: #f43f5e;
+  --primary-foreground: #ffffff;
+  --secondary: #331a22;
+  --secondary-foreground: #f5e6ea;
+  --muted: #331a22;
+  --muted-foreground: #a87e8a;
+  --accent: #331a22;
+  --accent-foreground: #f5e6ea;
+  --destructive: #fb7185;
+  --destructive-foreground: #ffffff;
+  --border: #3d1f28;
+  --input: #3d1f28;
+  --ring: #f43f5e;
+  --sidebar: #211218;
+  --sidebar-foreground: #f5e6ea;
+  --sidebar-primary: #f43f5e;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #2e1620;
+  --sidebar-accent-foreground: #f5e6ea;
+  --sidebar-border: #3d1f28;
+  --sidebar-ring: #f43f5e;
 }
 
 /* Ánh xạ biến của Tailwind v4 */
