@@ -3,8 +3,13 @@ import { useFocusStore } from "@/features/focus/store/focus.store";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PlayIcon, Tick01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
+import type { DailyPlanTask } from "@/features/board/types";
 
-export function FlowTodoList() {
+interface FlowTodoListProps {
+  onTaskSelect?: (task: DailyPlanTask) => void;
+}
+
+export function FlowTodoList({ onTaskSelect }: FlowTodoListProps) {
   const { dailyPlanToday } = useBoardStore();
   const { activeTaskId, pomodoroState, openFocusMode } = useFocusStore();
 
@@ -24,7 +29,7 @@ export function FlowTodoList() {
   const mits = dailyPlanToday.tasks.filter(t => t.isMit);
   const regular = dailyPlanToday.tasks.filter(t => !t.isMit);
 
-  const renderTask = (pt: typeof mits[0]) => {
+  const renderTask = (pt: DailyPlanTask) => {
     const isActive = pt.task.id === activeTaskId;
     const isDone = pt.task.status === "Done";
 
@@ -32,7 +37,12 @@ export function FlowTodoList() {
       <div 
         key={pt.id} 
         onClick={() => {
-          if (!isDone) openFocusMode(pt.task.id, pt.id, pt.task.estimatedMinutes || 25);
+          if (isDone) return;
+          if (onTaskSelect) {
+            onTaskSelect(pt);
+            return;
+          }
+          openFocusMode(pt.task.id, pt.id, pt.task.estimatedMinutes || 25);
         }}
         className={cn(
           "p-3 rounded-xl border flex items-start space-x-3 transition-all cursor-pointer group",
