@@ -82,6 +82,9 @@ export default function FlowPage() {
 
   // Read sizes from localStorage when layout breakpoint changes
   useEffect(() => {
+    // Number of panels expected for the current breakpoint
+    const expectedLen = isXl ? 3 : isLg ? 2 : 1;
+
     const saved = localStorage.getItem(`myPaceFlowSizes_${layoutKey}`);
     if (saved) {
       try {
@@ -92,19 +95,29 @@ export default function FlowPage() {
           localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify([20, 60, 20]));
           return;
         }
-        setSizes(parsed);
-        return;
+        // Guard: discard saved sizes that don't match the current panel count
+        // (can happen when zoom level changes between breakpoints)
+        if (Array.isArray(parsed) && parsed.length === expectedLen) {
+          setSizes(parsed);
+          return;
+        }
+        // Remove the stale/mismatched entry so we fall through to defaults
+        localStorage.removeItem(`myPaceFlowSizes_${layoutKey}`);
       } catch(e) {}
     }
     
-    // Defaults if nothing saved
+    // Defaults if nothing saved (or saved entry was invalid)
     if (isXl) setSizes([20, 60, 20]);
     else if (isLg) setSizes([25, 75]);
     else setSizes([100]);
   }, [layoutKey, resetKey]);
 
   const handleLayout = (newSizes: number[]) => {
-    if (canSave) {
+    // Only save if the number of reported panels matches what we expect for the
+    // current breakpoint.  During a zoom-triggered remount, react-resizable-panels
+    // can fire onLayout with stale / partial sizes that would corrupt the store.
+    const expectedLen = isXl ? 3 : isLg ? 2 : 1;
+    if (canSave && newSizes.length === expectedLen) {
       localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify(newSizes));
     }
   };
@@ -169,9 +182,11 @@ export default function FlowPage() {
   }
 
   // Map sizes based on current breakpoint
-  const todoSize = isXl ? sizes[0] : isLg ? sizes[0] : 0;
-  const pomodoroSize = isXl ? sizes[1] : isLg ? sizes[1] : sizes[0];
-  const zenzoneSize = isXl ? sizes[2] : 0;
+  // Use ?? fallbacks so defaultSize is never undefined (undefined causes
+  // react-resizable-panels to behave unpredictably on remount).
+  const todoSize = isXl ? (sizes[0] ?? 20) : isLg ? (sizes[0] ?? 25) : 0;
+  const pomodoroSize = isXl ? (sizes[1] ?? 60) : isLg ? (sizes[1] ?? 75) : (sizes[0] ?? 100);
+  const zenzoneSize = isXl ? (sizes[2] ?? 20) : 0;
 
   return (
     <div className="h-full w-full bg-background text-foreground overflow-hidden relative">
