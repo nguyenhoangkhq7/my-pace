@@ -63,21 +63,25 @@ export function FlowZenZone() {
   };
 
   return (
-    <div className="h-full flex flex-col border-l border-border bg-background">
+    <div className="h-full flex flex-col border-l border-border bg-background min-h-0">
       {/* Top Half: YouTube Player */}
-      <div className="p-4 border-b border-border">
-        <div className="bg-black aspect-video rounded-xl overflow-hidden border border-border shadow-[0_4px_20px_rgba(0,0,0,0.15)] relative group cursor-pointer">
+      <div className="p-4 border-b border-border shrink-0">
+        {/* Responsive 16:9 container capped at 220px height */}
+        <div
+          className="relative w-full rounded-xl overflow-hidden border border-border shadow-[0_4px_20px_rgba(0,0,0,0.15)] bg-black group cursor-pointer"
+          style={{ paddingBottom: "min(56.25%, 220px)" }}
+        >
           {/* Overlay to dim the video during focus mode */}
           <div className={cn(
             "absolute inset-0 transition-colors duration-500 pointer-events-none z-10",
-            (pomodoroState === "focusing" && !isZenMaximized) 
-              ? "bg-black/40 group-hover:bg-transparent" 
+            (pomodoroState === "focusing" && !isZenMaximized)
+              ? "bg-black/40 group-hover:bg-transparent"
               : "bg-transparent"
           )}></div>
           {embedUrl ? (
             <iframe
               className={cn(
-                "w-full h-full transition-all duration-700",
+                "absolute inset-0 w-full h-full transition-all duration-700",
                 (pomodoroState === "focusing" && !isZenMaximized)
                   ? "grayscale-[60%] group-hover:grayscale-0"
                   : "grayscale-0"
@@ -89,7 +93,7 @@ export function FlowZenZone() {
               allowFullScreen
             />
           ) : (
-            <div className="flex items-center justify-center h-full text-muted-foreground text-sm font-medium">
+            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm font-medium">
               Invalid YouTube URL
             </div>
           )}
