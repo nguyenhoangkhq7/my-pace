@@ -26,18 +26,19 @@ export function FlowTodoList({ onTaskSelect }: FlowTodoListProps) {
     );
   }
 
-  const mits = dailyPlanToday.tasks.filter(t => t.isMit);
-  const regular = dailyPlanToday.tasks.filter(t => !t.isMit);
-
   const formatTime = (iso: string) => {
     const date = new Date(iso);
     return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
   };
 
-  const getTaskScheduleLabel = (taskId: string) => {
-    const blocks = timeBlocks
+  const getTaskBlocks = (taskId: string) => {
+    return timeBlocks
       .filter((block) => block.taskId === taskId)
       .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+  };
+
+  const getTaskScheduleLabel = (taskId: string) => {
+    const blocks = getTaskBlocks(taskId);
 
     if (blocks.length === 0) {
       return null;
@@ -51,6 +52,37 @@ export function FlowTodoList({ onTaskSelect }: FlowTodoListProps) {
     const lastEnd = formatTime(blocks[blocks.length - 1].endTime);
     return `${firstStart} - ${lastEnd} · ${blocks.length} parts`;
   };
+
+  const getTaskOrderKey = (task: DailyPlanTask) => {
+    const blocks = getTaskBlocks(task.task.id);
+    const firstBlockStart = blocks[0]?.startTime;
+
+    return {
+      hasSchedule: blocks.length > 0,
+      startTime: firstBlockStart ? new Date(firstBlockStart).getTime() : Number.POSITIVE_INFINITY,
+      sortOrder: task.sortOrder,
+      isMit: task.isMit,
+    };
+  };
+
+  const orderedTasks = [...dailyPlanToday.tasks].sort((a, b) => {
+    const aKey = getTaskOrderKey(a);
+    const bKey = getTaskOrderKey(b);
+
+    if (aKey.hasSchedule !== bKey.hasSchedule) {
+      return aKey.hasSchedule ? -1 : 1;
+    }
+
+    if (aKey.startTime !== bKey.startTime) {
+      return aKey.startTime - bKey.startTime;
+    }
+
+    if (aKey.isMit !== bKey.isMit) {
+      return aKey.isMit ? -1 : 1;
+    }
+
+    return aKey.sortOrder - bKey.sortOrder;
+  });
 
   const renderTask = (pt: DailyPlanTask) => {
     const isActive = pt.task.id === activeTaskId;
@@ -143,24 +175,8 @@ export function FlowTodoList({ onTaskSelect }: FlowTodoListProps) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-8 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
-        {mits.length > 0 && (
-          <div className="space-y-4">
-            <h3 className="text-[10px] font-bold text-indigo-400/80 uppercase tracking-widest pl-1">Priority</h3>
-            <div className="space-y-3">
-              {mits.map(renderTask)}
-            </div>
-          </div>
-        )}
-        
-        {regular.length > 0 && (
-          <div className="space-y-4">
-            <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-1">Upcoming</h3>
-            <div className="space-y-3">
-              {regular.map(renderTask)}
-            </div>
-          </div>
-        )}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
+        {orderedTasks.map(renderTask)}
       </div>
     </div>
   );
