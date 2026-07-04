@@ -16,6 +16,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # Disable telemetry during the build
 ENV NEXT_TELEMETRY_DISABLED=1
+# Enable standalone output for Docker deployment
+ENV NEXT_OUTPUT_MODE=standalone
 
 RUN npm run build
 RUN mkdir -p public

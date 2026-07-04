@@ -1,11 +1,11 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { YoutubeIcon, PlayIcon, Delete02Icon, PlusSignIcon } from "@hugeicons/core-free-icons";
+import { YoutubeIcon, PlayIcon, Delete02Icon, PlusSignIcon, FullscreenIcon, Cancel01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
 
 export function FlowZenZone() {
-  const { youtubeUrl, setYoutubeUrl, youtubeHistory, addToHistory, removeFromHistory } = useFocusStore();
+  const { youtubeUrl, setYoutubeUrl, youtubeHistory, addToHistory, removeFromHistory, isZenMaximized, toggleZenMaximize, pomodoroState } = useFocusStore();
   
   const [inputUrl, setInputUrl] = useState("");
   const [inputTitle, setInputTitle] = useState("");
@@ -67,10 +67,21 @@ export function FlowZenZone() {
       {/* Top Half: YouTube Player */}
       <div className="p-4 border-b border-border">
         <div className="bg-black aspect-video rounded-xl overflow-hidden border border-border shadow-[0_4px_20px_rgba(0,0,0,0.15)] relative group cursor-pointer">
-          <div className="absolute inset-0 bg-black/40 group-hover:bg-transparent transition-colors duration-500 pointer-events-none z-10"></div>
+          {/* Overlay to dim the video during focus mode */}
+          <div className={cn(
+            "absolute inset-0 transition-colors duration-500 pointer-events-none z-10",
+            (pomodoroState === "focusing" && !isZenMaximized) 
+              ? "bg-black/40 group-hover:bg-transparent" 
+              : "bg-transparent"
+          )}></div>
           {embedUrl ? (
             <iframe
-              className="w-full h-full grayscale-[60%] group-hover:grayscale-0 transition-all duration-700"
+              className={cn(
+                "w-full h-full transition-all duration-700",
+                (pomodoroState === "focusing" && !isZenMaximized)
+                  ? "grayscale-[60%] group-hover:grayscale-0"
+                  : "grayscale-0"
+              )}
               src={embedUrl}
               title="YouTube video player"
               frameBorder="0"
@@ -82,6 +93,14 @@ export function FlowZenZone() {
               Invalid YouTube URL
             </div>
           )}
+          {/* Maximize / Restore button — visible on hover */}
+          <button
+            onClick={toggleZenMaximize}
+            title={isZenMaximized ? "Thu nhỏ" : "Phóng to"}
+            className="absolute top-2 right-2 z-20 p-1.5 rounded-lg bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-black/80 hover:scale-110"
+          >
+            <HugeiconsIcon icon={isZenMaximized ? Cancel01Icon : FullscreenIcon} size={14} />
+          </button>
         </div>
       </div>
 

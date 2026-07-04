@@ -603,11 +603,11 @@ export default function CalendarPage() {
 
         {/* ── Todo Today Sidebar ── */}
         {hasUnscheduled && isSidebarOpen && (
-          <div className="w-56 flex-shrink-0 flex flex-col rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden">
-            <div className="px-4 py-3 border-b border-slate-800 flex flex-col gap-2">
+          <div className="w-56 flex-shrink-0 flex flex-col rounded-2xl border border-border bg-card overflow-hidden">
+            <div className="px-4 py-3 border-b border-border flex flex-col gap-2">
               <div>
-                <div className="text-xs font-bold text-slate-300 uppercase tracking-wider">Todo Today</div>
-                <div className="text-[10px] text-slate-500 mt-0.5">Kéo vào thả để xếp lịch</div>
+                <div className="text-xs font-bold text-card-foreground uppercase tracking-wider">Todo Today</div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">Kéo vào thả để xếp lịch</div>
               </div>
               <Button
                 size="sm"
@@ -635,7 +635,7 @@ export default function CalendarPage() {
                       data-title={pt.task.title}
                       data-mit={String(pt.isMit)}
                       data-color={accentColor || ""}
-                      className="p-2 rounded-lg border text-xs select-none transition-all cursor-grab active:cursor-grabbing hover:brightness-110"
+                      className="p-2 rounded-lg border border-border bg-card/50 text-card-foreground text-xs select-none transition-all cursor-grab active:cursor-grabbing hover:brightness-110"
                       style={
                         accentColor
                           ? {

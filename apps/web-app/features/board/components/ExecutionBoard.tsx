@@ -100,7 +100,7 @@ export function ExecutionBoard({ currentDate, tomorrowDate }: { currentDate: str
     const regularTasks = plannedTasks.filter(t => !t.isImportant);
 
     return (
-      <div className="flex-1 flex flex-col space-y-4">
+      <div className="flex-1 flex flex-col min-h-0 space-y-4">
         <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex justify-between items-center">
           <div>
             <div className="text-xs text-primary/80 font-semibold uppercase tracking-wider">Remaining Time</div>
@@ -191,7 +191,7 @@ export function ExecutionBoard({ currentDate, tomorrowDate }: { currentDate: str
     const regular = currentPlan.tasks.filter(t => !t.isMit);
 
     return (
-      <div className="flex-1 flex flex-col space-y-6">
+      <div className="flex-1 flex flex-col min-h-0 space-y-6">
         <div className="flex justify-between items-center border-b border-border pb-4">
           <div>
             <div className="text-xs text-muted-foreground uppercase tracking-wider">Available Time</div>
