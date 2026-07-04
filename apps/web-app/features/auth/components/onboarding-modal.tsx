@@ -240,7 +240,7 @@ export function OnboardingModal() {
                   {selectedQ === null ? (
                     <div className="space-y-3 animate-fade-in">
                       <p className="text-center flex items-center justify-center gap-1">
-                        <span className="animate-bounce inline-block">👆</span> Bấm vào từng ô để xem chi tiết
+                        Bấm vào từng ô để xem chi tiết
                       </p>
                       <div className="grid grid-cols-2 gap-2">
                         <div className="p-2.5 rounded-xl bg-rose-500/5 border border-rose-500/10 space-y-0.5">
@@ -266,47 +266,59 @@ export function OnboardingModal() {
                   ) : (
                     <div className="animate-fade-in space-y-3">
                       {selectedQ === "Q1" && (
-                        <div className="bg-rose-500/5 border border-rose-500/20 rounded-2xl p-4 space-y-2 text-left">
+                        <div className="bg-rose-500/5 border border-rose-500/20 rounded-2xl p-4 space-y-2.5 text-left">
                           <div className="flex items-center justify-between">
-                            <h4 className="font-bold text-rose-400 flex items-center gap-1.5 text-sm"><span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />Q1: Làm Ngay (Do)</h4>
-                            <button type="button" onClick={() => setSelectedQ(null)} className="text-[10px] font-bold text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded cursor-pointer">✕ Đóng</button>
+                            <h4 className="font-bold text-rose-400 flex items-center gap-1.5 text-sm"><span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />Q1 — Khẩn cấp & Quan trọng</h4>
+                            <button type="button" onClick={() => setSelectedQ(null)} className="text-[10px] font-bold text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded cursor-pointer">✕</button>
                           </div>
-                          <p className="text-[11.5px] text-muted-foreground"><strong>📌</strong> Bắt buộc giải quyết ngay — hạn chót gấp, sự cố, khủng hoảng.</p>
-                          <p className="text-[11.5px] text-muted-foreground"><strong>✍️ Tạo task:</strong> Tích cả <span className="text-rose-400 font-semibold">"Quan trọng"</span> và <span className="text-rose-400 font-semibold">"Khẩn cấp"</span>.</p>
-                          <p className="text-[11.5px] text-muted-foreground"><strong>🚀</strong> Làm đầu tiên trong ngày.</p>
+                          <p className="text-[11.5px] text-muted-foreground leading-relaxed">Đây là những việc <strong className="text-rose-300">bắt buộc phải xử lý ngay hôm nay</strong> — deadline gấp, sự cố kỹ thuật, bài thi sắp tới. Trì hoãn sẽ gây hậu quả nghiêm trọng.</p>
+                          <div className="bg-rose-500/10 rounded-xl px-3 py-2 space-y-1">
+                            <p className="text-[10.5px] font-semibold text-rose-300">📋 Ví dụ thực tế</p>
+                            <p className="text-[10.5px] text-muted-foreground">• Nộp báo cáo deadline hôm nay<br/>• Sửa lỗi production đang ảnh hưởng user<br/>• Ôn thi có lịch thi ngày mai</p>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground"><strong className="text-foreground">✍️ Trong MyPACE:</strong> Tích cả <span className="text-rose-400 font-semibold">"Quan trọng"</span> và <span className="text-rose-400 font-semibold">"Khẩn cấp"</span> khi tạo task. Auto-Schedule sẽ xếp Q1 vào <strong>đầu tiên</strong> trong ngày.</p>
                         </div>
                       )}
                       {selectedQ === "Q2" && (
-                        <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-4 space-y-2 text-left">
+                        <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-4 space-y-2.5 text-left">
                           <div className="flex items-center justify-between">
-                            <h4 className="font-bold text-emerald-400 flex items-center gap-1.5 text-sm"><span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />Q2: Lập Kế Hoạch (Plan)</h4>
-                            <button type="button" onClick={() => setSelectedQ(null)} className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded cursor-pointer">✕ Đóng</button>
+                            <h4 className="font-bold text-emerald-400 flex items-center gap-1.5 text-sm"><span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />Q2 — Quan trọng, chưa gấp <span className="text-[9px] bg-emerald-500/20 px-1.5 py-0.5 rounded font-bold">Trọng tâm</span></h4>
+                            <button type="button" onClick={() => setSelectedQ(null)} className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded cursor-pointer">✕</button>
                           </div>
-                          <p className="text-[11.5px] text-muted-foreground"><strong>📌</strong> Quan trọng nhưng chưa gấp — học tập, sức khỏe, mục tiêu dài hạn. Trọng tâm của MyPACE.</p>
-                          <p className="text-[11.5px] text-muted-foreground"><strong>✍️ Tạo task:</strong> Chỉ tích <span className="text-emerald-400 font-semibold">"Quan trọng"</span>.</p>
-                          <p className="text-[11.5px] text-muted-foreground"><strong>🚀</strong> Làm Q2 đều đặn giúp bạn không bao giờ rơi vào khủng hoảng Q1.</p>
+                          <p className="text-[11.5px] text-muted-foreground leading-relaxed"><strong className="text-emerald-300">Đây là vùng tăng trưởng thực sự</strong> — học kỹ năng mới, xây dựng sức khỏe, phát triển bản thân. Không ai thúc ép, nhưng đây mới là điều thay đổi cuộc đời bạn.</p>
+                          <div className="bg-emerald-500/10 rounded-xl px-3 py-2 space-y-1">
+                            <p className="text-[10.5px] font-semibold text-emerald-300">📋 Ví dụ thực tế</p>
+                            <p className="text-[10.5px] text-muted-foreground">• Học lập trình / ngoại ngữ mỗi ngày<br/>• Tập gym, thiền định, đọc sách<br/>• Xây dựng portfolio, side project</p>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground"><strong className="text-foreground">✍️ Trong MyPACE:</strong> Chỉ tích <span className="text-emerald-400 font-semibold">"Quan trọng"</span> (bỏ trống "Khẩn cấp"). Làm Q2 đều đặn giúp bạn <strong>không bao giờ rơi vào khủng hoảng Q1</strong>.</p>
                         </div>
                       )}
                       {selectedQ === "Q3" && (
-                        <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4 space-y-2 text-left">
+                        <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4 space-y-2.5 text-left">
                           <div className="flex items-center justify-between">
-                            <h4 className="font-bold text-amber-400 flex items-center gap-1.5 text-sm"><span className="w-2 h-2 rounded-full bg-amber-400" />Q3: Ủy Quyền (Delegate)</h4>
-                            <button type="button" onClick={() => setSelectedQ(null)} className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded cursor-pointer">✕ Đóng</button>
+                            <h4 className="font-bold text-amber-400 flex items-center gap-1.5 text-sm"><span className="w-2 h-2 rounded-full bg-amber-400" />Q3 — Gấp, không quan trọng</h4>
+                            <button type="button" onClick={() => setSelectedQ(null)} className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded cursor-pointer">✕</button>
                           </div>
-                          <p className="text-[11.5px] text-muted-foreground"><strong>📌</strong> Gấp nhưng không quan trọng — email, cuộc gọi, họp vô bổ.</p>
-                          <p className="text-[11.5px] text-muted-foreground"><strong>✍️ Tạo task:</strong> Chỉ tích <span className="text-amber-400 font-semibold">"Khẩn cấp"</span>.</p>
-                          <p className="text-[11.5px] text-muted-foreground"><strong>🚀</strong> Ủy quyền hoặc giải quyết nhanh sau Q1 & Q2.</p>
+                          <p className="text-[11.5px] text-muted-foreground leading-relaxed">Trông có vẻ gấp nhưng thực ra <strong className="text-amber-300">không đóng góp cho mục tiêu của bạn</strong>. Đây là bẫy năng suất — bạn bận rộn cả ngày mà chẳng tiến về phía mục tiêu thực sự.</p>
+                          <div className="bg-amber-500/10 rounded-xl px-3 py-2 space-y-1">
+                            <p className="text-[10.5px] font-semibold text-amber-300">📋 Ví dụ thực tế</p>
+                            <p className="text-[10.5px] text-muted-foreground">• Trả lời email không quan trọng<br/>• Dự họp mà mình không cần có mặt<br/>• Giúp người khác việc không liên quan đến goal</p>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground"><strong className="text-foreground">✍️ Trong MyPACE:</strong> Chỉ tích <span className="text-amber-400 font-semibold">"Khẩn cấp"</span> (bỏ trống "Quan trọng"). Hãy ủy quyền hoặc giải quyết thật nhanh — <strong>đừng để Q3 ăn vào thời gian Q2</strong>.</p>
                         </div>
                       )}
                       {selectedQ === "Q4" && (
-                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2 text-left">
+                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2.5 text-left">
                           <div className="flex items-center justify-between">
-                            <h4 className="font-bold text-slate-400 flex items-center gap-1.5 text-sm"><span className="w-2 h-2 rounded-full bg-slate-400" />Q4: Loại Bỏ (Eliminate)</h4>
-                            <button type="button" onClick={() => setSelectedQ(null)} className="text-[10px] font-bold text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded cursor-pointer">✕ Đóng</button>
+                            <h4 className="font-bold text-slate-400 flex items-center gap-1.5 text-sm"><span className="w-2 h-2 rounded-full bg-slate-500" />Q4 — Không gấp, không quan trọng</h4>
+                            <button type="button" onClick={() => setSelectedQ(null)} className="text-[10px] font-bold text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded cursor-pointer">✕</button>
                           </div>
-                          <p className="text-[11.5px] text-muted-foreground"><strong>📌</strong> Không gấp, không quan trọng — lướt mạng xã hội, giải trí vô ích.</p>
-                          <p className="text-[11.5px] text-muted-foreground"><strong>✍️ Tạo task:</strong> Để trống cả hai ô.</p>
-                          <p className="text-[11.5px] text-muted-foreground"><strong>🚀</strong> Loại bỏ tối đa. Chỉ làm sau khi xong Q1 → Q3.</p>
+                          <p className="text-[11.5px] text-muted-foreground leading-relaxed">Những hoạt động <strong className="text-slate-300">lãng phí thời gian thuần túy</strong> — không tạo ra giá trị, không giúp bạn tiến gần hơn đến mục tiêu. Cần nhận diện và loại bỏ.</p>
+                          <div className="bg-slate-800/60 rounded-xl px-3 py-2 space-y-1">
+                            <p className="text-[10.5px] font-semibold text-slate-300">📋 Ví dụ thực tế</p>
+                            <p className="text-[10.5px] text-muted-foreground">• Lướt TikTok / mạng xã hội vô mục đích<br/>• Xem video không liên quan đến goal<br/>• Tán gẫu hoặc họp hành không cần thiết</p>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground"><strong className="text-foreground">✍️ Trong MyPACE:</strong> Để trống cả hai ô — Auto-Schedule sẽ xếp Q4 <strong>cuối cùng</strong>. Lý tưởng nhất: <span className="text-slate-300 font-semibold">loại bỏ hoàn toàn</span> khỏi kế hoạch.</p>
                         </div>
                       )}
                     </div>
@@ -326,23 +338,23 @@ export function OnboardingModal() {
                   {/* Action button */}
                   <div>
                     {simStep === 1 && (
-                      <Button onClick={() => setSimStep(2)} size="sm" className="w-full h-8 rounded-xl font-semibold text-xs bg-primary hover:bg-primary/90 text-primary-foreground shadow-md animate-pulse">
-                        👉 Tính giờ rảnh còn lại
+                      <Button onClick={() => setSimStep(2)} size="sm" className="w-full h-8 rounded-xl font-semibold text-xs bg-primary hover:bg-primary/90 text-primary-foreground shadow-md">
+                        Tính giờ rảnh còn lại
                       </Button>
                     )}
                     {simStep === 2 && (
                       <Button onClick={() => setSimStep(3)} size="sm" className="w-full h-8 rounded-xl font-semibold text-xs bg-emerald-600 hover:bg-emerald-500 text-white shadow-md">
-                        ⚡ Tự động xếp lịch (Auto-Schedule)
+                        Tự động xếp lịch (Auto-Schedule)
                       </Button>
                     )}
                     {simStep === 3 && (
                       <Button onClick={() => setSimStep(4)} size="sm" className="w-full h-8 rounded-xl font-semibold text-xs bg-rose-600 hover:bg-rose-500 text-white shadow-md">
-                        🔒 Khóa kế hoạch & bắt đầu ngày mới
+                        Khóa kế hoạch & bắt đầu ngày mới
                       </Button>
                     )}
                     {simStep === 4 && (
                       <Button variant="ghost" size="sm" onClick={() => setSimStep(1)} className="w-full h-8 rounded-xl font-medium text-xs text-muted-foreground hover:text-foreground hover:bg-muted/10">
-                        🔄 Trải nghiệm lại từ đầu
+                        Trải nghiệm lại từ đầu
                       </Button>
                     )}
                   </div>
