@@ -11,6 +11,7 @@ import java.util.UUID;
 @Repository
 public interface GoalRepository extends JpaRepository<Goal, UUID> {
     List<Goal> findByUserId(UUID userId);
+    List<Goal> findByUserIdAndStatus(UUID userId, String status);
     int countByUserIdAndStatus(UUID userId, String status);
     List<Goal> findByParentGoalId(UUID parentGoalId);
     long countByParentGoalId(UUID parentGoalId);

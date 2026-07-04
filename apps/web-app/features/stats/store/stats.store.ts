@@ -6,17 +6,17 @@ interface StatsState {
   overview: StatsOverviewResponse | null;
   isLoading: boolean;
   error: string | null;
-  fetchOverview: () => Promise<void>;
+  fetchOverview: (startDate?: string, endDate?: string) => Promise<void>;
 }
 
 export const useStatsStore = create<StatsState>((set) => ({
   overview: null,
   isLoading: false,
   error: null,
-  fetchOverview: async () => {
+  fetchOverview: async (startDate, endDate) => {
     set({ isLoading: true, error: null });
     try {
-      const data = await statsApi.getOverview();
+      const data = await statsApi.getOverview(startDate, endDate);
       set({ overview: data, isLoading: false });
     } catch (error: any) {
       set({ 

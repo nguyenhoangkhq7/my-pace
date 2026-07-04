@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useState, useRef } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +13,7 @@ interface ManageCategoriesModalProps {
   onClose: () => void;
 }
 
-const CATEGORY_COLORS = ["#64748b", "#ef4444", "#f97316", "#f59e0b", "#84cc16", "#22c55e", "#06b6d4", "#3b82f6", "#8b5cf6", "#d946ef", "#f43f5e"];
+const CATEGORY_COLORS = ["#0ea5e9", "#10b981", "#8b5cf6", "#f59e0b", "#f43f5e", "#6366f1", "#14b8a6", "#ec4899", "#ef4444", "#475569"];
 
 export function ManageCategoriesModal({ isOpen, onClose }: ManageCategoriesModalProps) {
   const { categories, updateCategory, deleteCategory } = useBoardStore();
@@ -22,6 +22,9 @@ export function ManageCategoriesModal({ isOpen, onClose }: ManageCategoriesModal
   const [editName, setEditName] = useState("");
   const [editColor, setEditColor] = useState(CATEGORY_COLORS[0]);
   const [error, setError] = useState("");
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const editCategoryColorInputRef = useRef<HTMLInputElement>(null);
 
   const handleStartEdit = (category: typeof categories[0]) => {
     setEditingId(category.id);
@@ -58,15 +61,21 @@ export function ManageCategoriesModal({ isOpen, onClose }: ManageCategoriesModal
     }
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    const confirmed = window.confirm(`Bạn có chắc chắn muốn xóa Category "${name}" không?\nCác Task và Goal liên kết với Category này sẽ tự động gỡ liên kết (không bị xóa).`);
-    if (!confirmed) return;
+  const handleDeleteClick = (id: string, name: string) => {
+    setDeleteTarget({ id, name });
+    setIsConfirmDeleteOpen(true);
+  };
 
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      await deleteCategory(id);
+      await deleteCategory(deleteTarget.id);
       setError("");
+      setIsConfirmDeleteOpen(false);
+      setDeleteTarget(null);
     } catch (err: any) {
       setError(err.message || "Không thể xóa Category");
+      setIsConfirmDeleteOpen(false);
     }
   };
 
@@ -99,18 +108,45 @@ export function ManageCategoriesModal({ isOpen, onClose }: ManageCategoriesModal
                       onChange={(e) => setEditName(e.target.value)}
                       className="bg-slate-950 border-slate-800 text-sm h-9"
                     />
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-1.5 items-center">
                       {CATEGORY_COLORS.map((color) => (
-                        <div
+                        <button
                           key={color}
+                          type="button"
                           onClick={() => setEditColor(color)}
                           className={cn(
-                            "w-5 h-5 rounded-full cursor-pointer ring-offset-slate-900",
-                            editColor === color ? "ring-2 ring-white" : ""
+                            "w-5 h-5 rounded-full cursor-pointer ring-offset-slate-900 border border-black/15 transition-all hover:scale-110 duration-200",
+                            editColor === color ? "ring-2 ring-white scale-105 shadow-md" : "opacity-85 hover:opacity-100"
                           )}
                           style={{ backgroundColor: color }}
                         />
                       ))}
+
+                      {!CATEGORY_COLORS.includes(editColor) && (
+                        <button
+                          type="button"
+                          onClick={() => editCategoryColorInputRef.current?.click()}
+                          className="w-5 h-5 rounded-full border border-white ring-2 ring-white scale-105 shadow-md cursor-pointer transition-all"
+                          style={{ backgroundColor: editColor }}
+                          title={`Màu tự chọn: ${editColor}`}
+                        />
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => editCategoryColorInputRef.current?.click()}
+                        className="w-5 h-5 rounded-full border border-black/15 cursor-pointer transition-all hover:scale-110 flex items-center justify-center bg-[linear-gradient(45deg,#ff0000,#00ff00,#0000ff)] opacity-85 hover:opacity-100"
+                        title="Tự chọn màu khác..."
+                      >
+                        <span className="text-[10px] text-white font-bold drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.6)]">+</span>
+                      </button>
+                      <input
+                        ref={editCategoryColorInputRef}
+                        type="color"
+                        value={editColor}
+                        onChange={(e) => setEditColor(e.target.value)}
+                        className="sr-only"
+                      />
                     </div>
                     <div className="flex space-x-2 pt-1">
                       <Button
@@ -157,8 +193,8 @@ export function ManageCategoriesModal({ isOpen, onClose }: ManageCategoriesModal
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 text-slate-400 hover:text-red-400 hover:bg-slate-800"
-                      onClick={() => handleDelete(c.id, c.name)}
+                      className="h-7 w-7 text-slate-400 hover:text-red-400 hover:bg-slate-800 cursor-pointer"
+                      onClick={() => handleDeleteClick(c.id, c.name)}
                     >
                       <HugeiconsIcon icon={Delete01Icon} className="w-3.5 h-3.5" />
                     </Button>
@@ -175,6 +211,47 @@ export function ManageCategoriesModal({ isOpen, onClose }: ManageCategoriesModal
           </Button>
         </div>
       </DialogContent>
+      
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isConfirmDeleteOpen} onOpenChange={setIsConfirmDeleteOpen}>
+        <DialogContent showCloseButton={false} className="sm:max-w-[360px] max-w-xs rounded-3xl p-6 border-none bg-slate-950 text-slate-50 border-slate-800 shadow-2xl text-center">
+          <div className="flex flex-col items-center space-y-4 py-2">
+            <div className="h-12 w-12 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500 animate-pulse">
+              <HugeiconsIcon icon={Delete01Icon} size={24} />
+            </div>
+            <div className="space-y-1">
+              <DialogTitle className="text-lg font-bold text-foreground text-center">
+                Xóa Category này?
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground text-center">
+                Bạn có chắc chắn muốn xóa Category &quot;{deleteTarget?.name}&quot; không?
+                Các Task và Goal liên kết với Category này sẽ tự động gỡ liên kết (không bị xóa).
+              </DialogDescription>
+            </div>
+          </div>
+          <DialogFooter className="flex flex-row justify-center gap-3 pt-4 border-t border-border/40 mt-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setIsConfirmDeleteOpen(false);
+                setDeleteTarget(null);
+              }}
+              className="h-10 rounded-xl font-medium text-muted-foreground hover:text-foreground flex-1 cursor-pointer"
+            >
+              Hủy
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              className="h-10 rounded-xl font-semibold bg-rose-600 hover:bg-rose-500 text-white flex-1 transition-all active:scale-[0.97] cursor-pointer"
+            >
+              Đồng ý xóa
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }

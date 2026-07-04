@@ -14,6 +14,10 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     List<Task> findByUserId(UUID userId);
     List<Task> findByUserIdAndStatus(UUID userId, String status);
     boolean existsByGoalId(UUID goalId);
+    boolean existsByGoalIdAndDueDate(UUID goalId, java.time.LocalDate dueDate);
+
+    @Query("SELECT COALESCE(SUM(t.actualMinutes), 0) FROM Task t WHERE t.goalId = :goalId AND t.status = 'Done' AND t.dueDate BETWEEN :startDate AND :endDate")
+    Integer sumActualMinutesByGoalIdAndDueDateBetween(@Param("goalId") UUID goalId, @Param("startDate") java.time.LocalDate startDate, @Param("endDate") java.time.LocalDate endDate);
 
     @Query("SELECT COALESCE(SUM(t.actualMinutes), 0) FROM Task t WHERE t.goalId = :goalId AND t.status = 'Done'")
     Integer sumActualMinutesByGoalId(@Param("goalId") UUID goalId);

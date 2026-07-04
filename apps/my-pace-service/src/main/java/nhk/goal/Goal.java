@@ -69,6 +69,13 @@ public class Goal {
     @NotNull
     @Column(name = "progress_pct", nullable = false)
     private Integer progressPct = 0;
+
+    @NotNull
+    @Column(name = "auto_create_task", nullable = false)
+    private Boolean autoCreateTask = false;
+
+    @Column(name = "default_session_minutes")
+    private Integer defaultSessionMinutes;
     
     @OneToOne(mappedBy = "goal", cascade = CascadeType.ALL, orphanRemoval = true)
     private TimeBoxedGoal timeBoxedGoal;

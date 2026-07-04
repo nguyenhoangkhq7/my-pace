@@ -33,6 +33,22 @@ export default function RootLayout({
       lang="en"
       className={cn("h-full antialiased", inter.variable, geistMono.variable)}
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var theme = localStorage.getItem('theme') || 'dark';
+                  document.documentElement.classList.remove('light', 'dark');
+                  document.documentElement.classList.add(theme);
+                  document.documentElement.style.colorScheme = theme;
+                } catch (e) {}
+              })();
+            `
+          }}
+        />
+      </head>
       <body className="min-h-screen bg-background text-foreground">
         <AuthProvider>
           <TooltipProvider>

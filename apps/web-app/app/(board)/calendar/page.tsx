@@ -19,14 +19,14 @@ import { Button } from "@/components/ui/button";
 import { TaskTimeBlockModal } from "@/features/board/components/TaskTimeBlockModal";
 import type { Task } from "@/features/board/types";
 import { autoSchedule } from "@/features/board/utils/autoSchedule";
+import { cn } from "@/lib/utils";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const EVENT_COLOR     = "#0ea5e9";
 const EVENT_TEXT      = "#ffffff";
-const EVENT_HIGHLIGHT = "rgba(14,165,233,0.15)";
 const TASK_COLOR_MIT  = "#6366f1"; // indigo for MITs
 const TASK_COLOR_REG  = "#475569"; // slate for regular tasks
+const PRESET_COLORS   = ["#0ea5e9", "#10b981", "#8b5cf6", "#f59e0b", "#f43f5e", "#6366f1", "#14b8a6", "#ec4899", "#ef4444", "#475569"];
 
 const todayStr = () => new Date().toISOString().split("T")[0];
 const toHHMM = (t: string) => t.substring(0, 5);
@@ -83,6 +83,21 @@ export default function CalendarPage() {
   const [isAutoScheduling, setIsAutoScheduling] = useState(false);
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [fixedEventColor, setFixedEventColor] = useState("#0ea5e9");
+  const colorInputRef = useRef<HTMLInputElement>(null);
+
+  // Hydrate fixed event color on mount
+  useEffect(() => {
+    const savedColor = localStorage.getItem("myPaceFixedEventColor");
+    if (savedColor) {
+      setFixedEventColor(savedColor);
+    }
+  }, []);
+
+  const handleColorChange = (color: string) => {
+    setFixedEventColor(color);
+    localStorage.setItem("myPaceFixedEventColor", color);
+  };
 
   // ── External Draggable setup ──────────────────────────────────────────────
   useEffect(() => {
@@ -282,10 +297,10 @@ export default function CalendarPage() {
       start: `${occ.occurrenceDate}T${occ.startTime}`,
       end: `${occ.occurrenceDate}T${occ.endTime}`,
       extendedProps: { occurrence: occ },
-      backgroundColor: EVENT_COLOR,
-      borderColor: EVENT_COLOR,
+      backgroundColor: fixedEventColor,
+      borderColor: fixedEventColor,
       textColor: EVENT_TEXT,
-      ...(occ.recurrenceType !== "NONE" && { backgroundColor: EVENT_COLOR + "d9" }),
+      ...(occ.recurrenceType !== "NONE" && { backgroundColor: fixedEventColor + "d9" }),
     })),
     // Time blocks — use store `timeBlocks` as single source of truth
     // (avoids the empty-array truthy bug with dailyPlanToday?.timeBlocks)
@@ -492,16 +507,61 @@ export default function CalendarPage() {
                 Kéo task từ sidebar → lịch · Click để tạo sự kiện · Kéo thả để di chuyển
               </p>
             </div>
-            {hasUnscheduled && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                className="text-xs h-8 border-slate-700 bg-slate-900/50 hover:bg-slate-800 text-slate-300 transition-colors"
-              >
-                {isSidebarOpen ? "Ẩn Todo" : "Hiện Todo"}
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {/* Color Selector for Fixed Events */}
+              <div className="flex items-center gap-2 border border-border bg-muted/20 rounded-xl px-3 h-8 shadow-inner">
+                <span className="text-[10px] font-semibold text-muted-foreground">Màu lịch cố định:</span>
+                <div className="flex gap-1.5 items-center">
+                  {PRESET_COLORS.map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => handleColorChange(color)}
+                      className={cn(
+                        "w-3.5 h-3.5 rounded-full border border-black/15 cursor-pointer transition-all hover:scale-110 duration-200",
+                        fixedEventColor === color ? "ring-2 ring-white scale-105 shadow-md" : "opacity-85 hover:opacity-100"
+                      )}
+                      style={{ backgroundColor: color }}
+                      title="Đổi màu lịch cố định"
+                    />
+                  ))}
+                  
+                  {!PRESET_COLORS.includes(fixedEventColor) && (
+                    <button
+                      onClick={() => colorInputRef.current?.click()}
+                      className="w-3.5 h-3.5 rounded-full border border-white ring-2 ring-white scale-105 shadow-md cursor-pointer transition-all"
+                      style={{ backgroundColor: fixedEventColor }}
+                      title={`Màu tự chọn: ${fixedEventColor}`}
+                    />
+                  )}
+
+                  <button
+                    onClick={() => colorInputRef.current?.click()}
+                    className="w-3.5 h-3.5 rounded-full border border-black/15 cursor-pointer transition-all hover:scale-110 flex items-center justify-center bg-[linear-gradient(45deg,#ff0000,#00ff00,#0000ff)] opacity-85 hover:opacity-100"
+                    title="Tự chọn màu khác..."
+                  >
+                    <span className="text-[9px] text-white font-bold drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.6)]">+</span>
+                  </button>
+                  <input
+                    ref={colorInputRef}
+                    type="color"
+                    value={fixedEventColor}
+                    onChange={(e) => handleColorChange(e.target.value)}
+                    className="sr-only"
+                  />
+                </div>
+              </div>
+
+              {hasUnscheduled && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                  className="text-xs h-8 border-slate-700 bg-slate-900/50 hover:bg-slate-800 text-slate-300 transition-colors rounded-xl px-3"
+                >
+                  {isSidebarOpen ? "Ẩn Todo" : "Hiện Todo"}
+                </Button>
+              )}
+            </div>
           </div>
 
           <div className="flex-1 rounded-2xl border border-border bg-card overflow-hidden shadow-sm calendar-wrapper">
@@ -656,8 +716,8 @@ export default function CalendarPage() {
         .calendar-wrapper .fc-button:hover { background-color: hsl(var(--accent)) !important; }
         .calendar-wrapper .fc-button-active,
         .calendar-wrapper .fc-button-primary:not(:disabled).fc-button-active {
-          background-color: ${EVENT_COLOR} !important;
-          border-color: ${EVENT_COLOR} !important;
+          background-color: ${fixedEventColor} !important;
+          border-color: ${fixedEventColor} !important;
           color: #fff !important;
         }
         .calendar-wrapper .fc-timegrid-slot { height: 2.5rem; }
@@ -668,7 +728,7 @@ export default function CalendarPage() {
           font-size: 0.75rem !important;
           cursor: pointer !important;
         }
-        .calendar-wrapper .fc-highlight { background: rgba(14, 165, 233, 0.05) !important; }
+        .calendar-wrapper .fc-highlight { background: ${fixedEventColor}15 !important; }
         .calendar-wrapper .fc-day-today { background-color: rgba(255, 255, 255, 0.01) !important; }
         .calendar-wrapper .fc-col-header-cell-cushion,
         .calendar-wrapper .fc-timegrid-axis-cushion,

@@ -12,8 +12,8 @@ export function FlowTodoList() {
   
   if (!dailyPlanToday || !dailyPlanToday.tasks || dailyPlanToday.tasks.length === 0) {
     return (
-      <div className="h-full flex flex-col items-center justify-center p-6 text-center text-slate-500 border-r border-[#1e293b] bg-[#0a0f1e]">
-        <div className="w-12 h-12 bg-[#0f172a] rounded-full flex items-center justify-center mb-3 shadow-inner">
+      <div className="h-full flex flex-col items-center justify-center p-6 text-center text-muted-foreground border-r border-border bg-background">
+        <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-3 shadow-inner">
           <span className="text-xl">📝</span>
         </div>
         <p className="text-sm font-medium">Chưa có công việc nào cho hôm nay.</p>
@@ -37,9 +37,9 @@ export function FlowTodoList() {
         className={cn(
           "p-3 rounded-xl border flex items-start space-x-3 transition-all cursor-pointer group",
           isActive 
-            ? "bg-[#0f172a] border-indigo-500/50 shadow-[0_0_20px_rgba(99,102,241,0.15)]" 
-            : "bg-[#0f172a] border-[#1e293b] hover:border-indigo-500/30 hover:bg-[#131c31]",
-          isDone ? "opacity-40 grayscale cursor-default hover:border-[#1e293b] hover:bg-[#0f172a]" : ""
+            ? "bg-card border-indigo-500/55 shadow-[0_0_20px_rgba(99,102,241,0.15)]" 
+            : "bg-card border-border hover:border-indigo-500/30 hover:bg-muted",
+          isDone ? "opacity-40 grayscale cursor-default hover:border-border hover:bg-card" : ""
         )}
       >
         <div className="mt-1 shrink-0">
@@ -52,7 +52,7 @@ export function FlowTodoList() {
                <HugeiconsIcon icon={PlayIcon} size={12} />
             </div>
           ) : (
-            <div className="w-5 h-5 rounded-full border border-slate-700 group-hover:border-indigo-400 flex items-center justify-center text-transparent group-hover:text-indigo-400 transition-colors">
+            <div className="w-5 h-5 rounded-full border border-border group-hover:border-indigo-400 flex items-center justify-center text-transparent group-hover:text-indigo-400 transition-colors">
                <HugeiconsIcon icon={PlayIcon} size={12} className="ml-0.5" />
             </div>
           )}
@@ -60,20 +60,20 @@ export function FlowTodoList() {
         <div className="flex-1 min-w-0">
           <div className={cn(
             "text-sm font-medium truncate tracking-wide",
-            isDone ? "text-slate-500 line-through" : isActive ? "text-indigo-300" : "text-slate-200"
+            isDone ? "text-muted-foreground line-through" : isActive ? "text-indigo-300" : "text-foreground"
           )}>
             {pt.task.title}
           </div>
-          <div className="flex items-center mt-1.5 space-x-2 text-[10px] font-medium text-slate-500 uppercase tracking-wider">
+          <div className="flex items-center mt-1.5 space-x-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
             {pt.task.estimatedMinutes > 0 && (
-              <span className="bg-[#0a0f1e] px-1.5 py-0.5 rounded border border-[#1e293b] text-slate-400">
+              <span className="bg-background px-1.5 py-0.5 rounded border border-border text-muted-foreground">
                 {pt.task.estimatedMinutes}m
               </span>
             )}
             {pt.task.category && (
               <div className="flex items-center space-x-1">
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: pt.task.category.color }}></span>
-                <span className="truncate text-slate-400">
+                <span className="truncate text-muted-foreground">
                   {pt.task.category.name}
                 </span>
               </div>
@@ -86,19 +86,19 @@ export function FlowTodoList() {
 
   return (
     <div className={cn(
-      "h-full flex flex-col border-r border-[#1e293b] bg-[#0a0f1e] transition-opacity duration-700",
+      "h-full flex flex-col border-r border-border bg-background transition-opacity duration-700",
       isFocusing ? "opacity-30 hover:opacity-100" : "opacity-100"
     )}>
-      <div className="p-5 border-b border-[#1e293b] flex items-center justify-between">
+      <div className="p-5 border-b border-border flex items-center justify-between">
         <div>
-          <h2 className="font-bold text-slate-100 tracking-wide flex items-center">
+          <h2 className="font-bold text-foreground tracking-wide flex items-center">
             Flow
             <span className="relative flex h-2 w-2 ml-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
             </span>
           </h2>
-          <p className="text-xs text-slate-500 font-medium mt-1 uppercase tracking-widest">
+          <p className="text-xs text-muted-foreground font-medium mt-1 uppercase tracking-widest">
             Today: {dailyPlanToday.tasks.length} tasks
           </p>
         </div>
@@ -116,7 +116,7 @@ export function FlowTodoList() {
         
         {regular.length > 0 && (
           <div className="space-y-4">
-            <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-1">Upcoming</h3>
+            <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-1">Upcoming</h3>
             <div className="space-y-3">
               {regular.map(renderTask)}
             </div>

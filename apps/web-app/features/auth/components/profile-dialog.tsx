@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuthStore } from "@/features/auth/store/auth.store";
-import { post } from "@/lib/fetchClient";
+import { post, put } from "@/lib/fetchClient";
 import { AppAlert } from "@/components/feedback/app-alert";
 import { cn } from "@/lib/utils";
 
@@ -68,8 +68,8 @@ export function ProfileDialog({ isOpen, onOpenChange }: ProfileDialogProps) {
     };
 
     try {
-      const response = await post("users/profile", payload);
-      if (response && typeof response === "object" && "id" in response) {
+      const response = await put<any, typeof payload>("users/profile", payload);
+      if (response.data && "id" in response.data) {
         if (accessToken && user) {
           setSession({
             accessToken,

@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { PanelImperativeHandle } from "react-resizable-panels";
-import { ChevronLeft, ChevronRight, Settings2, RefreshCw } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Settings2, RefreshCw } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,34 +31,6 @@ export default function FlowPage() {
   const isXl = useMediaQuery("(min-width: 1280px)");
   const [mounted, setMounted] = useState(false);
   const [resetKey, setResetKey] = useState(0);
-
-  const leftPanelRef = useRef<PanelImperativeHandle>(null);
-  const rightPanelRef = useRef<PanelImperativeHandle>(null);
-  const [isLeftCollapsed, setIsLeftCollapsed] = useState(false);
-  const [isRightCollapsed, setIsRightCollapsed] = useState(false);
-  
-  const leftPanelPrevSize = useRef<number>(isXl ? 20 : 25);
-  const rightPanelPrevSize = useRef<number>(20);
-
-  const toggleLeftPanel = () => {
-    if (isLeftCollapsed) {
-      leftPanelRef.current?.resize(isXl ? 20 : 25);
-      setIsLeftCollapsed(false);
-    } else {
-      leftPanelRef.current?.collapse();
-      setIsLeftCollapsed(true);
-    }
-  };
-
-  const toggleRightPanel = () => {
-    if (isRightCollapsed) {
-      rightPanelRef.current?.resize(20);
-      setIsRightCollapsed(false);
-    } else {
-      rightPanelRef.current?.collapse();
-      setIsRightCollapsed(true);
-    }
-  };
 
   // Fetch data if refreshed directly on /flow
   useEffect(() => {
@@ -142,7 +113,7 @@ export default function FlowPage() {
 
   if (!mounted || !sizes) {
     return (
-      <div className="flex h-full w-full bg-[#0a0f1e] text-slate-100 overflow-hidden items-center justify-center">
+      <div className="flex h-full w-full bg-background text-foreground overflow-hidden items-center justify-center">
       </div>
     );
   }
@@ -153,7 +124,7 @@ export default function FlowPage() {
   const zenzoneSize = isXl ? sizes[2] : 0;
 
   return (
-    <div className="h-full w-full bg-[#0a0f1e] text-slate-100 overflow-hidden relative">
+    <div className="h-full w-full bg-background text-foreground overflow-hidden relative">
       {/* Fix iframe stealing mouse events during resize */}
       <style dangerouslySetInnerHTML={{__html: `
         [data-panel-group-resizing] iframe {
@@ -166,22 +137,22 @@ export default function FlowPage() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button 
-              className="bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-slate-200 p-2.5 rounded-lg shadow-lg border border-slate-700/50 backdrop-blur transition-all active:scale-95 cursor-pointer"
+              className="bg-card hover:bg-muted text-muted-foreground hover:text-foreground p-2.5 rounded-lg shadow-lg border border-border backdrop-blur transition-all active:scale-95 cursor-pointer"
               title="Cài đặt & Giao diện"
             >
               <Settings2 className="w-4.5 h-4.5" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-[#0f172a] border-[#1e293b] text-slate-200 shadow-xl min-w-44">
+          <DropdownMenuContent align="end" className="bg-card border-border text-foreground shadow-xl min-w-44">
             <DropdownMenuItem 
               onClick={() => useFocusStore.getState().setIsSettingsOpen(true)}
-              className="hover:bg-slate-800 focus:bg-slate-800 cursor-pointer flex items-center gap-2 text-xs font-semibold py-2 px-3 text-slate-300 hover:text-slate-100"
+              className="hover:bg-muted focus:bg-muted cursor-pointer flex items-center gap-2 text-xs font-semibold py-2 px-3 text-muted-foreground hover:text-foreground"
             >
-              <Settings2 className="w-4 h-4 text-slate-400" /> Cấu hình Pomodoro
+              <Settings2 className="w-4 h-4 text-muted-foreground" /> Cấu hình Pomodoro
             </DropdownMenuItem>
             <DropdownMenuItem 
               onClick={handleResetLayout}
-              className="hover:bg-slate-800 focus:bg-slate-800 cursor-pointer flex items-center gap-2 text-xs font-semibold py-2 px-3 text-rose-400 hover:text-rose-300"
+              className="hover:bg-muted focus:bg-muted cursor-pointer flex items-center gap-2 text-xs font-semibold py-2 px-3 text-rose-400 hover:text-rose-300"
             >
               <RefreshCw className="w-4 h-4 text-rose-400" /> Reset giao diện
             </DropdownMenuItem>
@@ -196,15 +167,12 @@ export default function FlowPage() {
         {isLg && (
           <>
             <ResizablePanel 
-              ref={leftPanelRef}
               id="todo-panel" 
               {...({ order: 1 } as any)} 
               defaultSize={todoSize} 
               minSize={10} 
               collapsible={true} 
               collapsedSize={0}
-              onCollapse={() => setIsLeftCollapsed(true)}
-              onExpand={() => setIsLeftCollapsed(false)}
             >
               <div className={cn("h-full w-full overflow-y-auto transition-opacity duration-700", pomodoroState === "focusing" ? "opacity-20 hover:opacity-100" : "")}>
                  <FlowTodoList />
@@ -216,31 +184,11 @@ export default function FlowPage() {
         )}
         
         {/* Cột Giữa: Pomodoro Workspace */}
-        <ResizablePanel id="pomodoro-panel" {...({ order: 2 } as any)} defaultSize={pomodoroSize} minSize={20}>
+        <ResizablePanel id="pomodoro-panel" {...({ order: 2 } as any)} defaultSize={pomodoroSize} minSize={25}>
           <div className="h-full w-full relative">
-            {isLg && (
-              <button 
-                onClick={toggleLeftPanel}
-                className="absolute left-4 top-4 z-50 p-1.5 bg-[#0f172a]/50 hover:bg-[#1e293b] text-slate-500 hover:text-slate-300 border border-[#1e293b] rounded-lg shadow-md opacity-20 hover:opacity-100 transition-all cursor-pointer"
-                title={isLeftCollapsed ? "Mở danh sách công việc" : "Thu gọn danh sách công việc"}
-              >
-                {isLeftCollapsed ? <ChevronRight className="w-4.5 h-4.5" /> : <ChevronLeft className="w-4.5 h-4.5" />}
-              </button>
-            )}
- 
             <div className="h-full w-full flex items-center justify-center overflow-y-auto">
               <FlowPomodoro />
             </div>
- 
-            {isXl && (
-              <button 
-                onClick={toggleRightPanel}
-                className="absolute right-4 top-4 z-50 p-1.5 bg-[#0f172a]/50 hover:bg-[#1e293b] text-slate-500 hover:text-slate-300 border border-[#1e293b] rounded-lg shadow-md opacity-20 hover:opacity-100 transition-all cursor-pointer"
-                title={isRightCollapsed ? "Mở Zen Zone" : "Thu gọn Zen Zone"}
-              >
-                {isRightCollapsed ? <ChevronLeft className="w-4.5 h-4.5" /> : <ChevronRight className="w-4.5 h-4.5" />}
-              </button>
-            )}
           </div>
         </ResizablePanel>
         
@@ -250,15 +198,12 @@ export default function FlowPage() {
             <ResizableHandle withHandle />
             
             <ResizablePanel 
-              ref={rightPanelRef}
               id="zenzone-panel" 
               {...({ order: 3 } as any)} 
               defaultSize={zenzoneSize} 
               minSize={10} 
               collapsible={true} 
               collapsedSize={0}
-              onCollapse={() => setIsRightCollapsed(true)}
-              onExpand={() => setIsRightCollapsed(false)}
             >
               <div className={cn("h-full w-full overflow-y-auto transition-opacity duration-700", pomodoroState === "focusing" ? "opacity-20 hover:opacity-100" : "")}>
                  <FlowZenZone />
