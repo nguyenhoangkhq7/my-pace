@@ -17,9 +17,12 @@ public class StatsController {
     private final StatsService statsService;
 
     @GetMapping("/overview")
-    public ResponseEntity<StatsResponse> getOverview(@AuthenticationPrincipal UserDetailsCustom userDetails) {
+    public ResponseEntity<StatsResponse> getOverview(
+            @AuthenticationPrincipal UserDetailsCustom userDetails,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String startDate,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String endDate) {
         User user = userDetails.user();
-        StatsResponse response = statsService.getOverview(user);
+        StatsResponse response = statsService.getOverview(user, startDate, endDate);
         return ResponseEntity.ok(response);
     }
 }

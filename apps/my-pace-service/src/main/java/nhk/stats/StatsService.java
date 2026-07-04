@@ -21,18 +21,38 @@ public class StatsService {
     private EntityManager entityManager;
 
     @Transactional(readOnly = true)
-    public StatsResponse getOverview(User user) {
-        OffsetDateTime thirtyDaysAgo = OffsetDateTime.now().minusDays(30);
-        LocalDate thirtyDaysAgoDate = LocalDate.now().minusDays(30);
+    public StatsResponse getOverview(User user, String startDateStr, String endDateStr) {
+        java.time.ZoneId userZone = java.time.ZoneId.of(user.getTimezone());
+        LocalDate today = LocalDate.now(userZone);
+        
+        LocalDate startDateDate;
+        LocalDate endDateDate;
+
+        if (startDateStr != null && endDateStr != null && !startDateStr.isEmpty() && !endDateStr.isEmpty()) {
+            try {
+                startDateDate = LocalDate.parse(startDateStr);
+                endDateDate = LocalDate.parse(endDateStr);
+            } catch (Exception e) {
+                startDateDate = today.minusDays(30);
+                endDateDate = today;
+            }
+        } else {
+            startDateDate = today.minusDays(30);
+            endDateDate = today;
+        }
+
+        OffsetDateTime startDate = startDateDate.atStartOfDay(userZone).toOffsetDateTime();
+        OffsetDateTime endDate = endDateDate.atTime(23, 59, 59, 999999999).atZone(userZone).toOffsetDateTime();
 
         // 1. Matrix Time
         List<Object[]> matrixResults = entityManager.createQuery(
                 "SELECT t.isUrgent, t.isImportant, SUM(t.actualMinutes) " +
                 "FROM Task t " +
-                "WHERE t.userId = :userId AND t.updatedAt >= :startDate AND t.actualMinutes > 0 " +
+                "WHERE t.userId = :userId AND t.updatedAt >= :startDate AND t.updatedAt <= :endDate AND t.actualMinutes > 0 " +
                 "GROUP BY t.isUrgent, t.isImportant", Object[].class)
                 .setParameter("userId", user.getId())
-                .setParameter("startDate", thirtyDaysAgo)
+                .setParameter("startDate", startDate)
+                .setParameter("endDate", endDate)
                 .getResultList();
 
         Map<String, Integer> matrixTime = new HashMap<>();
@@ -67,10 +87,11 @@ public class StatsService {
         List<Object[]> categoryResults = entityManager.createQuery(
                 "SELECT c.name, SUM(t.actualMinutes) " +
                 "FROM Task t LEFT JOIN t.category c " +
-                "WHERE t.userId = :userId AND t.updatedAt >= :startDate AND t.actualMinutes > 0 " +
+                "WHERE t.userId = :userId AND t.updatedAt >= :startDate AND t.updatedAt <= :endDate AND t.actualMinutes > 0 " +
                 "GROUP BY c.name", Object[].class)
                 .setParameter("userId", user.getId())
-                .setParameter("startDate", thirtyDaysAgo)
+                .setParameter("startDate", startDate)
+                .setParameter("endDate", endDate)
                 .getResultList();
 
         for (Object[] row : categoryResults) {
@@ -82,16 +103,18 @@ public class StatsService {
         // 3. Plan Completion Rate
         Long totalPlanTasks = entityManager.createQuery(
                 "SELECT COUNT(dpt.id) FROM DailyPlanTask dpt, DailyPlan dp " +
-                "WHERE dp.id = dpt.dailyPlanId AND dp.userId = :userId AND dp.planDate >= :startDate", Long.class)
+                "WHERE dp.id = dpt.dailyPlanId AND dp.userId = :userId AND dp.planDate >= :startDate AND dp.planDate <= :endDate", Long.class)
                 .setParameter("userId", user.getId())
-                .setParameter("startDate", thirtyDaysAgoDate)
+                .setParameter("startDate", startDateDate)
+                .setParameter("endDate", endDateDate)
                 .getSingleResult();
 
         Long donePlanTasks = entityManager.createQuery(
                 "SELECT COUNT(dpt.id) FROM DailyPlanTask dpt JOIN dpt.task t, DailyPlan dp " +
-                "WHERE dp.id = dpt.dailyPlanId AND dp.userId = :userId AND dp.planDate >= :startDate AND t.status = 'Done'", Long.class)
+                "WHERE dp.id = dpt.dailyPlanId AND dp.userId = :userId AND dp.planDate >= :startDate AND dp.planDate <= :endDate AND t.status = 'Done'", Long.class)
                 .setParameter("userId", user.getId())
-                .setParameter("startDate", thirtyDaysAgoDate)
+                .setParameter("startDate", startDateDate)
+                .setParameter("endDate", endDateDate)
                 .getSingleResult();
 
         double completionRate = 0.0;
@@ -108,7 +131,6 @@ public class StatsService {
                 .getResultList();
 
         int streak = 0;
-        LocalDate today = LocalDate.now(java.time.ZoneId.of(user.getTimezone()));
         LocalDate current = today;
         
         // If they haven't checked in today yet, the streak could still be alive if they checked in yesterday

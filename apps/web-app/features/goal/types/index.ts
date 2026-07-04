@@ -23,9 +23,11 @@ export interface Goal {
   updatedAt: string;
   categoryId?: string;
   parentGoalId?: string;
+  progressPct?: number;
+  autoCreateTask?: boolean;
+  defaultSessionMinutes?: number;
   timeBoxedGoal?: TimeBoxedGoal;
   milestoneGoal?: MilestoneGoal;
-  progressPct?: number;
 }
 
 export interface GoalCreateRequest {
@@ -35,6 +37,8 @@ export interface GoalCreateRequest {
   parentGoalId?: string;
   startDate?: string;
   endDate?: string;
+  autoCreateTask?: boolean;
+  defaultSessionMinutes?: number;
   timeBoxedGoal?: TimeBoxedGoal;
   milestoneGoal?: MilestoneGoal;
 }
@@ -46,6 +50,8 @@ export interface GoalUpdateRequest {
   parentGoalId?: string;
   startDate?: string;
   endDate?: string;
+  autoCreateTask?: boolean;
+  defaultSessionMinutes?: number;
   timeBoxedGoal?: TimeBoxedGoal;
   milestoneGoal?: MilestoneGoal;
 }

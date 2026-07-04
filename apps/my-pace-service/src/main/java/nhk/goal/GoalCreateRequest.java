@@ -23,6 +23,8 @@ public class GoalCreateRequest {
     private java.util.UUID categoryId;
     
     private java.util.UUID parentGoalId;
+    private Boolean autoCreateTask;
+    private Integer defaultSessionMinutes;
     
     private TimeBoxedGoalDto timeBoxedGoal;
     private MilestoneGoalDto milestoneGoal;

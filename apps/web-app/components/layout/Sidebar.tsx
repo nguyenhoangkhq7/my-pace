@@ -15,6 +15,8 @@ import {
   ArrowRight01Icon,
   Target02Icon,
   Analytics01Icon,
+  Sun01Icon,
+  MoonIcon,
 } from "@hugeicons/core-free-icons";
 import { useAvailableTime } from "@/features/available-time";
 import { useEffect } from "react";
@@ -74,6 +76,23 @@ export function Sidebar() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+
+  useEffect(() => {
+    const savedTheme = (localStorage.getItem("theme") as "dark" | "light") || "dark";
+    setTheme(savedTheme);
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+    localStorage.setItem("theme", nextTheme);
+
+    const root = document.documentElement;
+    root.classList.remove("dark", "light");
+    root.classList.add(nextTheme);
+    root.style.colorScheme = nextTheme;
+  };
 
   useEffect(() => {
     const saved = localStorage.getItem("sidebarCollapsed");
@@ -230,6 +249,29 @@ export function Sidebar() {
           >
             <FeedbackIcon className="w-[18px] h-[18px] shrink-0" />
             {!isCollapsed && <span>Góp ý & Phản hồi</span>}
+          </button>
+
+          {/* Theme Switcher Button */}
+          <button
+            onClick={toggleTheme}
+            title={isCollapsed ? (theme === "dark" ? "Chế độ sáng" : "Chế độ tối") : undefined}
+            className={cn(
+              "flex w-full items-center rounded-xl py-2.5 cursor-pointer",
+              isCollapsed ? "justify-center px-0" : "gap-2.5 px-3",
+              "text-sm font-medium text-muted-foreground",
+              "transition-all duration-150",
+              "hover:bg-accent hover:text-foreground",
+              "active:scale-[0.97]"
+            )}
+          >
+            <HugeiconsIcon 
+              icon={theme === "dark" ? Sun01Icon : MoonIcon} 
+              size={18} 
+              className={cn("shrink-0", theme === "dark" ? "text-amber-500" : "text-indigo-400")} 
+            />
+            {!isCollapsed && (
+              <span>{theme === "dark" ? "Chế độ sáng" : "Chế độ tối"}</span>
+            )}
           </button>
 
         </div>
