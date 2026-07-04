@@ -10,7 +10,7 @@ interface FlowTodoListProps {
 }
 
 export function FlowTodoList({ onTaskSelect }: FlowTodoListProps) {
-  const { dailyPlanToday } = useBoardStore();
+  const { dailyPlanToday, timeBlocks } = useBoardStore();
   const { activeTaskId, pomodoroState, openFocusMode } = useFocusStore();
 
   const isFocusing = pomodoroState === "focusing";
@@ -29,9 +29,33 @@ export function FlowTodoList({ onTaskSelect }: FlowTodoListProps) {
   const mits = dailyPlanToday.tasks.filter(t => t.isMit);
   const regular = dailyPlanToday.tasks.filter(t => !t.isMit);
 
+  const formatTime = (iso: string) => {
+    const date = new Date(iso);
+    return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+  };
+
+  const getTaskScheduleLabel = (taskId: string) => {
+    const blocks = timeBlocks
+      .filter((block) => block.taskId === taskId)
+      .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
+    if (blocks.length === 0) {
+      return null;
+    }
+
+    if (blocks.length === 1) {
+      return `${formatTime(blocks[0].startTime)} - ${formatTime(blocks[0].endTime)}`;
+    }
+
+    const firstStart = formatTime(blocks[0].startTime);
+    const lastEnd = formatTime(blocks[blocks.length - 1].endTime);
+    return `${firstStart} - ${lastEnd} · ${blocks.length} parts`;
+  };
+
   const renderTask = (pt: DailyPlanTask) => {
     const isActive = pt.task.id === activeTaskId;
     const isDone = pt.task.status === "Done";
+    const scheduleLabel = getTaskScheduleLabel(pt.task.id);
 
     return (
       <div 
@@ -74,7 +98,7 @@ export function FlowTodoList({ onTaskSelect }: FlowTodoListProps) {
           )}>
             {pt.task.title}
           </div>
-          <div className="flex items-center mt-1.5 space-x-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+          <div className="flex items-center mt-1.5 gap-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider flex-wrap">
             {pt.task.estimatedMinutes > 0 && (
               <span className="bg-background px-1.5 py-0.5 rounded border border-border text-muted-foreground">
                 {pt.task.estimatedMinutes}m
@@ -87,6 +111,11 @@ export function FlowTodoList({ onTaskSelect }: FlowTodoListProps) {
                   {pt.task.category.name}
                 </span>
               </div>
+            )}
+            {scheduleLabel && (
+              <span className="ml-auto inline-flex items-center rounded-full border border-background/20 bg-foreground px-2 py-0.5 text-[10px] font-semibold normal-case tracking-normal text-background shadow-[0_4px_12px_rgba(0,0,0,0.14)]">
+                {scheduleLabel}
+              </span>
             )}
           </div>
         </div>
