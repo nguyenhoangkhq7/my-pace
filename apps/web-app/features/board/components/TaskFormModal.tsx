@@ -72,8 +72,15 @@ export function TaskFormModal({
   const currentTask = initialData?.id ? tasks.find(t => t.id === initialData.id) : null;
   const checklists = currentTask?.checklists || [];
 
+  // Track previous isOpen to only initialize form when modal FIRST opens,
+  // not on every re-render caused by store updates (e.g., after createCategory).
+  const prevIsOpenRef = useRef(false);
+
   useEffect(() => {
-    if (isOpen) {
+    const justOpened = isOpen && !prevIsOpenRef.current;
+    prevIsOpenRef.current = isOpen;
+
+    if (justOpened) {
       fetchGoals();
       setTitle(initialData?.title || "");
       setEstimatedMinutes(initialData?.estimatedMinutes ? String(initialData.estimatedMinutes) : "");

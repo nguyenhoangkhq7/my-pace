@@ -25,24 +25,27 @@ import { cn } from "@/lib/utils";
 export default function FlowPage() {
   const user = useAuthStore((s) => s.user);
   const pomodoroState = useFocusStore((s) => s.pomodoroState);
+  const isZenMaximized = useFocusStore((s) => s.isZenMaximized);
   const { fetchTasks, fetchDailyPlanToday, fetchCategories, dailyPlanToday } = useBoardStore();
 
   const isLg = useMediaQuery("(min-width: 1024px)");
   const isXl = useMediaQuery("(min-width: 1280px)");
   const [mounted, setMounted] = useState(false);
   const [resetKey, setResetKey] = useState(0);
+  const [isLeftCollapsed, setIsLeftCollapsed] = useState(false);
+  const [isRightCollapsed, setIsRightCollapsed] = useState(false);
 
-  // Fetch data if refreshed directly on /flow
+  // Fetch data on mount
   useEffect(() => {
     setMounted(true);
-    if (user && !dailyPlanToday) {
+    if (user) {
       const d = new Date();
       const currentDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       fetchCategories();
       fetchTasks();
       fetchDailyPlanToday(currentDate);
     }
-  }, [user, dailyPlanToday, fetchTasks, fetchDailyPlanToday, fetchCategories]);
+  }, [user, fetchTasks, fetchDailyPlanToday, fetchCategories]);
 
   // Auto-pause on unmount
   useEffect(() => {
@@ -164,7 +167,7 @@ export default function FlowPage() {
       <ResizablePanelGroup key={uniqueKey} onLayout={handleLayout} direction="horizontal" className="h-full w-full rounded-lg border-none">
         
         {/* Cột Trái: TODO Today */}
-        {isLg && (
+        {isLg && !isZenMaximized && (
           <>
             <ResizablePanel 
               id="todo-panel" 
@@ -173,39 +176,57 @@ export default function FlowPage() {
               minSize={10} 
               collapsible={true} 
               collapsedSize={0}
+              onCollapse={() => setIsLeftCollapsed(true)}
+              onExpand={() => setIsLeftCollapsed(false)}
             >
               <div className={cn("h-full w-full overflow-y-auto transition-opacity duration-700", pomodoroState === "focusing" ? "opacity-20 hover:opacity-100" : "")}>
                  <FlowTodoList />
               </div>
             </ResizablePanel>
             
-            <ResizableHandle withHandle />
+            <ResizableHandle 
+              withHandle 
+              className={cn(
+                "transition-all duration-200",
+                isLeftCollapsed ? "opacity-0 pointer-events-none !w-0 !min-w-0 !max-w-0 overflow-hidden" : ""
+              )}
+            />
           </>
         )}
         
         {/* Cột Giữa: Pomodoro Workspace */}
-        <ResizablePanel id="pomodoro-panel" {...({ order: 2 } as any)} defaultSize={pomodoroSize} minSize={25}>
-          <div className="h-full w-full relative">
-            <div className="h-full w-full flex items-center justify-center overflow-y-auto">
-              <FlowPomodoro />
+        {!isZenMaximized && (
+          <ResizablePanel id="pomodoro-panel" {...({ order: 2 } as any)} defaultSize={pomodoroSize} minSize={25}>
+            <div className="h-full w-full relative">
+              <div className="h-full w-full flex items-center justify-center overflow-y-auto">
+                <FlowPomodoro />
+              </div>
             </div>
-          </div>
-        </ResizablePanel>
+          </ResizablePanel>
+        )}
         
         {/* Cột Phải: Zen Zone */}
         {isXl && (
           <>
-            <ResizableHandle withHandle />
+            <ResizableHandle 
+              withHandle 
+              className={cn(
+                "transition-all duration-200",
+                isRightCollapsed || isZenMaximized ? "opacity-0 pointer-events-none !w-0 !min-w-0 !max-w-0 overflow-hidden" : ""
+              )}
+            />
             
             <ResizablePanel 
               id="zenzone-panel" 
               {...({ order: 3 } as any)} 
-              defaultSize={zenzoneSize} 
-              minSize={10} 
-              collapsible={true} 
+              defaultSize={isZenMaximized ? 100 : zenzoneSize} 
+              minSize={isZenMaximized ? 100 : 10} 
+              collapsible={!isZenMaximized} 
               collapsedSize={0}
+              onCollapse={() => setIsRightCollapsed(true)}
+              onExpand={() => setIsRightCollapsed(false)}
             >
-              <div className={cn("h-full w-full overflow-y-auto transition-opacity duration-700", pomodoroState === "focusing" ? "opacity-20 hover:opacity-100" : "")}>
+              <div className={cn("h-full w-full overflow-y-auto transition-opacity duration-700", pomodoroState === "focusing" && !isZenMaximized ? "opacity-20 hover:opacity-100" : "")}>
                  <FlowZenZone />
               </div>
             </ResizablePanel>
