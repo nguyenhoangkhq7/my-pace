@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Settings2, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,13 +20,18 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
+import type { DailyPlanTask } from "@/features/board/types";
 
 export default function FlowPage() {
   const user = useAuthStore((s) => s.user);
   const pomodoroState = useFocusStore((s) => s.pomodoroState);
+  const openFocusMode = useFocusStore((s) => s.openFocusMode);
   const isZenMaximized = useFocusStore((s) => s.isZenMaximized);
+  const confirmPlan = useBoardStore((s) => s.confirmPlan);
   const { fetchTasks, fetchDailyPlanToday, fetchCategories, dailyPlanToday } = useBoardStore();
 
   const isLg = useMediaQuery("(min-width: 1024px)");
@@ -34,6 +40,8 @@ export default function FlowPage() {
   const [resetKey, setResetKey] = useState(0);
   const [isLeftCollapsed, setIsLeftCollapsed] = useState(false);
   const [isRightCollapsed, setIsRightCollapsed] = useState(false);
+  const [isConfirmPlanOpen, setIsConfirmPlanOpen] = useState(false);
+  const [pendingTask, setPendingTask] = useState<DailyPlanTask | null>(null);
 
   // Fetch data on mount
   useEffect(() => {
@@ -114,6 +122,45 @@ export default function FlowPage() {
     setResetKey(prev => prev + 1);
   };
 
+  const handleTaskSelect = (task: DailyPlanTask) => {
+    if (!dailyPlanToday?.isConfirmed) {
+      setPendingTask(task);
+      setIsConfirmPlanOpen(true);
+      return;
+    }
+
+    openFocusMode(task.task.id, task.id, task.task.estimatedMinutes || 25);
+  };
+
+  const handleConfirmDailyPlan = async () => {
+    if (!dailyPlanToday) {
+      setIsConfirmPlanOpen(false);
+      setPendingTask(null);
+      return;
+    }
+
+    try {
+      if (!dailyPlanToday.isConfirmed) {
+        await confirmPlan(dailyPlanToday.planDate);
+      }
+
+      setIsConfirmPlanOpen(false);
+
+      if (pendingTask) {
+        openFocusMode(pendingTask.task.id, pendingTask.id, pendingTask.task.estimatedMinutes || 25);
+        setPendingTask(null);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Không thể chốt daily plan.");
+    }
+  };
+
+  const handleDeclineDailyPlan = () => {
+    setIsConfirmPlanOpen(false);
+    setPendingTask(null);
+  };
+
   if (!mounted || !sizes) {
     return (
       <div className="flex h-full w-full bg-background text-foreground overflow-hidden items-center justify-center">
@@ -180,7 +227,7 @@ export default function FlowPage() {
               onExpand={() => setIsLeftCollapsed(false)}
             >
               <div className={cn("h-full w-full overflow-y-auto transition-opacity duration-700", pomodoroState === "focusing" ? "opacity-20 hover:opacity-100" : "")}>
-                 <FlowTodoList />
+                  <FlowTodoList onTaskSelect={handleTaskSelect} />
               </div>
             </ResizablePanel>
             
@@ -234,6 +281,36 @@ export default function FlowPage() {
         )}
 
       </ResizablePanelGroup>
+
+      <Dialog open={isConfirmPlanOpen} onOpenChange={(open) => {
+        if (!open) {
+          handleDeclineDailyPlan();
+        } else {
+          setIsConfirmPlanOpen(true);
+        }
+      }}>
+        <DialogContent className="sm:max-w-[440px] bg-card border-border text-foreground">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">
+              Task này cần daily plan đã xác nhận
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground leading-relaxed">
+              {pendingTask
+                ? `Task "${pendingTask.task.title}" chỉ có thể vào focus mode sau khi daily plan được xác nhận. Nếu bỏ qua, bạn sẽ ở lại Flow mà không vào pomodoro.`
+                : ""}
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" className="border-border text-muted-foreground hover:text-foreground hover:bg-muted" onClick={handleDeclineDailyPlan}>
+              Không, ở lại Flow
+            </Button>
+            <Button className="bg-indigo-600 hover:bg-indigo-500 text-white" onClick={handleConfirmDailyPlan}>
+              Xác nhận rồi vào focus
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       
       {/* Settings Modal is global to the Flow page */}
       <PomodoroSettingsModal />

@@ -388,7 +388,7 @@ export function FlowPomodoro() {
           <div className="relative flex flex-col items-center justify-center z-10">
             <span className={cn(
               "text-6xl sm:text-7xl font-light tabular-nums tracking-tighter transition-colors duration-300", 
-              pomodoroState === 'paused' ? 'text-slate-500' : 'text-white'
+              pomodoroState === 'paused' ? 'text-muted-foreground' : 'text-foreground'
             )}>
               {formatTime(timeLeft)}
             </span>
