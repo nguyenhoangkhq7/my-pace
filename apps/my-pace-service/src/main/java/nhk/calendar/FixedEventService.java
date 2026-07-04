@@ -3,6 +3,14 @@ package nhk.calendar;
 import lombok.RequiredArgsConstructor;
 import nhk.user.User;
 import nhk.user.UserRepository;
+import nhk.goal.Goal;
+import nhk.goal.GoalRepository;
+import nhk.task.Task;
+import nhk.task.TaskRepository;
+import nhk.planning.DailyPlan;
+import nhk.planning.DailyPlanRepository;
+import nhk.planning.DailyPlanTask;
+import nhk.planning.DailyPlanTaskRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -21,6 +30,10 @@ public class FixedEventService {
     private final FixedEventExceptionRepository exceptionRepo;
     private final UserRepository userRepo;
     private final DailyCheckinRepository checkinRepo;
+    private final GoalRepository goalRepo;
+    private final TaskRepository taskRepo;
+    private final DailyPlanRepository dailyPlanRepo;
+    private final DailyPlanTaskRepository dailyPlanTaskRepo;
 
     // ─── Read ────────────────────────────────────────────────────────────────
 
@@ -153,9 +166,113 @@ public class FixedEventService {
         if (checkin.getCheckinTime() == null) {
             checkin.setCheckinTime(checkinTime != null ? checkinTime : LocalTime.now(java.time.ZoneId.of(user.getTimezone())));
             checkinRepo.save(checkin);
+
+            // Auto-generate daily tasks for active goals
+            generateDailyTasksForGoals(userId, date);
         }
 
         return getAvailableTime(userId, date);
+    }
+
+    private void generateDailyTasksForGoals(UUID userId, LocalDate date) {
+        List<Goal> activeGoals = goalRepo.findByUserIdAndStatus(userId, "In Progress");
+        if (activeGoals.isEmpty()) return;
+
+        DailyPlan plan = null;
+
+        for (Goal goal : activeGoals) {
+            if (Boolean.TRUE.equals(goal.getAutoCreateTask())) {
+                boolean isTimeBoxed = "Time-boxed".equals(goal.getGoalType()) && goal.getTimeBoxedGoal() != null;
+                boolean isMilestone = "Milestone".equals(goal.getGoalType()) && goal.getMilestoneGoal() != null;
+                
+                if (!isTimeBoxed && !isMilestone) continue;
+
+                if (taskRepo.existsByGoalIdAndDueDate(goal.getId(), date)) {
+                    continue;
+                }
+
+                int estimatedMinutes = 0;
+
+                if (isMilestone) {
+                    estimatedMinutes = goal.getDefaultSessionMinutes() != null ? goal.getDefaultSessionMinutes() : 45;
+                } else {
+                    var tb = goal.getTimeBoxedGoal();
+                    int targetMinutes = tb.getTargetMinutes() != null ? tb.getTargetMinutes() : 0;
+                    int periodDays = tb.getPeriodDays() != null ? tb.getPeriodDays() : 1;
+
+                    LocalDate startDate = goal.getStartDate() != null ? goal.getStartDate() : goal.getCreatedAt().toLocalDate();
+                    long daysSinceStart = ChronoUnit.DAYS.between(startDate, date);
+                    if (daysSinceStart < 0) {
+                        continue;
+                    }
+                    long periodIndex = daysSinceStart / periodDays;
+                    LocalDate periodStart = startDate.plusDays(periodIndex * periodDays);
+                    LocalDate periodEnd = periodStart.plusDays(periodDays - 1);
+
+                    int accumulated = taskRepo.sumActualMinutesByGoalIdAndDueDateBetween(goal.getId(), periodStart, periodEnd);
+                    int remaining = targetMinutes - accumulated;
+
+                    if (remaining <= 0) {
+                        continue;
+                    }
+
+                    int defaultDaily = goal.getDefaultSessionMinutes() != null 
+                            ? goal.getDefaultSessionMinutes() 
+                            : (int) Math.ceil((double) targetMinutes / periodDays);
+                    
+                    long dayInPeriod = daysSinceStart % periodDays;
+                    boolean isLastDayOfPeriod = (dayInPeriod == periodDays - 1);
+
+                    if (isLastDayOfPeriod) {
+                        estimatedMinutes = remaining;
+                    } else {
+                        estimatedMinutes = Math.min(remaining, defaultDaily);
+                    }
+                }
+
+                if (estimatedMinutes <= 0) continue;
+
+                Task task = new Task();
+                task.setUserId(userId);
+                task.setGoalId(goal.getId());
+                task.setCategoryId(goal.getCategoryId());
+                task.setTitle(goal.getTitle());
+                task.setEstimatedMinutes(estimatedMinutes);
+                task.setActualMinutes(0);
+                task.setIsImportant(true);
+                task.setIsUrgent(false);
+                task.setStatus("Picked for Today");
+                task.setDueDate(date);
+                task.setTaskType("GOAL_SESSION");
+
+                task = taskRepo.save(task);
+
+                if (plan == null) {
+                    plan = dailyPlanRepo.findByUserIdAndPlanDate(userId, date)
+                            .orElseGet(() -> {
+                                DailyPlan newPlan = new DailyPlan();
+                                newPlan.setUserId(userId);
+                                newPlan.setPlanDate(date);
+                                newPlan.setAvailableMinutes(0);
+                                newPlan.setIsConfirmed(false);
+                                return dailyPlanRepo.save(newPlan);
+                            });
+                }
+
+                final UUID savedTaskId = task.getId();
+                boolean linkExists = dailyPlanTaskRepo.findByDailyPlanIdOrderBySortOrderAsc(plan.getId())
+                        .stream().anyMatch(pt -> pt.getTask().getId().equals(savedTaskId));
+                
+                if (!linkExists) {
+                    DailyPlanTask planTask = new DailyPlanTask();
+                    planTask.setDailyPlanId(plan.getId());
+                    planTask.setTask(task);
+                    planTask.setIsMit(task.getIsImportant());
+                    planTask.setSortOrder(0);
+                    dailyPlanTaskRepo.save(planTask);
+                }
+            }
+        }
     }
 
     // ─── Write ───────────────────────────────────────────────────────────────

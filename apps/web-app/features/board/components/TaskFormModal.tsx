@@ -31,7 +31,7 @@ interface TaskFormModalProps {
   initialStatus?: 'Icebox' | 'Backlog' | 'Picked for Today' | 'Done';
 }
 
-const CATEGORY_COLORS = ["#64748b", "#ef4444", "#f97316", "#f59e0b", "#84cc16", "#22c55e", "#06b6d4", "#3b82f6", "#8b5cf6", "#d946ef", "#f43f5e"];
+const CATEGORY_COLORS = ["#0ea5e9", "#10b981", "#8b5cf6", "#f59e0b", "#f43f5e", "#6366f1", "#14b8a6", "#ec4899", "#ef4444", "#475569"];
 
 export function TaskFormModal({ 
   isOpen, 
@@ -49,6 +49,7 @@ export function TaskFormModal({
   const { tasks, categories, createCategory, createTask, updateTask, deleteTask, addChecklistItem, updateChecklistItem, deleteChecklistItem } = useBoardStore();
   const { goals, fetchGoals } = useGoalStore();
   const durationInputRef = useRef<HTMLInputElement>(null);
+  const categoryColorInputRef = useRef<HTMLInputElement>(null);
   
   const [title, setTitle] = useState("");
   const [estimatedMinutes, setEstimatedMinutes] = useState("");
@@ -66,12 +67,20 @@ export function TaskFormModal({
   const [newCategoryColor, setNewCategoryColor] = useState(CATEGORY_COLORS[0]);
   
   const [newChecklistTitle, setNewChecklistTitle] = useState("");
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
 
   const currentTask = initialData?.id ? tasks.find(t => t.id === initialData.id) : null;
   const checklists = currentTask?.checklists || [];
 
+  // Track previous isOpen to only initialize form when modal FIRST opens,
+  // not on every re-render caused by store updates (e.g., after createCategory).
+  const prevIsOpenRef = useRef(false);
+
   useEffect(() => {
-    if (isOpen) {
+    const justOpened = isOpen && !prevIsOpenRef.current;
+    prevIsOpenRef.current = isOpen;
+
+    if (justOpened) {
       fetchGoals();
       setTitle(initialData?.title || "");
       setEstimatedMinutes(initialData?.estimatedMinutes ? String(initialData.estimatedMinutes) : "");
@@ -99,6 +108,7 @@ export function TaskFormModal({
       setError("");
       setIsCreatingCategory(false);
       setNewChecklistTitle("");
+      setIsConfirmDeleteOpen(false);
     }
   }, [isOpen, initialData, prefilledGoalId, prefilledUrgent, prefilledImportant, planningTarget, initialStatus, fetchGoals]);
 
@@ -167,15 +177,19 @@ export function TaskFormModal({
     }
   };
 
-  const handleDelete = async () => {
+  const handleDeleteClick = () => {
+    setIsConfirmDeleteOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
     if (!initialData?.id) return;
-    if (confirm("Are you sure you want to delete this task?")) {
-      try {
-        await deleteTask(initialData.id);
-        handleClose();
-      } catch (err: any) {
-        setError(err.response?.data?.message || err.message);
-      }
+    try {
+      await deleteTask(initialData.id);
+      setIsConfirmDeleteOpen(false);
+      handleClose();
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message);
+      setIsConfirmDeleteOpen(false);
     }
   };
 
@@ -321,15 +335,42 @@ export function TaskFormModal({
                       onChange={e => setNewCategoryName(e.target.value)} 
                       className="bg-slate-950 border-slate-800"
                     />
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-1.5 items-center">
                       {CATEGORY_COLORS.map(c => (
-                        <div 
+                        <button
+                          type="button"
                           key={c} 
                           onClick={() => setNewCategoryColor(c)}
-                          className={cn("w-5 h-5 rounded-full cursor-pointer ring-offset-slate-900", newCategoryColor === c ? "ring-2 ring-white" : "")}
+                          className={cn("w-5 h-5 rounded-full cursor-pointer ring-offset-slate-900 border border-black/15 transition-all hover:scale-110 duration-200", newCategoryColor === c ? "ring-2 ring-white scale-105 shadow-md" : "opacity-85 hover:opacity-100")}
                           style={{ backgroundColor: c }}
                         />
                       ))}
+
+                      {!CATEGORY_COLORS.includes(newCategoryColor) && (
+                        <button
+                          type="button"
+                          onClick={() => categoryColorInputRef.current?.click()}
+                          className="w-5 h-5 rounded-full border border-white ring-2 ring-white scale-105 shadow-md cursor-pointer transition-all"
+                          style={{ backgroundColor: newCategoryColor }}
+                          title={`Màu tự chọn: ${newCategoryColor}`}
+                        />
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => categoryColorInputRef.current?.click()}
+                        className="w-5 h-5 rounded-full border border-black/15 cursor-pointer transition-all hover:scale-110 flex items-center justify-center bg-[linear-gradient(45deg,#ff0000,#00ff00,#0000ff)] opacity-85 hover:opacity-100"
+                        title="Tự chọn màu khác..."
+                      >
+                        <span className="text-[10px] text-white font-bold drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.6)]">+</span>
+                      </button>
+                      <input
+                        ref={categoryColorInputRef}
+                        type="color"
+                        value={newCategoryColor}
+                        onChange={(e) => setNewCategoryColor(e.target.value)}
+                        className="sr-only"
+                      />
                     </div>
                     <div className="flex space-x-2 pt-1">
                       <Button size="sm" variant="outline" className="h-7 text-xs border-slate-700 text-slate-300 flex-1 px-2" onClick={() => setIsCreatingCategory(false)}>Cancel</Button>
@@ -480,14 +521,14 @@ export function TaskFormModal({
           {error && <p className="text-red-500 text-sm md:col-span-3">{error}</p>}
         </div>
         
-        <DialogFooter className="mt-2 flex flex-row items-center justify-between w-full">
+        <DialogFooter className="mt-2 flex flex-row items-center justify-between sm:justify-between w-full">
           <div>
             {!requireDuration && initialData?.id && (
               <Button 
                 type="button" 
                 variant="ghost" 
-                onClick={handleDelete}
-                className="text-rose-500 hover:bg-rose-950/20 hover:text-rose-400 font-medium gap-1 px-2 h-9"
+                onClick={handleDeleteClick}
+                className="text-rose-500 hover:bg-rose-950/20 hover:text-rose-400 font-medium gap-1 px-2 h-9 cursor-pointer"
               >
                 <HugeiconsIcon icon={Delete01Icon} className="w-4 h-4" />
                 Delete Task
@@ -505,6 +546,43 @@ export function TaskFormModal({
         </DialogFooter>
       </DialogContent>
       <ManageCategoriesModal isOpen={isManagingCategories} onClose={() => setIsManagingCategories(false)} />
+      
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isConfirmDeleteOpen} onOpenChange={setIsConfirmDeleteOpen}>
+        <DialogContent showCloseButton={false} className="sm:max-w-[360px] max-w-xs rounded-3xl p-6 border-none bg-slate-950 text-slate-50 border-slate-800 shadow-2xl text-center">
+          <div className="flex flex-col items-center space-y-4 py-2">
+            <div className="h-12 w-12 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500 animate-pulse">
+              <HugeiconsIcon icon={Delete01Icon} size={24} />
+            </div>
+            <div className="space-y-1">
+              <DialogTitle className="text-lg font-bold text-foreground text-center">
+                Xóa Task này?
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground text-center">
+                Hành động này không thể hoàn tác. Bạn có chắc chắn muốn xóa Task này không?
+              </DialogDescription>
+            </div>
+          </div>
+          <DialogFooter className="flex flex-row justify-center gap-3 pt-4 border-t border-border/40 mt-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setIsConfirmDeleteOpen(false)}
+              className="h-10 rounded-xl font-medium text-muted-foreground hover:text-foreground flex-1 cursor-pointer"
+            >
+              Hủy
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              className="h-10 rounded-xl font-semibold bg-rose-600 hover:bg-rose-500 text-white flex-1 transition-all active:scale-[0.97] cursor-pointer"
+            >
+              Đồng ý xóa
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }

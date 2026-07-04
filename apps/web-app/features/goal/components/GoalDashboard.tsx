@@ -105,20 +105,20 @@ export function GoalDashboard() {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <Tabs value={filterStatus} onValueChange={setFilterStatus} className="w-fit">
-          <TabsList className="bg-slate-900 border border-slate-800 text-slate-400 h-9 p-1">
-            <TabsTrigger value="ALL" className="data-[state=active]:bg-primary data-[state=active]:text-white">All</TabsTrigger>
-            <TabsTrigger value="In Progress" className="data-[state=active]:bg-primary data-[state=active]:text-white">In Progress</TabsTrigger>
-            <TabsTrigger value="Freeze" className="data-[state=active]:bg-primary data-[state=active]:text-white">Freeze</TabsTrigger>
-            <TabsTrigger value="Done" className="data-[state=active]:bg-primary data-[state=active]:text-white">Done</TabsTrigger>
-            <TabsTrigger value="Archived" className="data-[state=active]:bg-primary data-[state=active]:text-white">Archived</TabsTrigger>
+          <TabsList className="bg-muted border border-border text-muted-foreground h-9 p-1">
+            <TabsTrigger value="ALL" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">All</TabsTrigger>
+            <TabsTrigger value="In Progress" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">In Progress</TabsTrigger>
+            <TabsTrigger value="Freeze" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Freeze</TabsTrigger>
+            <TabsTrigger value="Done" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Done</TabsTrigger>
+            <TabsTrigger value="Archived" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Archived</TabsTrigger>
           </TabsList>
         </Tabs>
 
         <Select value={filterType} onValueChange={setFilterType}>
-          <SelectTrigger className="w-[180px] bg-slate-900 border-slate-800">
+          <SelectTrigger className="w-[180px] bg-card border-border text-foreground">
             <SelectValue placeholder="Loại Goal" />
           </SelectTrigger>
-          <SelectContent className="bg-slate-950 border-slate-800 text-slate-200">
+          <SelectContent className="bg-card border-border text-foreground">
             <SelectItem value="ALL">All types</SelectItem>
             <SelectItem value="Binary">Project</SelectItem>
             <SelectItem value="Time-boxed">Habit</SelectItem>
@@ -151,7 +151,7 @@ export function GoalDashboard() {
               {/* Group: In Progress */}
               {filteredGoals.some(g => g.status === "In Progress") && (
                 <div className="space-y-4">
-                  <h2 className="text-lg font-semibold text-primary border-b border-slate-800 pb-2 flex items-center gap-2">
+                  <h2 className="text-lg font-semibold text-primary border-b border-border pb-2 flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-primary" />
                     In Progress
                   </h2>
@@ -173,7 +173,7 @@ export function GoalDashboard() {
               {/* Group: Freeze */}
               {filteredGoals.some(g => g.status === "Freeze") && (
                 <div className="space-y-4">
-                  <h2 className="text-lg font-semibold text-orange-400 border-b border-slate-800 pb-2 flex items-center gap-2">
+                  <h2 className="text-lg font-semibold text-orange-400 border-b border-border pb-2 flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-orange-400" />
                     Freeze
                   </h2>
@@ -195,7 +195,7 @@ export function GoalDashboard() {
               {/* Group: Done */}
               {filteredGoals.some(g => g.status === "Done") && (
                 <div className="space-y-4">
-                  <h2 className="text-lg font-semibold text-green-400 border-b border-slate-800 pb-2 flex items-center gap-2">
+                  <h2 className="text-lg font-semibold text-green-400 border-b border-border pb-2 flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-green-400" />
                     Done
                   </h2>
@@ -217,8 +217,8 @@ export function GoalDashboard() {
               {/* Group: Archived */}
               {filteredGoals.some(g => g.status === "Archived") && (
                 <div className="space-y-4">
-                  <h2 className="text-lg font-semibold text-slate-400 border-b border-slate-800 pb-2 flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-slate-400" />
+                  <h2 className="text-lg font-semibold text-muted-foreground border-b border-border pb-2 flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-muted-foreground" />
                     Archived
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

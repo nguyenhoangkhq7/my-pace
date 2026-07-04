@@ -136,9 +136,9 @@ export function BacklogMatrix() {
     });
     
     return (
-      <div className="flex flex-col border border-slate-800 rounded-xl overflow-hidden bg-slate-900/30">
-        <div className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider ${colorClass} border-b border-slate-800/50 bg-slate-900/50`}>
-          {title} <span className="text-slate-500 ml-1">({qTasks.length})</span>
+      <div className="flex flex-col border border-border rounded-xl overflow-hidden bg-muted/20">
+        <div className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider ${colorClass} border-b border-border/40 bg-muted/40`}>
+          {title} <span className="text-muted-foreground ml-1">({qTasks.length})</span>
         </div>
         <div className="p-3 flex-1 overflow-y-auto space-y-2 min-h-[150px]">
           {qTasks.map(task => (
@@ -147,8 +147,8 @@ export function BacklogMatrix() {
               onClick={() => handleTaskClick(task)}
               className={`p-3 rounded-lg border text-sm cursor-pointer transition-all ${
                 isPlanningMode && plannedTaskIds.includes(task.id)
-                  ? "border-primary bg-primary/10 text-primary-50"
-                  : "border-slate-800 bg-slate-950 hover:border-slate-600 hover:bg-slate-900 text-slate-200"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-card hover:border-border/80 hover:bg-muted text-foreground"
               }`}
             >
               <div className="font-medium line-clamp-2">{task.title}</div>
@@ -172,14 +172,14 @@ export function BacklogMatrix() {
                 ) : null}
 
                 {task.dueDate && (
-                  <span className="inline-flex items-center text-[10px] text-slate-400">
-                    <HugeiconsIcon icon={Calendar01Icon} size={12} className="mr-1" />
+                  <span className="inline-flex items-center text-[10px] text-muted-foreground">
+                    <HugeiconsIcon icon={Calendar01Icon} size={10} className="mr-1" />
                     {new Date(task.dueDate).toLocaleDateString()}
                   </span>
                 )}
                 
                 {task.estimatedMinutes > 0 && (
-                  <div className="text-xs text-slate-500">{task.estimatedMinutes}m</div>
+                  <div className="text-xs text-muted-foreground">{task.estimatedMinutes}m</div>
                 )}
               </div>
               
@@ -194,15 +194,15 @@ export function BacklogMatrix() {
   return (
     <div className="h-full flex flex-col space-y-4">
       <div className="flex items-center justify-between">
-        <div className="flex bg-slate-900 p-1 rounded-lg border border-slate-800">
+        <div className="flex bg-muted p-1 rounded-lg border border-border">
           <button
-            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === 'tasks' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'}`}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === 'tasks' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
             onClick={() => setActiveTab('tasks')}
           >
             Eisenhower Matrix
           </button>
           <button
-            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === 'goals' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'}`}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === 'goals' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
             onClick={() => setActiveTab('goals')}
           >
             Goal Backlog
@@ -214,13 +214,13 @@ export function BacklogMatrix() {
               value={useBoardStore.getState().selectedFilterId || "none"} 
               onValueChange={(val) => useBoardStore.getState().setFilter(val === "none" ? null : val)}
             >
-              <SelectTrigger className="h-8 border-slate-800 bg-slate-950 text-slate-300 w-[140px]">
+              <SelectTrigger className="h-8 border-border bg-card text-foreground w-[140px]">
                 <div className="flex items-center">
                   <HugeiconsIcon icon={FilterIcon} size={16} className="mr-2" />
                   <SelectValue placeholder="Filter" />
                 </div>
               </SelectTrigger>
-              <SelectContent className="bg-slate-950 border-slate-800 text-slate-200">
+              <SelectContent className="bg-card border-border text-foreground">
                 <SelectItem value="none">All Tasks</SelectItem>
                 <SelectItem value="goal">Goal</SelectItem>
                 {useBoardStore.getState().categories.map(c => (
@@ -248,7 +248,7 @@ export function BacklogMatrix() {
       ) : (
         <div className="flex-1 overflow-y-auto min-h-0 space-y-3 p-1">
           {goals.filter(g => g.status === 'In Progress' && !g.parentGoalId).length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-slate-500 border border-dashed border-slate-800 rounded-xl bg-slate-900/20">
+            <div className="h-full flex flex-col items-center justify-center text-muted-foreground border border-dashed border-border rounded-xl bg-muted/20">
               <HugeiconsIcon icon={Target02Icon} size={32} className="mb-2 opacity-50" />
               <p>Không có Goal nào đang thực thi (In Progress).</p>
             </div>
@@ -257,12 +257,12 @@ export function BacklogMatrix() {
               <div 
                 key={goal.id}
                 onClick={() => handleGoalClick(goal)}
-                className={`p-4 rounded-xl border border-slate-800 bg-slate-900/50 hover:bg-slate-900 hover:border-primary/50 cursor-pointer transition-all flex flex-col gap-2 ${isPlanningMode ? 'hover:shadow-md hover:-translate-y-0.5' : 'opacity-70'}`}
+                className={`p-4 rounded-xl border border-border bg-card hover:bg-muted hover:border-primary/55 cursor-pointer transition-all flex flex-col gap-2 ${isPlanningMode ? 'hover:shadow-md hover:-translate-y-0.5' : 'opacity-70'}`}
               >
                 <div className="flex items-center justify-between">
-                  <h4 className="font-semibold text-slate-100">{goal.title}</h4>
+                  <h4 className="font-semibold text-foreground">{goal.title}</h4>
                   <div className="flex gap-2 text-xs">
-                    <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                    <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
                       {goal.goalType === 'Binary' && <HugeiconsIcon icon={Folder01Icon} size={10} className="inline mr-1" />}
                       {goal.goalType === 'Binary' ? 'Dự án' : goal.goalType === 'Time-boxed' ? 'Thói quen' : 'Mục tiêu'}
                     </span>
@@ -270,13 +270,13 @@ export function BacklogMatrix() {
                 </div>
                 
                 <div className="flex items-center gap-2 mt-1">
-                  <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                  <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-primary" 
                       style={{ width: `${Math.round(goal.progressPct || 0)}%` }} 
                     />
                   </div>
-                  <span className="text-xs text-slate-400 font-medium w-8 text-right">
+                  <span className="text-xs text-muted-foreground font-medium w-8 text-right">
                     {Math.round(goal.progressPct || 0)}%
                   </span>
                 </div>

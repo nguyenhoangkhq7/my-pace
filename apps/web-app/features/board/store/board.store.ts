@@ -109,7 +109,14 @@ export const useBoardStore = create<BoardState>((set, get) => ({
 
   createTask: async (task) => {
     const res = await boardApi.createTask(task);
-    set(state => ({ tasks: [...state.tasks, res.data] }));
+    set(state => {
+      // Enrich the new task with the full category object so the UI
+      // shows the category badge immediately without requiring a refresh.
+      const enriched = res.data.categoryId
+        ? { ...res.data, category: state.categories.find(c => c.id === res.data.categoryId) ?? res.data.category }
+        : res.data;
+      return { tasks: [...state.tasks, enriched] };
+    });
     return res.data;
   },
 

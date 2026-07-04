@@ -13,8 +13,15 @@ export interface StatsOverviewResponse {
 }
 
 export const statsApi = {
-  getOverview: async (): Promise<StatsOverviewResponse> => {
-    const response = await fetchClient.get<StatsOverviewResponse>("stats/overview");
+  getOverview: async (startDate?: string, endDate?: string): Promise<StatsOverviewResponse> => {
+    let url = "stats/overview";
+    const params: string[] = [];
+    if (startDate) params.push(`startDate=${startDate}`);
+    if (endDate) params.push(`endDate=${endDate}`);
+    if (params.length > 0) {
+      url += `?${params.join("&")}`;
+    }
+    const response = await fetchClient.get<StatsOverviewResponse>(url);
     return response.data;
   },
 };

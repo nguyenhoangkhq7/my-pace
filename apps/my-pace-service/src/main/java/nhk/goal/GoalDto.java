@@ -19,6 +19,8 @@ public class GoalDto {
     private UUID categoryId;
     private UUID parentGoalId;
     private Integer progressPct;
+    private Boolean autoCreateTask;
+    private Integer defaultSessionMinutes;
     private TimeBoxedGoalDto timeBoxedGoal;
     private MilestoneGoalDto milestoneGoal;
 }

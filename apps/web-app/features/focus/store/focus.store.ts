@@ -30,6 +30,10 @@ interface FocusState {
   isSettingsOpen: boolean;
   setIsSettingsOpen: (open: boolean) => void;
 
+  // Zen Zone maximize
+  isZenMaximized: boolean;
+  toggleZenMaximize: () => void;
+
   // Actions
   setYoutubeUrl: (url: string) => void;
   addToHistory: (url: string, title: string) => void;
@@ -62,14 +66,16 @@ export const useFocusStore = create<FocusState>()(
       totalSessions: 1,
       accumulatedFocusTime: 0,
       
-      youtubeUrl: "https://www.youtube.com/watch?v=jfKfPfyJRdk",
+      youtubeUrl: "https://www.youtube.com/live/X4VbdwhkE10?si=gV884ky2WVfhPwQQ",
       youtubeHistory: [
-        { url: "https://www.youtube.com/watch?v=jfKfPfyJRdk", title: "Lofi Girl (Default)" }
+        { url: "https://www.youtube.com/live/X4VbdwhkE10?si=gV884ky2WVfhPwQQ", title: "Lofi Girl" }
       ],
       isSettingsOpen: false,
+      isZenMaximized: false,
 
       setYoutubeUrl: (url) => set({ youtubeUrl: url }),
       setIsSettingsOpen: (open) => set({ isSettingsOpen: open }),
+      toggleZenMaximize: () => set((state) => ({ isZenMaximized: !state.isZenMaximized })),
       
       addToHistory: (url, title) => set((state) => {
         // Prevent duplicates
