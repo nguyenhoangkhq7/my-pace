@@ -17,19 +17,15 @@ spring:
     secret: ${JWT_SECRET}
     access-token-expiration: 3600 # 1 hour in seconds
     refresh-token-expiration: 604800 # 7 days in seconds
-  mail:
-    host: ${MAIL_HOST:smtp.gmail.com}
-    port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-            required: true
+  resend:
+    api-key: ${RESEND_API_KEY}
+    from: ${RESEND_FROM_EMAIL:onboarding@resend.dev}
   data:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:localhost}
       port: ${SPRING_DATA_REDIS_PORT:6379}
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,https://my-pace-h27b.vercel.app,https://hoangkhaq.site,https://www.hoangkhaq.site}
+
