@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { TaskTimeBlockModal } from "@/features/board/components/TaskTimeBlockModal";
 import type { Task } from "@/features/board/types";
-import { autoSchedule } from "@/features/board/utils/autoSchedule";
+import { autoSchedule, type OccupiedSlot } from "@/features/board/utils/autoSchedule";
 import { cn } from "@/lib/utils";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -32,6 +32,14 @@ const todayStr = () => new Date().toISOString().split("T")[0];
 const toHHMM = (t: string) => t.substring(0, 5);
 const toSlotTime = (t: string | null | undefined, fallback: string) =>
   t ? t.substring(0, 5) + ":00" : fallback;
+const toLocalDateStr = (iso: string) => {
+  const date = new Date(iso);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+};
+const toLocalTimeStr = (iso: string) => {
+  const date = new Date(iso);
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+};
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -402,31 +410,23 @@ export default function CalendarPage() {
         return;
       }
 
-      // Gộp các fixedEvents và các timeBlocks hiện tại làm occupied slots (simulated fixed events)
-      const simulatedFixedEvents: FixedEventOccurrence[] = [
+      // Gộp các fixedEvents và các timeBlocks hiện tại làm occupied slots
+      const occupiedSlots: OccupiedSlot[] = [
         ...events.map((e) => ({
-          ...e,
+          date: e.occurrenceDate,
           startTime: e.startTime.substring(0, 5),
           endTime: e.endTime.substring(0, 5),
         })),
-        ...timeBlocks.map((tb) => {
-          const dateStr = tb.startTime.split("T")[0];
-          const sTime = tb.startTime.split("T")[1].substring(0, 5);
-          const eTime = tb.endTime.split("T")[1].substring(0, 5);
-          return {
-            id: `simulated-${tb.id || tb.taskId}`,
-            title: "Simulated Task Block",
-            occurrenceDate: dateStr,
-            startTime: sTime,
-            endTime: eTime,
-            recurrenceType: "NONE",
-          } as FixedEventOccurrence;
-        }),
+        ...timeBlocks.map((tb) => ({
+          date: toLocalDateStr(tb.startTime),
+          startTime: toLocalTimeStr(tb.startTime),
+          endTime: toLocalTimeStr(tb.endTime),
+        })),
       ];
 
       const newBlocks = autoSchedule(
         unscheduledPlanTasks,
-        simulatedFixedEvents,
+        occupiedSlots,
         dailyPlanToday.id,
         today,
         user.wakeTime,
