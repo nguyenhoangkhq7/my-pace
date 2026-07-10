@@ -92,7 +92,11 @@ my-pace-app/
 ### Frontend (Next.js / TypeScript)
 - Use standard functional components with TypeScript typings.
 - Prefer Tailwind CSS v4 for styling. Ensure UI matches the existing dark/modern aesthetics.
-- Keep component files clean, separating presentation logic from state when possible.
+- **Component Design (Clean Code & Reusability)**:
+  - **Single Responsibility Principle**: Components should do one thing well. Avoid "fat components" (over 200-300 lines). If a component grows too large, extract complex UI sections, forms, or SVG animations into smaller, independent sub-components.
+  - **Reusability**: Always check `components/ui/` or existing feature folders before building a new UI primitive. Reuse existing buttons, inputs, dialogs, and select components.
+  - **Separation of Concerns**: Keep components clean by separating presentation logic from state management. Move complex business logic into custom hooks (e.g. `useEventForm`, `useBacklogMatrix`) or Zustand stores.
+  - **Performance Optimization**: Since we are using React 19 (via Next.js 16), rely on the **React Compiler** for automatic memoization. Avoid manual `React.memo`, `useMemo`, or `useCallback` unless explicitly profiling a specific bottleneck. Ensure `useEffect` dependencies are correctly specified to avoid infinite loops.
 - Use `Zustand` for global state management.
 
 ### Backend (Spring Boot / Java)

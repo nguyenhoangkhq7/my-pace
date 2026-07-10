@@ -1,0 +1,93 @@
+import { useState } from "react";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { PlusSignIcon, Settings01Icon } from "@hugeicons/core-free-icons";
+import { CategoryCreateForm } from "./CategoryCreateForm";
+import type { Category } from "../types";
+import { Goal } from "@/features/goal/types";
+import { ManageCategoriesModal } from "./ManageCategoriesModal";
+
+interface TaskFormCategoryProps {
+  categoryId?: string;
+  onCategoryChange: (val: string | undefined) => void;
+  categories: Category[];
+  goalId?: string;
+  associatedGoal?: Goal;
+}
+
+export function TaskFormCategory({ categoryId, onCategoryChange, categories, goalId, associatedGoal }: TaskFormCategoryProps) {
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+  const [isManagingCategories, setIsManagingCategories] = useState(false);
+
+  const handleCategoryCreateSuccess = (catId: string) => {
+    onCategoryChange(catId);
+    setIsCreatingCategory(false);
+  };
+
+  return (
+    <>
+      <div className="grid gap-2">
+        <Label>Category</Label>
+        {isCreatingCategory ? (
+          <CategoryCreateForm
+            onCancel={() => setIsCreatingCategory(false)}
+            onSuccess={handleCategoryCreateSuccess}
+          />
+        ) : (
+          <div className="flex space-x-1.5">
+            <Select 
+              value={categoryId || "none"} 
+              onValueChange={(val) => onCategoryChange(val === "none" ? undefined : val)} 
+              disabled={!!goalId && goalId !== "none"}
+            >
+              <SelectTrigger className="w-full bg-slate-900 border-slate-800">
+                <SelectValue placeholder="Select Category" />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-950 border-slate-800 text-slate-200">
+                <SelectItem value="none">No Category</SelectItem>
+                {categories.map(c => (
+                  <SelectItem key={c.id} value={c.id}>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: c.color }} />
+                      <span>{c.name}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button 
+              variant="outline" 
+              className="border-slate-800 bg-slate-900 text-slate-300 px-2 shrink-0" 
+              onClick={() => setIsCreatingCategory(true)} 
+              disabled={!!goalId && goalId !== "none"} 
+              title="Thêm Category"
+            >
+              <HugeiconsIcon icon={PlusSignIcon} className="w-4 h-4" />
+            </Button>
+            <Button 
+              variant="outline" 
+              className="border-slate-800 bg-slate-900 text-slate-300 px-2 shrink-0" 
+              onClick={() => setIsManagingCategories(true)} 
+              title="Quản lý Category"
+            >
+              <HugeiconsIcon icon={Settings01Icon} className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {associatedGoal && (
+        <div className="grid gap-2 mt-4">
+          <Label>Goal</Label>
+          <div className="p-2.5 bg-slate-900 border border-slate-800 rounded-md text-sm text-slate-300 font-medium">
+            {associatedGoal.title}
+          </div>
+        </div>
+      )}
+
+      <ManageCategoriesModal isOpen={isManagingCategories} onClose={() => setIsManagingCategories(false)} />
+    </>
+  );
+}
