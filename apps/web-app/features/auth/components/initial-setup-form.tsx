@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { put, getApiErrorMessage } from "@/lib/fetchClient";
-import { useAuthStore } from "../store/auth.store";
+import { useAuthStore, AuthUser } from "../store/auth.store";
 import { appToast } from "@/components/feedback/app-toast";
 import { AppAlert } from "@/components/feedback/app-alert";
 import { cn } from "@/lib/utils";
@@ -50,7 +50,7 @@ export function InitialSetupForm() {
     };
 
     try {
-      const response = await put<Record<string, unknown>, typeof payload>("users/profile", payload);
+      const response = await put<AuthUser, typeof payload>("users/profile", payload);
 
       if (response.data && accessToken) {
         setSession({

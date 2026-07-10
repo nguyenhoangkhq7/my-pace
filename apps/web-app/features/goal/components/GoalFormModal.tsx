@@ -168,9 +168,9 @@ export function GoalFormModal({ isOpen, onOpenChange, goal, prefilledParentGoalI
 
       let result;
       if (goal) {
-        result = await updateGoal(goal.id, payload as GoalUpdateRequest);
+        result = await updateGoal(goal.id, payload as unknown as GoalUpdateRequest);
       } else {
-        result = await createGoal(payload as GoalCreateRequest);
+        result = await createGoal(payload as unknown as GoalCreateRequest);
       }
       if (onSuccess) {
         onSuccess(result);

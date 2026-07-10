@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { Task, DailyPlan, Category, TaskTimeBlock } from "../types";
+import { Task, DailyPlan, Category, TaskTimeBlock, TaskChecklistItem } from "../types";
 import { boardApi } from "../api/board.api";
 import { useGoalStore } from "@/features/goal/store/goal.store";
 
@@ -142,7 +142,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     set(state => ({
       tasks: state.tasks.map(t => t.id === taskId ? {
         ...t,
-        checklists: [...(t.checklists || []), res.data]
+        checklists: [...(t.checklists || []), res.data as TaskChecklistItem]
       } : t)
     }));
   },
@@ -152,7 +152,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     set(state => ({
       tasks: state.tasks.map(t => t.id === taskId ? {
         ...t,
-        checklists: (t.checklists || []).map(c => c.id === checklistId ? res.data : c)
+        checklists: (t.checklists || []).map(c => c.id === checklistId ? res.data as TaskChecklistItem : c)
       } : t)
     }));
   },

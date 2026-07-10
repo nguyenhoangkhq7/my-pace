@@ -238,8 +238,7 @@ export default function FlowPage() {
               minSize={10} 
               collapsible={true} 
               collapsedSize={0}
-              onCollapse={() => setIsLeftCollapsed(true)}
-              onExpand={() => setIsLeftCollapsed(false)}
+              {...({ onCollapse: () => setIsLeftCollapsed(true), onExpand: () => setIsLeftCollapsed(false) } as Record<string, unknown>)}
             >
               <div className={cn("h-full w-full overflow-y-auto transition-opacity duration-700", pomodoroState === "focusing" ? "opacity-20 hover:opacity-100" : "")}>
                   <FlowTodoList onTaskSelect={handleTaskSelect} />
@@ -285,8 +284,7 @@ export default function FlowPage() {
               minSize={isZenMaximized ? 100 : 10} 
               collapsible={!isZenMaximized} 
               collapsedSize={0}
-              onCollapse={() => setIsRightCollapsed(true)}
-              onExpand={() => setIsRightCollapsed(false)}
+              {...({ onCollapse: () => setIsRightCollapsed(true), onExpand: () => setIsRightCollapsed(false) } as Record<string, unknown>)}
             >
               <div className={cn("h-full w-full overflow-y-auto transition-opacity duration-700", pomodoroState === "focusing" && !isZenMaximized ? "opacity-20 hover:opacity-100" : "")}>
                  <FlowZenZone />

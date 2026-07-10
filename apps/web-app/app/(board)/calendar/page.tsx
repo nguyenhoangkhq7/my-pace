@@ -479,7 +479,7 @@ export default function CalendarPage() {
 
     // Check if drop coordinate is inside sidebar bounding box
     if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-      const taskId = info.event.extendedProps.taskId;
+      const taskId = info.event.extendedProps.taskId as string;
       handleUnscheduleTask(taskId);
     }
   }, [handleUnscheduleTask]);
