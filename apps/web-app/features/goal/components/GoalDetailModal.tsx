@@ -9,7 +9,7 @@ import { Goal } from "../types";
 import { Task } from "@/features/board/types";
 import { useBoardStore } from "@/features/board/store/board.store";
 import { useGoalStore } from "../store/goal.store";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CheckmarkCircle01Icon, Calendar01Icon, Time02Icon, PlusSignIcon, Folder01Icon, ArrowDown01Icon, ArrowRight01Icon, InboxIcon, Archive02Icon } from "@hugeicons/core-free-icons";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, startOfMonth, endOfMonth, startOfYear, endOfYear, eachMonthOfInterval, isSameMonth, addWeeks, addMonths, addYears } from "date-fns";
@@ -180,7 +180,7 @@ export function GoalDetailModal({ isOpen, onOpenChange, goal }: GoalDetailModalP
     try {
       await updateTask(task.id, { status: 'Backlog' });
       toast.success("Đã chuyển Task vào Backlog!");
-    } catch (e) {
+    } catch {
       toast.error("Lỗi khi chuyển Task.");
     }
   };
@@ -189,7 +189,7 @@ export function GoalDetailModal({ isOpen, onOpenChange, goal }: GoalDetailModalP
     try {
       await updateTask(task.id, { status: 'Icebox' });
       toast.success("Đã trả Task về Icebox!");
-    } catch (e) {
+    } catch {
       toast.error("Lỗi khi chuyển Task.");
     }
   };
@@ -211,11 +211,11 @@ export function GoalDetailModal({ isOpen, onOpenChange, goal }: GoalDetailModalP
           estimatedMinutes: 0,
           isImportant: true,
           isUrgent: false
-        } as any);
+        } as Partial<Task>);
         toast.success("Đã tạo Task!");
         setNewTaskTitle("");
         setIsCreating(false);
-      } catch (e) {
+      } catch {
         toast.error("Lỗi khi tạo Task");
       }
     };
@@ -633,7 +633,7 @@ export function GoalDetailModal({ isOpen, onOpenChange, goal }: GoalDetailModalP
               </div>
 
               {/* Tabs */}
-              <Tabs value={timeFilter} onValueChange={(val: any) => { setTimeFilter(val); setReferenceDate(new Date()); }} className="w-fit">
+              <Tabs value={timeFilter} onValueChange={(val) => { setTimeFilter(val as 'week' | 'month' | 'year'); setReferenceDate(new Date()); }} className="w-fit">
                 <TabsList className="bg-slate-900 border border-slate-800 text-slate-400 h-8 p-1">
                   <TabsTrigger value="week" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-white px-3 py-1">Tuần</TabsTrigger>
                   <TabsTrigger value="month" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-white px-3 py-1">Tháng</TabsTrigger>

@@ -18,7 +18,7 @@ export const useStatsStore = create<StatsState>((set) => ({
     try {
       const data = await statsApi.getOverview(startDate, endDate);
       set({ overview: data, isLoading: false });
-    } catch (error: any) {
+    } catch (error) {
       set({ 
         error: getApiErrorMessage(error, "Failed to fetch stats"), 
         isLoading: false 

@@ -3,12 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useStatsStore } from "@/features/stats/store/stats.store";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from "recharts";
-import { Flame, CheckCircle2, TrendingUp, Clock, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Flame, TrendingUp, Clock, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, label }: { active?: boolean, payload?: { value: number }[], label?: string }) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-card border border-border p-3 rounded-lg shadow-xl">
@@ -191,7 +190,7 @@ export default function StatsPage() {
           </div>
 
           {/* Range Tabs (Week, Month, Year) */}
-          <Tabs value={range} onValueChange={(val) => setRange(val as any)} className="w-fit">
+          <Tabs value={range} onValueChange={(val) => setRange(val as "week" | "month" | "year")} className="w-fit">
             <TabsList className="bg-transparent border-0 text-muted-foreground h-8 p-0 flex gap-1">
               <TabsTrigger value="week" className="data-[state=active]:bg-muted data-[state=active]:text-foreground text-xs px-3 h-7 rounded-lg">Tuần</TabsTrigger>
               <TabsTrigger value="month" className="data-[state=active]:bg-muted data-[state=active]:text-foreground text-xs px-3 h-7 rounded-lg">Tháng</TabsTrigger>

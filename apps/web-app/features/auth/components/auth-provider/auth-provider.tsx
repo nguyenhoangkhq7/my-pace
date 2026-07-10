@@ -60,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!isAuthRoute && !hasSession) {
             router.replace("/login");
         }
-    }, [accessToken, isInitialized, pathname, router, user]);
+    }, [isInitialized, isAuthRoute, hasSession, router]);
 
     if (!isInitialized || (!isAuthRoute && !hasSession)) {
         return (

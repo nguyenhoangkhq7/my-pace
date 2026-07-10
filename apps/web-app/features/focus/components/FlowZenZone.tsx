@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { YoutubeIcon, PlayIcon, Delete02Icon, PlusSignIcon, FullscreenIcon, Cancel01Icon } from "@hugeicons/core-free-icons";
+import { PlayIcon, Delete02Icon, PlusSignIcon, FullscreenIcon, Cancel01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
 
 export function FlowZenZone() {

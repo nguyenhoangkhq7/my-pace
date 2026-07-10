@@ -45,7 +45,11 @@ export default function FlowPage() {
 
   // Fetch data on mount
   useEffect(() => {
-    setMounted(true);
+    const timer = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
     if (user) {
       const d = new Date();
       const currentDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -82,35 +86,31 @@ export default function FlowPage() {
 
   // Read sizes from localStorage when layout breakpoint changes
   useEffect(() => {
-    // Number of panels expected for the current breakpoint
     const expectedLen = isXl ? 3 : isLg ? 2 : 1;
 
-    const saved = localStorage.getItem(`myPaceFlowSizes_${layoutKey}`);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        // Migrate old 15/70/15 default to new 20/60/20 layout
-        if (Array.isArray(parsed) && parsed.length === 3 && parsed[0] === 15 && parsed[1] === 70 && parsed[2] === 15) {
-          setSizes([20, 60, 20]);
-          localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify([20, 60, 20]));
-          return;
-        }
-        // Guard: discard saved sizes that don't match the current panel count
-        // (can happen when zoom level changes between breakpoints)
-        if (Array.isArray(parsed) && parsed.length === expectedLen) {
-          setSizes(parsed);
-          return;
-        }
-        // Remove the stale/mismatched entry so we fall through to defaults
-        localStorage.removeItem(`myPaceFlowSizes_${layoutKey}`);
-      } catch(e) {}
-    }
-    
-    // Defaults if nothing saved (or saved entry was invalid)
-    if (isXl) setSizes([20, 60, 20]);
-    else if (isLg) setSizes([25, 75]);
-    else setSizes([100]);
-  }, [layoutKey, resetKey]);
+    Promise.resolve().then(() => {
+      const saved = localStorage.getItem(`myPaceFlowSizes_${layoutKey}`);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length === 3 && parsed[0] === 15 && parsed[1] === 70 && parsed[2] === 15) {
+            setSizes([20, 60, 20]);
+            localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify([20, 60, 20]));
+            return;
+          }
+          if (Array.isArray(parsed) && parsed.length === expectedLen) {
+            setSizes(parsed);
+            return;
+          }
+          localStorage.removeItem(`myPaceFlowSizes_${layoutKey}`);
+        } catch {}
+      }
+      
+      if (isXl) setSizes([20, 60, 20]);
+      else if (isLg) setSizes([25, 75]);
+      else setSizes([100]);
+    });
+  }, [layoutKey, resetKey, isXl, isLg]);
 
   const handleLayout = (newSizes: number[]) => {
     // Only save if the number of reported panels matches what we expect for the
@@ -129,7 +129,7 @@ export default function FlowPage() {
           localStorage.removeItem(key);
         }
       });
-    } catch(e) {}
+    } catch {}
     setCanSave(false);
     setSizes(null);
     setResetKey(prev => prev + 1);
@@ -225,7 +225,7 @@ export default function FlowPage() {
         </DropdownMenu>
       </div>
 
-      {/* @ts-ignore - suppress ts error about direction vs orientation in older shadcn typings */}
+      {/* @ts-expect-error - suppress ts error about direction vs orientation in older shadcn typings */}
       <ResizablePanelGroup key={uniqueKey} onLayout={handleLayout} direction="horizontal" className="h-full w-full rounded-lg border-none">
         
         {/* Cột Trái: TODO Today */}
@@ -233,13 +233,12 @@ export default function FlowPage() {
           <>
             <ResizablePanel 
               id="todo-panel" 
-              {...({ order: 1 } as any)} 
+              {...({ order: 1 } as Record<string, unknown>)} 
               defaultSize={todoSize} 
               minSize={10} 
               collapsible={true} 
               collapsedSize={0}
-              onCollapse={() => setIsLeftCollapsed(true)}
-              onExpand={() => setIsLeftCollapsed(false)}
+              {...({ onCollapse: () => setIsLeftCollapsed(true), onExpand: () => setIsLeftCollapsed(false) } as Record<string, unknown>)}
             >
               <div className={cn("h-full w-full overflow-y-auto transition-opacity duration-700", pomodoroState === "focusing" ? "opacity-20 hover:opacity-100" : "")}>
                   <FlowTodoList onTaskSelect={handleTaskSelect} />
@@ -258,7 +257,7 @@ export default function FlowPage() {
         
         {/* Cột Giữa: Pomodoro Workspace */}
         {!isZenMaximized && (
-          <ResizablePanel id="pomodoro-panel" {...({ order: 2 } as any)} defaultSize={pomodoroSize} minSize={25}>
+          <ResizablePanel id="pomodoro-panel" {...({ order: 2 } as Record<string, unknown>)} defaultSize={pomodoroSize} minSize={25}>
             <div className="h-full w-full relative">
               <div className="h-full w-full flex items-center justify-center overflow-y-auto">
                 <FlowPomodoro />
@@ -280,13 +279,12 @@ export default function FlowPage() {
             
             <ResizablePanel 
               id="zenzone-panel" 
-              {...({ order: 3 } as any)} 
+              {...({ order: 3 } as Record<string, unknown>)} 
               defaultSize={isZenMaximized ? 100 : zenzoneSize} 
               minSize={isZenMaximized ? 100 : 10} 
               collapsible={!isZenMaximized} 
               collapsedSize={0}
-              onCollapse={() => setIsRightCollapsed(true)}
-              onExpand={() => setIsRightCollapsed(false)}
+              {...({ onCollapse: () => setIsRightCollapsed(true), onExpand: () => setIsRightCollapsed(false) } as Record<string, unknown>)}
             >
               <div className={cn("h-full w-full overflow-y-auto transition-opacity duration-700", pomodoroState === "focusing" && !isZenMaximized ? "opacity-20 hover:opacity-100" : "")}>
                  <FlowZenZone />

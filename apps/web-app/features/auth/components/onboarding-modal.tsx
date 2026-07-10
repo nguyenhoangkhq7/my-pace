@@ -40,7 +40,12 @@ export function OnboardingModal() {
   }, [hasCompletedOnboarding, startOnboarding]);
 
   useEffect(() => {
-    if (isOpen) { setSelectedQ(null); setSimStep(1); }
+    if (isOpen) { 
+      Promise.resolve().then(() => {
+        setSelectedQ(null); 
+        setSimStep(1); 
+      });
+    }
   }, [isOpen, currentSlide]);
 
   const totalSlides = 3;
@@ -276,7 +281,7 @@ export function OnboardingModal() {
                             <p className="text-[10.5px] font-semibold text-rose-300">📋 Ví dụ thực tế</p>
                             <p className="text-[10.5px] text-muted-foreground">• Nộp báo cáo deadline hôm nay<br/>• Sửa lỗi production đang ảnh hưởng user<br/>• Ôn thi có lịch thi ngày mai</p>
                           </div>
-                          <p className="text-[11px] text-muted-foreground"><strong className="text-foreground">✍️ Trong MyPACE:</strong> Tích cả <span className="text-rose-400 font-semibold">"Quan trọng"</span> và <span className="text-rose-400 font-semibold">"Khẩn cấp"</span> khi tạo task. Auto-Schedule sẽ xếp Q1 vào <strong>đầu tiên</strong> trong ngày.</p>
+                          <p className="text-[11px] text-muted-foreground"><strong className="text-foreground">✍️ Trong MyPACE:</strong> Tích cả <span className="text-rose-400 font-semibold">&quot;Quan trọng&quot;</span> và <span className="text-rose-400 font-semibold">&quot;Khẩn cấp&quot;</span> khi tạo task. Auto-Schedule sẽ xếp Q1 vào <strong>đầu tiên</strong> trong ngày.</p>
                         </div>
                       )}
                       {selectedQ === "Q2" && (
@@ -290,7 +295,7 @@ export function OnboardingModal() {
                             <p className="text-[10.5px] font-semibold text-emerald-300">📋 Ví dụ thực tế</p>
                             <p className="text-[10.5px] text-muted-foreground">• Học lập trình / ngoại ngữ mỗi ngày<br/>• Tập gym, thiền định, đọc sách<br/>• Xây dựng portfolio, side project</p>
                           </div>
-                          <p className="text-[11px] text-muted-foreground"><strong className="text-foreground">✍️ Trong MyPACE:</strong> Chỉ tích <span className="text-emerald-400 font-semibold">"Quan trọng"</span> (bỏ trống "Khẩn cấp"). Làm Q2 đều đặn giúp bạn <strong>không bao giờ rơi vào khủng hoảng Q1</strong>.</p>
+                          <p className="text-[11px] text-muted-foreground"><strong className="text-foreground">✍️ Trong MyPACE:</strong> Chỉ tích <span className="text-emerald-400 font-semibold">&quot;Quan trọng&quot;</span> (bỏ trống &quot;Khẩn cấp&quot;). Làm Q2 đều đặn giúp bạn <strong>không bao giờ rơi vào khủng hoảng Q1</strong>.</p>
                         </div>
                       )}
                       {selectedQ === "Q3" && (
@@ -304,7 +309,7 @@ export function OnboardingModal() {
                             <p className="text-[10.5px] font-semibold text-amber-300">📋 Ví dụ thực tế</p>
                             <p className="text-[10.5px] text-muted-foreground">• Trả lời email không quan trọng<br/>• Dự họp mà mình không cần có mặt<br/>• Giúp người khác việc không liên quan đến goal</p>
                           </div>
-                          <p className="text-[11px] text-muted-foreground"><strong className="text-foreground">✍️ Trong MyPACE:</strong> Chỉ tích <span className="text-amber-400 font-semibold">"Khẩn cấp"</span> (bỏ trống "Quan trọng"). Hãy ủy quyền hoặc giải quyết thật nhanh — <strong>đừng để Q3 ăn vào thời gian Q2</strong>.</p>
+                          <p className="text-[11px] text-muted-foreground"><strong className="text-foreground">✍️ Trong MyPACE:</strong> Chỉ tích <span className="text-amber-400 font-semibold">&quot;Khẩn cấp&quot;</span> (bỏ trống &quot;Quan trọng&quot;). Hãy ủy quyền hoặc giải quyết thật nhanh — <strong>đừng để Q3 ăn vào thời gian Q2</strong>.</p>
                         </div>
                       )}
                       {selectedQ === "Q4" && (

@@ -10,7 +10,7 @@ import type { EventReceiveArg } from "@fullcalendar/interaction";
 import { useCalendarEvents } from "@/features/calendar";
 import { useAvailableTime } from "@/features/available-time";
 import { EventModal } from "@/features/calendar/components/EventModal";
-import type { FixedEventOccurrence, ModalMode, UpdateOccurrencePayload } from "@/features/calendar/types";
+import type { FixedEventOccurrence, ModalMode } from "@/features/calendar/types";
 import { useAuthStore } from "@/features/auth";
 import { useBoardStore } from "@/features/board/store/board.store";
 import type { TaskTimeBlock } from "@/features/board/types";
@@ -50,7 +50,7 @@ export default function CalendarPage() {
   const draggableRef = useRef<Draggable | null>(null);
 
   const today = todayStr();
-  const { data: availableTime, fetchAvailableTime, isLoading: isLoadingAvailableTime } = useAvailableTime();
+  const { fetchAvailableTime } = useAvailableTime();
   const { dailyPlanToday, timeBlocks, saveTimeBlocks, fetchDailyPlanToday } = useBoardStore();
 
   const {
@@ -91,16 +91,15 @@ export default function CalendarPage() {
   const [isAutoScheduling, setIsAutoScheduling] = useState(false);
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [fixedEventColor, setFixedEventColor] = useState("#0ea5e9");
+  const [fixedEventColor, setFixedEventColor] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("myPaceFixedEventColor") || "#0ea5e9";
+    }
+    return "#0ea5e9";
+  });
   const colorInputRef = useRef<HTMLInputElement>(null);
 
-  // Hydrate fixed event color on mount
-  useEffect(() => {
-    const savedColor = localStorage.getItem("myPaceFixedEventColor");
-    if (savedColor) {
-      setFixedEventColor(savedColor);
-    }
-  }, []);
+
 
   const handleColorChange = (color: string) => {
     setFixedEventColor(color);
@@ -157,7 +156,11 @@ export default function CalendarPage() {
 
     // Remove any existing blocks for this task (1 manual placement = 1 block)
     const existingBlocks = timeBlocks.filter((b) => b.taskId !== taskId)
-      .map(({ id, ...rest }) => rest as Omit<TaskTimeBlock, "id">);
+      .map((b) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { id: _, ...rest } = b;
+        return rest as Omit<TaskTimeBlock, "id">;
+      });
 
     const newBlock: Omit<TaskTimeBlock, "id"> = {
       taskId,
@@ -252,7 +255,11 @@ export default function CalendarPage() {
       b.id === blockId
         ? { ...b, startTime: startTime.toISOString(), endTime: endTime.toISOString() }
         : b
-    ).map(({ id, ...rest }) => rest as Omit<TaskTimeBlock, "id">);
+    ).map((b) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { id: _, ...rest } = b;
+      return rest as Omit<TaskTimeBlock, "id">;
+    });
 
     try {
       await saveTimeBlocks(updatedBlocks);
@@ -260,15 +267,19 @@ export default function CalendarPage() {
     } catch { info.revert(); }
   }, [dailyPlanToday, timeBlocks, saveTimeBlocks, updateSingleOccurrence, updateAllOccurrences, createEvent, deleteSingleOccurrence]);
 
-  const handleEventResize = useCallback(async (arg: { event: any; revert: () => void }) => {
+  const handleEventResize = useCallback(async (arg: { event: { end: Date | null, extendedProps: Record<string, unknown> }; revert: () => void }) => {
     const blockId = arg.event.extendedProps?.blockId as string | undefined;
     if (blockId) {
       // Resize a time block
-      const newEnd = arg.event.end as Date | null;
+      const newEnd = arg.event.end;
       if (!newEnd || !dailyPlanToday) { arg.revert(); return; }
       const updatedBlocks = timeBlocks.map((b) =>
         b.id === blockId ? { ...b, endTime: newEnd.toISOString() } : b
-      ).map(({ id, ...rest }) => rest as Omit<TaskTimeBlock, "id">);
+      ).map((b) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { id: _, ...rest } = b;
+        return rest as Omit<TaskTimeBlock, "id">;
+      });
       try { await saveTimeBlocks(updatedBlocks); } catch { arg.revert(); }
       return;
     }
@@ -343,16 +354,18 @@ export default function CalendarPage() {
     }),
   ];
 
-  const [initialView, setInitialView] = useState("timeGridDay");
+  const [initialView] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("myPaceCalendarView") || "timeGridDay";
+    }
+    return "timeGridDay";
+  });
   const [isCalendarMounted, setIsCalendarMounted] = useState(false);
 
   // Restore saved view on mount
   useEffect(() => {
-    const savedView = localStorage.getItem("myPaceCalendarView");
-    if (savedView) {
-      setInitialView(savedView);
-    }
-    setIsCalendarMounted(true);
+    const timer = setTimeout(() => setIsCalendarMounted(true), 0);
+    return () => clearTimeout(timer);
   }, []);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
@@ -379,7 +392,11 @@ export default function CalendarPage() {
     // Remove all blocks associated with this task ID
     const updatedBlocks = timeBlocks
       .filter((b) => b.taskId !== taskId)
-      .map(({ id, ...rest }) => rest as Omit<TaskTimeBlock, "id">);
+      .map((b) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { id: _, ...rest } = b;
+        return rest as Omit<TaskTimeBlock, "id">;
+      });
 
     try {
       await saveTimeBlocks(updatedBlocks);
@@ -438,7 +455,11 @@ export default function CalendarPage() {
         return;
       }
 
-      const existingCleanBlocks = timeBlocks.map(({ id, ...rest }) => rest as Omit<TaskTimeBlock, "id">);
+      const existingCleanBlocks = timeBlocks.map((b) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { id: _, ...rest } = b;
+        return rest as Omit<TaskTimeBlock, "id">;
+      });
       await saveTimeBlocks([...existingCleanBlocks, ...newBlocks]);
       toast.success("Đã tự động sắp xếp các công việc còn lại vào lịch!");
     } catch (err) {
@@ -449,7 +470,7 @@ export default function CalendarPage() {
     }
   }, [dailyPlanToday, timeBlocks, events, user, today, saveTimeBlocks]);
 
-  const handleEventDragStop = useCallback((info: any) => {
+  const handleEventDragStop = useCallback((info: { event: { extendedProps: Record<string, unknown> }; jsEvent: MouseEvent }) => {
     if (!info.event.extendedProps.isTimeBlock || !sidebarRef.current) return;
 
     const rect = sidebarRef.current.getBoundingClientRect();
@@ -458,7 +479,7 @@ export default function CalendarPage() {
 
     // Check if drop coordinate is inside sidebar bounding box
     if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-      const taskId = info.event.extendedProps.taskId;
+      const taskId = info.event.extendedProps.taskId as string;
       handleUnscheduleTask(taskId);
     }
   }, [handleUnscheduleTask]);

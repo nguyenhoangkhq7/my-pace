@@ -16,6 +16,7 @@ import { Calendar01Icon, Delete01Icon, PlusSignIcon, Tick01Icon, Settings01Icon 
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ManageCategoriesModal } from "./ManageCategoriesModal";
+import { getApiErrorMessage } from "@/lib/fetchClient";
 
 interface TaskFormModalProps {
   isOpen: boolean;
@@ -81,34 +82,36 @@ export function TaskFormModal({
     prevIsOpenRef.current = isOpen;
 
     if (justOpened) {
-      fetchGoals();
-      setTitle(initialData?.title || "");
-      setEstimatedMinutes(initialData?.estimatedMinutes ? String(initialData.estimatedMinutes) : "");
-      setNotes(initialData?.notes || "");
-      
-      setIsUrgent(prefilledUrgent !== undefined ? prefilledUrgent : (initialData?.isUrgent || false));
-      setIsImportant(prefilledImportant !== undefined ? prefilledImportant : (initialData?.isImportant || false));
-      
-      setCategoryId(initialData?.categoryId || undefined);
-      setGoalId(prefilledGoalId || initialData?.goalId || undefined);
-      
-      if (initialData?.dueDate) {
-        setDueDate(new Date(initialData.dueDate));
-      } else if (planningTarget) {
-        const targetDate = new Date();
-        if (planningTarget === 'tomorrow') targetDate.setDate(targetDate.getDate() + 1);
-        setDueDate(targetDate);
-      } else if (prefilledGoalId && initialStatus !== 'Icebox' && !initialData?.id) {
-        // Default to today when creating from Habit/Target goal
-        setDueDate(new Date());
-      } else {
-        setDueDate(undefined);
-      }
-      
-      setError("");
-      setIsCreatingCategory(false);
-      setNewChecklistTitle("");
-      setIsConfirmDeleteOpen(false);
+      Promise.resolve().then(() => {
+        fetchGoals();
+        setTitle(initialData?.title || "");
+        setEstimatedMinutes(initialData?.estimatedMinutes ? String(initialData.estimatedMinutes) : "");
+        setNotes(initialData?.notes || "");
+        
+        setIsUrgent(prefilledUrgent !== undefined ? prefilledUrgent : (initialData?.isUrgent || false));
+        setIsImportant(prefilledImportant !== undefined ? prefilledImportant : (initialData?.isImportant || false));
+        
+        setCategoryId(initialData?.categoryId || undefined);
+        setGoalId(prefilledGoalId || initialData?.goalId || undefined);
+        
+        if (initialData?.dueDate) {
+          setDueDate(new Date(initialData.dueDate));
+        } else if (planningTarget) {
+          const targetDate = new Date();
+          if (planningTarget === 'tomorrow') targetDate.setDate(targetDate.getDate() + 1);
+          setDueDate(targetDate);
+        } else if (prefilledGoalId && initialStatus !== 'Icebox' && !initialData?.id) {
+          // Default to today when creating from Habit/Target goal
+          setDueDate(new Date());
+        } else {
+          setDueDate(undefined);
+        }
+        
+        setError("");
+        setIsCreatingCategory(false);
+        setNewChecklistTitle("");
+        setIsConfirmDeleteOpen(false);
+      });
     }
   }, [isOpen, initialData, prefilledGoalId, prefilledUrgent, prefilledImportant, planningTarget, initialStatus, fetchGoals]);
 
@@ -121,20 +124,22 @@ export function TaskFormModal({
     if (goalId && goalId !== "none") {
       const selectedGoal = goals.find(g => g.id === goalId);
       if (selectedGoal) {
-        if (selectedGoal.categoryId) {
-          setCategoryId(selectedGoal.categoryId);
-        }
-        if (!title && (selectedGoal.goalType === 'Time-boxed' || selectedGoal.goalType === 'Milestone')) {
-          setTitle(selectedGoal.title);
-        }
-        if (!estimatedMinutes && selectedGoal.goalType === 'Time-boxed' && selectedGoal.timeBoxedGoal) {
-          const target = selectedGoal.timeBoxedGoal.targetMinutes;
-          const period = Math.max(selectedGoal.timeBoxedGoal.periodDays, 1);
-          setEstimatedMinutes(String(Math.round(target / period)));
-        }
+        Promise.resolve().then(() => {
+          if (selectedGoal.categoryId) {
+            setCategoryId(selectedGoal.categoryId);
+          }
+          if (!title && (selectedGoal.goalType === 'Time-boxed' || selectedGoal.goalType === 'Milestone')) {
+            setTitle(selectedGoal.title);
+          }
+          if (!estimatedMinutes && selectedGoal.goalType === 'Time-boxed' && selectedGoal.timeBoxedGoal) {
+            const target = selectedGoal.timeBoxedGoal.targetMinutes;
+            const period = Math.max(selectedGoal.timeBoxedGoal.periodDays, 1);
+            setEstimatedMinutes(String(Math.round(target / period)));
+          }
+        });
       }
     }
-  }, [goalId, goals]);
+  }, [goalId, goals, estimatedMinutes, title]);
 
   const handleSubmitInternal = async () => {
     if (!title.trim()) {
@@ -171,8 +176,8 @@ export function TaskFormModal({
           await createTask(taskData);
         }
         handleClose();
-      } catch (err: any) {
-        setError(err.response?.data?.message || err.message);
+      } catch (err) {
+        setError(getApiErrorMessage(err));
       }
     }
   };
@@ -187,8 +192,8 @@ export function TaskFormModal({
       await deleteTask(initialData.id);
       setIsConfirmDeleteOpen(false);
       handleClose();
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message);
+    } catch (err) {
+      setError(getApiErrorMessage(err));
       setIsConfirmDeleteOpen(false);
     }
   };
@@ -216,7 +221,7 @@ export function TaskFormModal({
     }
   };
 
-  const inProgressGoals = goals.filter(g => g.status === "In Progress");
+
   const associatedGoal = goals.find(g => g.id === (prefilledGoalId || initialData?.goalId));
   const completedChecklistsCount = checklists.filter(c => c.isCompleted).length;
   const progressPercentage = checklists.length > 0 ? Math.round((completedChecklistsCount / checklists.length) * 100) : 0;
@@ -435,7 +440,7 @@ export function TaskFormModal({
                     <Calendar
                       mode="single"
                       selected={dueDate}
-                      onSelect={setDueDate as any}
+                      onSelect={(d) => setDueDate(d)}
                       className="text-slate-200"
                     />
                   </PopoverContent>

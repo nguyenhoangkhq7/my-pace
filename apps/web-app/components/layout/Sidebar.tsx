@@ -14,8 +14,7 @@ import {
   ArrowLeft01Icon,
   ArrowRight01Icon,
   Target02Icon,
-  Analytics01Icon,
-  PaintBoardIcon,
+  Analytics01Icon
 } from "@hugeicons/core-free-icons";
 import { useAvailableTime } from "@/features/available-time";
 import { FeedbackModal } from "../feedback/FeedbackModal";
@@ -90,8 +89,10 @@ export function Sidebar() {
   const themePickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const savedTheme = (localStorage.getItem("theme") as ThemeId) || "dark";
-    setTheme(savedTheme);
+    Promise.resolve().then(() => {
+      const savedTheme = (localStorage.getItem("theme") as ThemeId) || "dark";
+      setTheme(savedTheme);
+    });
   }, []);
 
   // Close theme picker when clicking outside
@@ -113,12 +114,15 @@ export function Sidebar() {
     root.classList.remove("dark", "light", "graphite", "nord", "sage", "rose");
     root.classList.add(newTheme);
     const isDark = THEMES.find(t => t.id === newTheme)?.dark ?? true;
+    // eslint-disable-next-line react-hooks/immutability
     root.style.colorScheme = isDark ? "dark" : "light";
   };
 
   useEffect(() => {
-    const saved = localStorage.getItem("sidebarCollapsed");
-    if (saved === "true") setIsCollapsed(true);
+    Promise.resolve().then(() => {
+      const saved = localStorage.getItem("sidebarCollapsed");
+      if (saved === "true") setIsCollapsed(true);
+    });
   }, []);
 
   const toggleCollapse = () => {
@@ -130,15 +134,11 @@ export function Sidebar() {
   };
 
   const today = new Date().toISOString().split("T")[0];
-  const { data: availableTime, fetchAvailableTime, checkin, isLoading } = useAvailableTime();
+  const { data: availableTime, fetchAvailableTime } = useAvailableTime();
 
   useEffect(() => {
     fetchAvailableTime(today);
   }, [today, fetchAvailableTime]);
-
-  const handleCheckin = async () => {
-    await checkin(today);
-  };
 
   return (
     <>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { useAvailableTimeStore } from "../store/available-time.store";
 import { useBoardStore } from "@/features/board/store/board.store";
 
@@ -17,11 +17,11 @@ export function useAppVisibility() {
 
   const lastCheckedDate = useRef<string>("");
 
-  const refreshAll = () => {
+  const refreshAll = useCallback(() => {
     const today = getTodayStr();
     fetchAvailableTimeToday(today);
     fetchDailyPlanToday(today);
-  };
+  }, [fetchAvailableTimeToday, fetchDailyPlanToday]);
 
   // 1. Auto Check-in when user opens app on a new day and no plan has been created yet
   useEffect(() => {
@@ -55,5 +55,5 @@ export function useAppVisibility() {
       window.removeEventListener("focus", handleFocusOrVisible);
       document.removeEventListener("visibilitychange", handleFocusOrVisible);
     };
-  }, [fetchAvailableTimeToday, fetchDailyPlanToday]);
+  }, [refreshAll]);
 }

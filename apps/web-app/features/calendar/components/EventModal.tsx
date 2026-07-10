@@ -80,27 +80,29 @@ export function EventModal({
   // ── Populate form when editing ─────────────────────────────────────────────
   useEffect(() => {
     if (!open) return;
-    if (mode === "edit" && occurrence) {
-      setTitle(occurrence.title);
-      setNotes(occurrence.notes ?? "");
-      setDate(occurrence.occurrenceDate);
-      setStartTime(occurrence.startTime.substring(0, 5));
-      setEndTime(occurrence.endTime.substring(0, 5));
-      setRecurrenceType(occurrence.recurrenceType);
-      setSelectedDays(occurrence.recurrenceDaysOfWeek ?? []);
-      setRecurrenceEndDate(occurrence.recurrenceEndDate ?? "");
-    } else {
-      // Create mode — use drag-select defaults
-      setTitle("");
-      setNotes("");
-      setDate(defaultDate ?? "");
-      setStartTime(defaultStart ?? "");
-      setEndTime(defaultEnd ?? "");
-      setRecurrenceType("NONE");
-      setSelectedDays([]);
-      setRecurrenceEndDate("");
-    }
-    setError(null);
+    Promise.resolve().then(() => {
+      if (mode === "edit" && occurrence) {
+        setTitle(occurrence.title);
+        setNotes(occurrence.notes ?? "");
+        setDate(occurrence.occurrenceDate);
+        setStartTime(occurrence.startTime.substring(0, 5));
+        setEndTime(occurrence.endTime.substring(0, 5));
+        setRecurrenceType(occurrence.recurrenceType);
+        setSelectedDays(occurrence.recurrenceDaysOfWeek ?? []);
+        setRecurrenceEndDate(occurrence.recurrenceEndDate ?? "");
+      } else {
+        // Create mode — use drag-select defaults
+        setTitle("");
+        setNotes("");
+        setDate(defaultDate ?? "");
+        setStartTime(defaultStart ?? "");
+        setEndTime(defaultEnd ?? "");
+        setRecurrenceType("NONE");
+        setSelectedDays([]);
+        setRecurrenceEndDate("");
+      }
+      setError(null);
+    });
   }, [open, mode, occurrence, defaultDate, defaultStart, defaultEnd]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────

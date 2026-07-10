@@ -1,5 +1,5 @@
 import { DailyPlanTask, TaskTimeBlock } from "../types";
-import { FixedEventOccurrence } from "@/features/calendar/types";
+
 
 interface ScheduleSlot {
   startTime: Date;
