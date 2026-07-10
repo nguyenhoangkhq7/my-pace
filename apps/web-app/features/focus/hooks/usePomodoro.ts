@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { useFocusStore } from "../store/focus.store";
 
 export function usePomodoro() {
@@ -17,11 +17,11 @@ export function usePomodoro() {
   const lastTickRef = useRef<number>(0);
 
   // Play a system beep using Web Audio API
-  const playSystemBeep = (frequency: number = 600, duration: number = 200, vol: number = 0.5) => {
+  const playSystemBeep = useCallback((frequency: number = 600, duration: number = 200, vol: number = 0.5) => {
     if (!soundEnabled || typeof window === "undefined") return;
     
     try {
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
       const oscillator = audioCtx.createOscillator();
       const gainNode = audioCtx.createGain();
 
@@ -39,17 +39,17 @@ export function usePomodoro() {
     } catch (e) {
       console.error("Audio beep failed", e);
     }
-  };
+  }, [soundEnabled]);
 
-  const playFocusEnd = () => {
+  const playFocusEnd = useCallback(() => {
     playSystemBeep(800, 300); // Higher pitch for focus end
     setTimeout(() => playSystemBeep(800, 400), 400); // Double beep
-  };
+  }, [playSystemBeep]);
 
-  const playBreakEnd = () => {
+  const playBreakEnd = useCallback(() => {
     playSystemBeep(500, 250); // Lower pitch for break end
     setTimeout(() => playSystemBeep(600, 300), 300);
-  };
+  }, [playSystemBeep]);
 
   useEffect(() => {
     if (pomodoroState === "idle" || pomodoroState === "finished" || pomodoroState === "paused") {
@@ -93,7 +93,9 @@ export function usePomodoro() {
     tick,
     transitionToBreak,
     transitionToFocus,
-    completeAllSessions
+    completeAllSessions,
+    playFocusEnd,
+    playBreakEnd
   ]);
 
   return { pomodoroState, timeLeft, currentSession, totalSessions };

@@ -8,14 +8,14 @@ export const boardApi = {
   deleteTask: (id: string) => fetchClient.del<unknown>(`tasks/${id}`),
 
   addChecklistItem: (taskId: string, data: { title: string; isCompleted?: boolean }) => 
-    fetchClient.post<any, typeof data>(`tasks/${taskId}/checklists`, data),
+    fetchClient.post<unknown, typeof data>(`tasks/${taskId}/checklists`, data),
   updateChecklistItem: (taskId: string, checklistId: string, data: { title?: string; isCompleted?: boolean }) => 
-    fetchClient.put<any, typeof data>(`tasks/${taskId}/checklists/${checklistId}`, data),
+    fetchClient.put<unknown, typeof data>(`tasks/${taskId}/checklists/${checklistId}`, data),
   deleteChecklistItem: (taskId: string, checklistId: string) => 
     fetchClient.del<unknown>(`tasks/${taskId}/checklists/${checklistId}`),
 
   getDailyPlan: (date: string) => fetchClient.get<DailyPlan>(`daily-plans/${date}`),
-  planMyDay: (data: any) => fetchClient.post<DailyPlan, any>("daily-plans/plan-my-day", data),
+  planMyDay: (data: Record<string, unknown>) => fetchClient.post<DailyPlan, Record<string, unknown>>("daily-plans/plan-my-day", data),
   confirmPlan: (date: string) => fetchClient.post<DailyPlan, Record<string, never>>(`daily-plans/${date}/confirm`, {}),
   reviewPlan: (date: string) => fetchClient.post<DailyPlan, Record<string, never>>(`daily-plans/${date}/review`, {}),
   cancelPlan: (date: string) => fetchClient.post<unknown, Record<string, never>>(`daily-plans/${date}/cancel`, {}),

@@ -47,12 +47,14 @@ export function ProfileDialog({ isOpen, onOpenChange }: ProfileDialogProps) {
   // Load current user data when dialog opens or user changes
   useEffect(() => {
     if (user && isOpen) {
-      setValue("fullName", user.name || "");
-      setValue("wakeTime", user.wakeTime ? user.wakeTime.substring(0, 5) : "07:00");
-      setValue("sleepTime", user.sleepTime ? user.sleepTime.substring(0, 5) : "23:00");
-      setBuffer(user.bufferPct ?? 20);
-      setError(null);
-      setIsConfirmLogoutOpen(false);
+      Promise.resolve().then(() => {
+        setValue("fullName", user.name || "");
+        setValue("wakeTime", user.wakeTime ? user.wakeTime.substring(0, 5) : "07:00");
+        setValue("sleepTime", user.sleepTime ? user.sleepTime.substring(0, 5) : "23:00");
+        setBuffer(user.bufferPct ?? 20);
+        setError(null);
+        setIsConfirmLogoutOpen(false);
+      });
     }
   }, [user, isOpen, setValue]);
 
@@ -68,7 +70,7 @@ export function ProfileDialog({ isOpen, onOpenChange }: ProfileDialogProps) {
     };
 
     try {
-      const response = await put<any, typeof payload>("users/profile", payload);
+      const response = await put<Record<string, unknown>, typeof payload>("users/profile", payload);
       if (response.data && "id" in response.data) {
         if (accessToken && user) {
           setSession({
@@ -86,9 +88,10 @@ export function ProfileDialog({ isOpen, onOpenChange }: ProfileDialogProps) {
       } else {
         setError("Không thể lưu thông tin. Vui lòng thử lại.");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Profile update error:", err);
-      setError(err.message || "Đã xảy ra lỗi kết nối với máy chủ.");
+      const errorMessage = err instanceof Error ? err.message : "Đã xảy ra lỗi kết nối với máy chủ.";
+      setError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }

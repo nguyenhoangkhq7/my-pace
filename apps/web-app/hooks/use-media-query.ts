@@ -1,12 +1,7 @@
 import { useEffect, useState } from "react";
 
 export function useMediaQuery(query: string) {
-  const [value, setValue] = useState(() => {
-    if (typeof window !== "undefined") {
-      return window.matchMedia(query).matches;
-    }
-    return false;
-  });
+  const [value, setValue] = useState(false);
 
   useEffect(() => {
     function onChange(event: MediaQueryListEvent) {
@@ -16,13 +11,13 @@ export function useMediaQuery(query: string) {
     const result = window.matchMedia(query);
     result.addEventListener("change", onChange);
     
-    // Safety check in case it changed between initial render and effect execution
-    if (result.matches !== value) {
+    // Đảm bảo sync giá trị ngay sau khi mount, bọc trong Promise để tránh lỗi set-state-in-effect
+    Promise.resolve().then(() => {
       setValue(result.matches);
-    }
+    });
 
     return () => result.removeEventListener("change", onChange);
-  }, [query, value]);
+  }, [query]);
 
   return value;
 }

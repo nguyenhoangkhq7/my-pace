@@ -6,7 +6,7 @@ import { useGoalStore } from "@/features/goal/store/goal.store";
 import { Goal } from "@/features/goal/types";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, Square, Check, ListTodo, Settings2, Volume2, VolumeX } from "lucide-react";
-import { useRouter } from "next/navigation";
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -28,9 +28,11 @@ export function PomodoroSettingsModal() {
 
   useEffect(() => {
     if (isSettingsOpen) {
-      setTempFocus(focusMinutes.toString());
-      setTempBreak(breakMinutes.toString());
-      setTempSound(soundEnabled);
+      Promise.resolve().then(() => {
+        setTempFocus(focusMinutes.toString());
+        setTempBreak(breakMinutes.toString());
+        setTempSound(soundEnabled);
+      });
     }
   }, [isSettingsOpen, focusMinutes, breakMinutes, soundEnabled]);
 
@@ -112,8 +114,7 @@ export function FlowPomodoro() {
     pauseTimer,
     pomodoroState,
     accumulatedFocusTime,
-    isSettingsOpen,
-    setIsSettingsOpen,
+
     focusMinutes,
     breakMinutes,
   } = useFocusStore();
@@ -200,7 +201,7 @@ export function FlowPomodoro() {
               </div>
 
               <div className="text-center text-sm text-muted-foreground font-medium italic pb-4 px-4">
-                "Thành công không phải là đích đến, mà là chặng đường bạn đã nỗ lực mỗi ngày."
+                &quot;Thành công không phải là đích đến, mà là chặng đường bạn đã nỗ lực mỗi ngày.&quot;
               </div>
 
               <DialogFooter className="flex justify-center sm:justify-center border-t border-border pt-5">

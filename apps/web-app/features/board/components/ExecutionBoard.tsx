@@ -2,18 +2,15 @@ import { useState, useMemo } from "react";
 import { useBoardStore } from "../store/board.store";
 import { useAvailableTimeStore } from "@/features/available-time/store/available-time.store";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Calendar01Icon, PlayIcon, Tick01Icon } from "@hugeicons/core-free-icons";
+import { Calendar01Icon } from "@hugeicons/core-free-icons";
 import { StartMyDayModal } from "./StartMyDayModal";
 import { TaskCardChecklist } from "./TaskCardChecklist";
-import { useFocusStore } from "@/features/focus/store/focus.store";
-import { useRouter } from "next/navigation";
 
 export function ExecutionBoard({ currentDate, tomorrowDate }: { currentDate: string; tomorrowDate: string }) {
-  const router = useRouter();
   const { 
     tasks, 
     dailyPlanToday, 
@@ -28,7 +25,7 @@ export function ExecutionBoard({ currentDate, tomorrowDate }: { currentDate: str
     isStarted
   } = useBoardStore();
   
-  const { openFocusMode } = useFocusStore();
+
   const { dataToday, dataTomorrow } = useAvailableTimeStore(s => s);
   const [activeTab, setActiveTab] = useState("today");
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
@@ -216,7 +213,7 @@ export function ExecutionBoard({ currentDate, tomorrowDate }: { currentDate: str
                     <div className={`font-medium text-sm ${pt.task.status === "Done" ? "text-muted-foreground line-through" : "text-foreground"}`}>
                       {pt.task.title}
                     </div>
-                    {renderTaskDetails(pt.task as any)}
+                    {renderTaskDetails(pt.task as typeof tasks[0])}
                   </div>
                 </div>
               ))}
@@ -232,7 +229,7 @@ export function ExecutionBoard({ currentDate, tomorrowDate }: { currentDate: str
                     <div className={`text-sm ${pt.task.status === "Done" ? "text-muted-foreground line-through" : "text-foreground"}`}>
                       {pt.task.title}
                     </div>
-                    {renderTaskDetails(pt.task as any)}
+                    {renderTaskDetails(pt.task as typeof tasks[0])}
                   </div>
                 </div>
               ))}

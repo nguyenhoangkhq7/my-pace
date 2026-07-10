@@ -4,7 +4,7 @@ import { TaskFormModal } from "./TaskFormModal";
 import { TaskCardChecklist } from "./TaskCardChecklist";
 import { useState, useEffect } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { PlusSignIcon, FilterIcon, Calendar01Icon, Folder01Icon, Target02Icon, PlayIcon, PauseIcon } from "@hugeicons/core-free-icons";
+import { PlusSignIcon, FilterIcon, Calendar01Icon, Folder01Icon, Target02Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { useAvailableTimeStore } from "../../available-time/store/available-time.store";
 import { toast } from "sonner";

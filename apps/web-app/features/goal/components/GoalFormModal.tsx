@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useWatch } from "react-hook-form";
 import { Goal, GoalCreateRequest, GoalUpdateRequest, GoalType } from "../types";
 import { useGoalStore } from "../store/goal.store";
 import { useBoardStore } from "@/features/board/store/board.store";
@@ -57,7 +57,7 @@ interface FormValues {
 }
 
 export function GoalFormModal({ isOpen, onOpenChange, goal, prefilledParentGoalId, onSuccess }: GoalFormModalProps) {
-  const { createGoal, updateGoal, deleteGoal, goals } = useGoalStore();
+  const { createGoal, updateGoal, deleteGoal } = useGoalStore();
   const { categories, createCategory } = useBoardStore();
   const [isManagingCategories, setIsManagingCategories] = useState(false);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
@@ -67,7 +67,7 @@ export function GoalFormModal({ isOpen, onOpenChange, goal, prefilledParentGoalI
   const [showAutoTaskHelp, setShowAutoTaskHelp] = useState(false);
   const hasInitializedRef = useRef(false);
 
-  const { register, handleSubmit, watch, reset, setValue, control } = useForm<FormValues>({
+  const { register, handleSubmit, reset, setValue, control } = useForm<FormValues>({
     defaultValues: {
       title: "",
       goalType: "Time-boxed",
@@ -86,10 +86,11 @@ export function GoalFormModal({ isOpen, onOpenChange, goal, prefilledParentGoalI
     },
   });
 
-  const goalType = watch("goalType");
-  const status = watch("status");
-  const categoryId = watch("categoryId");
-  const parentGoalId = watch("parentGoalId");
+  const goalType = useWatch({ control, name: "goalType" });
+  const status = useWatch({ control, name: "status" });
+  const categoryId = useWatch({ control, name: "categoryId" });
+  const parentGoalId = useWatch({ control, name: "parentGoalId" });
+  const autoCreateTask = useWatch({ control, name: "autoCreateTask" });
 
   useEffect(() => {
     if (isOpen) {
@@ -125,9 +126,11 @@ export function GoalFormModal({ isOpen, onOpenChange, goal, prefilledParentGoalI
         }
         hasInitializedRef.current = true;
       }
-      setIsCreatingCategory(false);
-      setNewCategoryName("");
-      setNewCategoryColor(CATEGORY_COLORS[0]);
+      Promise.resolve().then(() => {
+        setIsCreatingCategory(false);
+        setNewCategoryName("");
+        setNewCategoryColor(CATEGORY_COLORS[0]);
+      });
     } else {
       hasInitializedRef.current = false;
     }
@@ -140,7 +143,7 @@ export function GoalFormModal({ isOpen, onOpenChange, goal, prefilledParentGoalI
         return;
       }
 
-      const payload: any = {
+      const payload: Record<string, unknown> = {
         title: data.title,
         goalType: data.goalType,
         status: data.status,
@@ -165,9 +168,9 @@ export function GoalFormModal({ isOpen, onOpenChange, goal, prefilledParentGoalI
 
       let result;
       if (goal) {
-        result = await updateGoal(goal.id, payload as GoalUpdateRequest);
+        result = await updateGoal(goal.id, payload as unknown as GoalUpdateRequest);
       } else {
-        result = await createGoal(payload as GoalCreateRequest);
+        result = await createGoal(payload as unknown as GoalCreateRequest);
       }
       if (onSuccess) {
         onSuccess(result);
@@ -206,7 +209,7 @@ export function GoalFormModal({ isOpen, onOpenChange, goal, prefilledParentGoalI
     }
   };
 
-  const binaryGoals = goals.filter(g => g.goalType === 'Binary' && g.id !== goal?.id);
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -413,7 +416,7 @@ export function GoalFormModal({ isOpen, onOpenChange, goal, prefilledParentGoalI
                 </div>
               )}
 
-              {watch("autoCreateTask") && (
+              {autoCreateTask && (
                 <div className="space-y-2">
                   <label className="text-xs text-slate-400 font-medium block">
                     {goalType === "Time-boxed" 

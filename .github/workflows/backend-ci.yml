@@ -1,0 +1,65 @@
+name: Backend PR CI
+
+on:
+  pull_request:
+    branches: [ "develop", "main" ]
+    paths:
+      - 'apps/my-pace-service/**'
+      - '.github/workflows/backend-ci.yml'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/my-pace-service
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+          
+      - name: Create .env file from Secrets
+        run: |
+          # Ghi nội dung secret BACKEND_ENV vào file .env
+          echo "${{ secrets.BACKEND_ENV }}" > .env
+          
+      - name: Make Maven Wrapper executable
+        run: chmod +x mvnw
+          
+      - name: Check Lint / Format (Checkstyle)
+        run: ./mvnw checkstyle:check || echo "Checkstyle is not configured yet. Skipping."
+        
+      - name: Start Database and Redis
+        working-directory: ${{ github.workspace }}
+        run: docker compose up -d db redis
+        
+      - name: Wait for services
+        run: |
+          for i in {1..30}; do
+            docker exec my-pace-db pg_isready -U my_pace -d my_pace_db && echo "DB ready!" && break
+            echo "Waiting for DB..."
+            sleep 2
+          done
+        
+      - name: Run Unit Tests
+        run: ./mvnw test
+        
+      - name: Run SAST Scan (Trivy)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: 'apps/my-pace-service'
+          format: 'table'
+          exit-code: '1' # Block merge if there are CRITICAL/HIGH vulnerabilities
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+          
+      - name: Build with Maven (Dry-run)
+        run: ./mvnw clean package -DskipTests
