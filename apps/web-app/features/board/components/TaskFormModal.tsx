@@ -5,18 +5,22 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Task } from "../types";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { useBoardStore } from "../store/board.store";
 import { useGoalStore } from "@/features/goal/store/goal.store";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Calendar01Icon, Delete01Icon, PlusSignIcon, Tick01Icon, Settings01Icon } from "@hugeicons/core-free-icons";
+import { Calendar01Icon, Delete01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ManageCategoriesModal } from "./ManageCategoriesModal";
+import { ConfirmDeleteDialog } from "@/components/feedback/ConfirmDeleteDialog";
 import { getApiErrorMessage } from "@/lib/fetchClient";
+
+// Import new sub-components
+import { TaskFormChecklist } from "./TaskFormChecklist";
+import { TaskFormDuration } from "./TaskFormDuration";
+import { TaskFormCategory } from "./TaskFormCategory";
 
 interface TaskFormModalProps {
   isOpen: boolean;
@@ -32,8 +36,6 @@ interface TaskFormModalProps {
   initialStatus?: 'Icebox' | 'Backlog' | 'Picked for Today' | 'Done';
 }
 
-const CATEGORY_COLORS = ["#0ea5e9", "#10b981", "#8b5cf6", "#f59e0b", "#f43f5e", "#6366f1", "#14b8a6", "#ec4899", "#ef4444", "#475569"];
-
 export function TaskFormModal({ 
   isOpen, 
   onOpenChange,
@@ -47,10 +49,8 @@ export function TaskFormModal({
   planningTarget,
   initialStatus
 }: TaskFormModalProps) {
-  const { tasks, categories, createCategory, createTask, updateTask, deleteTask, addChecklistItem, updateChecklistItem, deleteChecklistItem } = useBoardStore();
+  const { tasks, categories, createTask, updateTask, deleteTask } = useBoardStore();
   const { goals, fetchGoals } = useGoalStore();
-  const durationInputRef = useRef<HTMLInputElement>(null);
-  const categoryColorInputRef = useRef<HTMLInputElement>(null);
   
   const [title, setTitle] = useState("");
   const [estimatedMinutes, setEstimatedMinutes] = useState("");
@@ -62,19 +62,11 @@ export function TaskFormModal({
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [error, setError] = useState("");
 
-  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
-  const [isManagingCategories, setIsManagingCategories] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [newCategoryColor, setNewCategoryColor] = useState(CATEGORY_COLORS[0]);
-  
-  const [newChecklistTitle, setNewChecklistTitle] = useState("");
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
 
   const currentTask = initialData?.id ? tasks.find(t => t.id === initialData.id) : null;
   const checklists = currentTask?.checklists || [];
 
-  // Track previous isOpen to only initialize form when modal FIRST opens,
-  // not on every re-render caused by store updates (e.g., after createCategory).
   const prevIsOpenRef = useRef(false);
 
   useEffect(() => {
@@ -101,15 +93,12 @@ export function TaskFormModal({
           if (planningTarget === 'tomorrow') targetDate.setDate(targetDate.getDate() + 1);
           setDueDate(targetDate);
         } else if (prefilledGoalId && initialStatus !== 'Icebox' && !initialData?.id) {
-          // Default to today when creating from Habit/Target goal
           setDueDate(new Date());
         } else {
           setDueDate(undefined);
         }
         
         setError("");
-        setIsCreatingCategory(false);
-        setNewChecklistTitle("");
         setIsConfirmDeleteOpen(false);
       });
     }
@@ -125,12 +114,8 @@ export function TaskFormModal({
       const selectedGoal = goals.find(g => g.id === goalId);
       if (selectedGoal) {
         Promise.resolve().then(() => {
-          if (selectedGoal.categoryId) {
-            setCategoryId(selectedGoal.categoryId);
-          }
-          if (!title && (selectedGoal.goalType === 'Time-boxed' || selectedGoal.goalType === 'Milestone')) {
-            setTitle(selectedGoal.title);
-          }
+          if (selectedGoal.categoryId) setCategoryId(selectedGoal.categoryId);
+          if (!title && (selectedGoal.goalType === 'Time-boxed' || selectedGoal.goalType === 'Milestone')) setTitle(selectedGoal.title);
           if (!estimatedMinutes && selectedGoal.goalType === 'Time-boxed' && selectedGoal.timeBoxedGoal) {
             const target = selectedGoal.timeBoxedGoal.targetMinutes;
             const period = Math.max(selectedGoal.timeBoxedGoal.periodDays, 1);
@@ -182,10 +167,6 @@ export function TaskFormModal({
     }
   };
 
-  const handleDeleteClick = () => {
-    setIsConfirmDeleteOpen(true);
-  };
-
   const handleConfirmDelete = async () => {
     if (!initialData?.id) return;
     try {
@@ -198,33 +179,7 @@ export function TaskFormModal({
     }
   };
 
-  const handleCreateCategory = async () => {
-    if (!newCategoryName.trim()) return;
-    try {
-      const cat = await createCategory({ name: newCategoryName, color: newCategoryColor });
-      setCategoryId(cat.id);
-      setIsCreatingCategory(false);
-      setNewCategoryName("");
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleAddChecklist = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newChecklistTitle.trim() || !initialData?.id) return;
-    try {
-      await addChecklistItem(initialData.id, newChecklistTitle.trim());
-      setNewChecklistTitle("");
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-
   const associatedGoal = goals.find(g => g.id === (prefilledGoalId || initialData?.goalId));
-  const completedChecklistsCount = checklists.filter(c => c.isCompleted).length;
-  const progressPercentage = checklists.length > 0 ? Math.round((completedChecklistsCount / checklists.length) * 100) : 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
@@ -243,7 +198,7 @@ export function TaskFormModal({
         
         <div className={cn("grid py-4", requireDuration ? "gap-4" : "grid-cols-1 md:grid-cols-2 gap-6")}>
           {/* Main Content (Left Column) */}
-          <div className={cn("space-y-4")}>
+          <div className="space-y-4">
             <div className="grid gap-2">
               <Label htmlFor="title">Title *</Label>
               <Input
@@ -257,59 +212,7 @@ export function TaskFormModal({
             
             {/* Checklist Section */}
             {!requireDuration && initialData?.id && (
-              <div className="grid gap-3 pt-2">
-                <div className="flex items-center gap-2">
-                  <HugeiconsIcon icon={Tick01Icon} className="w-5 h-5 text-slate-400" />
-                  <h3 className="font-semibold">Việc cần làm</h3>
-                </div>
-                
-                {checklists.length > 0 && (
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs text-slate-400 w-8">{progressPercentage}%</span>
-                    <div className="flex-1 h-2 bg-slate-900 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-primary transition-all duration-300"
-                        style={{ width: `${progressPercentage}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  {checklists.map(item => (
-                    <div key={item.id} className="flex items-start gap-3 group">
-                      <Checkbox 
-                        checked={item.isCompleted} 
-                        onCheckedChange={(checked) => updateChecklistItem(initialData.id!, item.id, { isCompleted: checked === true })}
-                        className="mt-1 border-slate-700"
-                      />
-                      <span className={cn("flex-1 text-sm pt-0.5", item.isCompleted && "line-through text-slate-500")}>
-                        {item.title}
-                      </span>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-6 w-6 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-400"
-                        onClick={() => deleteChecklistItem(initialData.id!, item.id)}
-                      >
-                        <HugeiconsIcon icon={Delete01Icon} className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-
-                <form onSubmit={handleAddChecklist} className="flex gap-2 mt-2">
-                  <Input 
-                    value={newChecklistTitle}
-                    onChange={e => setNewChecklistTitle(e.target.value)}
-                    placeholder="Thêm một mục"
-                    className="bg-slate-900 border-slate-800 h-9"
-                  />
-                  <Button type="submit" size="sm" variant="secondary" className="h-9">
-                    Thêm
-                  </Button>
-                </form>
-              </div>
+              <TaskFormChecklist taskId={initialData.id} checklists={checklists} />
             )}
             
             {!requireDuration && (
@@ -329,90 +232,17 @@ export function TaskFormModal({
           {/* Sidebar (Right Column) */}
           <div className="space-y-4">
             {!requireDuration && !prefilledGoalId && (
-              <div className="grid gap-2">
-                <Label>Category</Label>
-                {isCreatingCategory ? (
-                  <div className="space-y-3 p-3 bg-slate-900 border border-slate-800 rounded-md">
-                    <Input 
-                      autoFocus
-                      placeholder="Category Name" 
-                      value={newCategoryName} 
-                      onChange={e => setNewCategoryName(e.target.value)} 
-                      className="bg-slate-950 border-slate-800"
-                    />
-                    <div className="flex flex-wrap gap-1.5 items-center">
-                      {CATEGORY_COLORS.map(c => (
-                        <button
-                          type="button"
-                          key={c} 
-                          onClick={() => setNewCategoryColor(c)}
-                          className={cn("w-5 h-5 rounded-full cursor-pointer ring-offset-slate-900 border border-black/15 transition-all hover:scale-110 duration-200", newCategoryColor === c ? "ring-2 ring-white scale-105 shadow-md" : "opacity-85 hover:opacity-100")}
-                          style={{ backgroundColor: c }}
-                        />
-                      ))}
-
-                      {!CATEGORY_COLORS.includes(newCategoryColor) && (
-                        <button
-                          type="button"
-                          onClick={() => categoryColorInputRef.current?.click()}
-                          className="w-5 h-5 rounded-full border border-white ring-2 ring-white scale-105 shadow-md cursor-pointer transition-all"
-                          style={{ backgroundColor: newCategoryColor }}
-                          title={`Màu tự chọn: ${newCategoryColor}`}
-                        />
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={() => categoryColorInputRef.current?.click()}
-                        className="w-5 h-5 rounded-full border border-black/15 cursor-pointer transition-all hover:scale-110 flex items-center justify-center bg-[linear-gradient(45deg,#ff0000,#00ff00,#0000ff)] opacity-85 hover:opacity-100"
-                        title="Tự chọn màu khác..."
-                      >
-                        <span className="text-[10px] text-white font-bold drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.6)]">+</span>
-                      </button>
-                      <input
-                        ref={categoryColorInputRef}
-                        type="color"
-                        value={newCategoryColor}
-                        onChange={(e) => setNewCategoryColor(e.target.value)}
-                        className="sr-only"
-                      />
-                    </div>
-                    <div className="flex space-x-2 pt-1">
-                      <Button size="sm" variant="outline" className="h-7 text-xs border-slate-700 text-slate-300 flex-1 px-2" onClick={() => setIsCreatingCategory(false)}>Cancel</Button>
-                      <Button size="sm" className="h-7 text-xs bg-primary text-white flex-1 px-2" onClick={handleCreateCategory}>Save</Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex space-x-1.5">
-                    <Select value={categoryId || "none"} onValueChange={(val) => setCategoryId(val === "none" ? undefined : val)} disabled={!!goalId && goalId !== "none"}>
-                      <SelectTrigger className="w-full bg-slate-900 border-slate-800">
-                        <SelectValue placeholder="Select Category" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-slate-950 border-slate-800 text-slate-200">
-                        <SelectItem value="none">No Category</SelectItem>
-                        {categories.map(c => (
-                          <SelectItem key={c.id} value={c.id}>
-                            <div className="flex items-center space-x-2">
-                              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: c.color }} />
-                              <span>{c.name}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button variant="outline" className="border-slate-800 bg-slate-900 text-slate-300 px-2 shrink-0" onClick={() => setIsCreatingCategory(true)} disabled={!!goalId && goalId !== "none"} title="Thêm Category">
-                      <HugeiconsIcon icon={PlusSignIcon} className="w-4 h-4" />
-                    </Button>
-                    <Button variant="outline" className="border-slate-800 bg-slate-900 text-slate-300 px-2 shrink-0" onClick={() => setIsManagingCategories(true)} title="Quản lý Category">
-                      <HugeiconsIcon icon={Settings01Icon} className="w-4 h-4" />
-                    </Button>
-                  </div>
-                )}
-              </div>
+              <TaskFormCategory 
+                categoryId={categoryId}
+                onCategoryChange={setCategoryId}
+                categories={categories}
+                goalId={goalId}
+                associatedGoal={associatedGoal}
+              />
             )}
 
-            {!requireDuration && associatedGoal && (
-              <div className="grid gap-2">
+            {!requireDuration && associatedGoal && prefilledGoalId && (
+              <div className="grid gap-2 mt-4">
                 <Label>Goal</Label>
                 <div className="p-2.5 bg-slate-900 border border-slate-800 rounded-md text-sm text-slate-300 font-medium">
                   {associatedGoal.title}
@@ -448,56 +278,11 @@ export function TaskFormModal({
               </div>
             )}
             
-            <div className="grid gap-2">
-              <Label htmlFor="duration">Thời gian thực hiện (phút) {requireDuration && "*"}</Label>
-              <div className="flex flex-wrap gap-1.5">
-                {[30, 45, 60, 120, 180].map(mins => {
-                  const label = mins >= 60 ? `${mins / 60}h` : `${mins}m`;
-                  const isSelected = estimatedMinutes === String(mins);
-                  return (
-                    <Button
-                      key={mins}
-                      type="button"
-                      variant={isSelected ? "default" : "outline"}
-                      className={cn(
-                        "h-8 px-2.5 text-xs flex-1 min-w-[50px]",
-                        isSelected ? "bg-primary text-white" : "border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800"
-                      )}
-                      onClick={() => setEstimatedMinutes(String(mins))}
-                    >
-                      {label}
-                    </Button>
-                  );
-                })}
-                <Button
-                  type="button"
-                  variant={![30, 45, 60, 120, 180].includes(Number(estimatedMinutes)) && estimatedMinutes !== "" ? "default" : "outline"}
-                  className={cn(
-                    "h-8 px-2.5 text-xs flex-1 min-w-[65px]",
-                    ![30, 45, 60, 120, 180].includes(Number(estimatedMinutes)) && estimatedMinutes !== "" 
-                      ? "bg-primary text-white" 
-                      : "border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800"
-                  )}
-                  onClick={() => {
-                    durationInputRef.current?.focus();
-                    durationInputRef.current?.select();
-                  }}
-                >
-                  Tự nhập
-                </Button>
-              </div>
-              <Input
-                ref={durationInputRef}
-                id="duration"
-                type="number"
-                min="1"
-                placeholder="Hoặc tự nhập số phút..."
-                value={estimatedMinutes}
-                onChange={(e) => setEstimatedMinutes(e.target.value)}
-                onFocus={(e) => e.target.select()}
-                className="bg-slate-900 border-slate-800 focus:border-primary h-9 mt-1"
-              />
-            </div>
+            <TaskFormDuration 
+              value={estimatedMinutes}
+              onChange={setEstimatedMinutes}
+              requireDuration={requireDuration}
+            />
             
             {!requireDuration && !prefilledGoalId && (
               <div className="grid grid-cols-2 gap-4 mt-2">
@@ -532,7 +317,7 @@ export function TaskFormModal({
               <Button 
                 type="button" 
                 variant="ghost" 
-                onClick={handleDeleteClick}
+                onClick={() => setIsConfirmDeleteOpen(true)}
                 className="text-rose-500 hover:bg-rose-950/20 hover:text-rose-400 font-medium gap-1 px-2 h-9 cursor-pointer"
               >
                 <HugeiconsIcon icon={Delete01Icon} className="w-4 h-4" />
@@ -550,44 +335,14 @@ export function TaskFormModal({
           </div>
         </DialogFooter>
       </DialogContent>
-      <ManageCategoriesModal isOpen={isManagingCategories} onClose={() => setIsManagingCategories(false)} />
       
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={isConfirmDeleteOpen} onOpenChange={setIsConfirmDeleteOpen}>
-        <DialogContent showCloseButton={false} className="sm:max-w-[360px] max-w-xs rounded-3xl p-6 border-none bg-slate-950 text-slate-50 border-slate-800 shadow-2xl text-center">
-          <div className="flex flex-col items-center space-y-4 py-2">
-            <div className="h-12 w-12 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500 animate-pulse">
-              <HugeiconsIcon icon={Delete01Icon} size={24} />
-            </div>
-            <div className="space-y-1">
-              <DialogTitle className="text-lg font-bold text-foreground text-center">
-                Xóa Task này?
-              </DialogTitle>
-              <DialogDescription className="text-xs text-muted-foreground text-center">
-                Hành động này không thể hoàn tác. Bạn có chắc chắn muốn xóa Task này không?
-              </DialogDescription>
-            </div>
-          </div>
-          <DialogFooter className="flex flex-row justify-center gap-3 pt-4 border-t border-border/40 mt-2">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setIsConfirmDeleteOpen(false)}
-              className="h-10 rounded-xl font-medium text-muted-foreground hover:text-foreground flex-1 cursor-pointer"
-            >
-              Hủy
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={handleConfirmDelete}
-              className="h-10 rounded-xl font-semibold bg-rose-600 hover:bg-rose-500 text-white flex-1 transition-all active:scale-[0.97] cursor-pointer"
-            >
-              Đồng ý xóa
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDeleteDialog
+        isOpen={isConfirmDeleteOpen}
+        onOpenChange={setIsConfirmDeleteOpen}
+        onConfirm={handleConfirmDelete}
+        title="Xóa Task này?"
+        description="Hành động này không thể hoàn tác. Bạn có chắc chắn muốn xóa Task này không?"
+      />
     </Dialog>
   );
 }
