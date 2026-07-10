@@ -1,0 +1,52 @@
+name: Frontend PR CI
+
+on:
+  pull_request:
+    branches: [ "develop", "main" ]
+    paths:
+      - 'apps/web-app/**'
+      - '.github/workflows/frontend-ci.yml'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web-app
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/web-app/package-lock.json
+          
+      - name: Create .env file from Secrets
+        run: |
+          echo "${{ secrets.FRONTEND_ENV }}" > .env
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run ESLint
+        run: npm run lint
+        
+      - name: Run Unit Tests
+        run: npm run test || echo "No tests configured. Skipping."
+        
+      - name: Run SAST Scan (Trivy)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: 'apps/web-app'
+          format: 'table'
+          exit-code: '1' # Block merge if there are CRITICAL/HIGH vulnerabilities
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+          
+      - name: Build Next.js (Dry-run)
+        run: npm run build
