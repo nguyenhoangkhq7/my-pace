@@ -1,11 +1,10 @@
 import { useCallback } from "react";
 import { useCalendarStore } from "../store/calendar.store";
 import { useAvailableTimeStore } from "@/features/available-time/store/available-time.store";
-import { availableTimeApi } from "@/features/available-time/api/available-time.api";
+
 import { calendarApi } from "../api/calendar.api";
 import type {
   CreateEventPayload,
-  FixedEventOccurrence,
   UpdateOccurrencePayload,
 } from "../types";
 

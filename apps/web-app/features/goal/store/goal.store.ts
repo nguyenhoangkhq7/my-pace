@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { Goal, GoalCreateRequest, GoalUpdateRequest } from "../types";
 import { goalApi } from "../api/goal.api";
+import { getApiErrorMessage } from "@/lib/fetchClient";
 
 interface GoalState {
   goals: Goal[];
@@ -23,8 +24,8 @@ export const useGoalStore = create<GoalState>((set, get) => ({
     try {
       const res = await goalApi.getGoals();
       set({ goals: res.data });
-    } catch (err: any) {
-      set({ error: err.response?.data?.message || err.message });
+    } catch (err) {
+      set({ error: getApiErrorMessage(err) });
       throw err;
     } finally {
       set({ isLoading: false });
@@ -37,8 +38,8 @@ export const useGoalStore = create<GoalState>((set, get) => ({
       const res = await goalApi.createGoal(request);
       set((state) => ({ goals: [...state.goals, res.data] }));
       return res.data;
-    } catch (err: any) {
-      set({ error: err.response?.data?.message || err.message, isLoading: false });
+    } catch (err) {
+      set({ error: getApiErrorMessage(err), isLoading: false });
       throw err;
     } finally {
       set({ isLoading: false });
@@ -53,8 +54,8 @@ export const useGoalStore = create<GoalState>((set, get) => ({
         goals: state.goals.map((g) => (g.id === id ? res.data : g)),
       }));
       return res.data;
-    } catch (err: any) {
-      set({ error: err.response?.data?.message || err.message, isLoading: false });
+    } catch (err) {
+      set({ error: getApiErrorMessage(err), isLoading: false });
       throw err;
     } finally {
       set({ isLoading: false });
@@ -70,8 +71,8 @@ export const useGoalStore = create<GoalState>((set, get) => ({
         goals: state.goals.map((g) => (g.id === goalId ? res.data : g)),
       }));
       return res.data;
-    } catch (err: any) {
-      set({ error: err.response?.data?.message || err.message });
+    } catch (err) {
+      set({ error: getApiErrorMessage(err) });
       throw err;
     }
   },
@@ -82,8 +83,8 @@ export const useGoalStore = create<GoalState>((set, get) => ({
       await goalApi.deleteGoal(id);
       // Instead of optimistically removing, it's safer to re-fetch because it might be a soft-delete (status changed to Archived)
       await get().fetchGoals();
-    } catch (err: any) {
-      set({ error: err.response?.data?.message || err.message, isLoading: false });
+    } catch (err) {
+      set({ error: getApiErrorMessage(err), isLoading: false });
       throw err;
     } finally {
       set({ isLoading: false });

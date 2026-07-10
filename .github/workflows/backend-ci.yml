@@ -30,6 +30,9 @@ jobs:
           # Ghi nội dung secret BACKEND_ENV vào file .env
           echo "${{ secrets.BACKEND_ENV }}" > .env
           
+      - name: Make Maven Wrapper executable
+        run: chmod +x mvnw
+          
       - name: Check Lint / Format (Checkstyle)
         run: ./mvnw checkstyle:check || echo "Checkstyle is not configured yet. Skipping."
         

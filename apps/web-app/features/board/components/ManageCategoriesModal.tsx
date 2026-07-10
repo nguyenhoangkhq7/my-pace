@@ -2,10 +2,10 @@ import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+
 import { useBoardStore } from "../store/board.store";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { PencilEdit01Icon, Delete01Icon, Tick01Icon, Cancel01Icon } from "@hugeicons/core-free-icons";
+import { PencilEdit01Icon, Delete01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
 
 interface ManageCategoriesModalProps {
@@ -56,8 +56,8 @@ export function ManageCategoriesModal({ isOpen, onClose }: ManageCategoriesModal
       await updateCategory(id, { name: editName.trim(), color: editColor });
       setEditingId(null);
       setError("");
-    } catch (err: any) {
-      setError(err.message || "Không thể cập nhật Category");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể cập nhật Category");
     }
   };
 
@@ -73,8 +73,8 @@ export function ManageCategoriesModal({ isOpen, onClose }: ManageCategoriesModal
       setError("");
       setIsConfirmDeleteOpen(false);
       setDeleteTarget(null);
-    } catch (err: any) {
-      setError(err.message || "Không thể xóa Category");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể xóa Category");
       setIsConfirmDeleteOpen(false);
     }
   };

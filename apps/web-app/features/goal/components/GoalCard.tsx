@@ -4,7 +4,7 @@ import { Goal } from "../types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { PlayIcon, CheckmarkCircle01Icon, PauseIcon, Target02Icon, Archive02Icon, Edit01Icon, Folder01Icon } from "@hugeicons/core-free-icons";
+import { PlayIcon, CheckmarkCircle01Icon, PauseIcon, Archive02Icon, Edit01Icon, Folder01Icon } from "@hugeicons/core-free-icons";
 import { useGoalStore } from "../store/goal.store";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
@@ -13,11 +13,11 @@ import confetti from "canvas-confetti";
 interface GoalCardProps {
   goal: Goal;
   onEdit: (goal: Goal) => void;
-  onStatusChange: (goal: Goal, newStatus: string) => void;
+
   onCreateTask: (goalId: string) => void;
 }
 
-export function GoalCard({ goal, onEdit, onStatusChange, onCreateTask }: GoalCardProps) {
+export function GoalCard({ goal, onEdit, onCreateTask }: GoalCardProps) {
   const updateGoal = useGoalStore(s => s.updateGoal);
   const prevPctRef = useRef(goal.progressPct || 0);
 

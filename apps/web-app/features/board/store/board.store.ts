@@ -171,7 +171,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     set({ isLoading: true });
     try {
       const res = await boardApi.getDailyPlan(date);
-      const planData = (res.data as any) === "" ? null : res.data;
+      const planData = (res.data as unknown) === "" ? null : res.data;
       set({
         dailyPlanToday: planData,
         // Sync timeBlocks from plan response so calendar page can use them
@@ -188,7 +188,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   fetchDailyPlanTomorrow: async (date) => {
     try {
       const res = await boardApi.getDailyPlan(date);
-      const planData = (res.data as any) === "" ? null : res.data;
+      const planData = (res.data as unknown) === "" ? null : res.data;
       set({ dailyPlanTomorrow: planData });
     } catch (err) {
       console.error(err);

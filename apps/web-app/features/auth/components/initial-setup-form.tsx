@@ -22,7 +22,7 @@ interface SetupFormValues {
 }
 
 export function InitialSetupForm() {
-  const { user, accessToken, setSession } = useAuthStore();
+  const { accessToken, setSession } = useAuthStore();
   const [buffer, setBuffer] = useState(20); // default 20%
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -50,7 +50,7 @@ export function InitialSetupForm() {
     };
 
     try {
-      const response = await put<any, typeof payload>("users/profile", payload);
+      const response = await put<Record<string, unknown>, typeof payload>("users/profile", payload);
 
       if (response.data && accessToken) {
         setSession({

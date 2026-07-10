@@ -7,7 +7,7 @@ import { GoalFormModal } from "./GoalFormModal";
 import { GoalRulesModal } from "./GoalRulesModal";
 import { Goal } from "../types";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskFormModal } from "@/features/board/components/TaskFormModal";
@@ -19,7 +19,7 @@ import { useBoardStore } from "@/features/board/store/board.store";
 import { GoalDetailModal } from "./GoalDetailModal";
 
 export function GoalDashboard() {
-  const { goals, fetchGoals, isLoading, updateGoal, error } = useGoalStore();
+  const { goals, fetchGoals, isLoading, error } = useGoalStore();
   const [filterType, setFilterType] = useState<string>("ALL");
   const [filterStatus, setFilterStatus] = useState<string>("In Progress");
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
@@ -67,14 +67,6 @@ export function GoalDashboard() {
     setIsTaskModalOpen(true);
   };
 
-  const handleStatusChange = async (goal: Goal, newStatus: string) => {
-    try {
-      await updateGoal(goal.id, { status: newStatus as any });
-      toast.success(`Status updated to ${newStatus}`);
-    } catch (e: any) {
-      // Error is handled by store + useEffect
-    }
-  };
 
   const handleGoalClick = (goal: Goal) => {
     setSelectedGoal(goal);
@@ -140,7 +132,6 @@ export function GoalDashboard() {
                   <GoalCard 
                     goal={goal} 
                     onEdit={handleEdit}
-                    onStatusChange={handleStatusChange}
                     onCreateTask={handleCreateTaskFromGoal}
                   />
                 </div>
@@ -161,7 +152,6 @@ export function GoalDashboard() {
                         <GoalCard 
                           goal={goal} 
                           onEdit={handleEdit}
-                          onStatusChange={handleStatusChange}
                           onCreateTask={handleCreateTaskFromGoal}
                         />
                       </div>
@@ -183,7 +173,6 @@ export function GoalDashboard() {
                         <GoalCard 
                           goal={goal} 
                           onEdit={handleEdit}
-                          onStatusChange={handleStatusChange}
                           onCreateTask={handleCreateTaskFromGoal}
                         />
                       </div>
@@ -205,7 +194,6 @@ export function GoalDashboard() {
                         <GoalCard 
                           goal={goal} 
                           onEdit={handleEdit}
-                          onStatusChange={handleStatusChange}
                           onCreateTask={handleCreateTaskFromGoal}
                         />
                       </div>
@@ -227,7 +215,6 @@ export function GoalDashboard() {
                         <GoalCard 
                           goal={goal} 
                           onEdit={handleEdit}
-                          onStatusChange={handleStatusChange}
                           onCreateTask={handleCreateTaskFromGoal}
                         />
                       </div>
