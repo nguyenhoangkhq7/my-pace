@@ -58,6 +58,13 @@ public class TaskController {
         return taskService.updateChecklistItem(taskId, checklistId, request, userDetails);
     }
 
+    @PutMapping("/{taskId}/checklists/reorder")
+    public void reorderChecklists(@PathVariable UUID taskId,
+                                  @RequestBody List<UUID> checklistIds,
+                                  @AuthenticationPrincipal UserDetailsCustom userDetails) {
+        taskService.reorderChecklists(taskId, checklistIds, userDetails);
+    }
+
     @DeleteMapping("/{taskId}/checklists/{checklistId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteChecklistItem(@PathVariable UUID taskId,

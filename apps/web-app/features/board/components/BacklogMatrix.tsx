@@ -96,8 +96,8 @@ export function BacklogMatrix() {
             onClick={() => {
               setEditingTask(undefined);
               setIsModalOpen(true);
-              if (isTourActive && tourStepIndex === 0) {
-                advanceTourStep();
+              if (isTourActive && tourStepIndex === 1) {
+                setTimeout(() => advanceTourStep(), 400);
               }
             }}
           >

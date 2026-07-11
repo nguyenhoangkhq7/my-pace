@@ -5,6 +5,7 @@ import { useAvailableTimeStore } from "../../available-time/store/available-time
 import { useGoalStore } from "@/features/goal/store/goal.store";
 import { Task } from "../types";
 import { Goal } from "@/features/goal/types";
+import { useOnboardingStore } from "@/features/auth/store/onboarding.store";
 
 export function useBacklogMatrix() {
   const {
@@ -64,6 +65,11 @@ export function useBacklogMatrix() {
         }
       }
     }
+    const { isTourActive, tourStepIndex, setTourStep } = useOnboardingStore.getState();
+    if (isTourActive && (tourStepIndex >= 2 && tourStepIndex <= 4)) {
+      // Always go to step 5 (Plan My Day) after task creation — never skip it
+      setTourStep(5);
+    }
     setIsModalOpen(false);
     setEditingTask(undefined);
     setPrefilledGoalForTask(undefined);
@@ -100,10 +106,30 @@ export function useBacklogMatrix() {
         removePlannedTaskLocally(task.id);
       } else {
         if (!task.estimatedMinutes) {
-          setRequireDurationForTask(task);
+          if (useOnboardingStore.getState().isTourActive) {
+            updateTask(task.id, { estimatedMinutes: 30 }).then(updated => {
+              if (updated) {
+                checkTimeLimit(30);
+                addPlannedTaskLocally(updated);
+                // Advance tour to step 7 (save plan) after task added
+                const { isTourActive, tourStepIndex, advanceTourStep } = useOnboardingStore.getState();
+                if (isTourActive && tourStepIndex === 6) {
+                  setTimeout(() => advanceTourStep(), 400);
+                }
+              }
+            });
+          } else {
+            setRequireDurationForTask(task);
+            setIsModalOpen(true);
+          }
         } else {
           checkTimeLimit(task.estimatedMinutes);
           addPlannedTaskLocally(task);
+          // Advance tour to step 7 (save plan) after task added
+          const { isTourActive, tourStepIndex, advanceTourStep } = useOnboardingStore.getState();
+          if (isTourActive && tourStepIndex === 6) {
+            setTimeout(() => advanceTourStep(), 400);
+          }
         }
       }
     } else {

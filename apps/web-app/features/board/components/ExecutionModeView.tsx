@@ -147,7 +147,7 @@ export function ExecutionModeView({
             <>
               <Button
                 onClick={onStartMyDay}
-                className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-2.5 rounded-xl shadow-lg shadow-primary/20 transition-all cursor-pointer"
+                className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-2.5 rounded-xl shadow-lg shadow-primary/20 transition-all cursor-pointer tour-start-day-btn"
               >
                 {t.board.startMyDay}
               </Button>

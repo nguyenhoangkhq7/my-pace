@@ -13,6 +13,8 @@ export const boardApi = {
     fetchClient.put<unknown, typeof data>(`tasks/${taskId}/checklists/${checklistId}`, data),
   deleteChecklistItem: (taskId: string, checklistId: string) => 
     fetchClient.del<unknown>(`tasks/${taskId}/checklists/${checklistId}`),
+  reorderChecklists: (taskId: string, checklistIds: string[]) => 
+    fetchClient.put<unknown, string[]>(`tasks/${taskId}/checklists/reorder`, checklistIds),
 
   getDailyPlan: (date: string) => fetchClient.get<DailyPlan>(`daily-plans/${date}`),
   planMyDay: (data: Record<string, unknown>) => fetchClient.post<DailyPlan, Record<string, unknown>>("daily-plans/plan-my-day", data),
