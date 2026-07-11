@@ -1,6 +1,8 @@
 import { TaskDetails } from "./TaskDetails";
 import { Task } from "../types";
 import { cn } from "@/lib/utils";
+import { useBoardStore } from "../store/board.store";
+import { InlineTitleEditor } from "./InlineTitleEditor";
 
 interface ExecutionTaskItemProps {
   task: Task;
@@ -9,6 +11,7 @@ interface ExecutionTaskItemProps {
 }
 
 export function ExecutionTaskItem({ task, isMit, isConfirmed }: ExecutionTaskItemProps) {
+  const { updateTask } = useBoardStore();
   const isDone = task.status === "Done";
   
   return (
@@ -17,13 +20,18 @@ export function ExecutionTaskItem({ task, isMit, isConfirmed }: ExecutionTaskIte
       isMit ? "border-primary/30" : "border-border"
     )}>
       <div className="flex-1">
-        <div className={cn(
-          "text-sm",
-          isMit && "font-medium",
-          isDone ? "text-muted-foreground line-through" : "text-foreground"
-        )}>
-          {task.title}
-        </div>
+        <InlineTitleEditor
+          initialTitle={task.title}
+          onSave={async (newTitle) => {
+            await updateTask(task.id, { title: newTitle });
+          }}
+          className={cn(
+            "text-sm cursor-text hover:bg-muted/60 px-1 -mx-1 rounded block",
+            isMit && "font-medium",
+            isDone ? "text-muted-foreground line-through" : "text-foreground"
+          )}
+          inputClassName="h-7 text-sm bg-card border-border"
+        />
         <TaskDetails task={task} isConfirmed={isConfirmed} />
       </div>
     </div>

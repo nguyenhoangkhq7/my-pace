@@ -27,13 +27,10 @@ export function useAppVisibility() {
   useEffect(() => {
     const today = getTodayStr();
 
-    // Check if we haven't checked for today yet
-    if (lastCheckedDate.current !== today) {
-      lastCheckedDate.current = today;
-
-      // If we already loaded the daily plan and it is null (meaning no plan created yet)
-      // and we haven't checked in yet today (checkedIn is false)
-      if (dailyPlanToday === null && (!dataToday || !dataToday.checkedIn)) {
+    // Wait until dataToday has been fetched from the server and is not null
+    if (dataToday !== null && !dataToday.checkedIn && dailyPlanToday === null) {
+      if (lastCheckedDate.current !== today) {
+        lastCheckedDate.current = today;
         // Auto checkin in background
         checkin(today);
       }

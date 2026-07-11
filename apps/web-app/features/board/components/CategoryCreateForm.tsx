@@ -41,13 +41,13 @@ export function CategoryCreateForm({ onCancel, onSuccess }: CategoryCreateFormPr
   };
 
   return (
-    <div className="space-y-3 p-3 bg-slate-900 border border-slate-800 rounded-md">
+    <div className="space-y-3 p-3 bg-muted border border-border rounded-md">
       <Input
         autoFocus
         placeholder="Category Name"
         value={newCategoryName}
         onChange={(e) => setNewCategoryName(e.target.value)}
-        className="bg-slate-950 border-slate-800"
+        className="bg-background border-border"
       />
       <div className="flex flex-wrap gap-1.5 items-center">
         {CATEGORY_COLORS.map((c) => (
@@ -58,8 +58,8 @@ export function CategoryCreateForm({ onCancel, onSuccess }: CategoryCreateFormPr
               setNewCategoryColor(c);
             }}
             className={cn(
-              "w-5 h-5 rounded-full cursor-pointer ring-offset-slate-900 border border-black/15 transition-all hover:scale-110 duration-200",
-              newCategoryColor === c ? "ring-2 ring-white scale-105 shadow-md" : "opacity-85 hover:opacity-100"
+              "w-5 h-5 rounded-full cursor-pointer ring-offset-background border border-black/15 transition-all hover:scale-110 duration-200",
+              newCategoryColor === c ? "ring-2 ring-foreground scale-105 shadow-md" : "opacity-85 hover:opacity-100"
             )}
             style={{ backgroundColor: c }}
           />
@@ -89,7 +89,7 @@ export function CategoryCreateForm({ onCancel, onSuccess }: CategoryCreateFormPr
           size="sm"
           type="button"
           variant="outline"
-          className="h-7 text-xs border-slate-700 text-slate-300 flex-1 px-2"
+          className="h-7 text-xs border-border text-foreground flex-1 px-2"
           onClick={onCancel}
         >
           Cancel
@@ -97,7 +97,7 @@ export function CategoryCreateForm({ onCancel, onSuccess }: CategoryCreateFormPr
         <Button
           size="sm"
           type="button"
-          className="h-7 text-xs bg-primary text-white flex-1 px-2"
+          className="h-7 text-xs bg-primary text-primary-foreground flex-1 px-2"
           onClick={handleCreateCategory}
         >
           Save

@@ -21,6 +21,18 @@ export function CalendarStyles({ fixedEventColor }: CalendarStylesProps) {
         font-weight: 600 !important;
         padding: 0.3rem 0.7rem !important;
       }
+      .calendar-wrapper .fc-button-group {
+        gap: 0.375rem !important;
+        display: inline-flex !important;
+      }
+      .calendar-wrapper .fc-button-group .fc-button {
+        border-radius: 0.5rem !important;
+      }
+      .calendar-wrapper .fc-toolbar-chunk {
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+      }
       .calendar-wrapper .fc-button:hover { background-color: hsl(var(--accent)) !important; }
       .calendar-wrapper .fc-button-active,
       .calendar-wrapper .fc-button-primary:not(:disabled).fc-button-active {

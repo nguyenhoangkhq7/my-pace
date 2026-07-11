@@ -35,6 +35,10 @@ interface FocusState {
   isZenMaximized: boolean;
   toggleZenMaximize: () => void;
 
+  // Completion prompt state (micro-modal)
+  promptTask: { id: string; title: string; estimatedMinutes: number } | null;
+  setPromptTask: (task: { id: string; title: string; estimatedMinutes: number } | null) => void;
+
   // Actions
   setYoutubeUrl: (url: string) => void;
   addToHistory: (url: string, title: string) => void;
@@ -75,7 +79,9 @@ export const useFocusStore = create<FocusState>()(
       ],
       isSettingsOpen: false,
       isZenMaximized: false,
+      promptTask: null,
 
+      setPromptTask: (task) => set({ promptTask: task }),
       setYoutubeUrl: (url) => set({ youtubeUrl: url }),
       setIsSettingsOpen: (open) => set({ isSettingsOpen: open }),
       toggleZenMaximize: () => set((state) => ({ isZenMaximized: !state.isZenMaximized })),

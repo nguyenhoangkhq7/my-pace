@@ -129,49 +129,59 @@ export function useCalendarPage() {
   // ── FullCalendar events ────────────────────────────────────────────────────
   const scheduledTaskIds = useMemo(() => new Set(timeBlocks.map((b) => b.taskId)), [timeBlocks]);
 
-  const fcEvents = useMemo<EventInput[]>(() => [
-    // Fixed events
-    ...events.map((occ) => ({
-      id: occ.id,
-      title: occ.title,
-      start: `${occ.occurrenceDate}T${occ.startTime}`,
-      end: `${occ.occurrenceDate}T${occ.endTime}`,
-      extendedProps: { occurrence: occ },
-      backgroundColor: fixedEventColor,
-      borderColor: fixedEventColor,
-      textColor: EVENT_TEXT,
-      ...(occ.recurrenceType !== "NONE" && { backgroundColor: fixedEventColor + "d9" }),
-    })),
-    // Time blocks
-    ...timeBlocks.map((block) => {
-      const planTask = dailyPlanToday?.tasks.find((pt) => pt.task.id === block.taskId);
-      const task     = planTask?.task;
-      const isMit    = planTask?.isMit || false;
+  const isConfirmed = !!dailyPlanToday?.isConfirmed;
 
-      const label = block.totalParts > 1
-        ? `${task?.title || "Task"} (${block.partIndex}/${block.totalParts})`
-        : task?.title || "Task";
+  const fcEvents = useMemo<EventInput[]>(() => {
+    const list: EventInput[] = [
+      // Fixed events
+      ...events.map((occ) => ({
+        id: occ.id,
+        title: occ.title,
+        start: `${occ.occurrenceDate}T${occ.startTime}`,
+        end: `${occ.occurrenceDate}T${occ.endTime}`,
+        extendedProps: { occurrence: occ },
+        backgroundColor: fixedEventColor,
+        borderColor: fixedEventColor,
+        textColor: EVENT_TEXT,
+        ...(occ.recurrenceType !== "NONE" && { backgroundColor: fixedEventColor + "d9" }),
+      }))
+    ];
 
-      const color = task?.category?.color
-        ? task.category.color
-        : isMit
-        ? TASK_COLOR_MIT
-        : TASK_COLOR_REG;
+    if (isConfirmed) {
+      list.push(
+        ...timeBlocks.map((block) => {
+          const planTask = dailyPlanToday?.tasks.find((pt) => pt.task.id === block.taskId);
+          const task     = planTask?.task;
+          const isMit    = planTask?.isMit || false;
 
-      return {
-        id: block.id || `block-${block.taskId}-${block.partIndex}`,
-        title: label,
-        start: block.startTime,
-        end: block.endTime,
-        backgroundColor: color,
-        borderColor: color,
-        textColor: "#ffffff",
-        editable: true,
-        durationEditable: false,
-        extendedProps: { blockId: block.id, taskId: block.taskId, isTimeBlock: true },
-      };
-    }),
-  ], [events, timeBlocks, dailyPlanToday, fixedEventColor]);
+          const label = block.totalParts > 1
+            ? `${task?.title || "Task"} (${block.partIndex}/${block.totalParts})`
+            : task?.title || "Task";
+
+          const color = task?.category?.color
+            ? task.category.color
+            : isMit
+            ? TASK_COLOR_MIT
+            : TASK_COLOR_REG;
+
+          return {
+            id: block.id || `block-${block.taskId}-${block.partIndex}`,
+            title: label,
+            start: block.startTime,
+            end: block.endTime,
+            backgroundColor: color,
+            borderColor: color,
+            textColor: "#ffffff",
+            editable: true,
+            durationEditable: false,
+            extendedProps: { blockId: block.id, taskId: block.taskId, isTimeBlock: true },
+          };
+        })
+      );
+    }
+
+    return list;
+  }, [events, timeBlocks, dailyPlanToday, fixedEventColor, isConfirmed]);
 
   const [initialView] = useState(() => {
     if (typeof window !== "undefined") {

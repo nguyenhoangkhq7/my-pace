@@ -2,6 +2,8 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Calendar01Icon } from "@hugeicons/core-free-icons";
 import { Task } from "../types";
 import { TaskCardChecklist } from "./TaskCardChecklist";
+import { useBoardStore } from "../store/board.store";
+import { InlineTitleEditor } from "./InlineTitleEditor";
 
 interface TaskBacklogCardProps {
   task: Task;
@@ -14,6 +16,8 @@ export function TaskBacklogCard({
   onClick,
   isPlanned,
 }: TaskBacklogCardProps) {
+  const { updateTask } = useBoardStore();
+
   return (
     <div 
       onClick={onClick}
@@ -23,7 +27,14 @@ export function TaskBacklogCard({
           : "border-border bg-card hover:border-border/80 hover:bg-muted text-foreground"
       }`}
     >
-      <div className="font-medium line-clamp-2">{task.title}</div>
+      <InlineTitleEditor
+        initialTitle={task.title}
+        onSave={async (newTitle) => {
+          await updateTask(task.id, { title: newTitle });
+        }}
+        className="font-medium line-clamp-2 hover:bg-muted/60 px-1 -mx-1 rounded cursor-text block"
+        inputClassName="h-7 text-sm bg-card border-border"
+      />
       
       <div className="flex items-center gap-2 mt-2 flex-wrap">
         {task.goalId ? (

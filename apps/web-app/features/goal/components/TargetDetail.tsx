@@ -27,20 +27,20 @@ export function TargetDetail({ goal, stats, timeFilter, isFuturePeriod }: Target
 
   return (
     <div className="space-y-6">
-      <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
+      <div className="bg-card/50 p-4 rounded-xl border border-border flex items-center justify-between">
         <div>
-          <h3 className="text-sm text-slate-400 mb-1">Tiến độ chung</h3>
-          <div className="text-2xl font-bold text-slate-100">
+          <h3 className="text-sm text-muted-foreground mb-1">Tiến độ chung</h3>
+          <div className="text-2xl font-bold text-foreground">
             {goal.milestoneGoal?.currentCount || 0} / {goal.milestoneGoal?.targetCount || 0}
           </div>
         </div>
         <div className="text-right">
-          <h3 className="text-sm text-slate-400 mb-1">{periodLabel}</h3>
+          <h3 className="text-sm text-muted-foreground mb-1">{periodLabel}</h3>
           <div className="text-2xl font-bold text-primary">+{stats.totalCount}</div>
         </div>
       </div>
       <div>
-        <h3 className="text-sm font-semibold text-slate-200 mb-4">
+        <h3 className="text-sm font-semibold text-foreground mb-4">
           Mức độ đạt được (
           {timeFilter === "week"
             ? isCurrent
@@ -58,16 +58,16 @@ export function TargetDetail({ goal, stats, timeFilter, isFuturePeriod }: Target
         <div className="h-[200px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={stats.chartData}>
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "#64748b", fontSize: 12 }} />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} />
               <Tooltip
-                cursor={{ fill: "#1e293b" }}
-                contentStyle={{ backgroundColor: "#020617", borderColor: "#1e293b", borderRadius: "8px" }}
-                itemStyle={{ color: "#8b5cf6" }}
+                cursor={{ fill: "var(--muted)" }}
+                contentStyle={{ backgroundColor: "var(--background)", borderColor: "var(--border)", borderRadius: "8px" }}
+                itemStyle={{ color: "var(--primary)" }}
                 formatter={(value) => [`${value}`, "Số lượng"]}
               />
               <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                 {stats.chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.count > 0 ? "#8b5cf6" : "#334155"} />
+                  <Cell key={`cell-${index}`} fill={entry.count > 0 ? "var(--primary)" : "var(--muted)"} />
                 ))}
               </Bar>
             </BarChart>

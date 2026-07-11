@@ -9,6 +9,7 @@ interface StatsHeaderSectionProps {
   end: Date;
   onPrev: () => void;
   onNext: () => void;
+  streak?: number;
 }
 
 export function StatsHeaderSection({
@@ -18,10 +19,11 @@ export function StatsHeaderSection({
   end,
   onPrev,
   onNext,
+  streak = 0,
 }: StatsHeaderSectionProps) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <StatsTitle />
+      <StatsTitle streak={streak} />
 
       <div className="flex items-center gap-3 bg-card border border-border rounded-xl p-1.5 shadow-md">
         <DateNavigator

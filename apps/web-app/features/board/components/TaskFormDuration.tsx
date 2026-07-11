@@ -29,7 +29,7 @@ export function TaskFormDuration({ value, onChange, requireDuration }: TaskFormD
               variant={isSelected ? "default" : "outline"}
               className={cn(
                 "h-8 px-2.5 text-xs flex-1 min-w-[50px]",
-                isSelected ? "bg-primary text-white" : "border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800"
+                isSelected ? "bg-primary text-primary-foreground" : "border-border bg-card text-foreground hover:bg-muted"
               )}
               onClick={() => onChange(String(mins))}
             >
@@ -43,8 +43,8 @@ export function TaskFormDuration({ value, onChange, requireDuration }: TaskFormD
           className={cn(
             "h-8 px-2.5 text-xs flex-1 min-w-[65px]",
             isCustom 
-              ? "bg-primary text-white" 
-              : "border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800"
+              ? "bg-primary text-primary-foreground" 
+              : "border-border bg-card text-foreground hover:bg-muted"
           )}
           onClick={() => {
             durationInputRef.current?.focus();
@@ -63,7 +63,7 @@ export function TaskFormDuration({ value, onChange, requireDuration }: TaskFormD
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onFocus={(e) => e.target.select()}
-        className="bg-slate-900 border-slate-800 focus:border-primary h-9 mt-1"
+        className="bg-card border-border focus:border-primary h-9 mt-1"
       />
     </div>
   );

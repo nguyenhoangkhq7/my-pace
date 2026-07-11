@@ -65,6 +65,12 @@ export function FlowPomodoro() {
       const actualMinutes = Math.floor(accumulatedFocusTime / 60);
       if (actualMinutes > 0) {
         await updateTask(activeTaskId, { actualMinutes });
+      } else {
+        useFocusStore.getState().setPromptTask({
+          id: activeTaskId,
+          title: activeTask.title,
+          estimatedMinutes: activeTask.estimatedMinutes || 0
+        });
       }
       
       const todayStr = new Date().toISOString().split("T")[0];

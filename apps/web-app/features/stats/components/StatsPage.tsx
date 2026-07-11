@@ -3,15 +3,14 @@
 import { cn } from "@/lib/utils";
 import { useStatsPage } from "../hooks/useStatsPage";
 import { StatsHeaderSection } from "./StatsHeaderSection";
-import { KPISection } from "./KPISection";
 import { EisenhowerMatrixChart } from "./EisenhowerMatrixChart";
 import { CategoryChart } from "./CategoryChart";
 import { StatsLoadingState } from "./StatsLoadingState";
 import { StatsErrorState } from "./StatsErrorState";
+import { useAvailableTimeStore } from "@/features/available-time/store/available-time.store";
 
 export function StatsPage() {
   const {
-    overview,
     isLoading,
     error,
     range,
@@ -24,7 +23,9 @@ export function StatsPage() {
     categoryData,
   } = useStatsPage();
 
-  if (isLoading && !overview) {
+  const streak = useAvailableTimeStore((s) => s.dataToday?.streak ?? 0);
+
+  if (isLoading && !matrixData.length && !categoryData.length) {
     return <StatsLoadingState />;
   }
 
@@ -42,16 +43,11 @@ export function StatsPage() {
         end={end}
         onPrev={handlePrev}
         onNext={handleNext}
+        streak={streak}
       />
 
       {/* Main Content Dashboard */}
       <div className={cn("space-y-8 transition-opacity duration-200", isLoading && "opacity-60")}>
-        {/* KPI Cards */}
-        <KPISection
-          completionRate={overview?.completionRate}
-          streak={overview?.streak}
-        />
-
         {/* Charts Grid */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           {/* Matrix Chart */}
@@ -64,4 +60,3 @@ export function StatsPage() {
     </div>
   );
 }
-
