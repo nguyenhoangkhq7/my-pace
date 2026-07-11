@@ -109,9 +109,16 @@ export function autoSchedule(
   const dayEnd = new Date(now);
   dayEnd.setHours(sh, sm, 0, 0);
 
-  // Start from the later of "now" or "wake time", then add 15 minutes buffer
+  // Helper to round date up to the nearest 15 minutes
+  const roundUpTo15Minutes = (d: Date): Date => {
+    const ms = 15 * 60 * 1000;
+    return new Date(Math.ceil(d.getTime() / ms) * ms);
+  };
+
+  // Start from the later of "now" or "wake time", then add 5 minutes buffer
   let windowStart = now > dayStart ? now : dayStart;
-  windowStart = new Date(windowStart.getTime() + 15 * 60 * 1000);
+  windowStart = new Date(windowStart.getTime() + 5 * 60 * 1000);
+  windowStart = roundUpTo15Minutes(windowStart);
 
   if (windowStart >= dayEnd) return []; // No time left today
 
@@ -143,8 +150,8 @@ export function autoSchedule(
       // Nếu gap còn lại ít hơn 30 phút, không thể xếp thêm bất kỳ block nào
       if (gapRemainingMin < 30) break;
 
-      // Thời lượng cần xếp của task (áp dụng tối thiểu 30 phút)
-      const taskMin = Math.max(30, item.remainingMinutes);
+      // Thời lượng cần xếp của task (lấy thời lượng còn lại thực tế của task)
+      const taskMin = item.remainingMinutes;
 
       if (taskMin <= gapRemainingMin) {
         // Task vừa khít hoặc nằm gọn trong gap
