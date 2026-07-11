@@ -7,6 +7,7 @@ import { ExecutionBoard } from "@/features/board/components/ExecutionBoard";
 import { useBoardStore } from "@/features/board/store/board.store";
 import { useAvailableTimeStore } from "@/features/available-time/store/available-time.store";
 import { useAppVisibility } from "@/features/available-time";
+import { OutstandingTasksModal } from "./OutstandingTasksModal";
 
 export function DashboardPage() {
   useAppVisibility();
@@ -14,6 +15,13 @@ export function DashboardPage() {
   const { fetchTasks, fetchDailyPlanToday, fetchDailyPlanTomorrow, fetchCategories } = useBoardStore();
   const { fetchAvailableTimeToday, fetchAvailableTimeTomorrow } = useAvailableTimeStore();
   
+  const tasks = useBoardStore(s => s.tasks);
+  const dailyPlanToday = useBoardStore(s => s.dailyPlanToday);
+  const dailyPlanTomorrow = useBoardStore(s => s.dailyPlanTomorrow);
+
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [hasDismissed, setHasDismissed] = useState(false);
+
   const [currentDate] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -27,12 +35,22 @@ export function DashboardPage() {
 
   useEffect(() => {
     if (user) {
-      fetchCategories();
-      fetchTasks();
-      fetchDailyPlanToday(currentDate);
-      fetchDailyPlanTomorrow(tomorrowDate);
-      fetchAvailableTimeToday(currentDate);
-      fetchAvailableTimeTomorrow(tomorrowDate);
+      const loadAll = async () => {
+        try {
+          await Promise.all([
+            fetchCategories(),
+            fetchTasks(),
+            fetchDailyPlanToday(currentDate),
+            fetchDailyPlanTomorrow(tomorrowDate),
+            fetchAvailableTimeToday(currentDate),
+            fetchAvailableTimeTomorrow(tomorrowDate),
+          ]);
+          setHasLoaded(true);
+        } catch (err) {
+          console.error("Error loading dashboard data:", err);
+        }
+      };
+      loadAll();
     }
   }, [user, currentDate, tomorrowDate, fetchTasks, fetchDailyPlanToday, fetchDailyPlanTomorrow, fetchAvailableTimeToday, fetchAvailableTimeTomorrow, fetchCategories]);
 
@@ -41,6 +59,15 @@ export function DashboardPage() {
   if (showSetup) {
     return <InitialSetupForm />;
   }
+
+  const outstandingTasks = tasks.filter(task => {
+    if (task.status !== "Picked for Today") return false;
+    const inTodayPlan = !!dailyPlanToday?.tasks?.some(pt => pt.task?.id === task.id);
+    const inTomorrowPlan = !!dailyPlanTomorrow?.tasks?.some(pt => pt.task?.id === task.id);
+    return !inTodayPlan && !inTomorrowPlan;
+  });
+
+  const showOutstandingModal = hasLoaded && outstandingTasks.length > 0 && !hasDismissed;
 
   return (
     <div className="flex-1 flex flex-col w-full h-[calc(100vh-4rem)] p-4 sm:p-6 overflow-hidden">
@@ -53,6 +80,12 @@ export function DashboardPage() {
           <ExecutionBoard currentDate={currentDate} tomorrowDate={tomorrowDate} />
         </div>
       </div>
+
+      <OutstandingTasksModal
+        isOpen={showOutstandingModal}
+        onClose={() => setHasDismissed(true)}
+        tasks={outstandingTasks}
+      />
     </div>
   );
 }

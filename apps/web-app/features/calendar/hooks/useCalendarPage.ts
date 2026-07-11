@@ -167,6 +167,7 @@ export function useCalendarPage() {
         borderColor: color,
         textColor: "#ffffff",
         editable: true,
+        durationEditable: false,
         extendedProps: { blockId: block.id, taskId: block.taskId, isTimeBlock: true },
       };
     }),
