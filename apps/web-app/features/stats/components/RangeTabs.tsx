@@ -1,4 +1,5 @@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface RangeTabsProps {
   range: "week" | "month" | "year";
@@ -6,6 +7,8 @@ interface RangeTabsProps {
 }
 
 export function RangeTabs({ range, setRange }: RangeTabsProps) {
+  const { t } = useTranslation();
+
   return (
     <Tabs
       value={range}
@@ -17,19 +20,19 @@ export function RangeTabs({ range, setRange }: RangeTabsProps) {
           value="week"
           className="data-[state=active]:bg-muted data-[state=active]:text-foreground text-xs px-3 h-7 rounded-lg cursor-pointer"
         >
-          Tuần
+          {t.stats.week}
         </TabsTrigger>
         <TabsTrigger
           value="month"
           className="data-[state=active]:bg-muted data-[state=active]:text-foreground text-xs px-3 h-7 rounded-lg cursor-pointer"
         >
-          Tháng
+          {t.stats.month}
         </TabsTrigger>
         <TabsTrigger
           value="year"
           className="data-[state=active]:bg-muted data-[state=active]:text-foreground text-xs px-3 h-7 rounded-lg cursor-pointer"
         >
-          Năm
+          {t.stats.year}
         </TabsTrigger>
       </TabsList>
     </Tabs>

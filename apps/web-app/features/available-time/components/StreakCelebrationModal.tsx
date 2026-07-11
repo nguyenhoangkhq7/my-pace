@@ -1,8 +1,10 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useAvailableTimeStore } from "../store/available-time.store";
+import { useTranslation } from "@/hooks/use-translation";
 
 export function StreakCelebrationModal() {
+  const { t } = useTranslation();
   const streakToCelebrate = useAvailableTimeStore((s) => s.streakToCelebrate);
   const setStreakToCelebrate = useAvailableTimeStore((s) => s.setStreakToCelebrate);
 
@@ -50,15 +52,15 @@ export function StreakCelebrationModal() {
             
             {/* Small Streak Count Badge overlay */}
             <div className="absolute -bottom-1 bg-gradient-to-r from-orange-500 to-pink-600 text-white text-xs font-black px-3 py-0.5 rounded-full border border-slate-950 shadow-md">
-              {streakToCelebrate} NGÀY
+              {t.streak.days(streakToCelebrate)}
             </div>
           </div>
 
           <DialogTitle className="text-2xl font-black tracking-tight text-slate-100 mt-4">
-            Chuỗi Streak {streakToCelebrate} Ngày!
+            {t.streak.title(streakToCelebrate)}
           </DialogTitle>
           <DialogDescription className="text-slate-400 text-sm leading-relaxed max-w-sm pt-2">
-            Bạn đã duy trì chuỗi đăng nhập và làm việc liên tiếp <strong className="text-orange-400 font-extrabold">{streakToCelebrate} ngày</strong>. Hãy giữ vững phong độ và chinh phục các mục tiêu hôm nay nhé!
+            {t.streak.description(streakToCelebrate)}
           </DialogDescription>
         </DialogHeader>
 
@@ -67,7 +69,7 @@ export function StreakCelebrationModal() {
             className="w-full bg-gradient-to-r from-orange-500 to-pink-600 hover:from-orange-400 hover:to-pink-500 text-white font-bold h-11 rounded-2xl shadow-lg shadow-orange-500/25 border-none cursor-pointer text-sm"
             onClick={() => setStreakToCelebrate(null)}
           >
-            Tuyệt vời! Tiếp tục thôi
+            {t.streak.cta}
           </Button>
         </DialogFooter>
       </DialogContent>

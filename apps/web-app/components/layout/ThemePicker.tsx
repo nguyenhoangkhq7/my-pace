@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 
 type ThemeId = "dark" | "light" | "graphite" | "nord" | "sage" | "rose";
@@ -17,6 +18,7 @@ interface ThemePickerProps {
 }
 
 export function ThemePicker({ isCollapsed }: ThemePickerProps) {
+  const { t } = useTranslation();
   const [theme, setTheme] = useState<ThemeId>("dark");
   const [isThemePickerOpen, setIsThemePickerOpen] = useState(false);
   const themePickerRef = useRef<HTMLDivElement>(null);
@@ -55,7 +57,7 @@ export function ThemePicker({ isCollapsed }: ThemePickerProps) {
     <div ref={themePickerRef} className="relative">
       <button
         onClick={() => setIsThemePickerOpen(prev => !prev)}
-        title={isCollapsed ? "Chọn giao diện" : undefined}
+        title={isCollapsed ? t.sidebar.chooseTheme : undefined}
         className={cn(
           "flex w-full items-center rounded-xl py-2.5 cursor-pointer",
           isCollapsed ? "justify-center px-0" : "gap-2.5 px-3",
@@ -74,7 +76,7 @@ export function ThemePicker({ isCollapsed }: ThemePickerProps) {
             borderColor: THEMES.find(t => t.id === theme)?.ring,
           }}
         />
-        {!isCollapsed && <span>Giao diện</span>}
+        {!isCollapsed && <span>{t.sidebar.theme}</span>}
       </button>
 
       {/* Popover panel */}
@@ -84,7 +86,7 @@ export function ThemePicker({ isCollapsed }: ThemePickerProps) {
           isCollapsed ? "left-12" : "left-0",
           "w-52"
         )}>
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">Chọn giao diện</p>
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">{t.sidebar.chooseTheme}</p>
           <div className="grid grid-cols-3 gap-2">
             {THEMES.map((t) => (
               <button

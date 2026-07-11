@@ -4,27 +4,28 @@ import { useState } from "react";
 
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks/use-translation";
 
 import { OtpEmailStep } from "./otp-email-step";
 import { OtpVerificationStep } from "./otp-verification-step";
 import { OtpUserDataStep } from "./otp-user-data-step";
 
-const steps = [
-    {
-        id: 1,
-        title: "Email",
-    },
-    {
-        id: 2,
-        title: "Verification",
-    },
-    {
-        id: 3,
-        title: "Profile",
-    },
-];
-
 function RegisterProgress({ step }: { step: number }) {
+    const { t } = useTranslation();
+    const steps = [
+        {
+            id: 1,
+            title: t.auth.stepEmail,
+        },
+        {
+            id: 2,
+            title: t.auth.stepVerification,
+        },
+        {
+            id: 3,
+            title: t.auth.stepProfile,
+        },
+    ];
     const progress = Math.min(100, ((step - 1) / (steps.length - 1)) * 100);
 
     return (
@@ -68,10 +69,10 @@ function RegisterProgress({ step }: { step: number }) {
 
                                 <p className="text-xs text-muted-foreground">
                                     {item.id === 1
-                                        ? "Enter email"
+                                        ? t.auth.stepEmailSub
                                         : item.id === 2
-                                            ? "Verify code"
-                                            : "Create profile"}
+                                            ? t.auth.stepVerificationSub
+                                            : t.auth.stepProfileSub}
                                 </p>
                             </div>
                         </div>

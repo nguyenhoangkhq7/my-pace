@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogFooter } f
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Delete01Icon } from "@hugeicons/core-free-icons";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface DeleteConfirmationDialogProps {
   isOpen: boolean;
@@ -21,9 +22,12 @@ export function DeleteConfirmationDialog({
   description,
   onConfirm,
   onCancel,
-  confirmText = "Đồng ý xóa",
-  cancelText = "Hủy",
+  confirmText,
+  cancelText,
 }: DeleteConfirmationDialogProps) {
+  const { t } = useTranslation();
+  const finalConfirmText = confirmText || t.deleteConfirm.confirmText;
+  const finalCancelText = cancelText || t.deleteConfirm.cancelText;
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent showCloseButton={false} className="sm:max-w-[360px] max-w-xs rounded-3xl p-6 border-none bg-slate-950 text-slate-50 border-slate-800 shadow-2xl text-center">
@@ -47,7 +51,7 @@ export function DeleteConfirmationDialog({
             onClick={onCancel}
             className="h-10 rounded-xl font-medium text-muted-foreground hover:text-foreground flex-1 cursor-pointer"
           >
-            {cancelText}
+            {finalCancelText}
           </Button>
           <Button
             type="button"
@@ -55,7 +59,7 @@ export function DeleteConfirmationDialog({
             onClick={onConfirm}
             className="h-10 rounded-xl font-semibold bg-rose-600 hover:bg-rose-500 text-white flex-1 transition-all active:scale-[0.97] cursor-pointer"
           >
-            {confirmText}
+            {finalConfirmText}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -6,6 +6,7 @@ import { Input } from "./input";
 import { Button } from "./button";
 import { Pipette } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks/use-translation";
 
 // --- HSL Conversion Utilities ---
 
@@ -82,6 +83,7 @@ interface CustomColorPickerProps {
 }
 
 export function CustomColorPicker({ color, onChange, children }: CustomColorPickerProps) {
+  const { t } = useTranslation();
   const [localHex, setLocalHex] = useState(color || "#0ea5e9");
   const [hsl, setHsl] = useState(() => hexToHsl(localHex));
   const [typedHex, setTypedHex] = useState(localHex);
@@ -199,7 +201,7 @@ export function CustomColorPicker({ color, onChange, children }: CustomColorPick
           }
         `}} />
 
-        <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Tùy chọn màu sắc</div>
+        <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t.calendar.colorPickerTitle}</div>
 
         {/* --- Presets Grid --- */}
         <div className="grid grid-cols-5 gap-1.5">
@@ -222,7 +224,7 @@ export function CustomColorPicker({ color, onChange, children }: CustomColorPick
           {/* Hue */}
           <div className="flex flex-col gap-1">
             <div className="flex justify-between text-[10px] text-muted-foreground">
-              <span>Màu sắc (Hue)</span>
+              <span>{t.calendar.hue}</span>
               <span>{hsl.h}°</span>
             </div>
             <input
@@ -241,7 +243,7 @@ export function CustomColorPicker({ color, onChange, children }: CustomColorPick
           {/* Saturation */}
           <div className="flex flex-col gap-1">
             <div className="flex justify-between text-[10px] text-muted-foreground">
-              <span>Độ bão hòa (Saturation)</span>
+              <span>{t.calendar.saturation}</span>
               <span>{hsl.s}%</span>
             </div>
             <input
@@ -260,7 +262,7 @@ export function CustomColorPicker({ color, onChange, children }: CustomColorPick
           {/* Lightness */}
           <div className="flex flex-col gap-1">
             <div className="flex justify-between text-[10px] text-muted-foreground">
-              <span>Độ sáng (Lightness)</span>
+              <span>{t.calendar.lightness}</span>
               <span>{hsl.l}%</span>
             </div>
             <input
@@ -301,7 +303,7 @@ export function CustomColorPicker({ color, onChange, children }: CustomColorPick
               size="icon"
               onClick={handleEyeDropperClick}
               className="w-8 h-8 rounded-lg shrink-0 border-border bg-card text-foreground hover:bg-muted hover:text-foreground"
-              title="Hút màu trực tiếp từ màn hình"
+              title={t.calendar.eyedropperTitle}
             >
               <Pipette className="w-3.5 h-3.5" />
             </Button>

@@ -1,10 +1,12 @@
 import { DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface SlideMITsProps {
   isHelpMode?: boolean;
 }
 
 export function SlideMITs({ isHelpMode }: SlideMITsProps) {
+  const { t } = useTranslation();
   return (
     <>
       <div className="w-full flex items-center justify-center" style={{ minHeight: "10rem" }}>
@@ -23,15 +25,11 @@ export function SlideMITs({ isHelpMode }: SlideMITsProps) {
 
       <div className="space-y-2 px-1 w-full">
         <DialogTitle className="text-2xl font-bold tracking-tight text-foreground text-center">
-          Triết lý MITs
+          {t.onboarding.mitsTitle}
         </DialogTitle>
         <DialogDescription asChild className="text-sm leading-relaxed text-muted-foreground">
           <div className="text-sm text-center">
-            {isHelpMode ? (
-              <><strong className="text-foreground">Triết lý MITs</strong> giúp loại bỏ sự phân tâm. Giới hạn 1–3 việc quan trọng nhất mỗi ngày để đảm bảo năng lượng tập trung vào mục tiêu tạo tác động lớn nhất.</>
-            ) : (
-              <>Thay vì gồng gánh danh sách dài, mỗi ngày chỉ cam kết hoàn thành <span className="text-foreground font-semibold">1–3 việc thực sự quan trọng (MITs)</span> trước. Điều này bảo vệ tiêu điểm và duy trì động lực.</>
-            )}
+            {isHelpMode ? t.onboarding.mitsDescHelp : t.onboarding.mitsDesc}
           </div>
         </DialogDescription>
       </div>

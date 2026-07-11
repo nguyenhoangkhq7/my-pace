@@ -3,6 +3,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface TaskFormDurationProps {
   value: string;
@@ -11,13 +12,14 @@ interface TaskFormDurationProps {
 }
 
 export function TaskFormDuration({ value, onChange, requireDuration }: TaskFormDurationProps) {
+  const { t } = useTranslation();
   const durationInputRef = useRef<HTMLInputElement>(null);
   const presets = [30, 45, 60, 120, 180];
   const isCustom = !presets.includes(Number(value)) && value !== "";
 
   return (
     <div className="grid gap-2">
-      <Label htmlFor="duration">Thời gian thực hiện (phút) {requireDuration && "*"}</Label>
+      <Label htmlFor="duration">{t.taskForm.durationLabel} {requireDuration && "*"}</Label>
       <div className="flex flex-wrap gap-1.5">
         {presets.map(mins => {
           const label = mins >= 60 ? `${mins / 60}h` : `${mins}m`;
@@ -51,7 +53,7 @@ export function TaskFormDuration({ value, onChange, requireDuration }: TaskFormD
             durationInputRef.current?.select();
           }}
         >
-          Tự nhập
+          {t.taskForm.customDuration}
         </Button>
       </div>
       <Input
@@ -59,7 +61,7 @@ export function TaskFormDuration({ value, onChange, requireDuration }: TaskFormD
         id="duration"
         type="number"
         min="1"
-        placeholder="Hoặc tự nhập số phút..."
+        placeholder={t.taskForm.customDurationPlaceholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onFocus={(e) => e.target.select()}

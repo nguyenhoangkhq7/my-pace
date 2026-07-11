@@ -3,11 +3,10 @@ import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Delete01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
-import { TaskChecklistItem } from "../types";
 import { InlineTitleEditor } from "./InlineTitleEditor";
 
 interface TaskChecklistItemRowProps {
-  item: TaskChecklistItem;
+  item: { title: string; isCompleted: boolean; id?: string };
   onUpdate: (updates: { title?: string; isCompleted?: boolean }) => void;
   onDelete: () => void;
 }

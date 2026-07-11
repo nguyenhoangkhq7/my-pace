@@ -18,6 +18,7 @@ import { HabitDetail } from "./HabitDetail";
 import { TargetDetail } from "./TargetDetail";
 import { GoalPeriodNavigation } from "./GoalPeriodNavigation";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface GoalDetailModalProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ interface GoalDetailModalProps {
 }
 
 export function GoalDetailModal({ isOpen, onOpenChange, goal }: GoalDetailModalProps) {
+  const { t } = useTranslation();
   const { tasks } = useBoardStore();
   const { goals, updateGoal } = useGoalStore();
   
@@ -72,6 +74,15 @@ export function GoalDetailModal({ isOpen, onOpenChange, goal }: GoalDetailModalP
 
   const subgoals = goals.filter((g) => g.parentGoalId === goal.id);
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "In Progress": return t.goals.inProgress;
+      case "Done": return t.goals.done;
+      case "Archived": return t.goals.archived;
+      default: return t.goals.freeze;
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[550px] bg-background border-border text-foreground max-h-[90vh] flex flex-col p-0 overflow-hidden">
@@ -80,7 +91,7 @@ export function GoalDetailModal({ isOpen, onOpenChange, goal }: GoalDetailModalP
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-muted text-foreground border border-border">
-                  {goal.goalType === "Binary" ? "Project" : goal.goalType === "Time-boxed" ? "Habit" : "Target"}
+                  {goal.goalType === "Binary" ? t.goals.project : goal.goalType === "Time-boxed" ? t.goals.habit : t.goals.target}
                 </span>
                 <span
                   className={`px-2 py-0.5 rounded text-[10px] font-medium border ${
@@ -91,7 +102,7 @@ export function GoalDetailModal({ isOpen, onOpenChange, goal }: GoalDetailModalP
                       : "bg-muted/10 text-muted-foreground border-border"
                   }`}
                 >
-                  {goal.status}
+                  {getStatusLabel(goal.status)}
                 </span>
               </div>
               <DialogTitle className="text-xl">{goal.title}</DialogTitle>
@@ -109,7 +120,7 @@ export function GoalDetailModal({ isOpen, onOpenChange, goal }: GoalDetailModalP
                 )}
                 onClick={() => setIsEditingProject(!isEditingProject)}
               >
-                {isEditingProject ? "Xong" : "Chỉnh sửa"}
+                {isEditingProject ? t.common.save : t.common.edit}
               </Button>
             )}
           </div>

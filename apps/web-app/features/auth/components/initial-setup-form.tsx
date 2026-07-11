@@ -15,6 +15,7 @@ import { appToast } from "@/components/feedback/app-toast";
 import { AppAlert } from "@/components/feedback/app-alert";
 import { cn } from "@/lib/utils";
 import { TimeSelect } from "@/components/ui/time-select";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface SetupFormValues {
   wakeTime: string;
@@ -23,6 +24,7 @@ interface SetupFormValues {
 }
 
 export function InitialSetupForm() {
+  const { t } = useTranslation();
   const { accessToken, setSession } = useAuthStore();
   const [buffer, setBuffer] = useState(20); // default 20%
   const [error, setError] = useState<string | null>(null);
@@ -68,9 +70,9 @@ export function InitialSetupForm() {
           accessToken,
           user: response.data,
         });
-
-        appToast.success("Profile setup completed", {
-          description: "Your available time has been calculated.",
+        
+        appToast.success(t.auth.setupSuccess, {
+          description: t.auth.setupSuccessDesc,
         });
       }
     } catch (err) {
@@ -95,10 +97,10 @@ export function InitialSetupForm() {
           </div>
           <div className="space-y-2">
             <CardTitle className="text-3xl font-bold tracking-tight text-foreground">
-              Setup your Day
+              {t.auth.setupTitle}
             </CardTitle>
             <CardDescription className="text-sm text-muted-foreground">
-              Define your daily schedule to compute your real available hours.
+              {t.auth.setupDesc}
             </CardDescription>
           </div>
         </CardHeader>
@@ -107,7 +109,7 @@ export function InitialSetupForm() {
           {/* Wake Time & Sleep Time */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">Wake Time</Label>
+              <Label className="text-sm font-semibold">{t.auth.wakeTime}</Label>
               <TimeSelect
                 value={wakeTime}
                 onChange={(val) => setValue("wakeTime", val, { shouldValidate: true })}
@@ -118,7 +120,7 @@ export function InitialSetupForm() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">Sleep Time</Label>
+              <Label className="text-sm font-semibold">{t.auth.sleepTime}</Label>
               <TimeSelect
                 value={sleepTime}
                 onChange={(val) => setValue("sleepTime", val, { shouldValidate: true })}
@@ -132,7 +134,7 @@ export function InitialSetupForm() {
           {/* Buffer Time selector */}
           <div className="space-y-3">
             <Label className="text-sm font-semibold flex items-center justify-between">
-              <span>Buffer Time</span>
+              <span>{t.auth.bufferTime}</span>
               <span className="text-primary font-bold text-base">{buffer}%</span>
             </Label>
             <div className="grid grid-cols-5 gap-2">
@@ -162,9 +164,9 @@ export function InitialSetupForm() {
               className="text-primary shrink-0 mt-0.5"
             />
             <div className="space-y-1">
-              <h4 className="text-xs font-semibold text-foreground">Tại sao chúng tôi cần thông tin này?</h4>
+              <h4 className="text-xs font-semibold text-foreground">{t.auth.setupInfoTitle}</h4>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                MyPACE sẽ dùng nó để tính toán chính xác số giờ bạn thực sự có thể làm việc mỗi ngày, sau khi đã trừ đi ~{buffer}% thời gian cho việc di chuyển, chờ đợi, chuyển đổi context và các việc lặt vặt phát sinh.
+                {t.auth.setupInfoDesc(buffer)}
               </p>
             </div>
           </div>
@@ -176,13 +178,13 @@ export function InitialSetupForm() {
             disabled={isSubmitting || !isValid}
             className="h-12 w-full rounded-xl text-base font-semibold transition-all active:scale-[0.98]"
           >
-            {isSubmitting ? "Saving setup..." : "Complete Setup & Begin"}
+            {isSubmitting ? t.auth.savingSetup : t.auth.completeSetup}
           </Button>
 
           {error && (
             <AppAlert
               variant="error"
-              title="Setup failed"
+              title={t.auth.setupFailed}
               description={error}
             />
           )}

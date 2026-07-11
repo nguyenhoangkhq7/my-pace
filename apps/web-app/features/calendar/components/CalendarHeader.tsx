@@ -3,6 +3,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { FixedEventColorPicker } from "./FixedEventColorPicker";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface CalendarHeaderProps {
   fixedEventColor: string;
@@ -19,12 +20,14 @@ export function CalendarHeader({
   isSidebarOpen,
   onToggleSidebar,
 }: CalendarHeaderProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex items-center justify-between mb-3">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Lịch</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">{t.calendar.calendarTitle}</h1>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Kéo task từ sidebar → lịch · Click để tạo sự kiện · Kéo thả để di chuyển
+          {t.calendar.calendarDesc}
         </p>
       </div>
       <div className="flex items-center gap-2">
@@ -40,7 +43,7 @@ export function CalendarHeader({
             onClick={onToggleSidebar}
             className="text-xs h-8 border-border bg-card hover:bg-muted text-foreground transition-colors rounded-xl px-3"
           >
-            {isSidebarOpen ? "Ẩn Todo" : "Hiện Todo"}
+            {isSidebarOpen ? t.calendar.hideTodo : t.calendar.showTodo}
           </Button>
         )}
       </div>

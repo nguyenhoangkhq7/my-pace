@@ -19,21 +19,8 @@ import { useAvailableTime } from "@/features/available-time";
 import { FeedbackModal } from "../feedback/FeedbackModal";
 import { HelpIcon, FeedbackIcon } from "./SidebarIcons";
 import { ThemePicker } from "./ThemePicker";
-
-type NavItem = {
-  id: string;
-  label: string;
-  href: string;
-  icon: typeof Grid02Icon;
-};
-
-const NAV_ITEMS: NavItem[] = [
-  { id: "dashboard", label: "Plan your day", href: "/", icon: Grid02Icon },
-  { id: "goals", label: "Goals", href: "/goals", icon: Target02Icon },
-  { id: "calendar", label: "Calendar", href: "/calendar", icon: Calendar03Icon },
-  { id: "flow", label: "Flow", href: "/flow", icon: Time02Icon },
-  { id: "stats", label: "Analytics", href: "/stats", icon: Analytics01Icon },
-];
+import { LanguagePicker } from "./LanguagePicker";
+import { useTranslation } from "@/hooks/use-translation";
 
 import { Time02Icon } from "@hugeicons/core-free-icons";
 
@@ -42,6 +29,7 @@ export function Sidebar() {
   const startOnboarding = useOnboardingStore((s) => s.startOnboarding);
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useTranslation();
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
@@ -69,6 +57,21 @@ export function Sidebar() {
     fetchAvailableTime(today);
   }, [today, fetchAvailableTime]);
 
+  type NavItem = {
+    id: string;
+    label: string;
+    href: string;
+    icon: typeof Grid02Icon;
+  };
+
+  const NAV_ITEMS: (NavItem & { tourClass?: string })[] = [
+    { id: "dashboard", label: t.nav.planYourDay, href: "/", icon: Grid02Icon },
+    { id: "goals", label: t.nav.goals, href: "/goals", icon: Target02Icon },
+    { id: "calendar", label: t.nav.calendar, href: "/calendar", icon: Calendar03Icon, tourClass: "tour-calendar-nav" },
+    { id: "flow", label: t.nav.flow, href: "/flow", icon: Time02Icon, tourClass: "tour-focus-nav" },
+    { id: "stats", label: t.nav.analytics, href: "/stats", icon: Analytics01Icon },
+  ];
+
   return (
     <>
       <aside className={cn(
@@ -83,7 +86,7 @@ export function Sidebar() {
                 My<span className="text-primary">PACE</span>
               </div>
               <p className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                Productive Calm
+                {t.nav.productiveCalm}
               </p>
             </div>
           )}
@@ -99,7 +102,7 @@ export function Sidebar() {
         <nav className="flex flex-col gap-1">
           {!isCollapsed && (
             <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground px-2 mb-1">
-              Views
+              {t.nav.views}
             </span>
           )}
 
@@ -120,7 +123,8 @@ export function Sidebar() {
                   isActive
                     ? "bg-primary/10 text-primary shadow-xs"
                     : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                  "active:scale-[0.97]"
+                  "active:scale-[0.97]",
+                  item.tourClass
                 )}
               >
                 <HugeiconsIcon
@@ -144,7 +148,7 @@ export function Sidebar() {
         {!isCollapsed && availableTime?.checkedIn && availableTime.checkinTime && (
           <div className="px-2 pb-2">
             <span className="text-xs text-muted-foreground block">
-              Hôm nay bắt đầu lúc: <span className="font-semibold text-foreground">{availableTime.checkinTime}</span>
+              {t.sidebar.todayStartedAt} <span className="font-semibold text-foreground">{availableTime.checkinTime}</span>
             </span>
           </div>
         )}
@@ -171,7 +175,7 @@ export function Sidebar() {
           {/* Help Button */}
           <button
             onClick={() => startOnboarding(true)}
-            title={isCollapsed ? "Triết lý MyPACE" : undefined}
+            title={isCollapsed ? t.sidebar.philosophy : undefined}
             className={cn(
               "flex w-full items-center rounded-xl py-2.5",
               isCollapsed ? "justify-center px-0" : "gap-2.5 px-3",
@@ -182,13 +186,13 @@ export function Sidebar() {
             )}
           >
             <HelpIcon className="w-[18px] h-[18px] shrink-0" />
-            {!isCollapsed && <span>Triết lý MyPACE</span>}
+            {!isCollapsed && <span>{t.sidebar.philosophy}</span>}
           </button>
 
           {/* Feedback Button */}
           <button
             onClick={() => setIsFeedbackOpen(true)}
-            title={isCollapsed ? "Góp ý & Phản hồi" : undefined}
+            title={isCollapsed ? t.sidebar.feedback : undefined}
             className={cn(
               "flex w-full items-center rounded-xl py-2.5",
               isCollapsed ? "justify-center px-0" : "gap-2.5 px-3",
@@ -199,11 +203,14 @@ export function Sidebar() {
             )}
           >
             <FeedbackIcon className="w-[18px] h-[18px] shrink-0" />
-            {!isCollapsed && <span>Góp ý & Phản hồi</span>}
+            {!isCollapsed && <span>{t.sidebar.feedback}</span>}
           </button>
 
           {/* Theme Picker */}
           <ThemePicker isCollapsed={isCollapsed} />
+
+          {/* Language Picker */}
+          <LanguagePicker isCollapsed={isCollapsed} />
         </div>
       </aside>
 

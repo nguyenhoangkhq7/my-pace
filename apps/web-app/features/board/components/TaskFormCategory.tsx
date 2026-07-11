@@ -8,6 +8,7 @@ import { CategoryCreateForm } from "./CategoryCreateForm";
 import type { Category } from "../types";
 import { Goal } from "@/features/goal/types";
 import { ManageCategoriesModal } from "./ManageCategoriesModal";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface TaskFormCategoryProps {
   categoryId?: string;
@@ -18,6 +19,7 @@ interface TaskFormCategoryProps {
 }
 
 export function TaskFormCategory({ categoryId, onCategoryChange, categories, goalId, associatedGoal }: TaskFormCategoryProps) {
+  const { t } = useTranslation();
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [isManagingCategories, setIsManagingCategories] = useState(false);
 
@@ -29,7 +31,7 @@ export function TaskFormCategory({ categoryId, onCategoryChange, categories, goa
   return (
     <>
       <div className="grid gap-2">
-        <Label>Category</Label>
+        <Label>{t.taskForm.categoryLabel}</Label>
         {isCreatingCategory ? (
           <CategoryCreateForm
             onCancel={() => setIsCreatingCategory(false)}
@@ -43,10 +45,10 @@ export function TaskFormCategory({ categoryId, onCategoryChange, categories, goa
               disabled={!!goalId && goalId !== "none"}
             >
               <SelectTrigger className="w-full bg-card border-border">
-                <SelectValue placeholder="Select Category" />
+                <SelectValue placeholder={t.taskForm.selectCategory} />
               </SelectTrigger>
               <SelectContent className="bg-popover border-border text-foreground">
-                <SelectItem value="none">No Category</SelectItem>
+                <SelectItem value="none">{t.taskForm.noCategory}</SelectItem>
                 {categories.map(c => (
                   <SelectItem key={c.id} value={c.id}>
                     <div className="flex items-center space-x-2">
@@ -62,7 +64,7 @@ export function TaskFormCategory({ categoryId, onCategoryChange, categories, goa
               className="border-border bg-card text-foreground px-2 shrink-0" 
               onClick={() => setIsCreatingCategory(true)} 
               disabled={!!goalId && goalId !== "none"} 
-              title="Thêm Category"
+              title={t.taskForm.addCategory}
             >
               <HugeiconsIcon icon={PlusSignIcon} className="w-4 h-4" />
             </Button>
@@ -70,7 +72,7 @@ export function TaskFormCategory({ categoryId, onCategoryChange, categories, goa
               variant="outline" 
               className="border-border bg-card text-foreground px-2 shrink-0" 
               onClick={() => setIsManagingCategories(true)} 
-              title="Quản lý Category"
+              title={t.taskForm.manageCategory}
             >
               <HugeiconsIcon icon={Settings01Icon} className="w-4 h-4" />
             </Button>
@@ -80,7 +82,7 @@ export function TaskFormCategory({ categoryId, onCategoryChange, categories, goa
 
       {associatedGoal && (
         <div className="grid gap-2 mt-4">
-          <Label>Goal</Label>
+          <Label>{t.taskForm.goalLabel}</Label>
           <div className="p-2.5 bg-card border border-border rounded-md text-sm text-foreground font-medium">
             {associatedGoal.title}
           </div>

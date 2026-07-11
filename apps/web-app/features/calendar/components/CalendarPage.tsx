@@ -10,8 +10,10 @@ import { CalendarStyles } from "@/features/calendar/components/CalendarStyles";
 import { EventModal } from "@/features/calendar/components/EventModal";
 import { TaskTimeBlockModal } from "@/features/board/components/TaskTimeBlockModal";
 import { useCalendarPage } from "../hooks/useCalendarPage";
+import { useTranslation } from "@/hooks/use-translation";
 
 export function CalendarPage() {
+  const { t } = useTranslation();
   const {
     calendarRef,
     sidebarRef,
@@ -84,8 +86,8 @@ export function CalendarPage() {
                 center: "title",
                 right:  "dayGridMonth,timeGridWeek,timeGridDay",
               }}
-              buttonText={{ today: "Hôm nay", month: "Tháng", week: "Tuần", day: "Ngày" }}
-              locale="vi"
+              buttonText={{ today: t.calendar.fcToday, month: t.calendar.fcMonth, week: t.calendar.fcWeek, day: t.calendar.fcDay }}
+              locale={t.calendar.fcLocale}
               firstDay={1}
               slotMinTime={slotMin}
               slotMaxTime={slotMax}

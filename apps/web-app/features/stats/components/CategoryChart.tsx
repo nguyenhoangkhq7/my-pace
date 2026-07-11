@@ -2,6 +2,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { Clock } from "lucide-react";
 import { CustomTooltip } from "./CustomTooltip";
 import { ChartHeader } from "./ChartHeader";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface CategoryDataItem {
   name: string;
@@ -13,10 +14,12 @@ interface CategoryChartProps {
 }
 
 export function CategoryChart({ categoryData }: CategoryChartProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="bg-card rounded-2xl p-6 border border-border shadow-xl">
       <ChartHeader
-        title="Thời gian theo Danh mục (Category)"
+        title={t.stats.categoryChart}
         icon={<Clock className="w-5 h-5 text-cyan-400" />}
       />
 
@@ -33,7 +36,7 @@ export function CategoryChart({ categoryData }: CategoryChartProps) {
           </ResponsiveContainer>
         ) : (
           <div className="h-full flex items-center justify-center text-slate-500">
-            Chưa có dữ liệu danh mục
+            {t.stats.noCategoryData}
           </div>
         )}
       </div>

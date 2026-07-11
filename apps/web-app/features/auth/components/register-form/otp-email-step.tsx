@@ -33,6 +33,7 @@ import {
 } from "../../schema/auth.schema";
 import { AppAlert } from "@/components/feedback/app-alert";
 import { appToast } from "@/components/feedback/app-toast";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface OtpEmailStepProps {
     onNext: () => void;
@@ -49,6 +50,7 @@ type SendOtpRequest = {
 export function OtpEmailStep({
                                  onNext,
                              }: OtpEmailStepProps) {
+    const { t } = useTranslation();
     const setRegisterData = useRegisterStore(
         (state) => state.setRegisterData
     );
@@ -76,8 +78,8 @@ export function OtpEmailStep({
                 email: data.email,
             });
 
-            appToast.success("Verification code sent", {
-                description: "Check your inbox for the 6-digit code.",
+            appToast.success(t.auth.otpSent, {
+                description: t.auth.otpSentDesc,
             });
 
             onNext();
@@ -97,12 +99,11 @@ export function OtpEmailStep({
             <div className="space-y-6">
                 <CardHeader className="space-y-3 px-0 text-center">
                     <CardTitle className="text-3xl font-bold tracking-tight">
-                        Create account
+                        {t.auth.createAccount}
                     </CardTitle>
 
                     <CardDescription className="text-base leading-relaxed text-muted-foreground">
-                        Enter your email address to receive a
-                        verification code
+                        {t.auth.createAccountDesc}
                     </CardDescription>
                 </CardHeader>
 
@@ -110,14 +111,14 @@ export function OtpEmailStep({
                     <FieldGroup className="space-y-5">
                         <Field className="space-y-2">
                             <FieldLabel htmlFor="email">
-                                Email address
+                                {t.auth.emailAddress}
                             </FieldLabel>
 
                             <Input
                                 {...form.register("email")}
                                 type="email"
                                 id="email"
-                                placeholder="Enter your email"
+                                placeholder={t.auth.emailPlaceholder}
                                 className="h-12"
                             />
 
@@ -130,7 +131,7 @@ export function OtpEmailStep({
                     {form.formState.errors.root && (
                         <AppAlert
                             variant="error"
-                            title="Unable to send verification code"
+                            title={t.auth.sendOtpError}
                             description={form.formState.errors.root.message}
                         />
                     )}
@@ -144,8 +145,8 @@ export function OtpEmailStep({
                     className="h-12 w-full text-base"
                 >
                     {form.formState.isSubmitting
-                        ? "Sending OTP..."
-                        : "Continue"}
+                        ? t.auth.sendingOtp
+                        : t.auth.continueBtn}
                 </Button>
             </CardFooter>
         </form>

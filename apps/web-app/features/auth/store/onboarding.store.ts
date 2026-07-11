@@ -2,13 +2,19 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 interface OnboardingState {
+  // Modal state
   isOpen: boolean;
-  currentSlide: number;
-  hasCompletedOnboarding: boolean;
   isHelpMode: boolean;
   startOnboarding: (isHelpMode?: boolean) => void;
-  nextSlide: () => void;
-  prevSlide: () => void;
+  closeOnboardingModal: () => void;
+
+  // Tour state
+  isTourActive: boolean;
+  tourStepIndex: number;
+  hasCompletedOnboarding: boolean;
+  startTour: () => void;
+  setTourStep: (step: number) => void;
+  advanceTourStep: () => void;
   completeOnboarding: () => void;
 }
 
@@ -16,13 +22,29 @@ export const useOnboardingStore = create<OnboardingState>()(
   persist(
     (set) => ({
       isOpen: false,
-      currentSlide: 0,
-      hasCompletedOnboarding: false,
       isHelpMode: false,
-      startOnboarding: (isHelpMode = false) => set({ isOpen: true, currentSlide: 0, isHelpMode }),
-      nextSlide: () => set((state) => ({ currentSlide: Math.min(2, state.currentSlide + 1) })),
-      prevSlide: () => set((state) => ({ currentSlide: Math.max(0, state.currentSlide - 1) })),
-      completeOnboarding: () => set({ isOpen: false, hasCompletedOnboarding: true }),
+      startOnboarding: (isHelpMode = false) => set({ isOpen: true, isHelpMode, isTourActive: false }),
+      closeOnboardingModal: () => set({ isOpen: false }),
+
+      isTourActive: false,
+      tourStepIndex: 0,
+      hasCompletedOnboarding: false,
+      
+      startTour: () => {
+        console.log("STARTING TOUR! isTourActive is being set to true.");
+        set({ 
+          isOpen: false, // close modal when tour starts
+          isTourActive: true, 
+          tourStepIndex: 0 
+        });
+      },
+      setTourStep: (step) => set({ tourStepIndex: step }),
+      advanceTourStep: () => set((state) => ({ tourStepIndex: state.tourStepIndex + 1 })),
+      completeOnboarding: () => set({ 
+        isOpen: false, 
+        isTourActive: false, 
+        hasCompletedOnboarding: true 
+      }),
     }),
     {
       name: "my-pace-onboarding",
