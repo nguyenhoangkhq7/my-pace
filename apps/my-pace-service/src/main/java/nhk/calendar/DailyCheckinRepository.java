@@ -10,4 +10,5 @@ import java.util.UUID;
 @Repository
 public interface DailyCheckinRepository extends JpaRepository<DailyCheckin, UUID> {
     Optional<DailyCheckin> findByUserIdAndCheckinDate(UUID userId, LocalDate checkinDate);
+    java.util.List<DailyCheckin> findByUserIdOrderByCheckinDateDesc(UUID userId);
 }

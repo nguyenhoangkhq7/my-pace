@@ -9,6 +9,7 @@ import { FlowTodoList } from "@/features/focus/components/FlowTodoList";
 import { FlowPomodoro } from "@/features/focus/components/FlowPomodoro";
 import { PomodoroSettingsModal } from "@/features/focus/components/PomodoroSettingsModal";
 import { FlowZenZone } from "@/features/focus/components/FlowZenZone";
+import { TaskCompletionDurationModal } from "@/features/focus/components/TaskCompletionDurationModal";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -19,6 +20,9 @@ import { ConfirmPlanDialog } from "@/features/focus/components/ConfirmPlanDialog
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
 import type { DailyPlanTask } from "@/features/board/types";
+import { Button } from "@/components/ui/button";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Clock01Icon } from "@hugeicons/core-free-icons";
 
 export function FlowPage() {
   const user = useAuthStore((s) => s.user);
@@ -175,6 +179,35 @@ export function FlowPage() {
     );
   }
 
+  const isConfirmed = !!dailyPlanToday?.isConfirmed;
+
+  if (!isConfirmed) {
+    return (
+      <div className="h-full w-full bg-background flex flex-col items-center justify-center p-6 text-center">
+        <div className="max-w-md space-y-6">
+          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto text-primary animate-pulse">
+            <HugeiconsIcon icon={Clock01Icon} size={32} />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--card-foreground)' }}>
+              Bạn chưa lên kế hoạch cho hôm nay
+            </h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Để bắt đầu làm việc tập trung (Flow), bạn cần lên lịch công việc và nhấn bắt đầu ngày mới (Start My Day) trước.
+            </p>
+          </div>
+          <Button
+            size="lg"
+            className="rounded-xl px-8 shadow-lg shadow-primary/25 cursor-pointer font-semibold"
+            onClick={() => window.location.href = "/"}
+          >
+            Lên kế hoạch ngay (Plan my day)
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   // Map sizes based on current breakpoint
   // Use ?? fallbacks so defaultSize is never undefined (undefined causes
   // react-resizable-panels to behave unpredictably on remount).
@@ -274,6 +307,9 @@ export function FlowPage() {
       
       {/* Settings Modal is global to the Flow page */}
       <PomodoroSettingsModal />
+
+      {/* Micro-modal for completed task actual time entry */}
+      <TaskCompletionDurationModal />
     </div>
   );
 }

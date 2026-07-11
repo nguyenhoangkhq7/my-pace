@@ -91,11 +91,13 @@ public class FixedEventService {
         User user = userRepo.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
+        java.time.ZoneId zoneId = java.time.ZoneId.of(user.getTimezone());
         if (user.getWakeTime() == null || user.getSleepTime() == null) {
             return AvailableTimeResponse.builder()
                     .availableMinutes(0).blockedMinutes(0)
                     .bufferPct(user.getBufferPct()).workingWindowMinutes(0)
                     .checkedIn(false).checkinTime(null)
+                    .streak(getStreakForUser(userId, zoneId))
                     .build();
         }
 
@@ -104,29 +106,53 @@ public class FixedEventService {
         boolean checkedIn = checkinOpt.isPresent();
         LocalTime checkinTime = checkedIn ? checkinOpt.get().getCheckinTime() : null;
 
-        java.time.ZoneId zoneId = java.time.ZoneId.of(user.getTimezone());
         LocalDate today = LocalDate.now(zoneId);
         LocalTime now = LocalTime.now(zoneId);
-        
+
+        // Check if sleepTime crosses midnight relative to wakeTime
+        boolean isCrossMidnight = user.getSleepTime().isBefore(user.getWakeTime());
+
+        // If planning today, check if now is outside the active window [wakeTime, sleepTime]
+        if (date.equals(today)) {
+            boolean isInside;
+            if (!isCrossMidnight) {
+                isInside = !now.isBefore(user.getWakeTime()) && !now.isAfter(user.getSleepTime());
+            } else {
+                isInside = !now.isBefore(user.getWakeTime()) || !now.isAfter(user.getSleepTime());
+            }
+            if (!isInside) {
+                return AvailableTimeResponse.builder()
+                        .availableMinutes(0).blockedMinutes(0)
+                        .bufferPct(user.getBufferPct()).workingWindowMinutes(0)
+                        .checkedIn(checkedIn)
+                        .checkinTime(checkinTime != null ? checkinTime.toString().substring(0, 5) : null)
+                        .streak(getStreakForUser(userId, zoneId))
+                        .build();
+            }
+        }
+
         LocalTime windowStart;
         if (date.isBefore(today)) {
             windowStart = user.getSleepTime(); // past days have 0 available time
         } else if (date.equals(today)) {
-            // Planning today: Start_Time = Current_Time
             windowStart = now;
         } else {
-            // Planning tomorrow or future: Start_Time = Wake_Time
             windowStart = user.getWakeTime();
         }
         LocalTime windowEnd = user.getSleepTime();
 
         int workingWindow = (int) java.time.Duration.between(windowStart, windowEnd).toMinutes();
+        if (workingWindow < 0) {
+            workingWindow += 1440;
+        }
+
         if (workingWindow <= 0) {
             return AvailableTimeResponse.builder()
                     .availableMinutes(0).blockedMinutes(0)
                     .bufferPct(user.getBufferPct()).workingWindowMinutes(0)
                     .checkedIn(checkedIn)
                     .checkinTime(checkinTime != null ? checkinTime.toString().substring(0, 5) : null)
+                    .streak(getStreakForUser(userId, zoneId))
                     .build();
         }
 
@@ -148,6 +174,7 @@ public class FixedEventService {
                 .workingWindowMinutes(workingWindow)
                 .checkedIn(checkedIn)
                 .checkinTime(checkinTime != null ? checkinTime.toString().substring(0, 5) : null)
+                .streak(getStreakForUser(userId, zoneId))
                 .build();
     }
 
@@ -400,18 +427,32 @@ public class FixedEventService {
                                            LocalTime windowStart, LocalTime windowEnd) {
         if (occurrences.isEmpty()) return 0;
 
-        // Clamp each event to the working window and collect [start, end] in minutes from midnight
         int windowStartMin = (int) (windowStart.toSecondOfDay() / 60);
         int windowEndMin   = (int) (windowEnd.toSecondOfDay() / 60);
 
-        List<int[]> intervals = occurrences.stream()
-                .map(e -> new int[]{
-                        Math.max((int) (e.getStartTime().toSecondOfDay() / 60), windowStartMin),
-                        Math.min((int) (e.getEndTime().toSecondOfDay() / 60),   windowEndMin)
-                })
-                .filter(iv -> iv[1] > iv[0])   // discard events entirely outside window
-                .sorted(Comparator.comparingInt(iv -> iv[0]))
-                .collect(Collectors.toList());
+        boolean crossesMidnight = windowEnd.isBefore(windowStart);
+
+        List<int[]> intervals;
+        if (!crossesMidnight) {
+            intervals = occurrences.stream()
+                    .map(e -> new int[]{
+                            Math.max((int) (e.getStartTime().toSecondOfDay() / 60), windowStartMin),
+                            Math.min((int) (e.getEndTime().toSecondOfDay() / 60),   windowEndMin)
+                    })
+                    .filter(iv -> iv[1] > iv[0])   // discard events entirely outside window
+                    .sorted(Comparator.comparingInt(iv -> iv[0]))
+                    .collect(Collectors.toList());
+        } else {
+            int endOfTodayMin = 24 * 60; // 1440 minutes
+            intervals = occurrences.stream()
+                    .map(e -> new int[]{
+                            Math.max((int) (e.getStartTime().toSecondOfDay() / 60), windowStartMin),
+                            Math.min((int) (e.getEndTime().toSecondOfDay() / 60),   endOfTodayMin)
+                    })
+                    .filter(iv -> iv[1] > iv[0])   // discard events entirely outside window
+                    .sorted(Comparator.comparingInt(iv -> iv[0]))
+                    .collect(Collectors.toList());
+        }
 
         if (intervals.isEmpty()) return 0;
 
@@ -522,5 +563,47 @@ public class FixedEventService {
                 .recurrenceEndDate(fe.getRecurrenceEndDate())
                 .isException(ex != null)
                 .build();
+    }
+
+    private int getStreakForUser(UUID userId, java.time.ZoneId zoneId) {
+        LocalDate today = LocalDate.now(zoneId);
+        List<DailyCheckin> checkins = checkinRepo.findByUserIdOrderByCheckinDateDesc(userId);
+        if (checkins.isEmpty()) {
+            return 0;
+        }
+
+        int streak = 0;
+        LocalDate current = today;
+        boolean foundToday = false;
+        boolean foundYesterday = false;
+
+        for (DailyCheckin dc : checkins) {
+            LocalDate d = dc.getCheckinDate();
+            if (d.equals(today)) {
+                foundToday = true;
+            } else if (d.equals(today.minusDays(1))) {
+                foundYesterday = true;
+            }
+        }
+
+        if (foundToday) {
+            current = today;
+        } else if (foundYesterday) {
+            current = today.minusDays(1);
+        } else {
+            return 0;
+        }
+
+        for (DailyCheckin dc : checkins) {
+            LocalDate d = dc.getCheckinDate();
+            if (d.equals(current)) {
+                streak++;
+                current = current.minusDays(1);
+            } else if (d.isBefore(current)) {
+                break;
+            }
+        }
+
+        return streak;
     }
 }

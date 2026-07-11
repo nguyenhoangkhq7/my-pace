@@ -81,6 +81,12 @@ public class TaskService {
         taskMapper.updateFromRequest(request, task);
         
         boolean isNowDone = "Done".equals(task.getStatus());
+        if (!wasDone && isNowDone) {
+            task.setDoneAt(java.time.OffsetDateTime.now());
+        } else if (wasDone && !isNowDone) {
+            task.setDoneAt(null);
+        }
+        
         int newActualMinutes = task.getActualMinutes() != null ? task.getActualMinutes() : 0;
 
         Task saved = taskRepository.save(task);

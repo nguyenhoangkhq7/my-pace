@@ -5,4 +5,5 @@ export interface AvailableTimeData {
   workingWindowMinutes: number;
   checkedIn: boolean;
   checkinTime: string | null;
+  streak: number;
 }

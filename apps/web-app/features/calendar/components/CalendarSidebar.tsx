@@ -3,8 +3,10 @@
 import React, { useEffect, useRef, useImperativeHandle, forwardRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Draggable } from "@fullcalendar/interaction";
-import { DailyPlanTask } from "@/features/board/types";
+import { DailyPlanTask, DailyPlan } from "@/features/board/types";
 import { UnscheduledTaskItem } from "./UnscheduledTaskItem";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Clock01Icon } from "@hugeicons/core-free-icons";
 
 interface CalendarSidebarProps {
   unscheduledTasks: DailyPlanTask[];
@@ -13,10 +15,11 @@ interface CalendarSidebarProps {
   dailyPlanLength: number;
   timeBlocksLength: number;
   isSidebarOpen: boolean;
+  dailyPlanToday?: DailyPlan | null;
 }
 
 export const CalendarSidebar = forwardRef<HTMLDivElement, CalendarSidebarProps>(
-  ({ unscheduledTasks, isAutoScheduling, onAutoSchedule, dailyPlanLength, timeBlocksLength, isSidebarOpen }, ref) => {
+  ({ unscheduledTasks, isAutoScheduling, onAutoSchedule, dailyPlanLength, timeBlocksLength, isSidebarOpen, dailyPlanToday }, ref) => {
     const sidebarRef = useRef<HTMLDivElement>(null);
     const draggableRef = useRef<Draggable | null>(null);
 
@@ -53,6 +56,31 @@ export const CalendarSidebar = forwardRef<HTMLDivElement, CalendarSidebarProps>(
       });
       return () => draggableRef.current?.destroy();
     }, [dailyPlanLength, timeBlocksLength, isSidebarOpen]);
+
+    const hasPlan = !!(dailyPlanToday && dailyPlanToday.tasks && dailyPlanToday.tasks.length > 0);
+
+    if (!hasPlan) {
+      return (
+        <div className="w-56 flex-shrink-0 flex flex-col rounded-2xl border border-border bg-card overflow-hidden p-4 text-center justify-center items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+            <HugeiconsIcon icon={Clock01Icon} size={20} />
+          </div>
+          <div className="space-y-1">
+            <div className="text-xs font-bold" style={{ color: 'var(--card-foreground)' }}>Chưa lên kế hoạch</div>
+            <div className="text-[10px] text-muted-foreground leading-normal">
+              Bạn chưa lên kế hoạch cho ngày hôm nay.
+            </div>
+          </div>
+          <Button
+            size="sm"
+            className="w-full text-[11px] py-1.5 h-auto font-semibold rounded-lg shadow-md cursor-pointer"
+            onClick={() => window.location.href = "/"}
+          >
+            Lên kế hoạch ngay
+          </Button>
+        </div>
+      );
+    }
 
     return (
       <div className="w-56 flex-shrink-0 flex flex-col rounded-2xl border border-border bg-card overflow-hidden">

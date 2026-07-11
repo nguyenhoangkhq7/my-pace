@@ -11,16 +11,16 @@ interface CategoryListItemProps {
 
 export function CategoryListItem({ category, onStartEdit, onDeleteClick }: CategoryListItemProps) {
   return (
-    <div className="flex items-center justify-between p-3 bg-slate-900 border border-slate-800 rounded-md hover:border-slate-700 transition-colors">
+    <div className="flex items-center justify-between p-3 bg-card border border-border rounded-md hover:border-border/70 transition-colors">
       <div className="flex items-center space-x-3">
         <div className="w-4 h-4 rounded-full border border-black/20" style={{ backgroundColor: category.color }} />
-        <span className="text-sm font-medium text-slate-200">{category.name}</span>
+        <span className="text-sm font-medium text-foreground">{category.name}</span>
       </div>
       <div className="flex items-center space-x-1">
         <Button
           size="sm"
           variant="ghost"
-          className="h-8 w-8 p-0 text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
+          className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
           onClick={onStartEdit}
         >
           <HugeiconsIcon icon={PencilEdit01Icon} className="w-4 h-4" />

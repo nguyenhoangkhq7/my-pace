@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Clock01Icon, InformationCircleIcon } from "@hugeicons/core-free-icons";
@@ -14,6 +14,7 @@ import { useAuthStore, AuthUser } from "../store/auth.store";
 import { appToast } from "@/components/feedback/app-toast";
 import { AppAlert } from "@/components/feedback/app-alert";
 import { cn } from "@/lib/utils";
+import { TimeSelect } from "@/components/ui/time-select";
 
 interface SetupFormValues {
   wakeTime: string;
@@ -30,6 +31,8 @@ export function InitialSetupForm() {
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors, isValid },
   } = useForm<SetupFormValues>({
     defaultValues: {
@@ -38,6 +41,14 @@ export function InitialSetupForm() {
     },
     mode: "onChange",
   });
+
+  const wakeTime = watch("wakeTime") || "07:00";
+  const sleepTime = watch("sleepTime") || "23:00";
+
+  useEffect(() => {
+    register("wakeTime", { required: "Required" });
+    register("sleepTime", { required: "Required" });
+  }, [register]);
 
   const onSubmit = async (data: SetupFormValues) => {
     setIsSubmitting(true);
@@ -96,12 +107,10 @@ export function InitialSetupForm() {
           {/* Wake Time & Sleep Time */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="wakeTime" className="text-sm font-semibold">Wake Time</Label>
-              <Input
-                {...register("wakeTime", { required: "Required" })}
-                id="wakeTime"
-                type="time"
-                className="h-12 rounded-xl text-center bg-muted/40 font-mono text-base focus:bg-background"
+              <Label className="text-sm font-semibold">Wake Time</Label>
+              <TimeSelect
+                value={wakeTime}
+                onChange={(val) => setValue("wakeTime", val, { shouldValidate: true })}
               />
               {errors.wakeTime && (
                 <p className="text-xs text-rose-500 mt-1">{errors.wakeTime.message}</p>
@@ -109,12 +118,10 @@ export function InitialSetupForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="sleepTime" className="text-sm font-semibold">Sleep Time</Label>
-              <Input
-                {...register("sleepTime", { required: "Required" })}
-                id="sleepTime"
-                type="time"
-                className="h-12 rounded-xl text-center bg-muted/40 font-mono text-base focus:bg-background"
+              <Label className="text-sm font-semibold">Sleep Time</Label>
+              <TimeSelect
+                value={sleepTime}
+                onChange={(val) => setValue("sleepTime", val, { shouldValidate: true })}
               />
               {errors.sleepTime && (
                 <p className="text-xs text-rose-500 mt-1">{errors.sleepTime.message}</p>

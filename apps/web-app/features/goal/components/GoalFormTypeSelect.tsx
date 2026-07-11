@@ -43,16 +43,16 @@ export function GoalFormTypeSelect({ control, disabled }: GoalFormTypeSelectProp
         render={({ field }) => (
           <>
             <Select value={field.value} onValueChange={field.onChange} disabled={disabled}>
-              <SelectTrigger className="bg-slate-900 border-slate-700 text-slate-100">
+              <SelectTrigger className="bg-card border-border text-foreground">
                 <SelectValue placeholder="Chọn loại mục tiêu" />
               </SelectTrigger>
-              <SelectContent className="bg-slate-900 border-slate-700 text-slate-100">
+              <SelectContent className="bg-popover border-border text-foreground">
                 <SelectItem value="Binary">Project</SelectItem>
                 <SelectItem value="Time-boxed">Habit</SelectItem>
                 <SelectItem value="Milestone">Target</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-[11px] text-slate-400 mt-1 h-8">
+            <p className="text-[11px] text-muted-foreground mt-1 h-8">
               {field.value === 'Binary' && 'A project with a deadline. Progress is tracked by % of completed tasks.'}
               {field.value === 'Time-boxed' && 'A habit to maintain. Measured by accumulated minutes over a period.'}
               {field.value === 'Milestone' && 'A countable target (e.g. Run 100km, Make 50 calls).'}

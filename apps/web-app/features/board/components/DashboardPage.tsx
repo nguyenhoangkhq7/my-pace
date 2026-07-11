@@ -8,6 +8,7 @@ import { useBoardStore } from "@/features/board/store/board.store";
 import { useAvailableTimeStore } from "@/features/available-time/store/available-time.store";
 import { useAppVisibility } from "@/features/available-time";
 import { OutstandingTasksModal } from "./OutstandingTasksModal";
+import { StreakCelebrationModal } from "@/features/available-time/components/StreakCelebrationModal";
 
 export function DashboardPage() {
   useAppVisibility();
@@ -86,6 +87,8 @@ export function DashboardPage() {
         onClose={() => setHasDismissed(true)}
         tasks={outstandingTasks}
       />
+
+      <StreakCelebrationModal />
     </div>
   );
 }

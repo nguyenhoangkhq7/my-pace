@@ -74,12 +74,12 @@ export function GoalDetailModal({ isOpen, onOpenChange, goal }: GoalDetailModalP
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[550px] bg-slate-950 border-slate-800 text-slate-100 max-h-[90vh] flex flex-col p-0 overflow-hidden">
-        <DialogHeader className="p-6 pb-4 border-b border-slate-800/60 shrink-0 relative">
+      <DialogContent className="sm:max-w-[550px] bg-background border-border text-foreground max-h-[90vh] flex flex-col p-0 overflow-hidden">
+        <DialogHeader className="p-6 pb-4 border-b border-border/60 shrink-0 relative">
           <div className="flex items-start justify-between pr-4">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-800 text-slate-300 border border-slate-700">
+                <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-muted text-foreground border border-border">
                   {goal.goalType === "Binary" ? "Project" : goal.goalType === "Time-boxed" ? "Habit" : "Target"}
                 </span>
                 <span
@@ -88,7 +88,7 @@ export function GoalDetailModal({ isOpen, onOpenChange, goal }: GoalDetailModalP
                       ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
                       : goal.status === "Done"
                       ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                      : "bg-slate-500/10 text-slate-400 border-slate-500/20"
+                      : "bg-muted/10 text-muted-foreground border-border"
                   }`}
                 >
                   {goal.status}
@@ -104,8 +104,8 @@ export function GoalDetailModal({ isOpen, onOpenChange, goal }: GoalDetailModalP
                 className={cn(
                   "h-7 text-xs",
                   isEditingProject
-                    ? "bg-primary text-white hover:bg-primary/90"
-                    : "border-slate-700 text-slate-300 hover:text-white"
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "border-border text-muted-foreground hover:text-foreground"
                 )}
                 onClick={() => setIsEditingProject(!isEditingProject)}
               >

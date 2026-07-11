@@ -167,7 +167,7 @@ export function CustomColorPicker({ color, onChange, children }: CustomColorPick
       <PopoverTrigger asChild>
         {children}
       </PopoverTrigger>
-      <PopoverContent className="w-64 p-3 bg-slate-950 border border-slate-800 text-slate-100 flex flex-col gap-3 rounded-xl shadow-xl z-[9999]">
+      <PopoverContent className="w-64 p-3 bg-popover border border-border text-popover-foreground flex flex-col gap-3 rounded-xl shadow-xl z-[9999]">
         <style dangerouslySetInnerHTML={{__html: `
           input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
@@ -199,7 +199,7 @@ export function CustomColorPicker({ color, onChange, children }: CustomColorPick
           }
         `}} />
 
-        <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tùy chọn màu sắc</div>
+        <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Tùy chọn màu sắc</div>
 
         {/* --- Presets Grid --- */}
         <div className="grid grid-cols-5 gap-1.5">
@@ -210,7 +210,7 @@ export function CustomColorPicker({ color, onChange, children }: CustomColorPick
               onClick={() => handlePresetSelect(p)}
               className={cn(
                 "w-6 h-6 rounded-md cursor-pointer border border-black/20 hover:scale-105 transition-all duration-150",
-                localHex.toLowerCase() === p.toLowerCase() ? "ring-2 ring-white scale-105 shadow-md" : "opacity-85 hover:opacity-100"
+                localHex.toLowerCase() === p.toLowerCase() ? "ring-2 ring-foreground scale-105 shadow-md" : "opacity-85 hover:opacity-100"
               )}
               style={{ backgroundColor: p }}
             />
@@ -218,10 +218,10 @@ export function CustomColorPicker({ color, onChange, children }: CustomColorPick
         </div>
 
         {/* --- Sliders --- */}
-        <div className="flex flex-col gap-2 pt-1 border-t border-slate-900">
+        <div className="flex flex-col gap-2 pt-1 border-t border-border">
           {/* Hue */}
           <div className="flex flex-col gap-1">
-            <div className="flex justify-between text-[10px] text-slate-400">
+            <div className="flex justify-between text-[10px] text-muted-foreground">
               <span>Màu sắc (Hue)</span>
               <span>{hsl.h}°</span>
             </div>
@@ -240,7 +240,7 @@ export function CustomColorPicker({ color, onChange, children }: CustomColorPick
 
           {/* Saturation */}
           <div className="flex flex-col gap-1">
-            <div className="flex justify-between text-[10px] text-slate-400">
+            <div className="flex justify-between text-[10px] text-muted-foreground">
               <span>Độ bão hòa (Saturation)</span>
               <span>{hsl.s}%</span>
             </div>
@@ -259,7 +259,7 @@ export function CustomColorPicker({ color, onChange, children }: CustomColorPick
 
           {/* Lightness */}
           <div className="flex flex-col gap-1">
-            <div className="flex justify-between text-[10px] text-slate-400">
+            <div className="flex justify-between text-[10px] text-muted-foreground">
               <span>Độ sáng (Lightness)</span>
               <span>{hsl.l}%</span>
             </div>
@@ -278,15 +278,15 @@ export function CustomColorPicker({ color, onChange, children }: CustomColorPick
         </div>
 
         {/* --- Custom Hex & Pipette --- */}
-        <div className="flex gap-2 items-center pt-2 border-t border-slate-900">
-          <div className="flex-1 flex gap-1 items-center bg-slate-900 border border-slate-800 rounded-lg px-2 py-1">
-            <span className="text-[10px] font-semibold text-slate-500">HEX</span>
+        <div className="flex gap-2 items-center pt-2 border-t border-border">
+          <div className="flex-1 flex gap-1 items-center bg-card border border-border rounded-lg px-2 py-1">
+            <span className="text-[10px] font-semibold text-muted-foreground">HEX</span>
             <input
               type="text"
               value={typedHex}
               onChange={handleHexInputChange}
               maxLength={7}
-              className="w-full bg-transparent border-none text-slate-200 text-xs font-mono outline-hidden focus:ring-0 p-0"
+              className="w-full bg-transparent border-none text-foreground text-xs font-mono outline-hidden focus:ring-0 p-0"
             />
             <div
               className="w-4 h-4 rounded-md border border-white/10 shrink-0"
@@ -300,7 +300,7 @@ export function CustomColorPicker({ color, onChange, children }: CustomColorPick
               variant="outline"
               size="icon"
               onClick={handleEyeDropperClick}
-              className="w-8 h-8 rounded-lg shrink-0 border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white"
+              className="w-8 h-8 rounded-lg shrink-0 border-border bg-card text-foreground hover:bg-muted hover:text-foreground"
               title="Hút màu trực tiếp từ màn hình"
             >
               <Pipette className="w-3.5 h-3.5" />
