@@ -31,7 +31,6 @@ export const useOnboardingStore = create<OnboardingState>()(
       hasCompletedOnboarding: false,
       
       startTour: () => {
-        console.log("STARTING TOUR! isTourActive is being set to true.");
         set({ 
           isOpen: false, // close modal when tour starts
           isTourActive: true, 
@@ -48,6 +47,7 @@ export const useOnboardingStore = create<OnboardingState>()(
     }),
     {
       name: "my-pace-onboarding",
+      partialize: (state) => ({ hasCompletedOnboarding: state.hasCompletedOnboarding }),
     }
   )
 );

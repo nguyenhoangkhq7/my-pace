@@ -1,7 +1,7 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Delete01Icon } from "@hugeicons/core-free-icons";
+import { Menu01Icon, Delete01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
 import { InlineTitleEditor } from "./InlineTitleEditor";
 
@@ -9,11 +9,40 @@ interface TaskChecklistItemRowProps {
   item: { title: string; isCompleted: boolean; id?: string };
   onUpdate: (updates: { title?: string; isCompleted?: boolean }) => void;
   onDelete: () => void;
+  draggable?: boolean;
+  onDragStart?: (e: React.DragEvent) => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent) => void;
+  onDragEnd?: (e: React.DragEvent) => void;
+  isDragOver?: boolean;
 }
 
-export function TaskChecklistItemRow({ item, onUpdate, onDelete }: TaskChecklistItemRowProps) {
+export function TaskChecklistItemRow({ 
+  item, 
+  onUpdate, 
+  onDelete,
+  draggable,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
+  isDragOver
+}: TaskChecklistItemRowProps) {
   return (
-    <div className="flex items-center gap-3 group w-full min-w-0">
+    <div 
+      className={cn(
+        "flex items-center gap-3 group w-full min-w-0 p-1 -ml-1 rounded transition-colors",
+        isDragOver && "bg-muted border-t border-t-primary"
+      )}
+      draggable={draggable}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onDragEnd={onDragEnd}
+    >
+      <div className="cursor-grab text-muted-foreground opacity-30 hover:opacity-100 active:cursor-grabbing shrink-0 flex items-center justify-center">
+        <HugeiconsIcon icon={Menu01Icon} className="w-4 h-4" />
+      </div>
       <Checkbox 
         checked={item.isCompleted} 
         onCheckedChange={(checked) => onUpdate({ isCompleted: checked === true })}

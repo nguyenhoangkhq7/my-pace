@@ -10,6 +10,7 @@ public class TaskChecklistItemDto {
     private UUID taskId;
     private String title;
     private Boolean isCompleted;
+    private Integer orderIndex;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
 }

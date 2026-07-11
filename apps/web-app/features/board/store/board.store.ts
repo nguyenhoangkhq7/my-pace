@@ -29,6 +29,7 @@ interface BoardState {
   addChecklistItem: (taskId: string, title: string) => Promise<void>;
   updateChecklistItem: (taskId: string, checklistId: string, data: { title?: string; isCompleted?: boolean }) => Promise<void>;
   deleteChecklistItem: (taskId: string, checklistId: string) => Promise<void>;
+  reorderChecklists: (taskId: string, checklistIds: string[]) => Promise<void>;
 
   fetchDailyPlanToday: (date: string) => Promise<void>;
   fetchDailyPlanTomorrow: (date: string) => Promise<void>;
@@ -164,6 +165,27 @@ export const useBoardStore = create<BoardState>((set, get) => ({
         ...t,
         checklists: (t.checklists || []).filter(c => c.id !== checklistId)
       } : t)
+    }));
+  },
+
+  reorderChecklists: async (taskId, checklistIds) => {
+    await boardApi.reorderChecklists(taskId, checklistIds);
+    set(state => ({
+      tasks: state.tasks.map(t => {
+        if (t.id === taskId) {
+          const newChecklists = [...(t.checklists || [])];
+          newChecklists.sort((a, b) => {
+            const indexA = checklistIds.indexOf(a.id);
+            const indexB = checklistIds.indexOf(b.id);
+            if (indexA === -1 || indexB === -1) return 0;
+            return indexA - indexB;
+          });
+          // Update orderIndex locally
+          newChecklists.forEach((c, idx) => c.orderIndex = idx);
+          return { ...t, checklists: newChecklists };
+        }
+        return t;
+      })
     }));
   },
 

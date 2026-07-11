@@ -68,6 +68,7 @@ public class TaskService {
                     item.setTask(saved);
                     item.setTitle(itemReq.getTitle());
                     item.setIsCompleted(itemReq.getIsCompleted() != null ? itemReq.getIsCompleted() : false);
+                    item.setOrderIndex(itemReq.getOrderIndex() != null ? itemReq.getOrderIndex() : saved.getChecklists().size());
                     saved.getChecklists().add(item);
                 }
             }
@@ -145,6 +146,7 @@ public class TaskService {
         item.setTask(task);
         item.setTitle(request.getTitle());
         item.setIsCompleted(request.getIsCompleted() != null ? request.getIsCompleted() : false);
+        item.setOrderIndex(request.getOrderIndex() != null ? request.getOrderIndex() : task.getChecklists().size());
         
         task.getChecklists().add(item);
         taskRepository.save(task); // cascade will save item
@@ -169,6 +171,9 @@ public class TaskService {
         if (request.getIsCompleted() != null) {
             item.setIsCompleted(request.getIsCompleted());
         }
+        if (request.getOrderIndex() != null) {
+            item.setOrderIndex(request.getOrderIndex());
+        }
         
         taskRepository.save(task);
         return mapToChecklistItemDto(item);
@@ -183,12 +188,27 @@ public class TaskService {
         }
     }
 
+    @Transactional
+    public void reorderChecklists(UUID taskId, List<UUID> checklistIds, UserDetailsCustom userDetails) {
+        Task task = getTaskByUserId(taskId, userDetails.user().getId());
+        for (int i = 0; i < checklistIds.size(); i++) {
+            UUID id = checklistIds.get(i);
+            final int index = i;
+            task.getChecklists().stream()
+                    .filter(c -> c.getId().equals(id))
+                    .findFirst()
+                    .ifPresent(c -> c.setOrderIndex(index));
+        }
+        taskRepository.save(task);
+    }
+
     private TaskChecklistItemDto mapToChecklistItemDto(TaskChecklistItem item) {
         TaskChecklistItemDto dto = new TaskChecklistItemDto();
         dto.setId(item.getId());
         dto.setTaskId(item.getTaskId());
         dto.setTitle(item.getTitle());
         dto.setIsCompleted(item.getIsCompleted());
+        dto.setOrderIndex(item.getOrderIndex());
         dto.setCreatedAt(item.getCreatedAt());
         dto.setUpdatedAt(item.getUpdatedAt());
         return dto;

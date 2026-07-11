@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useOnboardingStore } from "@/features/auth/store/onboarding.store";
 import type {
   CreateEventPayload,
   FixedEventOccurrence,
@@ -47,6 +49,9 @@ export function useEventForm({
   const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>("NONE");
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const [recurrenceEndDate, setRecurrenceEndDate] = useState("");
+
+  const router = useRouter();
+  const { isTourActive, tourStepIndex, advanceTourStep } = useOnboardingStore();
 
   // ── UI State ───────────────────────────────────────────────────────────────
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -161,6 +166,13 @@ export function useEventForm({
     try {
       await createEvent(buildPayload());
       onClose();
+      
+      if (isTourActive && tourStepIndex === 0) {
+        setTimeout(() => {
+          advanceTourStep();
+          router.push("/");
+        }, 300);
+      }
     } catch {
       setError("Không thể tạo sự kiện. Vui lòng thử lại.");
     } finally {

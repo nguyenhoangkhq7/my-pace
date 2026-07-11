@@ -39,6 +39,10 @@ public class TaskChecklistItem {
     @Column(name = "is_completed", nullable = false)
     private Boolean isCompleted = false;
 
+    @NotNull
+    @Column(name = "order_index", nullable = false)
+    private Integer orderIndex = 0;
+
     @Column(name = "created_at", nullable = false)
     @Generated(event = EventType.INSERT)
     private OffsetDateTime createdAt;

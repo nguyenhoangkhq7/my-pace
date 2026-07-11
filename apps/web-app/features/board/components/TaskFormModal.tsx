@@ -72,7 +72,52 @@ export function TaskFormModal({
   const currentTask = initialData?.id ? tasks.find(t => t.id === initialData.id) : null;
   const checklists = currentTask?.checklists || [];
 
+  const draftKey = initialData?.id ? `my_pace_task_draft_${initialData.id}` : 'my_pace_task_draft_new';
+  const [hasDraft, setHasDraft] = useState(false);
+
   const prevIsOpenRef = useRef(false);
+
+  const getInitialState = () => {
+    let initialDueDate: Date | undefined = undefined;
+    if (initialData?.dueDate) {
+      initialDueDate = new Date(initialData.dueDate);
+    } else if (planningTarget) {
+      initialDueDate = new Date();
+      if (planningTarget === 'tomorrow') initialDueDate.setDate(initialDueDate.getDate() + 1);
+    } else if (prefilledGoalId && initialStatus !== 'Icebox' && !initialData?.id) {
+      initialDueDate = new Date();
+    }
+
+    return {
+      title: initialData?.title || "",
+      estimatedMinutes: initialData?.estimatedMinutes ? String(initialData.estimatedMinutes) : "",
+      notes: initialData?.notes || "",
+      isUrgent: prefilledUrgent !== undefined ? prefilledUrgent : (initialData?.isUrgent || false),
+      isImportant: prefilledImportant !== undefined ? prefilledImportant : (initialData?.isImportant || false),
+      categoryId: initialData?.categoryId || undefined,
+      goalId: prefilledGoalId || initialData?.goalId || undefined,
+      dueDate: initialDueDate,
+      localChecklists: initialData?.checklists
+        ? initialData.checklists.map(c => ({ title: c.title, isCompleted: c.isCompleted, orderIndex: c.orderIndex }))
+        : []
+    };
+  };
+
+  const resetToInitial = () => {
+    const initialState = getInitialState();
+    setTitle(initialState.title);
+    setEstimatedMinutes(initialState.estimatedMinutes);
+    setNotes(initialState.notes);
+    setIsUrgent(initialState.isUrgent);
+    setIsImportant(initialState.isImportant);
+    setCategoryId(initialState.categoryId);
+    setGoalId(initialState.goalId);
+    setDueDate(initialState.dueDate);
+    setLocalChecklists(initialState.localChecklists as any[]);
+    setError("");
+    localStorage.removeItem(draftKey);
+    setHasDraft(false);
+  };
 
   useEffect(() => {
     const justOpened = isOpen && !prevIsOpenRef.current;
@@ -82,39 +127,64 @@ export function TaskFormModal({
 
       Promise.resolve().then(() => {
         fetchGoals();
-        setTitle(initialData?.title || "");
-        setEstimatedMinutes(initialData?.estimatedMinutes ? String(initialData.estimatedMinutes) : "");
-        setNotes(initialData?.notes || "");
         
-        setIsUrgent(prefilledUrgent !== undefined ? prefilledUrgent : (initialData?.isUrgent || false));
-        setIsImportant(prefilledImportant !== undefined ? prefilledImportant : (initialData?.isImportant || false));
-        
-        setCategoryId(initialData?.categoryId || undefined);
-        setGoalId(prefilledGoalId || initialData?.goalId || undefined);
-        
-        if (initialData?.dueDate) {
-          setDueDate(new Date(initialData.dueDate));
-        } else if (planningTarget) {
-          const targetDate = new Date();
-          if (planningTarget === 'tomorrow') targetDate.setDate(targetDate.getDate() + 1);
-          setDueDate(targetDate);
-        } else if (prefilledGoalId && initialStatus !== 'Icebox' && !initialData?.id) {
-          setDueDate(new Date());
-        } else {
-          setDueDate(undefined);
+        const savedDraft = localStorage.getItem(draftKey);
+        if (savedDraft) {
+          try {
+            const draft = JSON.parse(savedDraft);
+            setTitle(draft.title || "");
+            setEstimatedMinutes(draft.estimatedMinutes || "");
+            setNotes(draft.notes || "");
+            setIsUrgent(draft.isUrgent ?? false);
+            setIsImportant(draft.isImportant ?? false);
+            setCategoryId(draft.categoryId);
+            setGoalId(draft.goalId);
+            setDueDate(draft.dueDate ? new Date(draft.dueDate) : undefined);
+            setLocalChecklists(draft.localChecklists || []);
+            setError("");
+            setIsConfirmDeleteOpen(false);
+            return;
+          } catch (e) {
+            console.error("Failed to parse draft", e);
+          }
         }
         
-        setLocalChecklists(
-          initialData?.checklists
-            ? initialData.checklists.map(c => ({ title: c.title, isCompleted: c.isCompleted }))
-            : []
-        );
-        
-        setError("");
+        resetToInitial();
         setIsConfirmDeleteOpen(false);
       });
     }
-  }, [isOpen, initialData, prefilledGoalId, prefilledUrgent, prefilledImportant, planningTarget, initialStatus, fetchGoals]);
+  }, [isOpen, initialData, prefilledGoalId, prefilledUrgent, prefilledImportant, planningTarget, initialStatus, fetchGoals, draftKey]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const initialState = getInitialState();
+    const formatDateForCompare = (d?: Date) => d ? format(d, "yyyy-MM-dd") : "";
+
+    const isDirty = 
+      title !== initialState.title ||
+      estimatedMinutes !== initialState.estimatedMinutes ||
+      notes !== initialState.notes ||
+      isUrgent !== initialState.isUrgent ||
+      isImportant !== initialState.isImportant ||
+      categoryId !== initialState.categoryId ||
+      goalId !== initialState.goalId ||
+      formatDateForCompare(dueDate) !== formatDateForCompare(initialState.dueDate) ||
+      JSON.stringify(localChecklists) !== JSON.stringify(initialState.localChecklists);
+
+    setHasDraft(isDirty);
+
+    if (isDirty) {
+      const draft = {
+        title, estimatedMinutes, notes, isUrgent, isImportant, categoryId, goalId, 
+        dueDate: dueDate ? dueDate.toISOString() : undefined, 
+        localChecklists
+      };
+      localStorage.setItem(draftKey, JSON.stringify(draft));
+    } else {
+      localStorage.removeItem(draftKey);
+    }
+  }, [title, estimatedMinutes, notes, isUrgent, isImportant, categoryId, goalId, dueDate, localChecklists, isOpen, draftKey]);
 
   const handleClose = () => {
     if (onOpenChange) onOpenChange(false);
@@ -176,7 +246,8 @@ export function TaskFormModal({
         } else {
           await createTask(taskData);
         }
-        if (isTourActive && tourStepIndex === 2) {
+        localStorage.removeItem(draftKey);
+        if (isTourActive && tourStepIndex === 3) {
           advanceTourStep();
         }
         handleClose();
@@ -190,6 +261,7 @@ export function TaskFormModal({
     if (!initialData?.id) return;
     try {
       await deleteTask(initialData.id);
+      localStorage.removeItem(draftKey);
       setIsConfirmDeleteOpen(false);
       handleClose();
     } catch (err) {
@@ -201,7 +273,12 @@ export function TaskFormModal({
   const associatedGoal = goals.find(g => g.id === (prefilledGoalId || initialData?.goalId));
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+    <Dialog modal={!isTourActive} open={isOpen} onOpenChange={(open) => {
+      if (!open) {
+        if (isTourActive) return;
+        handleClose();
+      }
+    }}>
       <DialogContent className={cn(
         "bg-background text-foreground border-border max-h-[90vh] overflow-y-auto scrollbar-thin",
         requireDuration ? "sm:max-w-[425px]" : "sm:max-w-[840px]"
@@ -247,7 +324,7 @@ export function TaskFormModal({
                     }
                   }
                 }}
-                className="bg-card border-border focus:border-primary text-lg font-medium"
+                className="bg-card border-border focus:border-primary text-lg font-medium tour-task-title-input"
                 disabled={requireDuration && !!initialData?.title}
               />
             </div>
@@ -259,9 +336,17 @@ export function TaskFormModal({
               ) : (
                 <TaskFormChecklist 
                   checklists={localChecklists} 
-                  onAddChecklistLocal={(title) => setLocalChecklists(prev => [...prev, { title, isCompleted: false }])}
+                  onAddChecklistLocal={(title) => setLocalChecklists(prev => [...prev, { title, isCompleted: false, orderIndex: prev.length } as any])}
                   onUpdateChecklistLocal={(index, updates) => setLocalChecklists(prev => prev.map((item, idx) => idx === index ? { ...item, ...updates } : item))}
                   onDeleteChecklistLocal={(index) => setLocalChecklists(prev => prev.filter((_, idx) => idx !== index))}
+                  onReorderLocal={(sourceIndex, destIndex) => {
+                    setLocalChecklists(prev => {
+                       const newOrder = [...prev];
+                       const [moved] = newOrder.splice(sourceIndex, 1);
+                       newOrder.splice(destIndex, 0, moved);
+                       return newOrder.map((item, idx) => ({ ...item, orderIndex: idx }));
+                    });
+                  }}
                 />
               )
             )}
@@ -363,7 +448,7 @@ export function TaskFormModal({
         </div>
         
         <DialogFooter className="mt-2 flex flex-row items-center justify-between sm:justify-between w-full">
-          <div>
+          <div className="flex items-center gap-2">
             {!requireDuration && initialData?.id && (
               <Button 
                 type="button" 
@@ -373,6 +458,17 @@ export function TaskFormModal({
               >
                 <HugeiconsIcon icon={Delete01Icon} className="w-4 h-4" />
                 {t.taskForm.deleteTask}
+              </Button>
+            )}
+            {!requireDuration && hasDraft && (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={resetToInitial}
+                className="text-muted-foreground hover:bg-muted font-medium gap-1 px-2 h-9 cursor-pointer"
+                title="Khôi phục"
+              >
+                Khôi phục
               </Button>
             )}
           </div>

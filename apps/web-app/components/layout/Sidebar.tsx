@@ -27,6 +27,7 @@ import { Time02Icon } from "@hugeicons/core-free-icons";
 export function Sidebar() {
   const user = useAuthStore((s) => s.user);
   const startOnboarding = useOnboardingStore((s) => s.startOnboarding);
+  const { isTourActive, tourStepIndex, advanceTourStep, completeOnboarding } = useOnboardingStore();
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useTranslation();
@@ -113,7 +114,15 @@ export function Sidebar() {
             return (
               <button
                 key={item.id}
-                onClick={() => router.push(item.href)}
+                onClick={() => {
+                  router.push(item.href);
+                  if (item.id === 'flow' && isTourActive && tourStepIndex === 11) {
+                    // Last step: complete onboarding when user navigates to Flow
+                    setTimeout(() => completeOnboarding(), 800);
+                  } else if (item.id === 'flow' && isTourActive && tourStepIndex < 11) {
+                    setTimeout(() => advanceTourStep(), 400);
+                  }
+                }}
                 title={isCollapsed ? item.label : undefined}
                 className={cn(
                   "flex w-full items-center rounded-xl py-2.5",

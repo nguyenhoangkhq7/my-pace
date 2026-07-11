@@ -263,7 +263,7 @@ export function FlowPage() {
         {!isZenMaximized && (
           <ResizablePanel id="pomodoro-panel" {...({ order: 2 } as Record<string, unknown>)} defaultSize={pomodoroSize} minSize={25}>
             <div className="h-full w-full relative">
-              <div className="h-full w-full flex items-center justify-center overflow-y-auto">
+              <div className="h-full w-full flex items-center justify-center overflow-y-auto tour-pomodoro-timer">
                 <FlowPomodoro />
               </div>
             </div>

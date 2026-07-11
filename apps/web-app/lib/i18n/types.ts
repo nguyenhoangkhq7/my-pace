@@ -351,14 +351,24 @@ export interface Translations {
       newTaskDesc: string;
       urgentImportantTitle: string;
       urgentImportantDesc: string;
+      inputTitleTitle: string;
+      inputTitleDesc: string;
       saveTaskTitle: string;
       saveTaskDesc: string;
       planMyDayTitle: string;
       planMyDayDesc: string;
-      scheduleTitle: string;
-      scheduleDesc: string;
-      focusTitle: string;
-      focusDesc: string;
+      selectTaskTitle: string;
+      selectTaskDesc: string;
+      savePlanTitle: string;
+      savePlanDesc: string;
+      startDayTitle: string;
+      startDayDesc: string;
+      manualScheduleTitle: string;
+      manualScheduleDesc: string;
+      dragDropTitle: string;
+      dragDropDesc: string;
+      focusNavTitle: string;
+      focusNavDesc: string;
     };
   };
   deleteConfirm: {
