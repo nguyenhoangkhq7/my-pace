@@ -23,6 +23,7 @@ export function ExecutionBoard({ currentDate, tomorrowDate }: { currentDate: str
     setIsStartMyDayOpen,
     currentPlan,
     currentAvailable,
+    availableData,
     handleSavePlan,
     handleCancelPlan,
   } = useExecutionBoard({ currentDate, tomorrowDate });
@@ -47,6 +48,8 @@ export function ExecutionBoard({ currentDate, tomorrowDate }: { currentDate: str
       return (
         <ExecutionModeView
           currentPlan={currentPlan}
+          currentAvailable={currentAvailable}
+          availableData={availableData}
           activeTab={activeTab}
           isStarted={isStarted}
           onEditPlan={() => setPlanningMode(true, activeTab as 'today' | 'tomorrow')}

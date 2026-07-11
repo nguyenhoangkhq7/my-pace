@@ -30,7 +30,7 @@ export function PlanningModeView({
     <div className="flex-1 flex flex-col min-h-0 space-y-4">
       <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex justify-between items-center">
         <div>
-          <div className="text-xs text-primary/80 font-semibold uppercase tracking-wider">Remaining Time</div>
+          <div className="text-xs text-primary/80 font-semibold uppercase tracking-wider">Thời gian khả dụng còn lại</div>
           <div className={`text-2xl font-bold ${currentAvailable < 0 ? 'text-red-500' : 'text-primary'}`}>
             {Math.floor(currentAvailable / 60)}h {currentAvailable % 60}m
           </div>
