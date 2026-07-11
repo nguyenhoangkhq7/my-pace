@@ -11,7 +11,8 @@ export function usePomodoro() {
     transitionToBreak,
     transitionToFocus,
     completeAllSessions,
-    soundEnabled
+    soundEnabled,
+    adjustForElapsedTime
   } = useFocusStore();
 
   const lastTickRef = useRef<number>(0);
@@ -50,6 +51,25 @@ export function usePomodoro() {
     playSystemBeep(500, 250); // Lower pitch for break end
     setTimeout(() => playSystemBeep(600, 300), 300);
   }, [playSystemBeep]);
+
+  // Adjust for background time when browser wakes up tab or gets focus
+  useEffect(() => {
+    adjustForElapsedTime();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        adjustForElapsedTime();
+      }
+    };
+
+    window.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", adjustForElapsedTime);
+
+    return () => {
+      window.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", adjustForElapsedTime);
+    };
+  }, [adjustForElapsedTime]);
 
   useEffect(() => {
     if (pomodoroState === "idle" || pomodoroState === "finished" || pomodoroState === "paused") {
