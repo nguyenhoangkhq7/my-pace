@@ -1,14 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Settings2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import { useAuthStore } from "@/features/auth";
 import { useBoardStore } from "@/features/board/store/board.store";
@@ -21,8 +14,8 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { FlowSettingsDropdown } from "@/features/focus/components/FlowSettingsDropdown";
+import { ConfirmPlanDialog } from "@/features/focus/components/ConfirmPlanDialog";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
 import type { DailyPlanTask } from "@/features/board/types";
@@ -199,32 +192,7 @@ export function FlowPage() {
       `}} />
 
       {/* Combined Settings Button (Dropdown Menu) */}
-      <div className="absolute bottom-4 right-4 z-50">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button 
-              className="bg-card hover:bg-muted text-muted-foreground hover:text-foreground p-2.5 rounded-lg shadow-lg border border-border backdrop-blur transition-all active:scale-95 cursor-pointer"
-              title="Cài đặt & Giao diện"
-            >
-              <Settings2 className="w-4.5 h-4.5" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-card border-border text-foreground shadow-xl min-w-44">
-            <DropdownMenuItem 
-              onClick={() => useFocusStore.getState().setIsSettingsOpen(true)}
-              className="hover:bg-muted focus:bg-muted cursor-pointer flex items-center gap-2 text-xs font-semibold py-2 px-3 text-muted-foreground hover:text-foreground"
-            >
-              <Settings2 className="w-4 h-4 text-muted-foreground" /> Cấu hình Pomodoro
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={handleResetLayout}
-              className="hover:bg-muted focus:bg-muted cursor-pointer flex items-center gap-2 text-xs font-semibold py-2 px-3 text-rose-400 hover:text-rose-300"
-            >
-              <RefreshCw className="w-4 h-4 text-rose-400" /> Reset giao diện
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      <FlowSettingsDropdown onResetLayout={handleResetLayout} />
 
       {/* @ts-expect-error - suppress ts error about direction vs orientation in older shadcn typings */}
       <ResizablePanelGroup key={uniqueKey} onLayout={handleLayout} direction="horizontal" className="h-full w-full rounded-lg border-none">
@@ -296,35 +264,13 @@ export function FlowPage() {
 
       </ResizablePanelGroup>
 
-      <Dialog open={isConfirmPlanOpen} onOpenChange={(open) => {
-        if (!open) {
-          handleDeclineDailyPlan();
-        } else {
-          setIsConfirmPlanOpen(true);
-        }
-      }}>
-        <DialogContent className="sm:max-w-[440px] bg-card border-border text-foreground">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold">
-              Task này cần daily plan đã xác nhận
-            </DialogTitle>
-            <DialogDescription className="text-muted-foreground leading-relaxed">
-              {pendingTask
-                ? `Task "${pendingTask.task.title}" chỉ có thể vào focus mode sau khi daily plan được xác nhận. Nếu bỏ qua, bạn sẽ ở lại Flow mà không vào pomodoro.`
-                : ""}
-            </DialogDescription>
-          </DialogHeader>
-
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" className="border-border text-muted-foreground hover:text-foreground hover:bg-muted" onClick={handleDeclineDailyPlan}>
-              Không, ở lại Flow
-            </Button>
-            <Button className="bg-indigo-600 hover:bg-indigo-500 text-white" onClick={handleConfirmDailyPlan}>
-              Xác nhận rồi vào focus
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Daily Plan confirmation modal dialog */}
+      <ConfirmPlanDialog
+        isOpen={isConfirmPlanOpen}
+        pendingTask={pendingTask}
+        onConfirm={handleConfirmDailyPlan}
+        onDecline={handleDeclineDailyPlan}
+      />
       
       {/* Settings Modal is global to the Flow page */}
       <PomodoroSettingsModal />

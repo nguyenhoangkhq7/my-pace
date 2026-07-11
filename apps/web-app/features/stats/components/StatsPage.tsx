@@ -1,12 +1,13 @@
 "use client";
 
-import { AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useStatsPage } from "../hooks/useStatsPage";
 import { StatsHeaderSection } from "./StatsHeaderSection";
 import { KPISection } from "./KPISection";
 import { EisenhowerMatrixChart } from "./EisenhowerMatrixChart";
 import { CategoryChart } from "./CategoryChart";
+import { StatsLoadingState } from "./StatsLoadingState";
+import { StatsErrorState } from "./StatsErrorState";
 
 export function StatsPage() {
   const {
@@ -24,25 +25,11 @@ export function StatsPage() {
   } = useStatsPage();
 
   if (isLoading && !overview) {
-    return (
-      <div className="flex h-full items-center justify-center text-slate-400">
-        <div className="animate-pulse flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-          <p>Đang tải dữ liệu thống kê...</p>
-        </div>
-      </div>
-    );
+    return <StatsLoadingState />;
   }
 
   if (error) {
-    return (
-      <div className="flex h-full items-center justify-center text-rose-400">
-        <div className="flex items-center gap-2 bg-rose-500/10 p-4 rounded-lg border border-rose-500/20">
-          <AlertCircle className="w-5 h-5" />
-          <p>{error}</p>
-        </div>
-      </div>
-    );
+    return <StatsErrorState error={error} />;
   }
 
   return (
@@ -77,3 +64,4 @@ export function StatsPage() {
     </div>
   );
 }
+
