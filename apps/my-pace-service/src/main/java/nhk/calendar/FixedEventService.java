@@ -112,11 +112,11 @@ public class FixedEventService {
         if (date.isBefore(today)) {
             windowStart = user.getSleepTime(); // past days have 0 available time
         } else if (date.equals(today)) {
-            // Planning today: Start_Time = Current_Time + 15 minutes
-            windowStart = now.plusMinutes(15);
+            // Planning today: Start_Time = Current_Time
+            windowStart = now;
         } else {
-            // Planning tomorrow or future: Start_Time = Wake_Time + 15 minutes
-            windowStart = user.getWakeTime().plusMinutes(15);
+            // Planning tomorrow or future: Start_Time = Wake_Time
+            windowStart = user.getWakeTime();
         }
         LocalTime windowEnd = user.getSleepTime();
 

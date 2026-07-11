@@ -31,18 +31,19 @@ export function useExecutionBoard({ currentDate, tomorrowDate }: UseExecutionBoa
   const targetDate = activeTab === "today" ? currentDate : tomorrowDate;
 
   // Time calculations
-  const baseAvailable = (activeTab === "today" ? dataToday?.availableMinutes : dataTomorrow?.availableMinutes) || 0;
+  const availableData = activeTab === "today" ? dataToday : dataTomorrow;
+  const baseAvailable = availableData?.availableMinutes || 0;
 
   const currentAvailable = useMemo(() => {
     if (!isPlanningMode) {
-      return currentPlan ? currentPlan.availableMinutes : baseAvailable;
+      return baseAvailable;
     }
     
     // In planning mode, deduct the sum of planned tasks
     const plannedTasks = tasks.filter(t => plannedTaskIds.includes(t.id));
     const usedTime = plannedTasks.reduce((acc, t) => acc + (t.estimatedMinutes || 0), 0);
     return Math.max(0, baseAvailable - usedTime);
-  }, [isPlanningMode, baseAvailable, currentPlan, plannedTaskIds, tasks]);
+  }, [isPlanningMode, baseAvailable, plannedTaskIds, tasks]);
 
   const handleSavePlan = () => {
     savePlan(targetDate, currentAvailable, activeTab as 'today' | 'tomorrow');
@@ -72,6 +73,7 @@ export function useExecutionBoard({ currentDate, tomorrowDate }: UseExecutionBoa
     currentPlan,
     targetDate,
     currentAvailable,
+    availableData,
     handleSavePlan,
     handleCancelPlan,
   };

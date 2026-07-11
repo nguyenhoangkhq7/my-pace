@@ -1,9 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { DailyPlan } from "../types";
 import { ExecutionTaskItem } from "./ExecutionTaskItem";
+import type { AvailableTimeData } from "@/features/available-time/types";
 
 interface ExecutionModeViewProps {
   currentPlan: DailyPlan;
+  currentAvailable: number;
+  availableData: AvailableTimeData | null;
   activeTab: string;
   isStarted: boolean;
   onEditPlan: () => void;
@@ -13,6 +16,8 @@ interface ExecutionModeViewProps {
 
 export function ExecutionModeView({
   currentPlan,
+  currentAvailable,
+  availableData,
   activeTab,
   isStarted,
   onEditPlan,
@@ -37,14 +42,25 @@ export function ExecutionModeView({
   const mits = tasksList.filter(t => t.isMit);
   const regular = tasksList.filter(t => !t.isMit);
 
+  const totalFree = availableData ? (availableData.workingWindowMinutes - availableData.blockedMinutes) : 0;
+  const bufferMins = availableData ? Math.round(totalFree * (availableData.bufferPct / 100)) : 0;
+  const showStats = availableData && totalFree > 0;
+
   return (
     <div className="flex-1 flex flex-col min-h-0 space-y-6">
       <div className="flex justify-between items-center border-b border-border pb-4">
-        <div>
-          <div className="text-xs text-muted-foreground uppercase tracking-wider">Available Time</div>
+        <div className="space-y-1">
+          <div className="text-xs text-muted-foreground uppercase tracking-wider">Tổng thời gian thực khả dụng</div>
           <div className="text-lg font-bold text-foreground">
-            {Math.floor(currentPlan.availableMinutes / 60)}h {currentPlan.availableMinutes % 60}m
+            {Math.floor(currentAvailable / 60)}h {currentAvailable % 60}m
           </div>
+          {showStats && (
+            <div className="flex gap-x-3 text-[10px] text-muted-foreground pt-0.5">
+              <span>Tổng thời gian: <strong className="text-slate-300">{Math.floor(totalFree / 60)}h {totalFree % 60}m</strong></span>
+              <span>•</span>
+              <span>Thời gian đệm ({availableData.bufferPct}%): <strong className="text-slate-300">{Math.floor(bufferMins / 60)}h {bufferMins % 60}m</strong></span>
+            </div>
+          )}
         </div>
         {(!isStarted || activeTab === 'tomorrow') && (
           <Button variant="outline" size="sm" onClick={onEditPlan} className="border-border text-foreground cursor-pointer">

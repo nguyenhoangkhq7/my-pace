@@ -21,6 +21,7 @@ interface FocusState {
   
   // Accumulated time for the current task (in seconds)
   accumulatedFocusTime: number;
+  lastActiveTimestamp: number;
 
   // Widget settings (persisted)
   youtubeUrl: string;
@@ -49,6 +50,7 @@ interface FocusState {
   transitionToFocus: () => void;
   completeAllSessions: () => void;
   updateConfig: (focusMin: number, breakMin: number, sound: boolean) => void;
+  adjustForElapsedTime: () => void;
 }
 
 export const useFocusStore = create<FocusState>()(
@@ -65,6 +67,7 @@ export const useFocusStore = create<FocusState>()(
       currentSession: 1,
       totalSessions: 1,
       accumulatedFocusTime: 0,
+      lastActiveTimestamp: 0,
       
       youtubeUrl: "https://www.youtube.com/live/X4VbdwhkE10?si=gV884ky2WVfhPwQQ",
       youtubeHistory: [
@@ -100,6 +103,7 @@ export const useFocusStore = create<FocusState>()(
           totalSessions,
           timeLeft: focusMinutes * 60,
           accumulatedFocusTime: 0,
+          lastActiveTimestamp: Date.now()
         });
       },
 
@@ -108,20 +112,21 @@ export const useFocusStore = create<FocusState>()(
           activeTaskId: null,
           activePlanTaskId: null,
           pomodoroState: "idle",
+          lastActiveTimestamp: 0
         });
       },
 
       startTimer: () => {
         const { pomodoroState } = get();
         if (pomodoroState === "idle" || pomodoroState === "paused") {
-          set({ pomodoroState: "focusing" });
+          set({ pomodoroState: "focusing", lastActiveTimestamp: Date.now() });
         } else if (pomodoroState === "breaking") {
-          set({ pomodoroState: "breaking" });
+          set({ pomodoroState: "breaking", lastActiveTimestamp: Date.now() });
         }
       },
 
       pauseTimer: () => {
-        set({ pomodoroState: "paused" });
+        set({ pomodoroState: "paused", lastActiveTimestamp: Date.now() });
       },
 
       tick: (seconds) => {
@@ -132,17 +137,21 @@ export const useFocusStore = create<FocusState>()(
           }
           return { 
             timeLeft: Math.max(0, state.timeLeft - seconds),
-            accumulatedFocusTime: newAccumulated
+            accumulatedFocusTime: newAccumulated,
+            lastActiveTimestamp: Date.now()
           };
         });
       },
 
       transitionToBreak: () => {
-        const { breakMinutes } = get();
-        set({
+        const { breakMinutes, pomodoroState, timeLeft } = get();
+        const addedFocus = pomodoroState === "focusing" ? timeLeft : 0;
+        set((state) => ({
           pomodoroState: "breaking",
           timeLeft: breakMinutes * 60,
-        });
+          accumulatedFocusTime: state.accumulatedFocusTime + addedFocus,
+          lastActiveTimestamp: Date.now()
+        }));
       },
 
       transitionToFocus: () => {
@@ -151,14 +160,19 @@ export const useFocusStore = create<FocusState>()(
           pomodoroState: "focusing",
           timeLeft: focusMinutes * 60,
           currentSession: currentSession + 1,
+          lastActiveTimestamp: Date.now()
         });
       },
 
       completeAllSessions: () => {
-        set({
+        const { pomodoroState, timeLeft } = get();
+        const addedFocus = pomodoroState === "focusing" ? timeLeft : 0;
+        set((state) => ({
           pomodoroState: "finished",
           timeLeft: 0,
-        });
+          accumulatedFocusTime: state.accumulatedFocusTime + addedFocus,
+          lastActiveTimestamp: Date.now()
+        }));
       },
 
       updateConfig: (focusMin, breakMin, sound) => {
@@ -167,6 +181,52 @@ export const useFocusStore = create<FocusState>()(
           breakMinutes: breakMin,
           soundEnabled: sound,
         });
+      },
+
+      adjustForElapsedTime: () => {
+        const { pomodoroState, timeLeft, lastActiveTimestamp, accumulatedFocusTime } = get();
+        if ((pomodoroState === "focusing" || pomodoroState === "breaking") && lastActiveTimestamp > 0) {
+          const now = Date.now();
+          const elapsedSeconds = Math.floor((now - lastActiveTimestamp) / 1000);
+          if (elapsedSeconds > 0) {
+            if (timeLeft - elapsedSeconds <= 0) {
+              const remainingFocus = pomodoroState === "focusing" ? timeLeft : 0;
+              if (pomodoroState === "focusing") {
+                const { currentSession, totalSessions } = get();
+                if (currentSession >= totalSessions) {
+                  set({
+                    pomodoroState: "finished",
+                    timeLeft: 0,
+                    accumulatedFocusTime: accumulatedFocusTime + remainingFocus,
+                    lastActiveTimestamp: now
+                  });
+                } else {
+                  const { breakMinutes } = get();
+                  set({
+                    pomodoroState: "paused",
+                    timeLeft: breakMinutes * 60,
+                    accumulatedFocusTime: accumulatedFocusTime + remainingFocus,
+                    lastActiveTimestamp: now
+                  });
+                }
+              } else {
+                const { focusMinutes } = get();
+                set({
+                  pomodoroState: "paused",
+                  timeLeft: focusMinutes * 60,
+                  lastActiveTimestamp: now
+                });
+              }
+            } else {
+              const addedFocus = pomodoroState === "focusing" ? elapsedSeconds : 0;
+              set({
+                timeLeft: timeLeft - elapsedSeconds,
+                accumulatedFocusTime: accumulatedFocusTime + addedFocus,
+                lastActiveTimestamp: now
+              });
+            }
+          }
+        }
       }
     }),
     {
@@ -177,6 +237,14 @@ export const useFocusStore = create<FocusState>()(
         focusMinutes: state.focusMinutes,
         breakMinutes: state.breakMinutes,
         soundEnabled: state.soundEnabled,
+        activeTaskId: state.activeTaskId,
+        activePlanTaskId: state.activePlanTaskId,
+        pomodoroState: state.pomodoroState,
+        timeLeft: state.timeLeft,
+        currentSession: state.currentSession,
+        totalSessions: state.totalSessions,
+        accumulatedFocusTime: state.accumulatedFocusTime,
+        lastActiveTimestamp: state.lastActiveTimestamp,
       }), 
     }
   )

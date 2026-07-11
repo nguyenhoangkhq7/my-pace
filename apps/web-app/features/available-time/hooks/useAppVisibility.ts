@@ -56,4 +56,16 @@ export function useAppVisibility() {
       document.removeEventListener("visibilitychange", handleFocusOrVisible);
     };
   }, [refreshAll]);
+
+  // 3. Periodic refresh (every 60 seconds) to keep the remaining time ticking in real-time when visible
+  useEffect(() => {
+    const today = getTodayStr();
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        fetchAvailableTimeToday(today);
+      }
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [fetchAvailableTimeToday]);
 }
