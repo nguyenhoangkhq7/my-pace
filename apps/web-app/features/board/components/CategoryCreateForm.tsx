@@ -1,8 +1,9 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useBoardStore } from "../store/board.store";
 import { cn } from "@/lib/utils";
+import { CustomColorPicker } from "@/components/ui/custom-color-picker";
 
 interface CategoryCreateFormProps {
   onCancel: () => void;
@@ -27,7 +28,6 @@ export function CategoryCreateForm({ onCancel, onSuccess }: CategoryCreateFormPr
   const { createCategory } = useBoardStore();
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryColor, setNewCategoryColor] = useState(CATEGORY_COLORS[0]);
-  const categoryColorInputRef = useRef<HTMLInputElement>(null);
 
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) return;
@@ -54,7 +54,9 @@ export function CategoryCreateForm({ onCancel, onSuccess }: CategoryCreateFormPr
           <button
             type="button"
             key={c}
-            onClick={() => setNewCategoryColor(c)}
+            onClick={() => {
+              setNewCategoryColor(c);
+            }}
             className={cn(
               "w-5 h-5 rounded-full cursor-pointer ring-offset-slate-900 border border-black/15 transition-all hover:scale-110 duration-200",
               newCategoryColor === c ? "ring-2 ring-white scale-105 shadow-md" : "opacity-85 hover:opacity-100"
@@ -63,31 +65,24 @@ export function CategoryCreateForm({ onCancel, onSuccess }: CategoryCreateFormPr
           />
         ))}
 
-        {!CATEGORY_COLORS.includes(newCategoryColor) && (
-          <button
-            type="button"
-            onClick={() => categoryColorInputRef.current?.click()}
-            className="w-5 h-5 rounded-full border border-white ring-2 ring-white scale-105 shadow-md cursor-pointer transition-all"
-            style={{ backgroundColor: newCategoryColor }}
-            title={`Màu tự chọn: ${newCategoryColor}`}
-          />
-        )}
-
-        <button
-          type="button"
-          onClick={() => categoryColorInputRef.current?.click()}
-          className="w-5 h-5 rounded-full border border-black/15 cursor-pointer transition-all hover:scale-110 flex items-center justify-center bg-[linear-gradient(45deg,#ff0000,#00ff00,#0000ff)] opacity-85 hover:opacity-100"
-          title="Tự chọn màu khác..."
-        >
-          <span className="text-[10px] text-white font-bold drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.6)]">+</span>
-        </button>
-        <input
-          ref={categoryColorInputRef}
-          type="color"
-          value={newCategoryColor}
-          onChange={(e) => setNewCategoryColor(e.target.value)}
-          className="sr-only"
-        />
+        <CustomColorPicker color={newCategoryColor} onChange={setNewCategoryColor}>
+          {!CATEGORY_COLORS.includes(newCategoryColor) ? (
+            <button
+              type="button"
+              className="w-5 h-5 rounded-full border border-white ring-2 ring-white scale-105 shadow-md cursor-pointer transition-all"
+              style={{ backgroundColor: newCategoryColor }}
+              title={`Màu tự chọn: ${newCategoryColor}`}
+            />
+          ) : (
+            <button
+              type="button"
+              className="w-5 h-5 rounded-full border border-black/15 cursor-pointer transition-all hover:scale-110 flex items-center justify-center bg-[linear-gradient(45deg,#ff0000,#00ff00,#0000ff)] opacity-85 hover:opacity-100"
+              title="Tự chọn màu khác..."
+            >
+              <span className="text-[10px] text-white font-bold drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.6)]">+</span>
+            </button>
+          )}
+        </CustomColorPicker>
       </div>
       <div className="flex space-x-2 pt-1">
         <Button

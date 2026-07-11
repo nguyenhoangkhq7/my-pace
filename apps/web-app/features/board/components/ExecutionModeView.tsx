@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { DailyPlan } from "../types";
-import { TaskDetails } from "./TaskDetails";
+import { ExecutionTaskItem } from "./ExecutionTaskItem";
 
 interface ExecutionModeViewProps {
   currentPlan: DailyPlan;
@@ -58,14 +58,12 @@ export function ExecutionModeView({
           <div className="space-y-3">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Most Important Tasks (MITs)</h3>
             {mits.map(pt => (
-              <div key={pt.id} className="p-3 bg-card border border-primary/30 rounded-lg flex items-start space-x-3">
-                <div className="flex-1">
-                  <div className={`font-medium text-sm ${pt.task.status === "Done" ? "text-muted-foreground line-through" : "text-foreground"}`}>
-                    {pt.task.title}
-                  </div>
-                  <TaskDetails task={pt.task} isConfirmed={currentPlan.isConfirmed} />
-                </div>
-              </div>
+              <ExecutionTaskItem
+                key={pt.id}
+                task={pt.task}
+                isMit={pt.isMit}
+                isConfirmed={currentPlan.isConfirmed}
+              />
             ))}
           </div>
         )}
@@ -74,14 +72,12 @@ export function ExecutionModeView({
           <div className="space-y-3">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Other Tasks</h3>
             {regular.map(pt => (
-              <div key={pt.id} className="p-3 bg-card border border-border rounded-lg flex items-start space-x-3">
-                <div className="flex-1">
-                  <div className={`text-sm ${pt.task.status === "Done" ? "text-muted-foreground line-through" : "text-foreground"}`}>
-                    {pt.task.title}
-                  </div>
-                  <TaskDetails task={pt.task} isConfirmed={currentPlan.isConfirmed} />
-                </div>
-              </div>
+              <ExecutionTaskItem
+                key={pt.id}
+                task={pt.task}
+                isMit={pt.isMit}
+                isConfirmed={currentPlan.isConfirmed}
+              />
             ))}
           </div>
         )}
