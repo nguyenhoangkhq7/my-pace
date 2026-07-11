@@ -1,6 +1,7 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Clock } from "lucide-react";
 import { CustomTooltip } from "./CustomTooltip";
+import { ChartHeader } from "./ChartHeader";
 
 interface CategoryDataItem {
   name: string;
@@ -14,10 +15,10 @@ interface CategoryChartProps {
 export function CategoryChart({ categoryData }: CategoryChartProps) {
   return (
     <div className="bg-card rounded-2xl p-6 border border-border shadow-xl">
-      <div className="flex items-center gap-3 mb-8">
-        <Clock className="w-5 h-5 text-cyan-400" />
-        <h3 className="text-lg font-semibold text-foreground">Thời gian theo Danh mục (Category)</h3>
-      </div>
+      <ChartHeader
+        title="Thời gian theo Danh mục (Category)"
+        icon={<Clock className="w-5 h-5 text-cyan-400" />}
+      />
 
       <div className="h-80 w-full">
         {categoryData.length > 0 ? (
@@ -39,3 +40,4 @@ export function CategoryChart({ categoryData }: CategoryChartProps) {
     </div>
   );
 }
+

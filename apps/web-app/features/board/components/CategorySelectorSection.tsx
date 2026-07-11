@@ -1,3 +1,4 @@
+import React from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PlusSignIcon, Settings01Icon } from "@hugeicons/core-free-icons";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Category } from "../types";
 import { CATEGORY_COLORS } from "../hooks/useTaskForm";
+import { CustomColorPicker } from "@/components/ui/custom-color-picker";
 
 interface CategorySelectorSectionProps {
   isCreatingCategory: boolean;
@@ -18,7 +20,7 @@ interface CategorySelectorSectionProps {
   setNewCategoryName: (val: string) => void;
   newCategoryColor: string;
   setNewCategoryColor: (val: string) => void;
-  categoryColorInputRef: React.RefObject<HTMLInputElement | null>;
+  categoryColorInputRef?: React.RefObject<HTMLInputElement | null>;
   handleCreateCategory: () => Promise<void>;
   categories: Category[];
   setIsManagingCategories: (val: boolean) => void;
@@ -34,7 +36,6 @@ export function CategorySelectorSection({
   setNewCategoryName,
   newCategoryColor,
   setNewCategoryColor,
-  categoryColorInputRef,
   handleCreateCategory,
   categories,
   setIsManagingCategories,
@@ -56,37 +57,32 @@ export function CategorySelectorSection({
               <button
                 type="button"
                 key={c} 
-                onClick={() => setNewCategoryColor(c)}
+                onClick={() => {
+                  setNewCategoryColor(c);
+                }}
                 className={cn("w-5 h-5 rounded-full cursor-pointer ring-offset-slate-900 border border-black/15 transition-all hover:scale-110 duration-200", newCategoryColor === c ? "ring-2 ring-white scale-105 shadow-md" : "opacity-85 hover:opacity-100")}
                 style={{ backgroundColor: c }}
               />
             ))}
 
-            {!CATEGORY_COLORS.includes(newCategoryColor) && (
-              <button
-                type="button"
-                onClick={() => categoryColorInputRef.current?.click()}
-                className="w-5 h-5 rounded-full border border-white ring-2 ring-white scale-105 shadow-md cursor-pointer transition-all"
-                style={{ backgroundColor: newCategoryColor }}
-                title={`Màu tự chọn: ${newCategoryColor}`}
-              />
-            )}
-
-            <button
-              type="button"
-              onClick={() => categoryColorInputRef.current?.click()}
-              className="w-5 h-5 rounded-full border border-black/15 cursor-pointer transition-all hover:scale-110 flex items-center justify-center bg-[linear-gradient(45deg,#ff0000,#00ff00,#0000ff)] opacity-85 hover:opacity-100"
-              title="Tự chọn màu khác..."
-            >
-              <span className="text-[10px] text-white font-bold drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.6)]">+</span>
-            </button>
-            <input
-              ref={categoryColorInputRef}
-              type="color"
-              value={newCategoryColor}
-              onChange={(e) => setNewCategoryColor(e.target.value)}
-              className="sr-only"
-            />
+            <CustomColorPicker color={newCategoryColor} onChange={setNewCategoryColor}>
+              {!CATEGORY_COLORS.includes(newCategoryColor) ? (
+                <button
+                  type="button"
+                  className="w-5 h-5 rounded-full border border-white ring-2 ring-white scale-105 shadow-md cursor-pointer transition-all"
+                  style={{ backgroundColor: newCategoryColor }}
+                  title={`Màu tự chọn: ${newCategoryColor}`}
+                />
+              ) : (
+                <button
+                  type="button"
+                  className="w-5 h-5 rounded-full border border-black/15 cursor-pointer transition-all hover:scale-110 flex items-center justify-center bg-[linear-gradient(45deg,#ff0000,#00ff00,#0000ff)] opacity-85 hover:opacity-100"
+                  title="Tự chọn màu khác..."
+                >
+                  <span className="text-[10px] text-white font-bold drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.6)]">+</span>
+                </button>
+              )}
+            </CustomColorPicker>
           </div>
           <div className="flex space-x-2 pt-1">
             <Button size="sm" variant="outline" className="h-7 text-xs border-slate-700 text-slate-300 flex-1 px-2" onClick={() => setIsCreatingCategory(false)}>Cancel</Button>
@@ -111,10 +107,21 @@ export function CategorySelectorSection({
               ))}
             </SelectContent>
           </Select>
-          <Button variant="outline" className="border-slate-800 bg-slate-900 text-slate-300 px-2 shrink-0" onClick={() => setIsCreatingCategory(true)} disabled={!!goalId && goalId !== "none"} title="Thêm Category">
+          <Button 
+            variant="outline" 
+            className="border-slate-800 bg-slate-900 text-slate-300 px-2 shrink-0" 
+            onClick={() => setIsCreatingCategory(true)} 
+            disabled={!!goalId && goalId !== "none"} 
+            title="Thêm Category"
+          >
             <HugeiconsIcon icon={PlusSignIcon} className="w-4 h-4" />
           </Button>
-          <Button variant="outline" className="border-slate-800 bg-slate-900 text-slate-300 px-2 shrink-0" onClick={() => setIsManagingCategories(true)} title="Quản lý Category">
+          <Button 
+            variant="outline" 
+            className="border-slate-800 bg-slate-900 text-slate-300 px-2 shrink-0" 
+            onClick={() => setIsManagingCategories(true)} 
+            title="Quản lý Category"
+          >
             <HugeiconsIcon icon={Settings01Icon} className="w-4 h-4" />
           </Button>
         </div>

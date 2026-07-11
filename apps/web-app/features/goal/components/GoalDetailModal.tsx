@@ -10,13 +10,13 @@ import { Task } from "@/features/board/types";
 import { useBoardStore } from "@/features/board/store/board.store";
 import { useGoalStore } from "../store/goal.store";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GoalFormModal } from "./GoalFormModal";
 import { TaskFormModal } from "@/features/board/components/TaskFormModal";
 import { useGoalStats } from "../hooks/useGoalStats";
 import { ProjectDetail } from "./ProjectDetail";
 import { HabitDetail } from "./HabitDetail";
 import { TargetDetail } from "./TargetDetail";
+import { GoalPeriodNavigation } from "./GoalPeriodNavigation";
 import { cn } from "@/lib/utils";
 
 interface GoalDetailModalProps {
@@ -117,61 +117,14 @@ export function GoalDetailModal({ isOpen, onOpenChange, goal }: GoalDetailModalP
 
         <div className="p-6 pt-4 overflow-y-auto min-h-0 flex-1">
           {goal.goalType !== "Binary" && (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 bg-slate-900/30 p-3 rounded-xl border border-slate-800/80">
-              {/* Navigation Controls */}
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="w-7 h-7 border-slate-800 bg-slate-900 text-slate-400 hover:text-white"
-                  onClick={handlePrev}
-                >
-                  ◀
-                </Button>
-                <span className="text-xs font-semibold text-slate-300 min-w-[125px] text-center">
-                  {getPeriodLabel()}
-                </span>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="w-7 h-7 border-slate-800 bg-slate-900 text-slate-400 hover:text-white"
-                  onClick={handleNext}
-                  disabled={isFuturePeriod()}
-                >
-                  ▶
-                </Button>
-              </div>
-
-              {/* Tabs */}
-              <Tabs
-                value={timeFilter}
-                onValueChange={(val) => setTimeFilter(val as "week" | "month" | "year")}
-                className="w-fit"
-              >
-                <TabsList className="bg-slate-900 border border-slate-800 text-slate-400 h-8 p-1">
-                  <TabsTrigger
-                    value="week"
-                    className="text-xs data-[state=active]:bg-primary data-[state=active]:text-white px-3 py-1"
-                  >
-                    Tuần
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="month"
-                    className="text-xs data-[state=active]:bg-primary data-[state=active]:text-white px-3 py-1"
-                  >
-                    Tháng
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="year"
-                    className="text-xs data-[state=active]:bg-primary data-[state=active]:text-white px-3 py-1"
-                  >
-                    Năm
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
+            <GoalPeriodNavigation
+              timeFilter={timeFilter}
+              setTimeFilter={setTimeFilter}
+              handlePrev={handlePrev}
+              handleNext={handleNext}
+              isFuturePeriod={isFuturePeriod()}
+              periodLabel={getPeriodLabel()}
+            />
           )}
           {goal.goalType === "Binary" && (
             <ProjectDetail
