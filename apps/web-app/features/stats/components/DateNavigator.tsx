@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { formatLabel } from "../utils/statsDateUtils";
+import { useLanguageStore } from "@/features/settings/store/useLanguageStore";
 
 interface DateNavigatorProps {
   start: Date;
@@ -16,6 +17,8 @@ export function DateNavigator({
   onPrev,
   onNext,
 }: DateNavigatorProps) {
+  const { locale } = useLanguageStore();
+
   return (
     <div className="flex items-center gap-3 px-2 border-r border-border/60">
       <button
@@ -25,7 +28,7 @@ export function DateNavigator({
         <ChevronLeft className="w-3.5 h-3.5" />
       </button>
       <span className="text-xs font-semibold text-foreground min-w-[150px] text-center">
-        {formatLabel(start, end, range)}
+        {formatLabel(start, end, range, locale)}
       </span>
       <button
         onClick={onNext}

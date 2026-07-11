@@ -4,6 +4,7 @@ import { Task } from "../types";
 import { TaskCardChecklist } from "./TaskCardChecklist";
 import { useBoardStore } from "../store/board.store";
 import { InlineTitleEditor } from "./InlineTitleEditor";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface TaskBacklogCardProps {
   task: Task;
@@ -16,6 +17,7 @@ export function TaskBacklogCard({
   onClick,
   isPlanned,
 }: TaskBacklogCardProps) {
+  const { t } = useTranslation();
   const { updateTask } = useBoardStore();
 
   return (
@@ -39,7 +41,7 @@ export function TaskBacklogCard({
       <div className="flex items-center gap-2 mt-2 flex-wrap">
         {task.goalId ? (
           <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-            Goal
+            {t.common.goal}
           </span>
         ) : task.category ? (
           <span 

@@ -59,8 +59,23 @@ public class TaskService {
         }
         
         Task saved = taskRepository.save(task);
-        if (task.getGoalId() != null) {
-            goalService.updateGoalProgress(task.getGoalId(), 0, 0);
+        
+        if (request.getChecklists() != null && !request.getChecklists().isEmpty()) {
+            for (TaskChecklistItemRequest itemReq : request.getChecklists()) {
+                if (itemReq.getTitle() != null && !itemReq.getTitle().trim().isEmpty()) {
+                    TaskChecklistItem item = new TaskChecklistItem();
+                    item.setTaskId(saved.getId());
+                    item.setTask(saved);
+                    item.setTitle(itemReq.getTitle());
+                    item.setIsCompleted(itemReq.getIsCompleted() != null ? itemReq.getIsCompleted() : false);
+                    saved.getChecklists().add(item);
+                }
+            }
+            saved = taskRepository.save(saved);
+        }
+
+        if (saved.getGoalId() != null) {
+            goalService.updateGoalProgress(saved.getGoalId(), 0, 0);
         }
         return taskMapper.toDto(saved);
     }

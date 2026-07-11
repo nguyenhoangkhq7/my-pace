@@ -33,6 +33,7 @@ import {
 // Sub-components
 import { GoalFormCategoryFields } from "./GoalFormCategoryFields";
 import { GoalFormTypeSelect } from "./GoalFormTypeSelect";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface GoalFormModalProps {
   isOpen: boolean;
@@ -62,6 +63,7 @@ interface FormValues {
 }
 
 export function GoalFormModal({ isOpen, onOpenChange, goal, prefilledParentGoalId, onSuccess }: GoalFormModalProps) {
+  const { t } = useTranslation();
   const { createGoal, updateGoal, deleteGoal } = useGoalStore();
   const [isManagingCategories, setIsManagingCategories] = useState(false);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
@@ -139,7 +141,7 @@ export function GoalFormModal({ isOpen, onOpenChange, goal, prefilledParentGoalI
   const onSubmit = async (data: FormValues) => {
     try {
       if (data.categoryId === "none") {
-        alert("Vui lòng chọn Category cho Goal.");
+        alert(t.goals.categorySelectRequired);
         return;
       }
 
@@ -197,14 +199,14 @@ export function GoalFormModal({ isOpen, onOpenChange, goal, prefilledParentGoalI
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{goal ? "Edit Goal" : "New Goal"}</DialogTitle>
+          <DialogTitle>{goal ? t.goals.editGoal : t.goals.newGoal}</DialogTitle>
         </DialogHeader>
 
         <FormProvider {...methods}>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Title</label>
-              <Input {...register("title", { required: true })} placeholder="Ví dụ: Học tiếng Anh" />
+              <label className="text-sm font-medium">{t.goals.titleLabel}</label>
+              <Input {...register("title", { required: true })} placeholder={t.goals.titlePlaceholder} />
             </div>
 
             <GoalFormCategoryFields
@@ -222,7 +224,7 @@ export function GoalFormModal({ isOpen, onOpenChange, goal, prefilledParentGoalI
 
             {goal && (
               <div className="space-y-2">
-                <label className="text-sm font-medium">Status</label>
+                <label className="text-sm font-medium">{t.goals.statusLabel}</label>
                 <Select
                   value={status}
                   onValueChange={(val: string) => setValue("status", val)}
@@ -231,10 +233,10 @@ export function GoalFormModal({ isOpen, onOpenChange, goal, prefilledParentGoalI
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Freeze">Freeze</SelectItem>
-                    <SelectItem value="In Progress">In Progress</SelectItem>
-                    <SelectItem value="Done">Done</SelectItem>
-                    <SelectItem value="Archived">Archived</SelectItem>
+                    <SelectItem value="Freeze">{t.goals.freeze}</SelectItem>
+                    <SelectItem value="In Progress">{t.goals.inProgress}</SelectItem>
+                    <SelectItem value="Done">{t.goals.done}</SelectItem>
+                    <SelectItem value="Archived">{t.goals.archived}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -262,15 +264,15 @@ export function GoalFormModal({ isOpen, onOpenChange, goal, prefilledParentGoalI
                     className="text-rose-500 hover:bg-rose-950/20 hover:text-rose-400 font-medium gap-1 px-2 h-9 cursor-pointer"
                   >
                     <HugeiconsIcon icon={Delete01Icon} className="w-4 h-4" />
-                    Delete Goal
+                    {t.goals.deleteGoal}
                   </Button>
                 )}
               </div>
               <div className="flex gap-2">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                  Hủy
+                  {t.common.cancel}
                 </Button>
-                <Button type="submit">Save</Button>
+                <Button type="submit">{t.common.save}</Button>
               </div>
             </div>
           </form>
@@ -282,8 +284,8 @@ export function GoalFormModal({ isOpen, onOpenChange, goal, prefilledParentGoalI
         isOpen={isConfirmDeleteOpen}
         onOpenChange={setIsConfirmDeleteOpen}
         onConfirm={handleConfirmDelete}
-        title="Xóa Mục tiêu này?"
-        description="Hành động này không thể hoàn tác. Bạn có chắc chắn muốn xóa Mục tiêu này không?"
+        title={t.goals.confirmDeleteTitle}
+        description={t.goals.confirmDeleteDesc}
       />
     </Dialog>
   );

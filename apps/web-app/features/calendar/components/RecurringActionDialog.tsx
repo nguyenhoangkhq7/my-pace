@@ -8,6 +8,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface RecurringActionDialogProps {
   open: boolean;
@@ -24,6 +25,7 @@ export function RecurringActionDialog({
   onSelectAll,
   onCancel,
 }: RecurringActionDialogProps) {
+  const { t } = useTranslation();
   const isDelete = action === "delete";
 
   return (
@@ -31,12 +33,12 @@ export function RecurringActionDialog({
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>
-            {isDelete ? "Xóa sự kiện lặp lại" : "Chỉnh sửa sự kiện lặp lại"}
+            {isDelete ? t.calendar.deleteRecurring : t.calendar.editRecurring}
           </DialogTitle>
         </DialogHeader>
 
         <p className="text-sm text-muted-foreground">
-          Bạn muốn {isDelete ? "xóa" : "chỉnh sửa"} mục nào?
+          {t.calendar.recurringQuestion(action)}
         </p>
 
         <div className="flex flex-col gap-2 pt-1">
@@ -45,10 +47,10 @@ export function RecurringActionDialog({
             className="flex flex-col rounded-xl border border-border bg-card px-4 py-3 text-left transition-all hover:border-primary/50 hover:bg-primary/5 active:scale-[0.98]"
           >
             <span className="font-medium text-sm text-foreground">
-              Chỉ sự kiện này
+              {t.calendar.onlyThis}
             </span>
             <span className="text-xs text-muted-foreground mt-0.5">
-              Chỉ {isDelete ? "xóa" : "thay đổi"} riêng ngày được chọn
+              {t.calendar.onlyThisDesc(action)}
             </span>
           </button>
 
@@ -57,17 +59,17 @@ export function RecurringActionDialog({
             className="flex flex-col rounded-xl border border-border bg-card px-4 py-3 text-left transition-all hover:border-primary/50 hover:bg-primary/5 active:scale-[0.98]"
           >
             <span className="font-medium text-sm text-foreground">
-              Tất cả sự kiện
+              {t.calendar.allEvents}
             </span>
             <span className="text-xs text-muted-foreground mt-0.5">
-              Áp dụng {isDelete ? "xóa" : "thay đổi"} cho toàn bộ chuỗi lặp
+              {t.calendar.allEventsDesc(action)}
             </span>
           </button>
         </div>
 
         <DialogFooter className="pt-2">
           <Button variant="ghost" size="sm" onClick={onCancel}>
-            Hủy
+            {t.calendar.cancelBtn2}
           </Button>
         </DialogFooter>
       </DialogContent>

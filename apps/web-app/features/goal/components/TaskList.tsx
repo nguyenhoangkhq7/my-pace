@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PlusSignIcon } from "@hugeicons/core-free-icons";
 import { toast } from "sonner";
+import { useTranslation } from "@/hooks/use-translation";
 
 // Sub-components
 import { GoalTaskItem } from "./GoalTaskItem";
@@ -19,6 +20,8 @@ interface TaskListProps {
 }
 
 export function TaskList({ taskList, gId, gStatus, isEditingProject, onTaskClick }: TaskListProps) {
+  const { t, locale } = useTranslation();
+  const isVi = locale === "vi";
   const { updateTask } = useBoardStore();
   const [isCreating, setIsCreating] = useState(false);
 
@@ -32,35 +35,37 @@ export function TaskList({ taskList, gId, gStatus, isEditingProject, onTaskClick
         isImportant: true,
         isUrgent: false
       } as Partial<Task>);
-      toast.success("Đã tạo Task!");
+      toast.success(isVi ? "Đã tạo công việc!" : "Task created!");
       setIsCreating(false);
     } catch {
-      toast.error("Lỗi khi tạo Task");
+      toast.error(isVi ? "Lỗi khi tạo công việc" : "Error creating task");
     }
   };
 
   const handleAddToBacklog = async (task: Task) => {
     try {
       await updateTask(task.id, { status: 'Backlog' });
-      toast.success("Đã chuyển Task vào Backlog!");
+      toast.success(isVi ? "Đã chuyển công việc vào hàng chờ!" : "Task moved to Backlog!");
     } catch {
-      toast.error("Lỗi khi chuyển Task.");
+      toast.error(isVi ? "Lỗi khi chuyển công việc." : "Error moving task.");
     }
   };
 
   const handleMoveToIcebox = async (task: Task) => {
     try {
       await updateTask(task.id, { status: 'Icebox' });
-      toast.success("Đã trả Task về Icebox!");
+      toast.success(isVi ? "Đã trả công việc về Icebox!" : "Task returned to Icebox!");
     } catch {
-      toast.error("Lỗi khi chuyển Task.");
+      toast.error(isVi ? "Lỗi khi chuyển công việc." : "Error moving task.");
     }
   };
 
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Tasks</h4>
+        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+          {isVi ? "Công việc" : "Tasks"}
+        </h4>
         {isEditingProject && (
           <Button 
             size="sm" 
@@ -70,13 +75,13 @@ export function TaskList({ taskList, gId, gStatus, isEditingProject, onTaskClick
             disabled={gStatus === 'Freeze' || gStatus === 'Archived'}
           >
             <HugeiconsIcon icon={PlusSignIcon} size={12} className="mr-1" />
-            Task
+            {isVi ? "Công việc" : "Task"}
           </Button>
         )}
       </div>
       <div className="space-y-1.5">
         {taskList.length === 0 && !isCreating ? (
-          <p className="text-xs text-slate-600 italic">Chưa có Task nào.</p>
+          <p className="text-xs text-slate-600 italic">{t.goals.noTasks}</p>
         ) : (
           taskList.map(t => (
             <GoalTaskItem

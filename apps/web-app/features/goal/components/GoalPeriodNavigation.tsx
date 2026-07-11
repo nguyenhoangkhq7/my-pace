@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface GoalPeriodNavigationProps {
   timeFilter: "week" | "month" | "year";
@@ -18,6 +19,8 @@ export function GoalPeriodNavigation({
   isFuturePeriod,
   periodLabel,
 }: GoalPeriodNavigationProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 bg-muted/30 p-3 rounded-xl border border-border/80">
       {/* Navigation Controls */}
@@ -57,19 +60,19 @@ export function GoalPeriodNavigation({
             value="week"
             className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-1"
           >
-            Tuần
+            {t.stats.week}
           </TabsTrigger>
           <TabsTrigger
             value="month"
             className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-1"
           >
-            Tháng
+            {t.stats.month}
           </TabsTrigger>
           <TabsTrigger
             value="year"
             className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-1"
           >
-            Năm
+            {t.stats.year}
           </TabsTrigger>
         </TabsList>
       </Tabs>

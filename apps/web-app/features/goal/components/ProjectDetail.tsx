@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CheckmarkCircle01Icon, PlusSignIcon } from "@hugeicons/core-free-icons";
 import { toast } from "sonner";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface ProjectDetailProps {
   goal: Goal;
@@ -27,6 +28,9 @@ export function ProjectDetail({
   handleOpenCreateSubgoal,
   onTaskClick,
 }: ProjectDetailProps) {
+  const { t, locale } = useTranslation();
+  const isVi = locale === "vi";
+
   const totalItems = goalTasks.length + subgoals.length;
   const doneTasks = goalTasks.filter((t) => t.status === "Done").length;
   const doneSubgoals = subgoals.filter((g) => g.status === "Done").length;
@@ -36,9 +40,9 @@ export function ProjectDetail({
   const handleMarkAsDone = async () => {
     try {
       await updateGoal(goal.id, { status: "Done" });
-      toast.success("Congratulations! Project completed!");
+      toast.success(isVi ? "Chúc mừng! Đã hoàn thành dự án!" : "Congratulations! Project completed!");
     } catch {
-      toast.error("Lỗi khi hoàn thành Project.");
+      toast.error(isVi ? "Lỗi khi hoàn thành Project." : "Error completing Project.");
     }
   };
 
@@ -47,15 +51,15 @@ export function ProjectDetail({
       <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
         <div>
           <h3 className="text-xs text-slate-400 mb-1 uppercase tracking-wider font-semibold">
-            Project Progress
+            {t.goals.projectProgress}
           </h3>
           <div className="text-2xl font-bold text-slate-100">
-            {doneItems} / {totalItems} <span className="text-sm font-normal text-slate-500">Mục</span>
+            {doneItems} / {totalItems} <span className="text-sm font-normal text-slate-500">{t.goals.itemsUnit}</span>
           </div>
         </div>
         <div className="text-right">
           <h3 className="text-xs text-slate-400 mb-1 uppercase tracking-wider font-semibold">
-            Hoàn thành
+            {isVi ? "Hoàn thành" : "Completed"}
           </h3>
           <div className="text-2xl font-bold text-primary">{pct}%</div>
         </div>
@@ -69,7 +73,7 @@ export function ProjectDetail({
         <div className="flex justify-center mt-2 mb-4">
           <Button className="bg-emerald-600 hover:bg-emerald-500 text-white w-full" onClick={handleMarkAsDone}>
             <HugeiconsIcon icon={CheckmarkCircle01Icon} size={18} className="mr-2" />
-            Mark Project as Done
+            {isVi ? "Đánh dấu Dự án đã hoàn thành" : "Mark Project as Done"}
           </Button>
         </div>
       )}
@@ -85,7 +89,7 @@ export function ProjectDetail({
 
         <div>
           <div className="flex items-center justify-between mb-3 border-b border-slate-800/50 pb-2">
-            <h3 className="text-sm font-semibold text-slate-200">Subgoals</h3>
+            <h3 className="text-sm font-semibold text-slate-200">{t.goals.subgoals}</h3>
             {isEditingProject && (
               <Button
                 size="sm"
@@ -95,13 +99,13 @@ export function ProjectDetail({
                 disabled={goal.status === "Freeze" || goal.status === "Archived"}
               >
                 <HugeiconsIcon icon={PlusSignIcon} size={14} className="mr-1" />
-                + Subgoal
+                {isVi ? "+ Mục tiêu con" : "+ Subgoal"}
               </Button>
             )}
           </div>
           <div className="space-y-1">
             {subgoals.length === 0 ? (
-              <p className="text-sm text-slate-500 italic">No subgoals yet.</p>
+              <p className="text-sm text-slate-500 italic">{t.goals.noSubgoals}</p>
             ) : (
               subgoals.map((g) => (
                 <SubgoalAccordion

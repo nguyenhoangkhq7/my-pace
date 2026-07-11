@@ -3,6 +3,7 @@ import { Goal } from "../types";
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Calendar01Icon, Time02Icon } from "@hugeicons/core-free-icons";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface HabitDetailProps {
   goal: Goal;
@@ -24,6 +25,9 @@ export function HabitDetail({
   referenceDate,
   isFuturePeriod,
 }: HabitDetailProps) {
+  const { t, locale } = useTranslation();
+  const isVi = locale === "vi";
+
   const targetMins = goal.timeBoxedGoal?.targetMinutes || 0;
   const periodDays = Math.max(goal.timeBoxedGoal?.periodDays || 1, 1);
 
@@ -34,16 +38,17 @@ export function HabitDetail({
   const isCurrent = isFuturePeriod();
   if (timeFilter === "week") {
     targetMinsForPeriod = (targetMins / periodDays) * 7;
-    label = isCurrent ? "Tổng phút tuần này" : "Tổng phút tuần đã chọn";
-    daysLabel = "/ 7 ngày";
+    label = isCurrent ? t.goals.totalMinutesWeekCurrent : t.goals.totalMinutesWeekSelected;
+    daysLabel = isVi ? "/ 7 ngày" : "/ 7 days";
   } else if (timeFilter === "month") {
     targetMinsForPeriod = (targetMins / periodDays) * 30;
-    label = isCurrent ? "Tổng phút tháng này" : "Tổng phút tháng đã chọn";
-    daysLabel = `/ ${new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 0).getDate()} ngày`;
+    label = isCurrent ? t.goals.totalMinutesMonthCurrent : t.goals.totalMinutesMonthSelected;
+    const daysInMonth = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 0).getDate();
+    daysLabel = isVi ? `/ ${daysInMonth} ngày` : `/ ${daysInMonth} days`;
   } else if (timeFilter === "year") {
     targetMinsForPeriod = (targetMins / periodDays) * 365;
-    label = isCurrent ? "Tổng phút năm nay" : "Tổng phút năm đã chọn";
-    daysLabel = "/ 12 tháng";
+    label = isCurrent ? t.goals.totalMinutesYearCurrent : t.goals.totalMinutesYearSelected;
+    daysLabel = isVi ? "/ 12 tháng" : "/ 12 months";
   }
 
   return (
@@ -54,12 +59,12 @@ export function HabitDetail({
             <HugeiconsIcon icon={Time02Icon} size={14} className="mr-1" /> {label}
           </h3>
           <div className="text-2xl font-bold text-foreground">
-            {stats.totalMinutes} <span className="text-sm text-muted-foreground font-normal">/ {Math.round(targetMinsForPeriod)} ph</span>
+            {stats.totalMinutes} <span className="text-sm text-muted-foreground font-normal">/ {Math.round(targetMinsForPeriod)} {isVi ? "ph" : "mins"}</span>
           </div>
         </div>
         <div className="bg-card/50 p-4 rounded-xl border border-border">
           <h3 className="text-sm text-muted-foreground mb-1 flex items-center">
-            <HugeiconsIcon icon={Calendar01Icon} size={14} className="mr-1" /> Số ngày thực hiện
+            <HugeiconsIcon icon={Calendar01Icon} size={14} className="mr-1" /> {t.goals.daysCompleted}
           </h3>
           <div className="text-2xl font-bold text-foreground">
             {stats.daysCompleted} <span className="text-sm text-muted-foreground font-normal">{daysLabel}</span>
@@ -68,18 +73,18 @@ export function HabitDetail({
       </div>
       <div>
         <h3 className="text-sm font-semibold text-foreground mb-4">
-          Biểu đồ thời gian (
+          {t.goals.timeChart} (
           {timeFilter === "week"
             ? isCurrent
-              ? "Tuần này"
-              : "Tuần đã chọn"
+              ? (isVi ? "Tuần này" : "This week")
+              : (isVi ? "Tuần đã chọn" : "Selected week")
             : timeFilter === "month"
             ? isCurrent
-              ? "Tháng này"
-              : "Tháng đã chọn"
+              ? (isVi ? "Tháng này" : "This month")
+              : (isVi ? "Tháng đã chọn" : "Selected month")
             : isCurrent
-            ? "Năm nay"
-            : "Năm đã chọn"}
+            ? (isVi ? "Năm nay" : "This year")
+            : (isVi ? "Năm đã chọn" : "Selected year")}
           )
         </h3>
         <div className="h-[200px] w-full">
@@ -90,7 +95,7 @@ export function HabitDetail({
                 cursor={{ fill: "var(--muted)" }}
                 contentStyle={{ backgroundColor: "var(--background)", borderColor: "var(--border)", borderRadius: "8px" }}
                 itemStyle={{ color: "var(--primary)" }}
-                formatter={(value) => [`${value} phút`, "Thời gian"]}
+                formatter={(value) => [`${value} ${isVi ? "phút" : "mins"}`, isVi ? "Thời gian" : "Time"]}
               />
               <Bar dataKey="minutes" radius={[4, 4, 0, 0]}>
                 {stats.chartData.map((entry, index) => (

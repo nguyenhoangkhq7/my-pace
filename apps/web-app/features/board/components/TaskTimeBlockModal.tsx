@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar01Icon, Clock01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { useTranslation } from "@/hooks/use-translation";
 import type { Task, TaskTimeBlock } from "../types";
 
 interface TaskTimeBlockModalProps {
@@ -26,6 +27,7 @@ export function TaskTimeBlockModal({
   onUnschedule,
   isSubmitting = false,
 }: TaskTimeBlockModalProps) {
+  const { t } = useTranslation();
   if (!block || !task) return null;
 
   const startTimeStr = new Date(block.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -67,13 +69,13 @@ export function TaskTimeBlockModal({
             ) : null}
             {isChunked && (
               <Badge variant="secondary" className="bg-slate-800 text-slate-300 text-[10px]">
-                Phần {block.partIndex}/{block.totalParts}
+                {t.timeblock.part(block.partIndex, block.totalParts)}
               </Badge>
             )}
           </div>
           <DialogTitle className="text-xl font-bold leading-snug">{task.title}</DialogTitle>
-          <DialogDescription className="text-slate-400 text-sm">
-            Chi tiết thời gian được phân bổ cho công việc này.
+          <DialogDescription className="text-muted-foreground text-sm">
+            {t.timeblock.detailDesc}
           </DialogDescription>
         </DialogHeader>
 
@@ -97,13 +99,13 @@ export function TaskTimeBlockModal({
           {/* Ghi chú và Ước lượng */}
           <div className="space-y-3">
             <div className="text-sm">
-              <span className="text-slate-400 font-medium">Thời gian ước lượng: </span>
+              <span className="text-xs font-medium text-muted-foreground">{t.timeblock.estimatedTime}</span>
               <span className="text-slate-200">{task.estimatedMinutes || 0} phút</span>
             </div>
 
             {task.notes && (
               <div className="flex flex-col gap-1">
-                <span className="text-sm text-slate-400 font-medium">Ghi chú:</span>
+                <span className="text-sm text-slate-400 font-medium">{t.timeblock.notes}</span>
                 <p className="text-sm text-slate-300 bg-slate-900/40 p-3 rounded-lg border border-slate-800 whitespace-pre-wrap">
                   {task.notes}
                 </p>
@@ -111,9 +113,9 @@ export function TaskTimeBlockModal({
             )}
 
             {isChunked && (
-              <div className="text-xs text-amber-400/90 leading-relaxed bg-amber-500/5 p-3 rounded-lg border border-amber-500/10">
-                ⚠️ Công việc này bị cắt thành nhiều khoảng thời gian khác nhau. Khi hủy lịch một phần bất kỳ, tất cả các phần lịch còn lại của công việc này cũng sẽ bị hủy.
-              </div>
+              <p className="text-xs text-amber-400/90 bg-amber-400/5 border border-amber-400/20 rounded-xl px-3 py-2.5 leading-relaxed">
+                {t.timeblock.chunkedWarning}
+              </p>
             )}
           </div>
         </div>
@@ -126,10 +128,10 @@ export function TaskTimeBlockModal({
             disabled={isSubmitting}
             className="w-full sm:w-auto"
           >
-            {isSubmitting ? "Đang hủy..." : "Hủy lịch (Unschedule)"}
+            {isSubmitting ? t.timeblock.unscheduling : t.timeblock.unschedule}
           </Button>
           <Button variant="ghost" size="sm" onClick={onClose} disabled={isSubmitting} className="w-full sm:w-auto text-slate-400">
-            Đóng
+            {t.timeblock.close}
           </Button>
         </DialogFooter>
       </DialogContent>

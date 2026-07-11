@@ -23,8 +23,10 @@ import type { DailyPlanTask } from "@/features/board/types";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Clock01Icon } from "@hugeicons/core-free-icons";
+import { useTranslation } from "@/hooks/use-translation";
 
 export function FlowPage() {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const pomodoroState = useFocusStore((s) => s.pomodoroState);
   const openFocusMode = useFocusStore((s) => s.openFocusMode);
@@ -190,10 +192,10 @@ export function FlowPage() {
           </div>
           <div className="space-y-2">
             <h2 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--card-foreground)' }}>
-              Bạn chưa lên kế hoạch cho hôm nay
+              {t.flow.noPlanTitle}
             </h2>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Để bắt đầu làm việc tập trung (Flow), bạn cần lên lịch công việc và nhấn bắt đầu ngày mới (Start My Day) trước.
+              {t.flow.noPlanDesc}
             </p>
           </div>
           <Button
@@ -201,7 +203,7 @@ export function FlowPage() {
             className="rounded-xl px-8 shadow-lg shadow-primary/25 cursor-pointer font-semibold"
             onClick={() => window.location.href = "/"}
           >
-            Lên kế hoạch ngay (Plan my day)
+            {t.flow.planNowBtn}
           </Button>
         </div>
       </div>

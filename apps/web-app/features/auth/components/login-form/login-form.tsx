@@ -23,10 +23,12 @@ import {
   normalizeAuthSession,
   useAuthStore,
 } from "../../store/auth.store";
+import { useTranslation } from "@/hooks/use-translation";
 
 type LoginRequest = LoginValues;
 
 export function LoginForm() {
+  const { t } = useTranslation();
   const router = useRouter();
   const setSession = useAuthStore((state) => state.setSession);
   const loginForm = useForm<LoginValues>({
@@ -51,8 +53,8 @@ export function LoginForm() {
 
       setSession(session);
 
-      appToast.success("Logged in successfully", {
-        description: "Redirecting you to your overview.",
+      appToast.success(t.auth.loginSuccess, {
+        description: t.auth.loginSuccessDesc,
       });
 
       router.replace("/");
@@ -68,24 +70,24 @@ export function LoginForm() {
         <Card className="w-full min-h-136 overflow-hidden rounded-3xl border-none shadow-2xl">
           <CardHeader className="space-y-2 pb-6 text-center">
             <CardTitle className="text-3xl font-bold tracking-tight text-foreground">
-              Login
+              {t.auth.loginTitle}
             </CardTitle>
 
             <CardDescription className="text-base text-muted-foreground">
-              Welcome back to my space
+              {t.auth.loginWelcome}
             </CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-6">
             <FieldGroup className="space-y-5">
               <Field className="space-y-2">
-                <FieldLabel htmlFor="email">Email</FieldLabel>
+                <FieldLabel htmlFor="email">{t.auth.emailLabel}</FieldLabel>
 
                 <Input
                     {...loginForm.register("email")}
                     id="email"
                     type="email"
-                    placeholder="Enter your email"
+                    placeholder={t.auth.emailPlaceholder}
                     className="h-11"
                 />
 
@@ -95,13 +97,13 @@ export function LoginForm() {
               </Field>
 
               <Field className="space-y-2">
-                <FieldLabel htmlFor="password">Password</FieldLabel>
+                <FieldLabel htmlFor="password">{t.auth.passwordLabel}</FieldLabel>
 
                 <Input
                     {...loginForm.register("password")}
                     id="password"
                     type="password"
-                    placeholder="Enter your password"
+                    placeholder={t.auth.passwordPlaceholder}
                     className="h-11"
                 />
 
@@ -118,26 +120,26 @@ export function LoginForm() {
               className="h-11 w-full text-base"
               disabled={loginForm.formState.isSubmitting}
             >
-              {loginForm.formState.isSubmitting ? "Signing in..." : "Login"}
+              {loginForm.formState.isSubmitting ? t.auth.signingIn : t.auth.loginBtn}
             </Button>
 
             {loginForm.formState.errors.root && (
               <AppAlert
                 variant="error"
-                title="Unable to log in"
+                title={t.auth.loginError}
                 description={loginForm.formState.errors.root.message}
               />
             )}
 
             <div className="flex items-center justify-center gap-1 text-sm text-muted-foreground">
-              <span>Don&apos;t have an account?</span>
+              <span>{t.auth.noAccount}</span>
 
               <Button
                   variant="link"
                   className="h-auto p-0 text-sm text-foreground hover:text-foreground/80"
                   asChild
               >
-                <Link href="/register">Register</Link>
+                <Link href="/register">{t.auth.register}</Link>
               </Button>
             </div>
           </CardFooter>

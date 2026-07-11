@@ -15,6 +15,7 @@ import { RecurringActionDialog } from "./RecurringActionDialog";
 import { EventDateTimeRow } from "./EventDateTimeRow";
 import { RecurrenceSelector } from "./RecurrenceSelector";
 import { useEventForm, UseEventFormProps } from "../hooks/useEventForm";
+import { useTranslation } from "@/hooks/use-translation";
 
 export function EventModal(props: UseEventFormProps) {
   const {
@@ -22,6 +23,7 @@ export function EventModal(props: UseEventFormProps) {
     mode,
     onClose,
   } = props;
+  const { t } = useTranslation();
 
   const {
     title,
@@ -61,17 +63,17 @@ export function EventModal(props: UseEventFormProps) {
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {mode === "create" ? "Thêm sự kiện cố định" : "Chỉnh sửa sự kiện"}
+              {mode === "create" ? t.calendar.addEvent : t.calendar.editEvent}
             </DialogTitle>
           </DialogHeader>
 
           <div className="flex flex-col gap-4 py-2">
             {/* Title */}
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="evt-title">Tiêu đề *</Label>
+              <Label htmlFor="evt-title">{t.calendar.titleLabel}</Label>
               <Input
                 id="evt-title"
-                placeholder="VD: Buổi học, Họp nhóm..."
+                placeholder={t.calendar.titlePlaceholder}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
               />
@@ -79,10 +81,10 @@ export function EventModal(props: UseEventFormProps) {
 
             {/* Notes */}
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="evt-notes">Ghi chú</Label>
+              <Label htmlFor="evt-notes">{t.calendar.notesLabel}</Label>
               <Textarea
                 id="evt-notes"
-                placeholder="Thêm ghi chú (tùy chọn)..."
+                placeholder={t.calendar.notesPlaceholder}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={2}
@@ -131,14 +133,14 @@ export function EventModal(props: UseEventFormProps) {
                 disabled={isSubmitting}
                 className="sm:mr-auto"
               >
-                Xóa
+                {t.calendar.deleteBtn}
               </Button>
             )}
             <Button variant="ghost" size="sm" onClick={onClose} disabled={isSubmitting}>
-              Hủy
+              {t.calendar.cancelBtn}
             </Button>
             <Button size="sm" onClick={handleSaveClick} disabled={isSubmitting}>
-              {isSubmitting ? "Đang lưu..." : mode === "create" ? "Tạo sự kiện" : "Lưu thay đổi"}
+              {isSubmitting ? t.calendar.saving : mode === "create" ? t.calendar.createBtn : t.calendar.saveChanges}
             </Button>
           </DialogFooter>
         </DialogContent>

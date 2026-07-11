@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface PresetColorButtonProps {
   color: string;
@@ -9,6 +10,8 @@ interface PresetColorButtonProps {
 }
 
 export function PresetColorButton({ color, isSelected, onClick }: PresetColorButtonProps) {
+  const { t } = useTranslation();
+
   return (
     <button
       type="button"
@@ -18,7 +21,7 @@ export function PresetColorButton({ color, isSelected, onClick }: PresetColorBut
         isSelected ? "ring-2 ring-white scale-105 shadow-md" : "opacity-85 hover:opacity-100"
       )}
       style={{ backgroundColor: color }}
-      title="Đổi màu lịch cố định"
+      title={t.calendar.changeCalendarColor}
     />
   );
 }
