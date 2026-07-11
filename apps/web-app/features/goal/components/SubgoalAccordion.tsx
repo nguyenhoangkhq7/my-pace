@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Folder01Icon, ArrowDown01Icon, ArrowRight01Icon, PlusSignIcon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface SubgoalAccordionProps {
   subgoal: Goal;
@@ -24,6 +25,8 @@ export function SubgoalAccordion({
   handleOpenCreateSubgoal,
   onTaskClick,
 }: SubgoalAccordionProps) {
+  const { t, locale } = useTranslation();
+  const isVi = locale === "vi";
   const [isOpen, setIsOpen] = useState(false);
   const { goals } = useGoalStore();
   const { tasks } = useBoardStore();
@@ -71,7 +74,7 @@ export function SubgoalAccordion({
           {level < 3 && (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Subgoals</h4>
+                <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t.goals.subgoals}</h4>
                 {isEditingProject && (
                   <Button
                     size="sm"
@@ -81,12 +84,12 @@ export function SubgoalAccordion({
                     disabled={subgoal.status === "Freeze" || subgoal.status === "Archived"}
                   >
                     <HugeiconsIcon icon={PlusSignIcon} size={12} className="mr-1" />
-                    Subgoal
+                    {isVi ? "Mục tiêu con" : "Subgoal"}
                   </Button>
                 )}
               </div>
               {childrenSubgoals.length === 0 ? (
-                <p className="text-xs text-slate-600 italic">No subgoals yet.</p>
+                <p className="text-xs text-slate-600 italic">{t.goals.noSubgoals}</p>
               ) : (
                 childrenSubgoals.map((child) => (
                   <SubgoalAccordion

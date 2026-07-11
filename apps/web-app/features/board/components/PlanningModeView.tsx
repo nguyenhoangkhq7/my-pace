@@ -6,6 +6,7 @@ import type { AvailableTimeData } from "@/features/available-time/types";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { InformationCircleIcon } from "@hugeicons/core-free-icons";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface PlanningModeViewProps {
   currentAvailable: number;
@@ -26,6 +27,7 @@ export function PlanningModeView({
   onSave,
   onRemoveTask,
 }: PlanningModeViewProps) {
+  const { t } = useTranslation();
   const plannedTasks = plannedTaskIds
     .map(id => tasks.find(t => t.id === id))
     .filter(Boolean) as Task[];
@@ -45,7 +47,7 @@ export function PlanningModeView({
       <div className="bg-primary/5 border border-primary/20 rounded-xl p-5 flex flex-col gap-4">
         <div className="space-y-1 w-full">
           <div className="flex items-center gap-1.5 mb-1">
-            <div className="text-xs text-primary/80 font-bold uppercase tracking-wider">Thời gian khả dụng còn lại</div>
+            <div className="text-xs text-primary/80 font-bold uppercase tracking-wider">{t.planning.remainingTime}</div>
             {baseAvailable > 0 && (
               <TooltipProvider>
                 <Tooltip delayDuration={0}>
@@ -55,15 +57,15 @@ export function PlanningModeView({
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="right" className="p-3 bg-card text-card-foreground border border-border shadow-lg">
-                    <p className="font-semibold text-xs border-b border-border pb-1.5 mb-1.5 text-foreground">Cách tính quỹ thời gian</p>
+                    <p className="font-semibold text-xs border-b border-border pb-1.5 mb-1.5 text-foreground">{t.planning.howTimeCalculated}</p>
                     <div className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 text-xs">
-                      <span className="text-muted-foreground">Tổng quỹ thời gian thực tế:</span>
+                      <span className="text-muted-foreground">{t.planning.totalBudget}</span>
                       <span className="font-medium text-right text-foreground">{Math.floor(baseAvailable / 60)}h {baseAvailable % 60}m</span>
                       
-                      <span className="text-muted-foreground">Trừ đi các task đã xếp:</span>
+                      <span className="text-muted-foreground">{t.planning.scheduledTasks}</span>
                       <span className="font-medium text-amber-500 text-right">-{Math.floor(usedTime / 60)}h {usedTime % 60}m</span>
                       
-                      <span className="text-muted-foreground font-medium pt-1.5 border-t border-border mt-0.5">Còn trống để xếp thêm:</span>
+                      <span className="text-muted-foreground font-medium pt-1.5 border-t border-border mt-0.5">{t.planning.remaining}</span>
                       <span className={`font-bold pt-1.5 border-t border-border mt-0.5 text-right ${currentAvailable < 0 ? 'text-red-500' : 'text-primary'}`}>
                         {currentAvailable < 0 ? "-" : ""}{Math.floor(Math.abs(currentAvailable) / 60)}h {Math.abs(currentAvailable) % 60}m
                       </span>
@@ -79,10 +81,10 @@ export function PlanningModeView({
             </div>
             <div className="flex space-x-2 shrink-0">
               <Button variant="outline" size="sm" onClick={onCancel} className="border-primary/20 text-foreground hover:bg-primary/10 cursor-pointer">
-                Cancel
+                {t.common.cancel}
               </Button>
               <Button size="sm" onClick={onSave} className="bg-primary text-primary-foreground cursor-pointer shadow-md shadow-primary/20">
-                Save Plan
+                {t.planning.savePlan}
               </Button>
             </div>
           </div>
@@ -94,12 +96,12 @@ export function PlanningModeView({
               <div 
                 className={`${overscheduled ? 'bg-red-500' : 'bg-primary'} transition-all duration-500`}
                 style={{ width: `${usedPct}%` }}
-                title={`Đã xếp: ${Math.floor(usedTime / 60)}h ${usedTime % 60}m`}
+                title={t.planning.scheduledTitle(`${Math.floor(usedTime / 60)}h ${usedTime % 60}m`)}
               />
               <div 
                 className="bg-muted/50 transition-all duration-500" 
                 style={{ width: `${remPct}%` }}
-                title={`Còn lại: ${Math.floor(currentAvailable / 60)}h ${currentAvailable % 60}m`}
+                title={t.planning.remainingTitle(`${Math.floor(currentAvailable / 60)}h ${currentAvailable % 60}m`)}
               />
             </div>
           </div>
@@ -109,7 +111,7 @@ export function PlanningModeView({
       <div className="flex-1 overflow-y-auto space-y-6 pr-2 scrollbar-thin">
         {mits.length > 0 && (
           <div className="space-y-3">
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Most Important Tasks (MITs)</h3>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t.planning.mits}</h3>
             {mits.map(task => (
               <PlanningTaskItem key={task.id} task={task} onRemove={onRemoveTask} />
             ))}
@@ -118,7 +120,7 @@ export function PlanningModeView({
         
         {regularTasks.length > 0 && (
           <div className="space-y-3">
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Other Tasks</h3>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t.planning.otherTasks}</h3>
             {regularTasks.map(task => (
               <PlanningTaskItem key={task.id} task={task} onRemove={onRemoveTask} />
             ))}
@@ -127,7 +129,7 @@ export function PlanningModeView({
 
         {plannedTasks.length === 0 && (
           <div className="h-32 flex flex-col items-center justify-center text-muted-foreground border border-dashed border-border rounded-xl">
-            <span className="text-sm">Click tasks in the matrix to add them here</span>
+            <span className="text-sm">{t.planning.clickToAdd}</span>
           </div>
         )}
       </div>

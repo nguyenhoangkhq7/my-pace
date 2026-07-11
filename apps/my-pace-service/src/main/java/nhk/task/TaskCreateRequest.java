@@ -3,6 +3,7 @@ package nhk.task;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -17,4 +18,5 @@ public class TaskCreateRequest {
     private LocalDate dueDate;
     private String status;
     private String notes;
+    private List<TaskChecklistItemRequest> checklists;
 }

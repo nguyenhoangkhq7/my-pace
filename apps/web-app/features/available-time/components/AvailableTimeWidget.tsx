@@ -5,15 +5,20 @@ interface AvailableTimeWidgetProps {
   isLoading: boolean;
 }
 
-function formatMinutes(minutes: number): string {
+import { useTranslation } from "@/hooks/use-translation";
+
+function formatMinutes(minutes: number, locale: string): string {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  if (h === 0) return `${m}p`;
-  if (m === 0) return `${h}h`;
-  return `${h}h ${m}p`;
+  const hUnit = "h";
+  const mUnit = locale === "vi" ? "p" : "m";
+  if (h === 0) return `${m}${mUnit}`;
+  if (m === 0) return `${h}${hUnit}`;
+  return `${h}${hUnit} ${m}${mUnit}`;
 }
 
 export function AvailableTimeWidget({ data, isLoading }: AvailableTimeWidgetProps) {
+  const { t, locale } = useTranslation();
   const available = data?.availableMinutes ?? 0;
   const working   = data?.workingWindowMinutes ?? 0;
   const blocked   = data?.blockedMinutes ?? 0;
@@ -51,7 +56,7 @@ export function AvailableTimeWidget({ data, isLoading }: AvailableTimeWidgetProp
             ) : (
               <>
                 <span className="text-base font-bold text-foreground leading-none">{fillPct}%</span>
-                <span className="text-[9px] text-muted-foreground mt-0.5">còn lại</span>
+                <span className="text-[9px] text-muted-foreground mt-0.5">{t.availableTime.remaining}</span>
               </>
             )}
           </div>
@@ -61,11 +66,11 @@ export function AvailableTimeWidget({ data, isLoading }: AvailableTimeWidgetProp
         <div className="flex flex-col gap-1 min-w-0">
           <div className="flex items-center gap-2">
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              Thời gian khả dụng hôm nay
+              {t.availableTime.todayAvailable}
             </p>
             {checkedIn && checkinTime && (
               <span className="inline-flex items-center rounded-full bg-sky-500/10 px-2 py-0.5 text-[10px] font-semibold text-sky-400">
-                Đã Check-in lúc {checkinTime}
+                {t.availableTime.checkedInAt(checkinTime)}
               </span>
             )}
           </div>
@@ -77,12 +82,12 @@ export function AvailableTimeWidget({ data, isLoading }: AvailableTimeWidgetProp
           ) : (
             <>
               <p className="text-3xl font-extrabold text-foreground leading-tight">
-                {formatMinutes(available)}
+                {formatMinutes(available, locale)}
               </p>
               <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1">
-                <Stat label="Bị chiếm"         value={formatMinutes(blocked)} color="text-rose-400" />
-                <Stat label="Buffer"            value={`${bufferPct}%`}        color="text-amber-400" />
-                <Stat label="Cửa sổ làm việc"  value={formatMinutes(working)} color="text-emerald-400" />
+                <Stat label={t.availableTime.occupied}         value={formatMinutes(blocked, locale)} color="text-rose-400" />
+                <Stat label={t.availableTime.buffer}            value={`${bufferPct}%`}        color="text-amber-400" />
+                <Stat label={t.availableTime.workWindow}  value={formatMinutes(working, locale)} color="text-emerald-400" />
               </div>
             </>
           )}

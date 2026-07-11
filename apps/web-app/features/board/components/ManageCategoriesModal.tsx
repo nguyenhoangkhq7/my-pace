@@ -6,6 +6,7 @@ import { useBoardStore } from "../store/board.store";
 import { ConfirmDeleteDialog } from "@/components/feedback/ConfirmDeleteDialog";
 import { CategoryEditForm } from "./CategoryEditForm";
 import { CategoryListItem } from "./CategoryListItem";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface ManageCategoriesModalProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ interface ManageCategoriesModalProps {
 
 export function ManageCategoriesModal({ isOpen, onClose }: ManageCategoriesModalProps) {
   const { categories, updateCategory, deleteCategory } = useBoardStore();
+  const { t } = useTranslation();
   
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -32,14 +34,14 @@ export function ManageCategoriesModal({ isOpen, onClose }: ManageCategoriesModal
 
   const handleSaveEdit = async (id: string, name: string, color: string) => {
     if (!name.trim()) {
-      setError("Tên Category không được để trống");
+      setError(t.categories.nameEmpty);
       return;
     }
     
     // Check if name is unique among other categories
     const isDuplicate = categories.some(c => c.id !== id && c.name.toLowerCase() === name.trim().toLowerCase());
     if (isDuplicate) {
-      setError("Tên Category đã tồn tại");
+      setError(t.categories.nameExists);
       return;
     }
 
@@ -48,7 +50,7 @@ export function ManageCategoriesModal({ isOpen, onClose }: ManageCategoriesModal
       setEditingId(null);
       setError("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Không thể cập nhật Category");
+      setError(err instanceof Error ? err.message : t.categories.updateFailed);
     }
   };
 
@@ -67,7 +69,7 @@ export function ManageCategoriesModal({ isOpen, onClose }: ManageCategoriesModal
         handleCancelEdit();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Không thể xóa Category");
+      setError(err instanceof Error ? err.message : t.categories.deleteFailed);
     }
   };
 
@@ -75,9 +77,9 @@ export function ManageCategoriesModal({ isOpen, onClose }: ManageCategoriesModal
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="bg-background text-foreground border-border sm:max-w-[450px] max-h-[80vh] flex flex-col p-6 overflow-hidden">
         <DialogHeader>
-          <DialogTitle>Quản lý Category</DialogTitle>
+          <DialogTitle>{t.categories.manageTitle}</DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Chỉnh sửa tên, màu sắc hoặc xóa các Category hiện có.
+            {t.categories.manageDesc}
           </DialogDescription>
         </DialogHeader>
 
@@ -85,7 +87,7 @@ export function ManageCategoriesModal({ isOpen, onClose }: ManageCategoriesModal
 
         <div className="flex-1 overflow-y-auto mt-4 pr-1 space-y-3 scrollbar-thin">
           {categories.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">Chưa có Category nào.</p>
+            <p className="text-sm text-muted-foreground text-center py-6">{t.categories.noneYet}</p>
           ) : (
             categories.map((c) => {
               const isEditing = editingId === c.id;
@@ -115,15 +117,15 @@ export function ManageCategoriesModal({ isOpen, onClose }: ManageCategoriesModal
 
         <DialogFooter className="mt-4 border-t border-border pt-4 shrink-0">
           <Button variant="outline" className="border-border bg-card hover:bg-muted text-foreground h-9" onClick={onClose}>
-            Đóng
+            {t.categories.close}
           </Button>
         </DialogFooter>
       </DialogContent>
 
       <ConfirmDeleteDialog
         isOpen={isConfirmDeleteOpen}
-        title="Xóa Category"
-        description={`Bạn có chắc chắn muốn xóa Category "${deleteTarget?.name}"? Các task thuộc category này sẽ không bị xóa nhưng sẽ không còn liên kết.`}
+        title={t.categories.deleteTitle}
+        description={t.categories.deleteDesc(deleteTarget?.name || "")}
         onConfirm={handleConfirmDelete}
         onOpenChange={setIsConfirmDeleteOpen}
       />

@@ -1,6 +1,7 @@
 import React from "react";
 import { Goal } from "../types";
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface TargetDetailProps {
   goal: Goal;
@@ -15,21 +16,24 @@ interface TargetDetailProps {
 }
 
 export function TargetDetail({ goal, stats, timeFilter, isFuturePeriod }: TargetDetailProps) {
+  const { t, locale } = useTranslation();
+  const isVi = locale === "vi";
+
   const isCurrent = isFuturePeriod();
   let periodLabel = "";
   if (timeFilter === "week") {
-    periodLabel = isCurrent ? "Tuần này đạt được" : "Tuần đã chọn đạt được";
+    periodLabel = isCurrent ? t.goals.totalCountWeekCurrent : t.goals.totalCountWeekSelected;
   } else if (timeFilter === "month") {
-    periodLabel = isCurrent ? "Tháng này đạt được" : "Tháng đã chọn đạt được";
+    periodLabel = isCurrent ? t.goals.totalCountMonthCurrent : t.goals.totalCountMonthSelected;
   } else if (timeFilter === "year") {
-    periodLabel = isCurrent ? "Năm nay đạt được" : "Năm đã chọn đạt được";
+    periodLabel = isCurrent ? t.goals.totalCountYearCurrent : t.goals.totalCountYearSelected;
   }
 
   return (
     <div className="space-y-6">
       <div className="bg-card/50 p-4 rounded-xl border border-border flex items-center justify-between">
         <div>
-          <h3 className="text-sm text-muted-foreground mb-1">Tiến độ chung</h3>
+          <h3 className="text-sm text-muted-foreground mb-1">{t.goals.generalProgress}</h3>
           <div className="text-2xl font-bold text-foreground">
             {goal.milestoneGoal?.currentCount || 0} / {goal.milestoneGoal?.targetCount || 0}
           </div>
@@ -41,18 +45,18 @@ export function TargetDetail({ goal, stats, timeFilter, isFuturePeriod }: Target
       </div>
       <div>
         <h3 className="text-sm font-semibold text-foreground mb-4">
-          Mức độ đạt được (
+          {t.goals.achievementChart} (
           {timeFilter === "week"
             ? isCurrent
-              ? "Tuần này"
-              : "Tuần đã chọn"
+              ? (isVi ? "Tuần này" : "This week")
+              : (isVi ? "Tuần đã chọn" : "Selected week")
             : timeFilter === "month"
             ? isCurrent
-              ? "Tháng này"
-              : "Tháng đã chọn"
+              ? (isVi ? "Tháng này" : "This month")
+              : (isVi ? "Tháng đã chọn" : "Selected month")
             : isCurrent
-            ? "Năm nay"
-            : "Năm đã chọn"}
+            ? (isVi ? "Năm nay" : "This year")
+            : (isVi ? "Năm đã chọn" : "Selected year")}
           )
         </h3>
         <div className="h-[200px] w-full">
@@ -63,7 +67,7 @@ export function TargetDetail({ goal, stats, timeFilter, isFuturePeriod }: Target
                 cursor={{ fill: "var(--muted)" }}
                 contentStyle={{ backgroundColor: "var(--background)", borderColor: "var(--border)", borderRadius: "8px" }}
                 itemStyle={{ color: "var(--primary)" }}
-                formatter={(value) => [`${value}`, "Số lượng"]}
+                formatter={(value) => [`${value}`, isVi ? "Số lượng" : "Count"]}
               />
               <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                 {stats.chartData.map((entry, index) => (

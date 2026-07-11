@@ -16,6 +16,8 @@ import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDeleteDialog } from "@/components/feedback/ConfirmDeleteDialog";
 import { getApiErrorMessage } from "@/lib/fetchClient";
+import { useTranslation } from "@/hooks/use-translation";
+import { useOnboardingStore } from "@/features/auth/store/onboarding.store";
 
 // Import new sub-components
 import { TaskFormChecklist } from "./TaskFormChecklist";
@@ -51,6 +53,8 @@ export function TaskFormModal({
 }: TaskFormModalProps) {
   const { tasks, categories, createTask, updateTask, deleteTask } = useBoardStore();
   const { goals, fetchGoals } = useGoalStore();
+  const { isTourActive, tourStepIndex, advanceTourStep } = useOnboardingStore();
+  const { t } = useTranslation();
   
   const [title, setTitle] = useState("");
   const [estimatedMinutes, setEstimatedMinutes] = useState("");
@@ -62,6 +66,7 @@ export function TaskFormModal({
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [error, setError] = useState("");
 
+  const [localChecklists, setLocalChecklists] = useState<{ title: string; isCompleted: boolean }[]>([]);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
 
   const currentTask = initialData?.id ? tasks.find(t => t.id === initialData.id) : null;
@@ -74,6 +79,7 @@ export function TaskFormModal({
     prevIsOpenRef.current = isOpen;
 
     if (justOpened) {
+
       Promise.resolve().then(() => {
         fetchGoals();
         setTitle(initialData?.title || "");
@@ -97,6 +103,12 @@ export function TaskFormModal({
         } else {
           setDueDate(undefined);
         }
+        
+        setLocalChecklists(
+          initialData?.checklists
+            ? initialData.checklists.map(c => ({ title: c.title, isCompleted: c.isCompleted }))
+            : []
+        );
         
         setError("");
         setIsConfirmDeleteOpen(false);
@@ -128,11 +140,11 @@ export function TaskFormModal({
 
   const handleSubmitInternal = async () => {
     if (!title.trim()) {
-      setError("Title is required.");
+      setError(t.taskForm.titleRequired);
       return;
     }
     if (requireDuration && !estimatedMinutes) {
-      setError("Estimated duration is required to plan this task.");
+      setError(t.taskForm.durationRequired);
       return;
     }
 
@@ -147,6 +159,10 @@ export function TaskFormModal({
       dueDate: dueDate ? format(dueDate, "yyyy-MM-dd") : undefined,
     };
 
+    if (!initialData?.id && localChecklists.length > 0) {
+      taskData.checklists = localChecklists as any[];
+    }
+
     if (initialStatus && !initialData?.id) {
       taskData.status = initialStatus;
     }
@@ -159,6 +175,9 @@ export function TaskFormModal({
           await updateTask(initialData.id, taskData);
         } else {
           await createTask(taskData);
+        }
+        if (isTourActive && tourStepIndex === 2) {
+          advanceTourStep();
         }
         handleClose();
       } catch (err) {
@@ -188,10 +207,10 @@ export function TaskFormModal({
         requireDuration ? "sm:max-w-[425px]" : "sm:max-w-[840px]"
       )}>
         <DialogHeader>
-          <DialogTitle>{initialData?.id ? (requireDuration ? "Missing Information" : "Edit Task") : "Create Task"}</DialogTitle>
+          <DialogTitle>{initialData?.id ? (requireDuration ? t.taskForm.missingInfo : t.taskForm.editTask) : t.taskForm.createTask}</DialogTitle>
           {requireDuration && (
             <DialogDescription className="text-muted-foreground">
-              Please provide the estimated duration to add this task to your plan.
+              {t.taskForm.missingDurationDesc}
             </DialogDescription>
           )}
         </DialogHeader>
@@ -200,7 +219,7 @@ export function TaskFormModal({
           {/* Main Content (Left Column) */}
           <div className="space-y-4">
             <div className="grid gap-2">
-              <Label htmlFor="title">Title *</Label>
+              <Label htmlFor="title">{t.taskForm.titleLabel}</Label>
               <Input
                 id="title"
                 value={title}
@@ -234,19 +253,28 @@ export function TaskFormModal({
             </div>
             
             {/* Checklist Section */}
-            {!requireDuration && initialData?.id && (
-              <TaskFormChecklist taskId={initialData.id} checklists={checklists} />
+            {!requireDuration && (
+              initialData?.id ? (
+                <TaskFormChecklist taskId={initialData.id} checklists={checklists} />
+              ) : (
+                <TaskFormChecklist 
+                  checklists={localChecklists} 
+                  onAddChecklistLocal={(title) => setLocalChecklists(prev => [...prev, { title, isCompleted: false }])}
+                  onUpdateChecklistLocal={(index, updates) => setLocalChecklists(prev => prev.map((item, idx) => idx === index ? { ...item, ...updates } : item))}
+                  onDeleteChecklistLocal={(index) => setLocalChecklists(prev => prev.filter((_, idx) => idx !== index))}
+                />
+              )
             )}
             
             {!requireDuration && (
               <div className="grid gap-2 pt-2">
-                <Label htmlFor="notes">Notes</Label>
+                <Label htmlFor="notes">{t.taskForm.notesLabel}</Label>
                 <Textarea
                   id="notes"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   className="bg-card border-border focus:border-primary min-h-[100px]"
-                  placeholder="Add a more detailed description..."
+                  placeholder={t.taskForm.notesPlaceholder}
                 />
               </div>
             )}
@@ -266,7 +294,7 @@ export function TaskFormModal({
 
             {!requireDuration && associatedGoal && prefilledGoalId && (
               <div className="grid gap-2 mt-4">
-                <Label>Goal</Label>
+                <Label>{t.taskForm.goalLabel}</Label>
                 <div className="p-2.5 bg-card border border-border rounded-md text-sm text-foreground font-medium">
                   {associatedGoal.title}
                 </div>
@@ -275,7 +303,7 @@ export function TaskFormModal({
 
             {!requireDuration && (
               <div className="grid gap-2">
-                <Label>Due Date</Label>
+                <Label>{t.taskForm.dueDateLabel}</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -286,7 +314,7 @@ export function TaskFormModal({
                       )}
                     >
                       <HugeiconsIcon icon={Calendar01Icon} className="mr-2 h-4 w-4" />
-                      {dueDate ? format(dueDate, "PPP") : <span>Pick a date</span>}
+                      {dueDate ? format(dueDate, "PPP") : <span>{t.taskForm.pickDate}</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0 bg-popover border-border">
@@ -308,7 +336,7 @@ export function TaskFormModal({
             />
             
             {!requireDuration && !prefilledGoalId && (
-              <div className="grid grid-cols-2 gap-4 mt-2">
+              <div className="grid grid-cols-2 gap-4 mt-2 tour-urgent-important">
                 <div className="flex items-center space-x-2">
                   <Checkbox 
                     id="urgent" 
@@ -316,7 +344,7 @@ export function TaskFormModal({
                     onCheckedChange={(checked) => setIsUrgent(checked === true)}
                     className="border-border"
                   />
-                  <Label htmlFor="urgent" className="cursor-pointer font-normal text-sm">Urgent</Label>
+                  <Label htmlFor="urgent" className="cursor-pointer font-normal text-sm">{t.taskForm.urgentLabel}</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox 
@@ -325,7 +353,7 @@ export function TaskFormModal({
                     onCheckedChange={(checked) => setIsImportant(checked === true)}
                     className="border-border"
                   />
-                  <Label htmlFor="important" className="cursor-pointer font-normal text-sm">Important</Label>
+                  <Label htmlFor="important" className="cursor-pointer font-normal text-sm">{t.taskForm.importantLabel}</Label>
                 </div>
               </div>
             )}
@@ -344,16 +372,16 @@ export function TaskFormModal({
                 className="text-rose-500 hover:bg-rose-950/20 hover:text-rose-400 font-medium gap-1 px-2 h-9 cursor-pointer"
               >
                 <HugeiconsIcon icon={Delete01Icon} className="w-4 h-4" />
-                Delete Task
+                {t.taskForm.deleteTask}
               </Button>
             )}
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={handleClose} className="border-border text-foreground hover:bg-muted">
-              Cancel
+              {t.common.cancel}
             </Button>
-            <Button onClick={handleSubmitInternal} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-              {requireDuration ? "Continue" : "Save"}
+            <Button onClick={handleSubmitInternal} className="bg-primary hover:bg-primary/90 text-primary-foreground tour-save-task-btn">
+              {requireDuration ? t.taskForm.continue : t.taskForm.save}
             </Button>
           </div>
         </DialogFooter>
@@ -363,8 +391,8 @@ export function TaskFormModal({
         isOpen={isConfirmDeleteOpen}
         onOpenChange={setIsConfirmDeleteOpen}
         onConfirm={handleConfirmDelete}
-        title="Xóa Task này?"
-        description="Hành động này không thể hoàn tác. Bạn có chắc chắn muốn xóa Task này không?"
+        title={t.taskForm.confirmDeleteTitle}
+        description={t.taskForm.confirmDeleteDesc}
       />
     </Dialog>
   );

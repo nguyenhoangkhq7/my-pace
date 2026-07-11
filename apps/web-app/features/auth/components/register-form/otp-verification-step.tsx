@@ -39,6 +39,7 @@ import {
 import { post, getApiErrorMessage } from "@/lib/fetchClient";
 import { AppAlert } from "@/components/feedback/app-alert";
 import { appToast } from "@/components/feedback/app-toast";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface OtpVerificationStepProps {
     onNext: () => void;
@@ -56,6 +57,7 @@ export function OtpVerificationStep({onNext}: OtpVerificationStepProps) {
         registerFormData,
         setRegisterData,
     } = useRegisterStore();
+    const { t } = useTranslation();
     const form = useForm<OtpStepValues>({
         resolver: zodResolver(otpStepSchema),
         defaultValues: {
@@ -86,8 +88,8 @@ export function OtpVerificationStep({onNext}: OtpVerificationStepProps) {
                 otp: data.otp,
             });
 
-            appToast.success("Verification code confirmed", {
-                description: "You can now finish creating your profile.",
+            appToast.success(t.auth.verifySuccess, {
+                description: t.auth.verifySuccessDesc,
             });
 
             onNext();
@@ -113,11 +115,10 @@ export function OtpVerificationStep({onNext}: OtpVerificationStepProps) {
                     </div>
                     <div className="space-y-2">
                         <CardTitle className="text-3xl font-bold tracking-tight">
-                            Verify your account
+                            {t.auth.verifyAccount}
                         </CardTitle>
                         <CardDescription className="mx-auto max-w-md text-base leading-relaxed text-muted-foreground">
-                            We sent a 6-digit verification code
-                            to:
+                            {t.auth.verifyDesc}
                         </CardDescription>
                         <p className="text-sm font-medium text-foreground">
                             {registerFormData.email ||
@@ -130,7 +131,7 @@ export function OtpVerificationStep({onNext}: OtpVerificationStepProps) {
                     <Field className="space-y-5">
                         <div className="flex items-center justify-between gap-3">
                             <FieldLabel htmlFor="otp-verification">
-                                Verification code
+                                {t.auth.verificationCode}
                             </FieldLabel>
                             <Button
                                 variant="outline"
@@ -142,7 +143,7 @@ export function OtpVerificationStep({onNext}: OtpVerificationStepProps) {
                                     icon={RefreshIcon}
                                     size={16}
                                 />
-                                Resend
+                                {t.auth.resend}
                             </Button>
                         </div>
 
@@ -198,21 +199,21 @@ export function OtpVerificationStep({onNext}: OtpVerificationStepProps) {
                         {form.formState.errors.root && (
                             <AppAlert
                                 variant="error"
-                                title="Unable to verify code"
+                                title={t.auth.verifyError}
                                 description={form.formState.errors.root.message}
                             />
                         )}
 
                         <FieldDescription className="space-y-2 text-center">
                             <span className="block text-sm text-muted-foreground">
-                                Didn&apos;t receive the code?
+                                {t.auth.didntReceive}
                             </span>
 
                             <button
                                 type="button"
                                 className="text-sm font-medium text-foreground hover:text-foreground/80 hover:underline"
                             >
-                                Try another email address
+                                {t.auth.tryAnotherEmail}
                             </button>
                         </FieldDescription>
                     </Field>
@@ -229,8 +230,8 @@ export function OtpVerificationStep({onNext}: OtpVerificationStepProps) {
                     }
                 >
                     {form.formState.isSubmitting
-                        ? "Verifying..."
-                        : "Continue"}
+                        ? t.auth.verifying
+                        : t.auth.continueBtn}
                 </Button>
             </CardFooter>
         </form>

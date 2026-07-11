@@ -5,6 +5,7 @@ import { ExecutionModeView } from "./ExecutionModeView";
 import { NoPlanState } from "./NoPlanState";
 import { CancelPlanDialog } from "./CancelPlanDialog";
 import { useExecutionBoard } from "../hooks/useExecutionBoard";
+import { useTranslation } from "@/hooks/use-translation";
 
 export function ExecutionBoard({ currentDate, tomorrowDate }: { currentDate: string; tomorrowDate: string }) {
   const {
@@ -27,6 +28,7 @@ export function ExecutionBoard({ currentDate, tomorrowDate }: { currentDate: str
     handleSavePlan,
     handleCancelPlan,
   } = useExecutionBoard({ currentDate, tomorrowDate });
+  const { t } = useTranslation();
 
   const renderContent = () => {
     // If currently in planning mode for this tab
@@ -74,8 +76,8 @@ export function ExecutionBoard({ currentDate, tomorrowDate }: { currentDate: str
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
         <div className="flex justify-between items-center mb-6">
           <TabsList className="bg-muted border border-border">
-            <TabsTrigger value="today" className="data-[state=active]:bg-card data-[state=active]:text-foreground cursor-pointer">Hôm nay</TabsTrigger>
-            <TabsTrigger value="tomorrow" className="data-[state=active]:bg-card data-[state=active]:text-foreground cursor-pointer">Ngày mai</TabsTrigger>
+            <TabsTrigger value="today" className="data-[state=active]:bg-card data-[state=active]:text-foreground cursor-pointer">{t.board.today}</TabsTrigger>
+            <TabsTrigger value="tomorrow" className="data-[state=active]:bg-card data-[state=active]:text-foreground cursor-pointer">{t.board.tomorrow}</TabsTrigger>
           </TabsList>
         </div>
         

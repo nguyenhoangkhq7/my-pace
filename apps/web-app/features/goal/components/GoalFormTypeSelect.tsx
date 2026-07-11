@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { GoalType } from "../types";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface FormValues {
   title: string;
@@ -34,9 +35,11 @@ interface GoalFormTypeSelectProps {
 }
 
 export function GoalFormTypeSelect({ control, disabled }: GoalFormTypeSelectProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium">Type</label>
+      <label className="text-sm font-medium">{t.goals.typeLabel}</label>
       <Controller
         name="goalType"
         control={control}
@@ -44,18 +47,18 @@ export function GoalFormTypeSelect({ control, disabled }: GoalFormTypeSelectProp
           <>
             <Select value={field.value} onValueChange={field.onChange} disabled={disabled}>
               <SelectTrigger className="bg-card border-border text-foreground">
-                <SelectValue placeholder="Chọn loại mục tiêu" />
+                <SelectValue placeholder={t.goals.typeSelectPlaceholder} />
               </SelectTrigger>
               <SelectContent className="bg-popover border-border text-foreground">
-                <SelectItem value="Binary">Project</SelectItem>
-                <SelectItem value="Time-boxed">Habit</SelectItem>
-                <SelectItem value="Milestone">Target</SelectItem>
+                <SelectItem value="Binary">{t.goals.project}</SelectItem>
+                <SelectItem value="Time-boxed">{t.goals.habit}</SelectItem>
+                <SelectItem value="Milestone">{t.goals.target}</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-[11px] text-muted-foreground mt-1 h-8">
-              {field.value === 'Binary' && 'A project with a deadline. Progress is tracked by % of completed tasks.'}
-              {field.value === 'Time-boxed' && 'A habit to maintain. Measured by accumulated minutes over a period.'}
-              {field.value === 'Milestone' && 'A countable target (e.g. Run 100km, Make 50 calls).'}
+              {field.value === 'Binary' && t.goals.descriptionBinary}
+              {field.value === 'Time-boxed' && t.goals.descriptionTimeBoxed}
+              {field.value === 'Milestone' && t.goals.descriptionMilestone}
             </p>
           </>
         )}

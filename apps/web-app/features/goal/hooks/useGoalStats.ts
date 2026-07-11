@@ -17,8 +17,14 @@ import {
   addMonths,
   addYears,
 } from "date-fns";
+import { useLanguageStore } from "@/features/settings/store/useLanguageStore";
+import { vi, enUS } from "date-fns/locale";
 
 export function useGoalStats(goal: Goal | null, tasks: Task[]) {
+  const { locale } = useLanguageStore();
+  const isVi = locale === "vi";
+  const fnsLocale = isVi ? vi : enUS;
+
   const [timeFilter, setTimeFilter] = useState<'week' | 'month' | 'year'>('week');
   const [referenceDate, setReferenceDate] = useState<Date>(new Date());
 
@@ -60,12 +66,16 @@ export function useGoalStats(goal: Goal | null, tasks: Task[]) {
     if (timeFilter === 'week') {
       const start = startOfWeek(referenceDate, { weekStartsOn: 1 });
       const end = endOfWeek(referenceDate, { weekStartsOn: 1 });
-      return `${format(start, "d MMM")} - ${format(end, "d MMM, yyyy")}`;
+      return `${format(start, "d MMM", { locale: fnsLocale })} - ${format(end, "d MMM, yyyy", { locale: fnsLocale })}`;
     }
     if (timeFilter === 'month') {
-      return `Tháng ${format(referenceDate, "M, yyyy")}`;
+      return isVi 
+        ? `Tháng ${format(referenceDate, "M, yyyy")}` 
+        : format(referenceDate, "MMMM yyyy", { locale: fnsLocale });
     }
-    return `Năm ${format(referenceDate, "yyyy")}`;
+    return isVi 
+      ? `Năm ${format(referenceDate, "yyyy")}` 
+      : format(referenceDate, "yyyy");
   };
 
   const goalTasks = useMemo(() => {
@@ -99,7 +109,7 @@ export function useGoalStats(goal: Goal | null, tasks: Task[]) {
           totalCount += count;
           daysCompleted += 1;
         }
-        return { name: format(day, "EEE"), minutes, count };
+        return { name: format(day, "EEE", { locale: fnsLocale }), minutes, count };
       });
 
     } else if (timeFilter === 'month') {
@@ -137,12 +147,12 @@ export function useGoalStats(goal: Goal | null, tasks: Task[]) {
           totalCount += count;
           daysCompleted += 1;
         }
-        return { name: format(month, "MMM"), minutes, count };
+        return { name: format(month, "MMM", { locale: fnsLocale }), minutes, count };
       });
     }
 
     return { chartData, totalMinutes, daysCompleted, totalCount };
-  }, [goalTasks, goal, timeFilter, referenceDate]);
+  }, [goalTasks, goal, timeFilter, referenceDate, fnsLocale]);
 
   return {
     timeFilter,

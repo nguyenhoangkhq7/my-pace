@@ -7,8 +7,12 @@ import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PlusSignIcon, FilterIcon } from "@hugeicons/core-free-icons";
 import { useBacklogMatrix } from "../hooks/useBacklogMatrix";
+import { useTranslation } from "@/hooks/use-translation";
+import { useOnboardingStore } from "@/features/auth/store/onboarding.store";
 
 export function BacklogMatrix() {
+  const { t } = useTranslation();
+  const { isTourActive, tourStepIndex, advanceTourStep } = useOnboardingStore();
   const {
     tasks,
     isPlanningMode,
@@ -50,7 +54,7 @@ export function BacklogMatrix() {
             }`}
             onClick={() => setActiveTab('tasks')}
           >
-            Eisenhower Matrix
+            {t.eisenhower.matrixName}
           </button>
           <button
             className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors cursor-pointer ${
@@ -60,7 +64,7 @@ export function BacklogMatrix() {
             }`}
             onClick={() => setActiveTab('goals')}
           >
-            Goal Backlog
+            {t.eisenhower.goalBacklogName}
           </button>
         </div>
         <div className="flex space-x-2">
@@ -69,15 +73,15 @@ export function BacklogMatrix() {
               value={selectedFilterId || "none"} 
               onValueChange={(val) => setFilter(val === "none" ? null : val)}
             >
-              <SelectTrigger className="h-8 border-border bg-card text-foreground w-[140px] cursor-pointer">
+              <SelectTrigger className="h-8 border-border bg-card text-foreground w-[180px] cursor-pointer">
                 <div className="flex items-center">
                   <HugeiconsIcon icon={FilterIcon} size={16} className="mr-2" />
-                  <SelectValue placeholder="Filter" />
+                  <SelectValue placeholder={t.common.filter} />
                 </div>
               </SelectTrigger>
               <SelectContent className="bg-card border-border text-foreground">
-                <SelectItem value="none">All Tasks</SelectItem>
-                <SelectItem value="goal">Goal</SelectItem>
+                <SelectItem value="none">{t.common.allTasks}</SelectItem>
+                <SelectItem value="goal">{t.taskForm.goalLabel}</SelectItem>
                 {categories.map(c => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.name}
@@ -88,14 +92,17 @@ export function BacklogMatrix() {
           )}
           <Button
             size="sm"
-            className="h-8 bg-primary hover:bg-primary/90 text-white cursor-pointer"
+            className="h-8 bg-primary hover:bg-primary/90 text-white cursor-pointer tour-new-task-btn"
             onClick={() => {
               setEditingTask(undefined);
               setIsModalOpen(true);
+              if (isTourActive && tourStepIndex === 0) {
+                advanceTourStep();
+              }
             }}
           >
             <HugeiconsIcon icon={PlusSignIcon} size={16} className="mr-2" />
-            New Task
+            {t.board.newTask}
           </Button>
         </div>
       </div>
@@ -103,7 +110,7 @@ export function BacklogMatrix() {
       {activeTab === 'tasks' ? (
         <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-4 min-h-0">
           <EisenhowerQuadrant
-            title="Q1: Do First"
+            title={`${t.eisenhower.q1Label}: ${t.eisenhower.q1Action}`}
             isUrgent={true}
             isImportant={true}
             colorClass="text-red-400"
@@ -114,7 +121,7 @@ export function BacklogMatrix() {
             onTaskClick={handleTaskClick}
           />
           <EisenhowerQuadrant
-            title="Q2: Schedule"
+            title={`${t.eisenhower.q2Label}: ${t.eisenhower.q2Action}`}
             isUrgent={false}
             isImportant={true}
             colorClass="text-blue-400"
@@ -125,7 +132,7 @@ export function BacklogMatrix() {
             onTaskClick={handleTaskClick}
           />
           <EisenhowerQuadrant
-            title="Q3: Delegate"
+            title={`${t.eisenhower.q3Label}: ${t.eisenhower.q3Action}`}
             isUrgent={true}
             isImportant={false}
             colorClass="text-yellow-400"
@@ -136,7 +143,7 @@ export function BacklogMatrix() {
             onTaskClick={handleTaskClick}
           />
           <EisenhowerQuadrant
-            title="Q4: Eliminate"
+            title={`${t.eisenhower.q4Label}: ${t.eisenhower.q4Action}`}
             isUrgent={false}
             isImportant={false}
             colorClass="text-slate-400"

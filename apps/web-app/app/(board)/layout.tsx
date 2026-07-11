@@ -3,7 +3,7 @@
 import React from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { useAuthStore } from "@/features/auth";
-import { OnboardingModal } from "@/features/auth";
+import { OnboardingModal, AppTour } from "@/features/auth";
 
 export default function AppLayout({
   children,
@@ -29,6 +29,7 @@ export default function AppLayout({
       </main>
       {/* Rendered here so it's accessible on all board routes via the Sidebar button */}
       <OnboardingModal />
+      <AppTour />
     </div>
   );
 }

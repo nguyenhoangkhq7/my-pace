@@ -9,6 +9,8 @@ import { useCalendarStore } from "@/features/calendar/store/calendar.store";
 import { useAuthStore } from "@/features/auth";
 import { autoSchedule, type OccupiedSlot } from "../utils/autoSchedule";
 import { toast } from "sonner";
+import { useTranslation } from "@/hooks/use-translation";
+import { useOnboardingStore } from "@/features/auth/store/onboarding.store";
 
 interface StartMyDayModalProps {
   isOpen: boolean;
@@ -29,8 +31,10 @@ const toLocalTimeStr = (iso: string) => {
 export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalProps) {
   const router = useRouter();
   const [isScheduling, setIsScheduling] = useState(false);
+  const { t } = useTranslation();
   const { dailyPlanToday, saveTimeBlocks, confirmPlan } = useBoardStore();
   const { events: fixedEvents } = useCalendarStore();
+  const { isTourActive, tourStepIndex, advanceTourStep } = useOnboardingStore();
   const user = useAuthStore((s) => s.user);
 
   const handleManualSchedule = async () => {
@@ -38,15 +42,18 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
       await confirmPlan(todayStr);
       onClose();
       router.push(`/calendar?view=day&date=${todayStr}`);
+      if (isTourActive && tourStepIndex === 4) {
+        setTimeout(() => advanceTourStep(), 500);
+      }
     } catch (err) {
       console.error(err);
-      toast.error("Không thể chốt kế hoạch.");
+      toast.error(t.startMyDay.errorConfirm);
     }
   };
 
   const handleAutoSchedule = async () => {
     if (!dailyPlanToday || !user?.wakeTime || !user?.sleepTime) {
-      toast.error("Không thể tự động lên lịch. Hãy kiểm tra lại cài đặt giờ thức/ngủ.");
+      toast.error(t.startMyDay.errorAutoScheduleSetup);
       return;
     }
 
@@ -74,19 +81,22 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
         );
 
         if (blocks.length === 0) {
-          toast.warning("Không còn đủ thời gian trống hôm nay để lên lịch tự động.");
+          toast.warning(t.startMyDay.errorNoTimeLeft);
           onClose();
           return;
         }
 
         await saveTimeBlocks(blocks);
         await confirmPlan(todayStr);
-        toast.success("Đã tự động sắp xếp lịch thành công!");
+        toast.success(t.startMyDay.successAutoSchedule);
         onClose();
         router.push(`/calendar?view=day&date=${todayStr}`);
+        if (isTourActive && tourStepIndex === 4) {
+          setTimeout(() => advanceTourStep(), 500); // Wait for route & modal animation
+        }
     } catch (err) {
       console.error(err);
-      toast.error("Có lỗi xảy ra khi tự động lên lịch.");
+      toast.error(t.startMyDay.errorAutoSchedule);
     } finally {
       setIsScheduling(false);
     }
@@ -98,17 +108,14 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
         <DialogHeader>
           <div className="flex items-center space-x-3 mb-1">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-2xl">🚀</div>
-            <DialogTitle className="text-xl">Start My Day</DialogTitle>
+            <DialogTitle className="text-xl">{t.startMyDay.title}</DialogTitle>
           </div>
           <DialogDescription className="text-slate-400 text-sm leading-relaxed pt-1">
-            Bạn có muốn phân bổ thời gian cụ thể cho các công việc hôm nay không?
-            Hệ thống sẽ giúp bạn sắp xếp{" "}
-            <span className="text-primary font-medium">{dailyPlanToday?.tasks?.length || 0} task</span>{" "}
-            vào các khung giờ còn trống.
+            {t.startMyDay.description(dailyPlanToday?.tasks?.length || 0)}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 gap-3 py-4">
+        <div className="grid grid-cols-1 gap-3 py-4 tour-schedule-area">
           {/* Auto Schedule Card */}
           <button
             onClick={handleAutoSchedule}
@@ -117,11 +124,11 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
           >
             <div className="flex items-center space-x-3 mb-2">
               <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-lg">⚡</div>
-              <span className="font-semibold text-slate-100">Auto-Schedule</span>
-              {isScheduling && <span className="text-xs text-primary animate-pulse ml-auto">Đang xử lý...</span>}
+              <span className="font-semibold text-slate-100">{t.startMyDay.autoSchedule}</span>
+              {isScheduling && <span className="text-xs text-primary animate-pulse ml-auto">{t.startMyDay.processing}</span>}
             </div>
             <p className="text-sm text-slate-400 leading-snug">
-              Tôi muốn hệ thống tự động sắp xếp các task vào lịch, tôn trọng độ ưu tiên và các sự kiện cố định.
+              {t.startMyDay.autoScheduleDesc}
             </p>
           </button>
 
@@ -132,17 +139,17 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
           >
             <div className="flex items-center space-x-3 mb-2">
               <div className="w-8 h-8 rounded-lg bg-slate-700 flex items-center justify-center text-lg">✋</div>
-              <span className="font-semibold text-slate-200">Manual Schedule</span>
+              <span className="font-semibold text-slate-200">{t.startMyDay.manualSchedule}</span>
             </div>
             <p className="text-sm text-slate-400 leading-snug">
-              Tôi muốn tự kéo thả các task vào lịch để kiểm soát chính xác thời gian bắt đầu và kết thúc.
+              {t.startMyDay.manualScheduleDesc}
             </p>
           </button>
         </div>
 
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} className="text-slate-500 hover:text-slate-300">
-            Bỏ qua, tôi chỉ cần danh sách
+            {t.startMyDay.skipJustList}
           </Button>
         </DialogFooter>
       </DialogContent>

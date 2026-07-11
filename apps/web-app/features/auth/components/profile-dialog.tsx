@@ -13,6 +13,7 @@ import { post, put } from "@/lib/fetchClient";
 import { AppAlert } from "@/components/feedback/app-alert";
 import { cn } from "@/lib/utils";
 import { TimeSelect } from "@/components/ui/time-select";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface ProfileFormValues {
   fullName: string;
@@ -26,6 +27,7 @@ interface ProfileDialogProps {
 }
 
 export function ProfileDialog({ isOpen, onOpenChange }: ProfileDialogProps) {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const accessToken = useAuthStore((s) => s.accessToken);
   const setSession = useAuthStore((s) => s.setSession);
@@ -97,11 +99,11 @@ export function ProfileDialog({ isOpen, onOpenChange }: ProfileDialogProps) {
         }
         onOpenChange(false);
       } else {
-        setError("Không thể lưu thông tin. Vui lòng thử lại.");
+        setError(t.profile.updateError);
       }
     } catch (err: unknown) {
       console.error("Profile update error:", err);
-      const errorMessage = err instanceof Error ? err.message : "Đã xảy ra lỗi kết nối với máy chủ.";
+      const errorMessage = err instanceof Error ? err.message : t.profile.connectionError;
       setError(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -126,10 +128,10 @@ export function ProfileDialog({ isOpen, onOpenChange }: ProfileDialogProps) {
           <DialogHeader className="space-y-1">
             <DialogTitle className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
               <HugeiconsIcon icon={UserCircleIcon} className="text-primary" size={24} />
-              Cập nhật thông tin cá nhân
+              {t.profile.title}
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              Thiết lập các thông số sinh hoạt cơ bản để MyPACE tính toán quỹ thời gian cho bạn.
+              {t.profile.desc}
             </DialogDescription>
           </DialogHeader>
 
@@ -137,16 +139,16 @@ export function ProfileDialog({ isOpen, onOpenChange }: ProfileDialogProps) {
             <div className="space-y-4">
               {/* Full Name */}
               <div className="space-y-1.5">
-                <Label htmlFor="fullName" className="text-xs font-semibold text-muted-foreground">Họ và tên</Label>
+                <Label htmlFor="fullName" className="text-xs font-semibold text-muted-foreground">{t.profile.fullName}</Label>
                 <div className="relative">
                   <Input
                     id="fullName"
-                    placeholder="Nhập họ và tên..."
+                    placeholder={t.profile.fullNamePlaceholder}
                     className={cn(
                       "h-10 rounded-xl bg-muted/20 border-border/40 focus:border-primary px-3 text-xs",
                       errors.fullName && "border-rose-500 focus:border-rose-500"
                     )}
-                    {...register("fullName", { required: "Họ và tên không được để trống" })}
+                    {...register("fullName", { required: t.profile.fullNameRequired })}
                   />
                 </div>
                 {errors.fullName && (
@@ -159,7 +161,7 @@ export function ProfileDialog({ isOpen, onOpenChange }: ProfileDialogProps) {
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
                     <HugeiconsIcon icon={Clock01Icon} size={14} className="text-emerald-500" />
-                    Giờ thức dậy
+                    {t.profile.wakeTime}
                   </Label>
                   <TimeSelect
                     value={wakeTime}
@@ -169,7 +171,7 @@ export function ProfileDialog({ isOpen, onOpenChange }: ProfileDialogProps) {
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
                     <HugeiconsIcon icon={Clock01Icon} size={14} className="text-indigo-400" />
-                    Giờ đi ngủ
+                    {t.profile.sleepTime}
                   </Label>
                   <TimeSelect
                     value={sleepTime}
@@ -181,11 +183,11 @@ export function ProfileDialog({ isOpen, onOpenChange }: ProfileDialogProps) {
               {/* Available Buffer Slider */}
               <div className="space-y-2.5 pt-2">
                 <div className="flex justify-between items-center">
-                  <Label className="text-xs font-semibold text-muted-foreground">Tỉ lệ thời gian dự phòng (Buffer)</Label>
+                  <Label className="text-xs font-semibold text-muted-foreground">{t.profile.bufferRatio}</Label>
                   <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-lg">{buffer}%</span>
                 </div>
                 <p className="text-[10px] leading-relaxed text-muted-foreground/80">
-                  Thời gian đệm để chuẩn bị hoặc nghỉ ngơi giữa các Task (MyPACE khuyên dùng 20% để giữ nhịp độ thoải mái nhất).
+                  {t.profile.bufferDesc}
                 </p>
                 <div className="grid grid-cols-5 gap-2 pt-1">
                   {[10, 15, 20, 25, 30].map((opt) => (
@@ -210,21 +212,21 @@ export function ProfileDialog({ isOpen, onOpenChange }: ProfileDialogProps) {
             {error && (
               <AppAlert
                 variant="error"
-                title="Cập nhật thất bại"
+                title={t.profile.updateFailed}
                 description={error}
               />
             )}
 
             <DialogFooter className="flex flex-row justify-between sm:justify-between items-center pt-4 border-t border-border/40">
               {/* Left side: Logout Button */}
-              <Button
+            <Button
                 type="button"
                 variant="ghost"
                 onClick={() => setIsConfirmLogoutOpen(true)}
                 className="h-10 px-3 rounded-xl font-medium text-rose-500 hover:bg-rose-500/10 hover:text-rose-500 transition-colors flex items-center gap-2 shrink-0 cursor-pointer"
               >
                 <HugeiconsIcon icon={Logout03Icon} size={18} className="shrink-0" />
-                <span>Đăng xuất</span>
+                <span>{t.profile.logout}</span>
               </Button>
 
               {/* Right side: Cancel & Save */}
@@ -235,14 +237,14 @@ export function ProfileDialog({ isOpen, onOpenChange }: ProfileDialogProps) {
                   onClick={() => onOpenChange(false)}
                   className="h-10 rounded-xl font-medium text-muted-foreground hover:text-foreground"
                 >
-                  Hủy
+                  {t.profile.cancel}
                 </Button>
                 <Button
                   type="submit"
                   disabled={isSubmitting || !isValid}
                   className="h-10 px-6 rounded-xl font-semibold bg-primary text-primary-foreground"
                 >
-                  {isSubmitting ? "Đang lưu..." : "Lưu thay đổi"}
+                  {isSubmitting ? t.profile.saving : t.profile.saveChanges}
                 </Button>
               </div>
             </DialogFooter>
@@ -259,10 +261,10 @@ export function ProfileDialog({ isOpen, onOpenChange }: ProfileDialogProps) {
             </div>
             <div className="space-y-1">
               <DialogTitle className="text-lg font-bold text-foreground text-center">
-                Đăng xuất tài khoản
+                {t.profile.logoutConfirmTitle}
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground text-center">
-                Bạn có chắc chắn muốn đăng xuất khỏi hệ thống MyPACE?
+                {t.profile.logoutConfirmDesc}
               </DialogDescription>
             </div>
           </div>
@@ -273,7 +275,7 @@ export function ProfileDialog({ isOpen, onOpenChange }: ProfileDialogProps) {
               onClick={() => setIsConfirmLogoutOpen(false)}
               className="h-10 rounded-xl font-medium text-muted-foreground hover:text-foreground flex-1"
             >
-              Hủy
+              {t.profile.logoutConfirmCancel}
             </Button>
             <Button
               type="button"
@@ -281,7 +283,7 @@ export function ProfileDialog({ isOpen, onOpenChange }: ProfileDialogProps) {
               onClick={handleLogout}
               className="h-10 rounded-xl font-semibold bg-rose-600 hover:bg-rose-500 text-white flex-1 transition-all active:scale-[0.97]"
             >
-              Đồng ý
+              {t.profile.logoutConfirmOk}
             </Button>
           </DialogFooter>
         </DialogContent>

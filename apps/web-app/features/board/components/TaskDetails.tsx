@@ -2,6 +2,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Calendar01Icon } from "@hugeicons/core-free-icons";
 import { Task } from "../types";
 import { TaskCardChecklist } from "./TaskCardChecklist";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface TaskDetailsProps {
   task: Task;
@@ -9,11 +10,13 @@ interface TaskDetailsProps {
 }
 
 export function TaskDetails({ task, isConfirmed }: TaskDetailsProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex items-center gap-2 mt-1.5 flex-wrap">
       {task.goalId ? (
         <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-          Goal
+          {t.common.goal}
         </span>
       ) : task.category ? (
         <span 

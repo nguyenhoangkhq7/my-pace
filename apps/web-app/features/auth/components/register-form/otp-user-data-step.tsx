@@ -40,6 +40,7 @@ import {
     type UserDataStepValues,
 } from "../../schema/auth.schema";
 import { useRegisterStore } from "../../store/register.store";
+import { useTranslation } from "@/hooks/use-translation";
 
 type RegisterRequest = {
     email: string;
@@ -48,6 +49,7 @@ type RegisterRequest = {
 };
 
 export function OtpUserDataStep() {
+    const { t } = useTranslation();
     const router = useRouter();
     const setSession = useAuthStore((state) => state.setSession);
     const {
@@ -101,8 +103,8 @@ export function OtpUserDataStep() {
 
             setSession(session);
 
-            appToast.success("Account created successfully", {
-                description: "You are now signed in.",
+            appToast.success(t.auth.registerSuccess, {
+                description: t.auth.registerSuccessDesc,
             });
 
             resetRegisterData();
@@ -131,11 +133,11 @@ export function OtpUserDataStep() {
 
                     <div className="space-y-2">
                         <CardTitle className="text-3xl font-bold tracking-tight">
-                            Create your profile
+                            {t.auth.createProfile}
                         </CardTitle>
 
                         <CardDescription className="mx-auto max-w-md text-base leading-relaxed text-muted-foreground">
-                            Complete your registration for:
+                            {t.auth.createProfileDesc}
                         </CardDescription>
 
                         <p className="text-sm font-medium text-foreground">
@@ -147,25 +149,25 @@ export function OtpUserDataStep() {
                 <CardContent className="space-y-6 px-0">
                     <FieldGroup className="space-y-5">
                         <Field className="space-y-2">
-                            <FieldLabel htmlFor="fullName">Full name</FieldLabel>
+                            <FieldLabel htmlFor="fullName">{t.auth.fullNameLabel}</FieldLabel>
                             <Input
                                 {...form.register("fullName")}
                                 id="fullName"
                                 type="text"
-                                placeholder="Enter your full name"
+                                placeholder={t.auth.fullNamePlaceholder}
                                 className="h-12 rounded-xl"
                             />
                             <FieldError>{form.formState.errors.fullName?.message}</FieldError>
                         </Field>
 
                         <Field className="space-y-2">
-                            <FieldLabel htmlFor="password">Password</FieldLabel>
+                            <FieldLabel htmlFor="password">{t.auth.passwordLabel2}</FieldLabel>
                             <div className="relative">
                                 <Input
                                     {...form.register("password")}
                                     id="password"
                                     type={showPassword ? "text" : "password"}
-                                    placeholder="At least 8 characters"
+                                    placeholder={t.auth.passwordPlaceholder2}
                                     className="h-12 rounded-xl pr-12"
                                 />
                                 <button
@@ -183,13 +185,13 @@ export function OtpUserDataStep() {
                         </Field>
 
                         <Field className="space-y-2">
-                            <FieldLabel htmlFor="confirmPassword">Confirm password</FieldLabel>
+                            <FieldLabel htmlFor="confirmPassword">{t.auth.confirmPasswordLabel}</FieldLabel>
                             <div className="relative">
                                 <Input
                                     {...form.register("confirmPassword")}
                                     id="confirmPassword"
                                     type={showConfirmPassword ? "text" : "password"}
-                                    placeholder="Retype your password"
+                                    placeholder={t.auth.confirmPasswordPlaceholder}
                                     className="h-12 rounded-xl pr-12"
                                 />
                                 <button
@@ -215,22 +217,22 @@ export function OtpUserDataStep() {
                     disabled={form.formState.isSubmitting || !form.formState.isValid}
                     className="h-12 w-full rounded-xl text-base font-medium"
                 >
-                    {form.formState.isSubmitting ? "Creating account..." : "Create account"}
+                    {form.formState.isSubmitting ? t.auth.creatingAccount : t.auth.createAccountBtn}
                 </Button>
 
                 {form.formState.errors.root && (
                     <AppAlert
                         variant="error"
-                        title="Unable to create account"
+                        title={t.auth.createAccountError}
                         description={form.formState.errors.root.message}
                     />
                 )}
 
                 <div className="flex items-center justify-center gap-1 text-sm text-muted-foreground">
-                    <span>Already have an account?</span>
+                    <span>{t.auth.alreadyHaveAccount}</span>
 
                     <Button variant="link" className="h-auto p-0 text-sm font-medium text-foreground hover:text-foreground/80" type="button" asChild>
-                        <Link href="/login">Login</Link>
+                        <Link href="/login">{t.auth.loginLink}</Link>
                     </Button>
                 </div>
             </CardFooter>

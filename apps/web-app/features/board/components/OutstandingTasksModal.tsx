@@ -5,6 +5,7 @@ import { useBoardStore } from "../store/board.store";
 import { Task } from "../types";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Delete01Icon, Undo02Icon } from "@hugeicons/core-free-icons";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface OutstandingTasksModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ interface OutstandingTasksModalProps {
 export function OutstandingTasksModal({ isOpen, onClose, tasks }: OutstandingTasksModalProps) {
   const { updateTask, deleteTask } = useBoardStore();
   const [actioningId, setActioningId] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   const handleMoveToBacklog = async (task: Task) => {
     setActioningId(task.id);
@@ -47,10 +49,10 @@ export function OutstandingTasksModal({ isOpen, onClose, tasks }: OutstandingTas
         <DialogHeader>
           <div className="flex items-center space-x-3 mb-1">
             <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-2xl">⚠️</div>
-            <DialogTitle className="text-xl">Công việc tồn đọng từ hôm qua</DialogTitle>
+            <DialogTitle className="text-xl">{t.outstanding.title}</DialogTitle>
           </div>
           <DialogDescription className="text-slate-400 text-sm leading-relaxed pt-1">
-            Hệ thống phát hiện bạn có một số công việc đã chọn hôm qua nhưng chưa hoàn thành. Hãy chọn đưa về Backlog hoặc xóa bỏ chúng để giữ bảng làm việc sạch sẽ.
+            {t.outstanding.description}
           </DialogDescription>
         </DialogHeader>
 
@@ -86,7 +88,7 @@ export function OutstandingTasksModal({ isOpen, onClose, tasks }: OutstandingTas
                   onClick={() => handleMoveToBacklog(task)}
                 >
                   <HugeiconsIcon icon={Undo02Icon} className="w-3.5 h-3.5" />
-                  <span>Về Backlog</span>
+                  <span>{t.outstanding.moveToBacklog}</span>
                 </Button>
                 <Button
                   size="sm"
@@ -96,7 +98,7 @@ export function OutstandingTasksModal({ isOpen, onClose, tasks }: OutstandingTas
                   onClick={() => handleDelete(task.id)}
                 >
                   <HugeiconsIcon icon={Delete01Icon} className="w-3.5 h-3.5" />
-                  <span>Xóa</span>
+                  <span>{t.outstanding.delete}</span>
                 </Button>
               </div>
             </div>
@@ -105,7 +107,7 @@ export function OutstandingTasksModal({ isOpen, onClose, tasks }: OutstandingTas
 
         <DialogFooter className="mt-4 border-t border-slate-800 pt-4 shrink-0">
           <Button variant="outline" className="border-slate-850 bg-slate-900 hover:bg-slate-800 text-slate-300 h-9" onClick={onClose}>
-            Đóng
+            {t.outstanding.close}
           </Button>
         </DialogFooter>
       </DialogContent>

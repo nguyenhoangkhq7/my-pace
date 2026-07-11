@@ -7,6 +7,7 @@ import { DailyPlanTask, DailyPlan } from "@/features/board/types";
 import { UnscheduledTaskItem } from "./UnscheduledTaskItem";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Clock01Icon } from "@hugeicons/core-free-icons";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface CalendarSidebarProps {
   unscheduledTasks: DailyPlanTask[];
@@ -20,6 +21,7 @@ interface CalendarSidebarProps {
 
 export const CalendarSidebar = forwardRef<HTMLDivElement, CalendarSidebarProps>(
   ({ unscheduledTasks, isAutoScheduling, onAutoSchedule, dailyPlanLength, timeBlocksLength, isSidebarOpen, dailyPlanToday }, ref) => {
+    const { t } = useTranslation();
     const sidebarRef = useRef<HTMLDivElement>(null);
     const draggableRef = useRef<Draggable | null>(null);
 
@@ -66,9 +68,9 @@ export const CalendarSidebar = forwardRef<HTMLDivElement, CalendarSidebarProps>(
             <HugeiconsIcon icon={Clock01Icon} size={20} />
           </div>
           <div className="space-y-1">
-            <div className="text-xs font-bold" style={{ color: 'var(--card-foreground)' }}>Chưa lên kế hoạch</div>
+            <div className="text-xs font-bold" style={{ color: 'var(--card-foreground)' }}>{t.calendar.notPlanned}</div>
             <div className="text-[10px] text-muted-foreground leading-normal">
-              Bạn chưa lên kế hoạch cho ngày hôm nay.
+              {t.calendar.notPlannedDesc}
             </div>
           </div>
           <Button
@@ -76,7 +78,7 @@ export const CalendarSidebar = forwardRef<HTMLDivElement, CalendarSidebarProps>(
             className="w-full text-[11px] py-1.5 h-auto font-semibold rounded-lg shadow-md cursor-pointer"
             onClick={() => window.location.href = "/"}
           >
-            Lên kế hoạch ngay
+            {t.calendar.planNow}
           </Button>
         </div>
       );
@@ -86,8 +88,8 @@ export const CalendarSidebar = forwardRef<HTMLDivElement, CalendarSidebarProps>(
       <div className="w-56 flex-shrink-0 flex flex-col rounded-2xl border border-border bg-card overflow-hidden">
         <div className="px-4 py-3 border-b border-border flex flex-col gap-2">
           <div>
-            <div className="text-xs font-bold text-card-foreground uppercase tracking-wider">Todo Today</div>
-            <div className="text-[10px] text-muted-foreground mt-0.5">Kéo vào thả để xếp lịch</div>
+            <div className="text-xs font-bold text-card-foreground uppercase tracking-wider">{t.calendar.todoToday}</div>
+            <div className="text-[10px] text-muted-foreground mt-0.5">{t.calendar.dragToSchedule}</div>
           </div>
           <Button
             size="sm"
@@ -95,7 +97,7 @@ export const CalendarSidebar = forwardRef<HTMLDivElement, CalendarSidebarProps>(
             disabled={isAutoScheduling}
             className="w-full bg-primary/20 border border-primary/30 hover:bg-primary/30 text-primary text-[11px] py-1 h-auto font-semibold rounded-lg"
           >
-            {isAutoScheduling ? "Đang xếp lịch..." : "Tự động xếp lịch"}
+            {isAutoScheduling ? t.calendar.autoScheduling : t.calendar.autoSchedule}
           </Button>
         </div>
 

@@ -11,6 +11,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Settings01Icon, PlusSignIcon } from "@hugeicons/core-free-icons";
 import { CategoryCreateForm } from "@/features/board/components/CategoryCreateForm";
 import { useBoardStore } from "@/features/board/store/board.store";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface GoalFormCategoryFieldsProps {
   categoryId: string;
@@ -28,6 +29,7 @@ export function GoalFormCategoryFields({
   setIsManagingCategories,
 }: GoalFormCategoryFieldsProps) {
   const { categories } = useBoardStore();
+  const { t } = useTranslation();
 
   const handleCategoryCreateSuccess = (catId: string) => {
     setCategoryId(catId);
@@ -36,7 +38,7 @@ export function GoalFormCategoryFields({
 
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium">Category</label>
+      <label className="text-sm font-medium">{t.goals.categoryLabel}</label>
       {isCreatingCategory ? (
         <CategoryCreateForm
           onCancel={() => setIsCreatingCategory(false)}
@@ -45,14 +47,14 @@ export function GoalFormCategoryFields({
       ) : (
         <div className="flex items-center space-x-1.5">
           <Select
-            value={categoryId}
-            onValueChange={(val: string) => setCategoryId(val)}
+             value={categoryId}
+             onValueChange={(val: string) => setCategoryId(val)}
           >
             <SelectTrigger className="w-full bg-card border-border">
-              <SelectValue placeholder="Chọn Category" />
+              <SelectValue placeholder={t.goals.categoryLabel} />
             </SelectTrigger>
             <SelectContent className="bg-popover border-border text-foreground">
-              <SelectItem value="none">Không có Category</SelectItem>
+              <SelectItem value="none">{t.goals.noCategory}</SelectItem>
               {categories.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
                   <div className="flex items-center space-x-2">
@@ -68,7 +70,7 @@ export function GoalFormCategoryFields({
             variant="outline"
             className="border-border bg-card text-foreground px-2 shrink-0 h-7"
             onClick={() => setIsCreatingCategory(true)}
-            title="Thêm Category"
+            title={t.goals.categoryLabel}
           >
             <HugeiconsIcon icon={PlusSignIcon} className="w-4 h-4" />
           </Button>
@@ -77,7 +79,7 @@ export function GoalFormCategoryFields({
             variant="outline"
             className="border-border bg-card text-foreground px-2 shrink-0 h-7"
             onClick={() => setIsManagingCategories(true)}
-            title="Quản lý Category"
+            title={t.goals.categoryLabel}
           >
             <HugeiconsIcon icon={Settings01Icon} className="w-4 h-4" />
           </Button>
