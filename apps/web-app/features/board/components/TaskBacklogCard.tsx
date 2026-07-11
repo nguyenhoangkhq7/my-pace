@@ -5,6 +5,7 @@ import { TaskCardChecklist } from "./TaskCardChecklist";
 import { useBoardStore } from "../store/board.store";
 import { InlineTitleEditor } from "./InlineTitleEditor";
 import { useTranslation } from "@/hooks/use-translation";
+import { cn } from "@/lib/utils";
 
 interface TaskBacklogCardProps {
   task: Task;
@@ -23,11 +24,12 @@ export function TaskBacklogCard({
   return (
     <div 
       onClick={onClick}
-      className={`p-3 rounded-lg border text-sm cursor-pointer transition-all ${
+      className={cn(
+        "p-3 rounded-lg border text-sm cursor-pointer transition-all tour-backlog-item",
         isPlanned
           ? "border-primary bg-primary/10 text-primary"
           : "border-border bg-card hover:border-border/80 hover:bg-muted text-foreground"
-      }`}
+      )}
     >
       <InlineTitleEditor
         initialTitle={task.title}

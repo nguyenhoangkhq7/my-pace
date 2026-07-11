@@ -9,6 +9,7 @@ export interface TaskChecklistItem {
   taskId: string;
   title: string;
   isCompleted: boolean;
+  orderIndex?: number;
   createdAt: string;
   updatedAt: string;
 }

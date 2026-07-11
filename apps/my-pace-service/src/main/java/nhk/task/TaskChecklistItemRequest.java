@@ -9,4 +9,5 @@ public class TaskChecklistItemRequest {
     private String title;
     
     private Boolean isCompleted;
+    private Integer orderIndex;
 }

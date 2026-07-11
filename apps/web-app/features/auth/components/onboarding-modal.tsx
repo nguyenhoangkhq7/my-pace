@@ -138,7 +138,7 @@ export function OnboardingModal() {
             <Button 
               type="button" 
               onClick={() => {
-                router.push("/");
+                router.push("/calendar");
                 // Wait for the modal exit animation (300ms) and scrollbar restoration to prevent spotlight misalignment
                 setTimeout(() => startTour(), 400);
               }}

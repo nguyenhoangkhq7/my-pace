@@ -6,6 +6,7 @@ import { NoPlanState } from "./NoPlanState";
 import { CancelPlanDialog } from "./CancelPlanDialog";
 import { useExecutionBoard } from "../hooks/useExecutionBoard";
 import { useTranslation } from "@/hooks/use-translation";
+import { useOnboardingStore } from "@/features/auth/store/onboarding.store";
 
 export function ExecutionBoard({ currentDate, tomorrowDate }: { currentDate: string; tomorrowDate: string }) {
   const {
@@ -56,7 +57,13 @@ export function ExecutionBoard({ currentDate, tomorrowDate }: { currentDate: str
           activeTab={activeTab}
           isStarted={isStarted}
           onEditPlan={() => setPlanningMode(true, activeTab as 'today' | 'tomorrow')}
-          onStartMyDay={() => setIsStartMyDayOpen(true)}
+          onStartMyDay={() => {
+            setIsStartMyDayOpen(true);
+            const { isTourActive, tourStepIndex, advanceTourStep } = useOnboardingStore.getState();
+            if (isTourActive && tourStepIndex === 8) {
+              setTimeout(() => advanceTourStep(), 400); // Wait for modal to open
+            }
+          }}
           onCancelPlan={() => setIsCancelModalOpen(true)}
         />
       );

@@ -42,8 +42,9 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
       await confirmPlan(todayStr);
       onClose();
       router.push(`/calendar?view=day&date=${todayStr}`);
-      if (isTourActive && tourStepIndex === 4) {
-        setTimeout(() => advanceTourStep(), 500);
+      if (isTourActive && tourStepIndex === 8) {
+        // Advance to step 9 (drag-drop on calendar) after a short delay for navigation
+        setTimeout(() => advanceTourStep(), 600);
       }
     } catch (err) {
       console.error(err);
@@ -91,7 +92,7 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
         toast.success(t.startMyDay.successAutoSchedule);
         onClose();
         router.push(`/calendar?view=day&date=${todayStr}`);
-        if (isTourActive && tourStepIndex === 4) {
+        if (isTourActive && tourStepIndex === 8) {
           setTimeout(() => advanceTourStep(), 500); // Wait for route & modal animation
         }
     } catch (err) {
@@ -103,7 +104,12 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog modal={!isTourActive} open={isOpen} onOpenChange={(open) => {
+      if (!open) {
+        if (isTourActive) return;
+        onClose();
+      }
+    }}>
       <DialogContent className="sm:max-w-[480px] bg-slate-950 text-slate-50 border-slate-800">
         <DialogHeader>
           <div className="flex items-center space-x-3 mb-1">
@@ -135,7 +141,7 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
           {/* Manual Schedule Card */}
           <button
             onClick={handleManualSchedule}
-            className="group flex flex-col items-start p-4 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 hover:border-slate-600 transition-all text-left"
+            className="tour-manual-schedule-btn group flex flex-col items-start p-4 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 hover:border-slate-600 transition-all text-left"
           >
             <div className="flex items-center space-x-3 mb-2">
               <div className="w-8 h-8 rounded-lg bg-slate-700 flex items-center justify-center text-lg">✋</div>
