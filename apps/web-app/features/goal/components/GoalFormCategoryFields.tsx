@@ -48,10 +48,10 @@ export function GoalFormCategoryFields({
             value={categoryId}
             onValueChange={(val: string) => setCategoryId(val)}
           >
-            <SelectTrigger className="w-full bg-slate-900 border-slate-800">
+            <SelectTrigger className="w-full bg-card border-border">
               <SelectValue placeholder="Chọn Category" />
             </SelectTrigger>
-            <SelectContent className="bg-slate-950 border-slate-800 text-slate-200">
+            <SelectContent className="bg-popover border-border text-foreground">
               <SelectItem value="none">Không có Category</SelectItem>
               {categories.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
@@ -66,7 +66,7 @@ export function GoalFormCategoryFields({
           <Button
             type="button"
             variant="outline"
-            className="border-slate-800 bg-slate-900 text-slate-300 px-2 shrink-0 h-7"
+            className="border-border bg-card text-foreground px-2 shrink-0 h-7"
             onClick={() => setIsCreatingCategory(true)}
             title="Thêm Category"
           >
@@ -75,7 +75,7 @@ export function GoalFormCategoryFields({
           <Button
             type="button"
             variant="outline"
-            className="border-slate-800 bg-slate-900 text-slate-300 px-2 shrink-0 h-7"
+            className="border-border bg-card text-foreground px-2 shrink-0 h-7"
             onClick={() => setIsManagingCategories(true)}
             title="Quản lý Category"
           >

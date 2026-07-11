@@ -22,13 +22,13 @@ export function CategoryEditForm({ category, onSave, onCancel }: CategoryEditFor
   };
 
   return (
-    <div className="space-y-3 p-3 bg-slate-900 border border-slate-800 rounded-md">
+    <div className="space-y-3 p-3 bg-muted border border-border rounded-md">
       <Input
         autoFocus
         placeholder="Tên Category"
         value={editName}
         onChange={(e) => setEditName(e.target.value)}
-        className="bg-slate-950 border-slate-800 text-sm h-9"
+        className="bg-background border-border text-sm h-9"
       />
       <div className="flex flex-wrap gap-1.5 items-center">
         {CATEGORY_COLORS.map((color) => (
@@ -37,8 +37,8 @@ export function CategoryEditForm({ category, onSave, onCancel }: CategoryEditFor
             type="button"
             onClick={() => setEditColor(color)}
             className={cn(
-              "w-5 h-5 rounded-full cursor-pointer ring-offset-slate-900 border border-black/15 transition-all hover:scale-110 duration-200",
-              editColor === color ? "ring-2 ring-white scale-105 shadow-md" : "opacity-85 hover:opacity-100"
+              "w-5 h-5 rounded-full cursor-pointer ring-offset-background border border-black/15 transition-all hover:scale-110 duration-200",
+              editColor === color ? "ring-2 ring-foreground scale-105 shadow-md" : "opacity-85 hover:opacity-100"
             )}
             style={{ backgroundColor: color }}
           />
@@ -67,14 +67,14 @@ export function CategoryEditForm({ category, onSave, onCancel }: CategoryEditFor
         <Button
           size="sm"
           variant="outline"
-          className="h-7 text-xs border-slate-700 text-slate-300 flex-1 px-2 cursor-pointer"
+          className="h-7 text-xs border-border text-foreground flex-1 px-2 cursor-pointer"
           onClick={onCancel}
         >
           Hủy
         </Button>
         <Button
           size="sm"
-          className="h-7 text-xs bg-primary text-white flex-1 px-2 cursor-pointer"
+          className="h-7 text-xs bg-primary text-primary-foreground flex-1 px-2 cursor-pointer"
           onClick={handleSave}
         >
           Lưu

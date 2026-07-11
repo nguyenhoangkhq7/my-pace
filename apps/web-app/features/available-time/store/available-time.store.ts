@@ -6,15 +6,20 @@ interface AvailableTimeState {
   dataToday: AvailableTimeData | null;
   dataTomorrow: AvailableTimeData | null;
   isLoading: boolean;
+  streakToCelebrate: number | null;
   fetchAvailableTimeToday: (date: string) => Promise<void>;
   fetchAvailableTimeTomorrow: (date: string) => Promise<void>;
-  checkin: (date: string, checkinTime?: string) => Promise<void>;
+  checkin: (date: string, checkinTime?: string) => Promise<any>;
+  setStreakToCelebrate: (streak: number | null) => void;
 }
 
 export const useAvailableTimeStore = create<AvailableTimeState>((set) => ({
   dataToday: null,
   dataTomorrow: null,
   isLoading: false,
+  streakToCelebrate: null,
+
+  setStreakToCelebrate: (streak) => set({ streakToCelebrate: streak }),
 
   fetchAvailableTimeToday: async (date) => {
     set({ isLoading: true });
@@ -41,7 +46,11 @@ export const useAvailableTimeStore = create<AvailableTimeState>((set) => ({
     set({ isLoading: true });
     try {
       const res = await availableTimeApi.checkin(date, checkinTime);
-      set({ dataToday: res.data });
+      set({ 
+        dataToday: res.data,
+        streakToCelebrate: res.data.streak > 0 ? res.data.streak : null
+      });
+      return res.data;
     } catch (err) {
       console.error("Failed to record checkin", err);
     } finally {

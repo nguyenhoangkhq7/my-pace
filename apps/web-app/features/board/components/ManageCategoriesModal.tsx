@@ -73,10 +73,10 @@ export function ManageCategoriesModal({ isOpen, onClose }: ManageCategoriesModal
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="bg-slate-950 text-slate-50 border-slate-800 sm:max-w-[450px] max-h-[80vh] flex flex-col p-6 overflow-hidden">
+      <DialogContent className="bg-background text-foreground border-border sm:max-w-[450px] max-h-[80vh] flex flex-col p-6 overflow-hidden">
         <DialogHeader>
           <DialogTitle>Quản lý Category</DialogTitle>
-          <DialogDescription className="text-slate-400">
+          <DialogDescription className="text-muted-foreground">
             Chỉnh sửa tên, màu sắc hoặc xóa các Category hiện có.
           </DialogDescription>
         </DialogHeader>
@@ -85,7 +85,7 @@ export function ManageCategoriesModal({ isOpen, onClose }: ManageCategoriesModal
 
         <div className="flex-1 overflow-y-auto mt-4 pr-1 space-y-3 scrollbar-thin">
           {categories.length === 0 ? (
-            <p className="text-sm text-slate-500 text-center py-6">Chưa có Category nào.</p>
+            <p className="text-sm text-muted-foreground text-center py-6">Chưa có Category nào.</p>
           ) : (
             categories.map((c) => {
               const isEditing = editingId === c.id;
@@ -113,8 +113,8 @@ export function ManageCategoriesModal({ isOpen, onClose }: ManageCategoriesModal
           )}
         </div>
 
-        <DialogFooter className="mt-4 border-t border-slate-800 pt-4 shrink-0">
-          <Button variant="outline" className="border-slate-850 bg-slate-900 hover:bg-slate-800 text-slate-300 h-9" onClick={onClose}>
+        <DialogFooter className="mt-4 border-t border-border pt-4 shrink-0">
+          <Button variant="outline" className="border-border bg-card hover:bg-muted text-foreground h-9" onClick={onClose}>
             Đóng
           </Button>
         </DialogFooter>

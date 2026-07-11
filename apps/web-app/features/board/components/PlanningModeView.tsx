@@ -2,8 +2,14 @@ import { Button } from "@/components/ui/button";
 import { Task } from "../types";
 import { PlanningTaskItem } from "./PlanningTaskItem";
 
+import type { AvailableTimeData } from "@/features/available-time/types";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { InformationCircleIcon } from "@hugeicons/core-free-icons";
+
 interface PlanningModeViewProps {
   currentAvailable: number;
+  availableData: AvailableTimeData | null;
   plannedTaskIds: string[];
   tasks: Task[];
   onCancel: () => void;
@@ -13,6 +19,7 @@ interface PlanningModeViewProps {
 
 export function PlanningModeView({
   currentAvailable,
+  availableData,
   plannedTaskIds,
   tasks,
   onCancel,
@@ -26,23 +33,77 @@ export function PlanningModeView({
   const mits = plannedTasks.filter(t => t.isImportant);
   const regularTasks = plannedTasks.filter(t => !t.isImportant);
 
+  const baseAvailable = availableData?.availableMinutes || 0;
+  const usedTime = Math.max(0, baseAvailable - currentAvailable);
+  const overscheduled = usedTime > baseAvailable;
+  
+  const usedPct = baseAvailable > 0 ? Math.min(100, (usedTime / baseAvailable) * 100) : 0;
+  const remPct = baseAvailable > 0 ? Math.max(0, (currentAvailable / baseAvailable) * 100) : 0;
+
   return (
     <div className="flex-1 flex flex-col min-h-0 space-y-4">
-      <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex justify-between items-center">
-        <div>
-          <div className="text-xs text-primary/80 font-semibold uppercase tracking-wider">Thời gian khả dụng còn lại</div>
-          <div className={`text-2xl font-bold ${currentAvailable < 0 ? 'text-red-500' : 'text-primary'}`}>
-            {Math.floor(currentAvailable / 60)}h {currentAvailable % 60}m
+      <div className="bg-primary/5 border border-primary/20 rounded-xl p-5 flex flex-col gap-4">
+        <div className="space-y-1 w-full">
+          <div className="flex items-center gap-1.5 mb-1">
+            <div className="text-xs text-primary/80 font-bold uppercase tracking-wider">Thời gian khả dụng còn lại</div>
+            {baseAvailable > 0 && (
+              <TooltipProvider>
+                <Tooltip delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <button className="text-primary/50 hover:text-primary transition-colors outline-none cursor-pointer flex items-center justify-center">
+                      <HugeiconsIcon icon={InformationCircleIcon} size={14} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="p-3 bg-card text-card-foreground border border-border shadow-lg">
+                    <p className="font-semibold text-xs border-b border-border pb-1.5 mb-1.5 text-foreground">Cách tính quỹ thời gian</p>
+                    <div className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 text-xs">
+                      <span className="text-muted-foreground">Tổng quỹ thời gian thực tế:</span>
+                      <span className="font-medium text-right text-foreground">{Math.floor(baseAvailable / 60)}h {baseAvailable % 60}m</span>
+                      
+                      <span className="text-muted-foreground">Trừ đi các task đã xếp:</span>
+                      <span className="font-medium text-amber-500 text-right">-{Math.floor(usedTime / 60)}h {usedTime % 60}m</span>
+                      
+                      <span className="text-muted-foreground font-medium pt-1.5 border-t border-border mt-0.5">Còn trống để xếp thêm:</span>
+                      <span className={`font-bold pt-1.5 border-t border-border mt-0.5 text-right ${currentAvailable < 0 ? 'text-red-500' : 'text-primary'}`}>
+                        {currentAvailable < 0 ? "-" : ""}{Math.floor(Math.abs(currentAvailable) / 60)}h {Math.abs(currentAvailable) % 60}m
+                      </span>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
+          <div className="flex items-center justify-between">
+            <div className={`text-3xl font-black tracking-tight ${currentAvailable < 0 ? 'text-red-500' : 'text-primary'}`}>
+              {currentAvailable < 0 ? "-" : ""}{Math.floor(Math.abs(currentAvailable) / 60)}h {Math.abs(currentAvailable) % 60}m
+            </div>
+            <div className="flex space-x-2 shrink-0">
+              <Button variant="outline" size="sm" onClick={onCancel} className="border-primary/20 text-foreground hover:bg-primary/10 cursor-pointer">
+                Cancel
+              </Button>
+              <Button size="sm" onClick={onSave} className="bg-primary text-primary-foreground cursor-pointer shadow-md shadow-primary/20">
+                Save Plan
+              </Button>
+            </div>
           </div>
         </div>
-        <div className="flex space-x-2">
-          <Button variant="outline" size="sm" onClick={onCancel} className="border-border text-muted-foreground cursor-pointer">
-            Cancel
-          </Button>
-          <Button size="sm" onClick={onSave} className="bg-primary text-white cursor-pointer">
-            Save Plan
-          </Button>
-        </div>
+
+        {baseAvailable > 0 && (
+          <div className="pt-1">
+            <div className="h-2.5 w-full bg-muted/80 rounded-full overflow-hidden flex shadow-inner">
+              <div 
+                className={`${overscheduled ? 'bg-red-500' : 'bg-primary'} transition-all duration-500`}
+                style={{ width: `${usedPct}%` }}
+                title={`Đã xếp: ${Math.floor(usedTime / 60)}h ${usedTime % 60}m`}
+              />
+              <div 
+                className="bg-muted/50 transition-all duration-500" 
+                style={{ width: `${remPct}%` }}
+                title={`Còn lại: ${Math.floor(currentAvailable / 60)}h ${currentAvailable % 60}m`}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-6 pr-2 scrollbar-thin">

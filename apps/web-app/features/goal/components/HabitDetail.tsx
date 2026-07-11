@@ -49,25 +49,25 @@ export function HabitDetail({
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800">
-          <h3 className="text-sm text-slate-400 mb-1 flex items-center">
+        <div className="bg-card/50 p-4 rounded-xl border border-border">
+          <h3 className="text-sm text-muted-foreground mb-1 flex items-center">
             <HugeiconsIcon icon={Time02Icon} size={14} className="mr-1" /> {label}
           </h3>
-          <div className="text-2xl font-bold text-slate-100">
-            {stats.totalMinutes} <span className="text-sm text-slate-500 font-normal">/ {Math.round(targetMinsForPeriod)} ph</span>
+          <div className="text-2xl font-bold text-foreground">
+            {stats.totalMinutes} <span className="text-sm text-muted-foreground font-normal">/ {Math.round(targetMinsForPeriod)} ph</span>
           </div>
         </div>
-        <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800">
-          <h3 className="text-sm text-slate-400 mb-1 flex items-center">
+        <div className="bg-card/50 p-4 rounded-xl border border-border">
+          <h3 className="text-sm text-muted-foreground mb-1 flex items-center">
             <HugeiconsIcon icon={Calendar01Icon} size={14} className="mr-1" /> Số ngày thực hiện
           </h3>
-          <div className="text-2xl font-bold text-slate-100">
-            {stats.daysCompleted} <span className="text-sm text-slate-500 font-normal">{daysLabel}</span>
+          <div className="text-2xl font-bold text-foreground">
+            {stats.daysCompleted} <span className="text-sm text-muted-foreground font-normal">{daysLabel}</span>
           </div>
         </div>
       </div>
       <div>
-        <h3 className="text-sm font-semibold text-slate-200 mb-4">
+        <h3 className="text-sm font-semibold text-foreground mb-4">
           Biểu đồ thời gian (
           {timeFilter === "week"
             ? isCurrent
@@ -85,16 +85,16 @@ export function HabitDetail({
         <div className="h-[200px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={stats.chartData}>
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "#64748b", fontSize: 12 }} />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} />
               <Tooltip
-                cursor={{ fill: "#1e293b" }}
-                contentStyle={{ backgroundColor: "#020617", borderColor: "#1e293b", borderRadius: "8px" }}
-                itemStyle={{ color: "#38bdf8" }}
+                cursor={{ fill: "var(--muted)" }}
+                contentStyle={{ backgroundColor: "var(--background)", borderColor: "var(--border)", borderRadius: "8px" }}
+                itemStyle={{ color: "var(--primary)" }}
                 formatter={(value) => [`${value} phút`, "Thời gian"]}
               />
               <Bar dataKey="minutes" radius={[4, 4, 0, 0]}>
                 {stats.chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.minutes > 0 ? "#38bdf8" : "#334155"} />
+                  <Cell key={`cell-${index}`} fill={entry.minutes > 0 ? "var(--primary)" : "var(--muted)"} />
                 ))}
               </Bar>
             </BarChart>

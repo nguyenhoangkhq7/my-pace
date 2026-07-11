@@ -27,4 +27,7 @@ public class AvailableTimeResponse {
 
     /** The time the user checked in (if checkedIn is true), formatted as "HH:mm". */
     private String checkinTime;
+
+    /** The user's current checkin streak. */
+    private int streak;
 }

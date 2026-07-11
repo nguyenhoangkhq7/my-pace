@@ -12,6 +12,7 @@ import { useAuthStore } from "@/features/auth/store/auth.store";
 import { post, put } from "@/lib/fetchClient";
 import { AppAlert } from "@/components/feedback/app-alert";
 import { cn } from "@/lib/utils";
+import { TimeSelect } from "@/components/ui/time-select";
 
 interface ProfileFormValues {
   fullName: string;
@@ -39,10 +40,20 @@ export function ProfileDialog({ isOpen, onOpenChange }: ProfileDialogProps) {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors, isValid },
   } = useForm<ProfileFormValues>({
     mode: "onChange",
   });
+
+  const wakeTime = watch("wakeTime") || "07:00";
+  const sleepTime = watch("sleepTime") || "23:00";
+
+  // Register fields manually
+  useEffect(() => {
+    register("wakeTime", { required: true });
+    register("sleepTime", { required: true });
+  }, [register]);
 
   // Load current user data when dialog opens or user changes
   useEffect(() => {
@@ -146,27 +157,23 @@ export function ProfileDialog({ isOpen, onOpenChange }: ProfileDialogProps) {
               {/* Time Boundary (Wake up & Sleep) */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="wakeTime" className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                  <Label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
                     <HugeiconsIcon icon={Clock01Icon} size={14} className="text-emerald-500" />
                     Giờ thức dậy
                   </Label>
-                  <Input
-                    id="wakeTime"
-                    type="time"
-                    className="h-10 rounded-xl bg-muted/20 border-border/40 focus:border-primary px-3 text-xs"
-                    {...register("wakeTime", { required: true })}
+                  <TimeSelect
+                    value={wakeTime}
+                    onChange={(val) => setValue("wakeTime", val, { shouldValidate: true })}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="sleepTime" className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                  <Label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
                     <HugeiconsIcon icon={Clock01Icon} size={14} className="text-indigo-400" />
                     Giờ đi ngủ
                   </Label>
-                  <Input
-                    id="sleepTime"
-                    type="time"
-                    className="h-10 rounded-xl bg-muted/20 border-border/40 focus:border-primary px-3 text-xs"
-                    {...register("sleepTime", { required: true })}
+                  <TimeSelect
+                    value={sleepTime}
+                    onChange={(val) => setValue("sleepTime", val, { shouldValidate: true })}
                   />
                 </div>
               </div>

@@ -42,10 +42,10 @@ export function TaskFormCategory({ categoryId, onCategoryChange, categories, goa
               onValueChange={(val) => onCategoryChange(val === "none" ? undefined : val)} 
               disabled={!!goalId && goalId !== "none"}
             >
-              <SelectTrigger className="w-full bg-slate-900 border-slate-800">
+              <SelectTrigger className="w-full bg-card border-border">
                 <SelectValue placeholder="Select Category" />
               </SelectTrigger>
-              <SelectContent className="bg-slate-950 border-slate-800 text-slate-200">
+              <SelectContent className="bg-popover border-border text-foreground">
                 <SelectItem value="none">No Category</SelectItem>
                 {categories.map(c => (
                   <SelectItem key={c.id} value={c.id}>
@@ -59,7 +59,7 @@ export function TaskFormCategory({ categoryId, onCategoryChange, categories, goa
             </Select>
             <Button 
               variant="outline" 
-              className="border-slate-800 bg-slate-900 text-slate-300 px-2 shrink-0" 
+              className="border-border bg-card text-foreground px-2 shrink-0" 
               onClick={() => setIsCreatingCategory(true)} 
               disabled={!!goalId && goalId !== "none"} 
               title="Thêm Category"
@@ -68,7 +68,7 @@ export function TaskFormCategory({ categoryId, onCategoryChange, categories, goa
             </Button>
             <Button 
               variant="outline" 
-              className="border-slate-800 bg-slate-900 text-slate-300 px-2 shrink-0" 
+              className="border-border bg-card text-foreground px-2 shrink-0" 
               onClick={() => setIsManagingCategories(true)} 
               title="Quản lý Category"
             >
@@ -81,7 +81,7 @@ export function TaskFormCategory({ categoryId, onCategoryChange, categories, goa
       {associatedGoal && (
         <div className="grid gap-2 mt-4">
           <Label>Goal</Label>
-          <div className="p-2.5 bg-slate-900 border border-slate-800 rounded-md text-sm text-slate-300 font-medium">
+          <div className="p-2.5 bg-card border border-border rounded-md text-sm text-foreground font-medium">
             {associatedGoal.title}
           </div>
         </div>

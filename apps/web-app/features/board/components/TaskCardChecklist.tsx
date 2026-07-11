@@ -5,6 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useBoardStore } from "../store/board.store";
 import { Task } from "../types";
 import { cn } from "@/lib/utils";
+import { InlineTitleEditor } from "./InlineTitleEditor";
 
 interface TaskCardChecklistProps {
   task: Task;
@@ -29,7 +30,7 @@ export function TaskCardChecklist({ task, disabled }: TaskCardChecklistProps) {
           "inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs cursor-pointer transition-colors border",
           isAllDone 
             ? "bg-green-500/10 text-green-500 border-green-500/20 hover:bg-green-500/20" 
-            : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700"
+            : "bg-muted text-foreground border-border hover:bg-accent"
         )}
         onClick={(e) => {
           e.stopPropagation();
@@ -41,18 +42,28 @@ export function TaskCardChecklist({ task, disabled }: TaskCardChecklistProps) {
       </div>
 
       {isExpanded && (
-        <div className="mt-2 space-y-2 p-2 bg-slate-900/50 rounded-md border border-slate-800">
+        <div className="mt-2 space-y-2 p-2 bg-card/50 rounded-md border border-border">
           {checklists.map(item => (
-            <div key={item.id} className="flex items-start gap-2">
+            <div key={item.id} className="flex items-center gap-2 w-full min-w-0">
               <Checkbox 
                 checked={item.isCompleted} 
                 onCheckedChange={(checked) => !disabled && updateChecklistItem(task.id, item.id, { isCompleted: checked === true })}
-                className="mt-0.5 h-3.5 w-3.5 border-slate-700"
+                className="h-3.5 w-3.5 border-border shrink-0"
                 disabled={disabled}
               />
-              <span className={cn("flex-1 text-[11px] leading-tight pt-px", item.isCompleted && "line-through text-slate-500")}>
-                {item.title}
-              </span>
+              <InlineTitleEditor
+                initialTitle={item.title}
+                onSave={async (newTitle) => {
+                  if (!disabled) {
+                    await updateChecklistItem(task.id, item.id, { title: newTitle });
+                  }
+                }}
+                className={cn(
+                  "flex-1 text-[11px] leading-tight cursor-pointer hover:bg-muted/40 px-1 py-0.5 rounded break-words min-w-0",
+                  item.isCompleted && "line-through text-muted-foreground"
+                )}
+                inputClassName="h-6 text-[11px] py-0.5 px-1 bg-background border-border text-foreground flex-1 min-w-0"
+              />
             </div>
           ))}
         </div>

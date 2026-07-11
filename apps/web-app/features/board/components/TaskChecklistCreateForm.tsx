@@ -22,7 +22,7 @@ export function TaskChecklistCreateForm({ onSubmit }: TaskChecklistCreateFormPro
         value={newChecklistTitle}
         onChange={e => setNewChecklistTitle(e.target.value)}
         placeholder="Thêm một mục"
-        className="bg-slate-900 border-slate-800 h-9 text-slate-200"
+        className="bg-card border-border h-9 text-foreground"
       />
       <Button type="submit" size="sm" variant="secondary" className="h-9 cursor-pointer">
         Thêm

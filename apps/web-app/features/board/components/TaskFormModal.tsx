@@ -184,13 +184,13 @@ export function TaskFormModal({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className={cn(
-        "bg-slate-950 text-slate-50 border-slate-800 max-h-[90vh] overflow-y-auto scrollbar-thin",
+        "bg-background text-foreground border-border max-h-[90vh] overflow-y-auto scrollbar-thin",
         requireDuration ? "sm:max-w-[425px]" : "sm:max-w-[840px]"
       )}>
         <DialogHeader>
           <DialogTitle>{initialData?.id ? (requireDuration ? "Missing Information" : "Edit Task") : "Create Task"}</DialogTitle>
           {requireDuration && (
-            <DialogDescription className="text-slate-400">
+            <DialogDescription className="text-muted-foreground">
               Please provide the estimated duration to add this task to your plan.
             </DialogDescription>
           )}
@@ -205,7 +205,30 @@ export function TaskFormModal({
                 id="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="bg-slate-900 border-slate-800 focus:border-primary text-lg font-medium"
+                onBlur={async () => {
+                  if (initialData?.id && title.trim() && title !== initialData.title) {
+                    try {
+                      await updateTask(initialData.id, { title: title.trim() });
+                    } catch (err) {
+                      console.error(err);
+                    }
+                  }
+                }}
+                onKeyDown={async (e) => {
+                  if (e.key === "Enter") {
+                    if (initialData?.id && title.trim() && title !== initialData.title) {
+                      try {
+                        await updateTask(initialData.id, { title: title.trim() });
+                        (e.target as HTMLInputElement).blur();
+                      } catch (err) {
+                        console.error(err);
+                      }
+                    } else if (!initialData?.id) {
+                      handleSubmitInternal();
+                    }
+                  }
+                }}
+                className="bg-card border-border focus:border-primary text-lg font-medium"
                 disabled={requireDuration && !!initialData?.title}
               />
             </div>
@@ -222,7 +245,7 @@ export function TaskFormModal({
                   id="notes"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="bg-slate-900 border-slate-800 focus:border-primary min-h-[100px]"
+                  className="bg-card border-border focus:border-primary min-h-[100px]"
                   placeholder="Add a more detailed description..."
                 />
               </div>
@@ -244,7 +267,7 @@ export function TaskFormModal({
             {!requireDuration && associatedGoal && prefilledGoalId && (
               <div className="grid gap-2 mt-4">
                 <Label>Goal</Label>
-                <div className="p-2.5 bg-slate-900 border border-slate-800 rounded-md text-sm text-slate-300 font-medium">
+                <div className="p-2.5 bg-card border border-border rounded-md text-sm text-foreground font-medium">
                   {associatedGoal.title}
                 </div>
               </div>
@@ -258,20 +281,20 @@ export function TaskFormModal({
                     <Button
                       variant={"outline"}
                       className={cn(
-                        "w-full justify-start text-left font-normal bg-slate-900 border-slate-800",
-                        !dueDate && "text-slate-400"
+                        "w-full justify-start text-left font-normal bg-card border-border",
+                        !dueDate && "text-muted-foreground"
                       )}
                     >
                       <HugeiconsIcon icon={Calendar01Icon} className="mr-2 h-4 w-4" />
                       {dueDate ? format(dueDate, "PPP") : <span>Pick a date</span>}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 bg-slate-950 border-slate-800">
+                  <PopoverContent className="w-auto p-0 bg-popover border-border">
                     <Calendar
                       mode="single"
                       selected={dueDate}
                       onSelect={(d) => setDueDate(d)}
-                      className="text-slate-200"
+                      className="text-foreground"
                     />
                   </PopoverContent>
                 </Popover>
@@ -291,7 +314,7 @@ export function TaskFormModal({
                     id="urgent" 
                     checked={isUrgent}
                     onCheckedChange={(checked) => setIsUrgent(checked === true)}
-                    className="border-slate-700"
+                    className="border-border"
                   />
                   <Label htmlFor="urgent" className="cursor-pointer font-normal text-sm">Urgent</Label>
                 </div>
@@ -300,7 +323,7 @@ export function TaskFormModal({
                     id="important" 
                     checked={isImportant}
                     onCheckedChange={(checked) => setIsImportant(checked === true)}
-                    className="border-slate-700"
+                    className="border-border"
                   />
                   <Label htmlFor="important" className="cursor-pointer font-normal text-sm">Important</Label>
                 </div>
@@ -326,10 +349,10 @@ export function TaskFormModal({
             )}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={handleClose} className="border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white">
+            <Button variant="outline" onClick={handleClose} className="border-border text-foreground hover:bg-muted">
               Cancel
             </Button>
-            <Button onClick={handleSubmitInternal} className="bg-primary hover:bg-primary/90 text-white">
+            <Button onClick={handleSubmitInternal} className="bg-primary hover:bg-primary/90 text-primary-foreground">
               {requireDuration ? "Continue" : "Save"}
             </Button>
           </div>

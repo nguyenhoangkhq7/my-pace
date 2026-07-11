@@ -46,9 +46,11 @@ public class StatsService {
 
         // 1. Matrix Time
         List<Object[]> matrixResults = entityManager.createQuery(
-                "SELECT t.isUrgent, t.isImportant, SUM(t.actualMinutes) " +
+                "SELECT t.isUrgent, t.isImportant, " +
+                "SUM(CASE WHEN t.status = 'Done' THEN COALESCE(NULLIF(t.actualMinutes, 0), NULLIF(t.estimatedMinutes, 0), 25) ELSE t.actualMinutes END) " +
                 "FROM Task t " +
-                "WHERE t.userId = :userId AND t.updatedAt >= :startDate AND t.updatedAt <= :endDate AND t.actualMinutes > 0 " +
+                "WHERE t.userId = :userId AND COALESCE(t.doneAt, t.updatedAt) >= :startDate AND COALESCE(t.doneAt, t.updatedAt) <= :endDate " +
+                "AND (t.status = 'Done' OR t.actualMinutes > 0) " +
                 "GROUP BY t.isUrgent, t.isImportant", Object[].class)
                 .setParameter("userId", user.getId())
                 .setParameter("startDate", startDate)
@@ -85,9 +87,11 @@ public class StatsService {
         }
 
         List<Object[]> categoryResults = entityManager.createQuery(
-                "SELECT c.name, SUM(t.actualMinutes) " +
+                "SELECT c.name, " +
+                "SUM(CASE WHEN t.status = 'Done' THEN COALESCE(NULLIF(t.actualMinutes, 0), NULLIF(t.estimatedMinutes, 0), 25) ELSE t.actualMinutes END) " +
                 "FROM Task t LEFT JOIN t.category c " +
-                "WHERE t.userId = :userId AND t.updatedAt >= :startDate AND t.updatedAt <= :endDate AND t.actualMinutes > 0 " +
+                "WHERE t.userId = :userId AND COALESCE(t.doneAt, t.updatedAt) >= :startDate AND COALESCE(t.doneAt, t.updatedAt) <= :endDate " +
+                "AND (t.status = 'Done' OR t.actualMinutes > 0) " +
                 "GROUP BY c.name", Object[].class)
                 .setParameter("userId", user.getId())
                 .setParameter("startDate", startDate)

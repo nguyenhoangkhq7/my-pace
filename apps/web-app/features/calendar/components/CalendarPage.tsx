@@ -62,65 +62,64 @@ export function CalendarPage() {
 
   return (
     <div className="flex flex-col gap-4 h-full">
+      <CalendarHeader 
+        fixedEventColor={fixedEventColor}
+        onColorChange={handleColorChange}
+        hasUnscheduled={hasUnscheduled}
+        isSidebarOpen={isSidebarOpen}
+        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+      />
+
       <div className="flex gap-4 flex-1 min-h-0">
         
         {/* ── FullCalendar ── */}
-        <div className="flex-1 flex flex-col min-h-0">
-          <CalendarHeader 
-            fixedEventColor={fixedEventColor}
-            onColorChange={handleColorChange}
-            hasUnscheduled={hasUnscheduled}
-            isSidebarOpen={isSidebarOpen}
-            onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-          />
-
-          <div className="flex-1 rounded-2xl border border-border bg-card overflow-hidden shadow-sm calendar-wrapper">
-            {isCalendarMounted && (
-              <FullCalendar
-                ref={calendarRef}
-                plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
-                initialView={initialView}
-                headerToolbar={{
-                  left:   "prev,next today",
-                  center: "title",
-                  right:  "dayGridMonth,timeGridWeek,timeGridDay",
-                }}
-                buttonText={{ today: "Hôm nay", month: "Tháng", week: "Tuần", day: "Ngày" }}
-                locale="vi"
-                firstDay={1}
-                slotMinTime={slotMin}
-                slotMaxTime={slotMax}
-                allDaySlot={false}
-                nowIndicator
-                selectable
-                selectMirror
-                editable
-                droppable
-                eventResizableFromStart={false}
-                events={fcEvents}
-                datesSet={handleDatesSet}
-                select={handleSelect}
-                eventClick={handleEventClick}
-                eventDrop={handleEventDrop}
-                eventResize={handleEventResize}
-                eventReceive={handleEventReceive}
-                eventDragStop={handleEventDragStop}
-                height="100%"
-              />
-            )}
-          </div>
+        <div className="flex-1 rounded-2xl border border-border bg-card overflow-hidden shadow-sm calendar-wrapper">
+          {isCalendarMounted && (
+            <FullCalendar
+              ref={calendarRef}
+              plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
+              initialView={initialView}
+              headerToolbar={{
+                left:   "prev,next today",
+                center: "title",
+                right:  "dayGridMonth,timeGridWeek,timeGridDay",
+              }}
+              buttonText={{ today: "Hôm nay", month: "Tháng", week: "Tuần", day: "Ngày" }}
+              locale="vi"
+              firstDay={1}
+              slotMinTime={slotMin}
+              slotMaxTime={slotMax}
+              allDaySlot={false}
+              nowIndicator
+              selectable
+              selectMirror
+              editable
+              droppable
+              eventResizableFromStart={false}
+              events={fcEvents}
+              datesSet={handleDatesSet}
+              select={handleSelect}
+              eventClick={handleEventClick}
+              eventDrop={handleEventDrop}
+              eventResize={handleEventResize}
+              eventReceive={handleEventReceive}
+              eventDragStop={handleEventDragStop}
+              height="100%"
+            />
+          )}
         </div>
 
         {/* ── Todo Today Sidebar ── */}
-        {hasUnscheduled && isSidebarOpen && (
+        {((hasUnscheduled || !dailyPlanToday?.isConfirmed) && isSidebarOpen) && (
           <CalendarSidebar
             ref={sidebarRef}
-            unscheduledTasks={unscheduledTasks}
+            unscheduledTasks={dailyPlanToday?.isConfirmed ? unscheduledTasks : []}
             isAutoScheduling={isAutoScheduling}
             onAutoSchedule={handleAutoScheduleFromSidebar}
-            dailyPlanLength={dailyPlanToday?.tasks?.length || 0}
+            dailyPlanLength={dailyPlanToday?.isConfirmed ? (dailyPlanToday?.tasks?.length || 0) : 0}
             timeBlocksLength={timeBlocks.length}
             isSidebarOpen={isSidebarOpen}
+            dailyPlanToday={dailyPlanToday?.isConfirmed ? dailyPlanToday : null}
           />
         )}
       </div>

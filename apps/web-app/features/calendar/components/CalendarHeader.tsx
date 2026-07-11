@@ -38,7 +38,7 @@ export function CalendarHeader({
             variant="outline" 
             size="sm"
             onClick={onToggleSidebar}
-            className="text-xs h-8 border-slate-700 bg-slate-900/50 hover:bg-slate-800 text-slate-300 transition-colors rounded-xl px-3"
+            className="text-xs h-8 border-border bg-card hover:bg-muted text-foreground transition-colors rounded-xl px-3"
           >
             {isSidebarOpen ? "Ẩn Todo" : "Hiện Todo"}
           </Button>

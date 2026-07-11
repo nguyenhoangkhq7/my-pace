@@ -34,6 +34,7 @@ export function ExecutionBoard({ currentDate, tomorrowDate }: { currentDate: str
       return (
         <PlanningModeView
           currentAvailable={currentAvailable}
+          availableData={availableData}
           plannedTaskIds={plannedTaskIds}
           tasks={tasks}
           onCancel={() => setPlanningMode(false)}

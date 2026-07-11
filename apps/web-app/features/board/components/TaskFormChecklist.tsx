@@ -27,14 +27,14 @@ export function TaskFormChecklist({ taskId, checklists }: TaskFormChecklistProps
   return (
     <div className="grid gap-3 pt-2">
       <div className="flex items-center gap-2">
-        <HugeiconsIcon icon={Tick01Icon} className="w-5 h-5 text-slate-400" />
-        <h3 className="font-semibold text-slate-200">Việc cần làm</h3>
+        <HugeiconsIcon icon={Tick01Icon} className="w-5 h-5 text-muted-foreground" />
+        <h3 className="font-semibold text-foreground">Việc cần làm</h3>
       </div>
       
       {checklists.length > 0 && (
         <div className="flex items-center gap-2 mb-2">
-          <span className="text-xs text-slate-400 w-8">{progressPercentage}%</span>
-          <div className="flex-1 h-2 bg-slate-900 rounded-full overflow-hidden">
+          <span className="text-xs text-muted-foreground w-8">{progressPercentage}%</span>
+          <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
             <div 
               className="h-full bg-primary transition-all duration-300"
               style={{ width: `${progressPercentage}%` }}
@@ -48,7 +48,7 @@ export function TaskFormChecklist({ taskId, checklists }: TaskFormChecklistProps
           <TaskChecklistItemRow
             key={item.id}
             item={item}
-            onUpdate={(isCompleted) => updateChecklistItem(taskId, item.id, { isCompleted })}
+            onUpdate={(updates) => updateChecklistItem(taskId, item.id, updates)}
             onDelete={() => deleteChecklistItem(taskId, item.id)}
           />
         ))}
