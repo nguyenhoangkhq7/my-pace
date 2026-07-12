@@ -112,9 +112,14 @@ export function useBacklogMatrix() {
                 checkTimeLimit(30);
                 addPlannedTaskLocally(updated);
                 // Advance tour to step 7 (save plan) after task added
-                const { isTourActive, tourStepIndex, advanceTourStep } = useOnboardingStore.getState();
-                if (isTourActive && tourStepIndex === 6) {
-                  setTimeout(() => advanceTourStep(), 400);
+                const { isTourActive, tourStepIndex } = useOnboardingStore.getState();
+                if (isTourActive && (tourStepIndex === 5 || tourStepIndex === 6)) {
+                  setTimeout(() => {
+                    const state = useOnboardingStore.getState();
+                    if (state.isTourActive && (state.tourStepIndex === 5 || state.tourStepIndex === 6)) {
+                      state.setTourStep(7);
+                    }
+                  }, 400);
                 }
               }
             });
@@ -125,9 +130,14 @@ export function useBacklogMatrix() {
           checkTimeLimit(task.estimatedMinutes);
           addPlannedTaskLocally(task);
           // Advance tour to step 7 (save plan) after task added
-          const { isTourActive, tourStepIndex, advanceTourStep } = useOnboardingStore.getState();
-          if (isTourActive && tourStepIndex === 6) {
-            setTimeout(() => advanceTourStep(), 400);
+          const { isTourActive, tourStepIndex } = useOnboardingStore.getState();
+          if (isTourActive && (tourStepIndex === 5 || tourStepIndex === 6)) {
+            setTimeout(() => {
+              const state = useOnboardingStore.getState();
+              if (state.isTourActive && (state.tourStepIndex === 5 || state.tourStepIndex === 6)) {
+                state.setTourStep(7);
+              }
+            }, 400);
           }
         }
       }

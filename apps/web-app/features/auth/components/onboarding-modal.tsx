@@ -64,7 +64,7 @@ export function OnboardingModal() {
       <Dialog open={isOpen} onOpenChange={(open) => { if (!open) closeOnboardingModal(); }}>
         <DialogContent
           showCloseButton={isHelpMode}
-          className="sm:max-w-[500px] w-[95vw] rounded-3xl p-6 border-none bg-card shadow-2xl overflow-y-auto max-h-[90vh] duration-300 scrollbar-thin z-50"
+          className="sm:max-w-[500px] w-[95vw] rounded-3xl p-6 border-none bg-card shadow-2xl overflow-y-auto max-h-[90vh] duration-300 scrollbar-thin"
         >
           <DialogHeader className="mb-4 mt-1">
             <DialogTitle className="text-2xl font-extrabold tracking-tight text-center text-foreground">

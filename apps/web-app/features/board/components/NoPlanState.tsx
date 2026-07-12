@@ -14,7 +14,12 @@ export function NoPlanState({ activeTab, onStartPlanning }: NoPlanStateProps) {
   const handleStartPlanning = () => {
     onStartPlanning();
     if (isTourActive && tourStepIndex === 5) {
-      setTimeout(() => advanceTourStep(), 400);
+      setTimeout(() => {
+        const state = useOnboardingStore.getState();
+        if (state.isTourActive && state.tourStepIndex === 5) {
+          state.setTourStep(6);
+        }
+      }, 400);
     }
   };
 
