@@ -38,6 +38,7 @@ export const en: Translations = {
     theme: "Theme",
     chooseTheme: "Choose theme",
     language: "Language",
+    settings: "Settings",
   },
   board: {
     today: "Today",
