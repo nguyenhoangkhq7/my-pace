@@ -54,7 +54,7 @@ export function TaskChecklistItemRow({
           onUpdate({ title: newTitle });
         }}
         className={cn(
-          "text-sm text-foreground cursor-pointer hover:bg-muted/40 px-1 py-0.5 rounded flex-1 min-w-0 break-words",
+          "text-sm text-foreground cursor-pointer hover:bg-muted/40 px-1 py-0.5 rounded min-w-0 break-words max-w-full inline-block",
           item.isCompleted && "line-through text-muted-foreground"
         )}
         inputClassName="h-7 text-sm py-1 bg-card border-border text-foreground flex-1 min-w-0"

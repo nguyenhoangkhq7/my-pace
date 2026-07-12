@@ -114,7 +114,7 @@ export function TaskCardChecklist({ task, disabled }: TaskCardChecklistProps) {
                   }
                 }}
                 className={cn(
-                  "flex-1 text-[11px] leading-tight cursor-pointer hover:bg-muted/40 px-1 py-0.5 rounded break-words min-w-0",
+                  "text-[11px] leading-tight cursor-pointer hover:bg-muted/40 px-1 py-0.5 rounded break-words min-w-0 max-w-full",
                   item.isCompleted && "line-through text-muted-foreground",
                   !disabled && "cursor-grab active:cursor-grabbing"
                 )}
