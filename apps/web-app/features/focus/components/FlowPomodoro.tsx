@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useFocusStore } from "@/features/focus/store/focus.store";
-import { usePomodoro } from "@/features/focus/hooks/usePomodoro";
 import { useBoardStore } from "@/features/board/store/board.store";
 import { useGoalStore } from "@/features/goal/store/goal.store";
 import { Goal } from "@/features/goal/types";
@@ -23,9 +22,10 @@ export function FlowPomodoro() {
     accumulatedFocusTime,
     focusMinutes,
     breakMinutes,
+    timeLeft,
+    currentSession,
+    totalSessions,
   } = useFocusStore();
-
-  const { timeLeft, currentSession, totalSessions } = usePomodoro();
   const { tasks, toggleTaskDone, updateTask } = useBoardStore();
   const { goals, fetchGoals } = useGoalStore();
 

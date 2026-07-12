@@ -1,6 +1,7 @@
 "use client";
 
 import { useBoardStore } from "@/features/board/store/board.store";
+import { useTranslation } from "@/hooks/use-translation";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import { cn } from "@/lib/utils";
 import type { DailyPlanTask } from "@/features/board/types";
@@ -11,6 +12,7 @@ interface FlowTodoListProps {
 }
 
 export function FlowTodoList({ onTaskSelect }: FlowTodoListProps) {
+  const { t } = useTranslation();
   const { dailyPlanToday, timeBlocks } = useBoardStore();
   const { pomodoroState } = useFocusStore();
 
@@ -102,7 +104,7 @@ export function FlowTodoList({ onTaskSelect }: FlowTodoListProps) {
             </span>
           </h2>
           <p className="text-xs text-muted-foreground font-medium mt-1 uppercase tracking-widest">
-            Today: {dailyPlanToday.tasks.length} tasks
+            {t.flow.todayTasksCount(dailyPlanToday.tasks.length)}
           </p>
         </div>
       </div>
