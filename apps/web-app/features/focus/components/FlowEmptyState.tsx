@@ -6,9 +6,23 @@ import { useAvailableTimeStore } from "@/features/available-time/store/available
 import { toast } from "sonner";
 import type { Task } from "@/features/board/types";
 import { TaskFormModal } from "@/features/board/components/TaskFormModal";
+import { useTranslation } from "@/hooks/use-translation";
+import { useAuthStore } from "@/features/auth";
+import { calendarApi } from "@/features/calendar/api/calendar.api";
+import { autoSchedule, type OccupiedSlot } from "@/features/board/utils/autoSchedule";
+
+const toLocalDateStr = (iso: string) => {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+const toLocalTimeStr = (iso: string) => {
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+};
 
 export function FlowEmptyState() {
-  const { tasks, dailyPlanToday, savePlan, updateTask, reviewDailyPlan } = useBoardStore();
+  const { t, locale } = useTranslation();
+  const { tasks, dailyPlanToday, savePlan, updateTask, reviewDailyPlan, saveTimeBlocks } = useBoardStore();
   const { dataToday } = useAvailableTimeStore();
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isAddingTask, setIsAddingTask] = useState(false);
@@ -57,11 +71,54 @@ export function FlowEmptyState() {
 
       try {
         await savePlan(dailyPlanToday.planDate, dailyPlanToday.availableMinutes, "today");
+
+        const { user } = useAuthStore.getState();
+        
+        const d = new Date();
+        const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+        if (user?.wakeTime && user?.sleepTime) {
+          const { data: fixedEvents } = await calendarApi.getEvents(todayStr, todayStr);
+          const occupiedSlots: OccupiedSlot[] = fixedEvents.map((event) => ({
+            date: event.occurrenceDate,
+            startTime: event.startTime.substring(0, 5),
+            endTime: event.endTime.substring(0, 5),
+          }));
+          
+          const existingBlocks = dailyPlanToday.timeBlocks.map((block) => ({
+            date: toLocalDateStr(block.startTime),
+            startTime: toLocalTimeStr(block.startTime),
+            endTime: toLocalTimeStr(block.endTime),
+          }));
+
+          const newDailyPlanTask = { task: task, isCompleted: false, orderIndex: dailyPlanToday.tasks.length, dailyPlanId: dailyPlanToday.id };
+          const blocks = autoSchedule(
+            [newDailyPlanTask as any],
+            [...occupiedSlots, ...existingBlocks],
+            dailyPlanToday.id,
+            todayStr,
+            user.wakeTime,
+            user.sleepTime
+          );
+
+          if (blocks.length > 0) {
+            await saveTimeBlocks([...dailyPlanToday.timeBlocks, ...blocks]);
+          }
+        }
+
         setIsReviewModalOpen(false); // Close review modal on successful add
-        toast.success(`Đã thêm công việc "${task.title}" vào kế hoạch hôm nay!`);
+        toast.success(
+          locale === "vi"
+            ? `Đã thêm công việc "${task.title}" vào kế hoạch hôm nay!`
+            : `Added task "${task.title}" to today's plan!`
+        );
       } catch (err) {
         console.error(err);
-        toast.error("Không thể thêm công việc vào kế hoạch.");
+        toast.error(
+          locale === "vi"
+            ? "Không thể thêm công việc vào kế hoạch."
+            : "Could not add task to today's plan."
+        );
       } finally {
         setIsAddingTask(false);
       }
@@ -88,7 +145,11 @@ export function FlowEmptyState() {
         await addAndSaveTask(updatedTask);
       } catch (err) {
         console.error(err);
-        toast.error("Không thể cập nhật thời gian cho công việc.");
+        toast.error(
+          locale === "vi"
+            ? "Không thể cập nhật thời gian cho công việc."
+            : "Could not update task duration."
+        );
       }
     };
 
@@ -102,9 +163,9 @@ export function FlowEmptyState() {
               <svg className="w-16 h-16 text-emerald-500 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <h2 className="text-3xl font-black text-foreground tracking-wide">Tuyệt vời!</h2>
+              <h2 className="text-3xl font-black text-foreground tracking-wide">{t.flow.great}</h2>
               <p className="text-muted-foreground font-medium max-w-xs mx-auto">
-                Bạn đã hoàn thành tất cả công việc cho hôm nay.
+                {t.flow.allTasksDone}
               </p>
             </div>
           ) : (
@@ -112,12 +173,12 @@ export function FlowEmptyState() {
               <svg className="w-16 h-16 text-indigo-500 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
               </svg>
-              <h2 className="text-3xl font-black text-foreground tracking-wide">Kế hoạch hoàn tất!</h2>
+              <h2 className="text-3xl font-black text-foreground tracking-wide">{t.flow.planCompleted}</h2>
               <p className="text-muted-foreground font-medium max-w-xs mx-auto">
-                Hãy nhìn lại những gì bạn đã đạt được trong ngày hôm nay.
+                {t.flow.lookBack}
               </p>
               <Button onClick={() => setIsReviewModalOpen(true)} className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 px-6 rounded-full mt-2 shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all duration-200 hover:scale-[1.03] active:scale-[0.97] cursor-pointer">
-                End-of-Day Review
+                {t.flow.endOfDayReview}
               </Button>
             </div>
           )}
@@ -126,50 +187,50 @@ export function FlowEmptyState() {
         <Dialog open={isReviewModalOpen} onOpenChange={setIsReviewModalOpen}>
           <DialogContent className="sm:max-w-[500px] bg-card text-foreground border-border shadow-2xl max-h-[90vh] overflow-y-auto scrollbar-thin">
             <DialogHeader>
-              <DialogTitle className="text-2xl text-center font-bold tracking-wide">Tổng kết cuối ngày</DialogTitle>
+              <DialogTitle className="text-2xl text-center font-bold tracking-wide">{t.flow.summaryTitle}</DialogTitle>
               <DialogDescription className="text-center pt-2 text-muted-foreground font-medium">
-                Dưới đây là những gì bạn đã làm được hôm nay:
+                {t.flow.summaryDesc}
               </DialogDescription>
             </DialogHeader>
             
             <div className="grid grid-cols-2 gap-4 py-6">
               <div className="bg-indigo-950/10 border border-indigo-500/20 hover:border-indigo-500/30 transition-all rounded-2xl p-5 text-center">
                 <div className="text-5xl font-black text-indigo-400 mb-2 drop-shadow-md">{completedCount}</div>
-                <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Tasks Done</div>
+                <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">{t.flow.tasksDone}</div>
               </div>
               <div className="bg-emerald-950/10 border border-emerald-500/20 hover:border-emerald-500/30 transition-all rounded-2xl p-5 text-center">
                 <div className="text-5xl font-black text-emerald-400 mb-2 drop-shadow-md">{totalMinutes}</div>
-                <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Focus Minutes</div>
+                <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">{t.flow.focusMinutes}</div>
               </div>
               <div className="bg-cyan-950/10 border border-cyan-500/20 hover:border-cyan-500/30 transition-all rounded-2xl p-5 text-center col-span-2">
                 <div className="text-3xl font-bold text-cyan-400 mb-2 drop-shadow-sm">{totalEstimated}m</div>
-                <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Estimated Time Originally</div>
+                <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">{t.flow.estimatedTime}</div>
               </div>
             </div>
 
             <div className="text-center text-xs italic text-muted-foreground/80 font-medium max-w-sm mx-auto leading-relaxed pb-4 px-4">
-              &quot;Thành công không phải là đích đến, mà là chặng đường bạn đã nỗ lực mỗi ngày.&quot;
+              {t.flow.quote}
             </div>
 
             {/* Elegant inline task picker prompting relaxation or extra tasks */}
             {backlogTasks.length > 0 ? (
               <div className="flex flex-col items-center justify-center text-center space-y-1 pb-2 pt-4 border-t border-border mt-2">
                 <p className="text-xs text-muted-foreground font-medium">
-                  Hãy dành thời gian để nghỉ ngơi
+                  {t.flow.takeRest}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Bạn còn dư {remainingMinutes} phút, bạn có muốn{" "}
+                  {t.flow.remainingPrompt(remainingMinutes)}
                   <span 
                     onClick={() => setIsPickTaskModalOpen(true)}
                     className="text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer underline decoration-dotted underline-offset-4 transition-colors"
                   >
-                    thêm task?
+                    {t.flow.addTaskLink}
                   </span>
                 </p>
               </div>
             ) : (
               <div className="text-center text-xs text-muted-foreground font-medium pt-2 mt-2">
-                Đã hoàn tất công việc hôm nay, nghỉ ngơi thôi
+                {t.flow.allDoneLetRest}
               </div>
             )}
 
@@ -183,7 +244,7 @@ export function FlowEmptyState() {
                 }} 
                 className="bg-indigo-600 hover:bg-indigo-500 text-white w-full rounded-full font-bold shadow-[0_4px_20px_rgba(79,70,229,0.35)] h-12 transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
               >
-                Tuyệt vời, Đóng lại
+                {t.flow.closeBtn}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -193,9 +254,9 @@ export function FlowEmptyState() {
         <Dialog open={isPickTaskModalOpen} onOpenChange={setIsPickTaskModalOpen}>
           <DialogContent className="sm:max-w-[420px] bg-slate-950 text-slate-50 border-slate-800 p-6 rounded-2xl shadow-2xl flex flex-col gap-4">
             <DialogHeader className="space-y-1">
-              <DialogTitle className="text-lg font-bold">Thêm công việc hôm nay</DialogTitle>
+              <DialogTitle className="text-lg font-bold">{t.flow.addTaskToday}</DialogTitle>
               <DialogDescription className="text-slate-400 text-xs">
-                Chọn công việc từ hàng chờ để tiếp tục thực hiện:
+                {t.flow.selectBacklogTask}
               </DialogDescription>
             </DialogHeader>
 
@@ -214,11 +275,11 @@ export function FlowEmptyState() {
                       {task.title}
                     </div>
                     {task.estimatedMinutes && (
-                      <div className="text-[10px] text-slate-400 mt-0.5">{task.estimatedMinutes} phút</div>
+                      <div className="text-[10px] text-slate-400 mt-0.5">{task.estimatedMinutes} {t.flow.minutesUnit}</div>
                     )}
                   </div>
                   <button className="text-[10px] font-bold bg-indigo-600/20 hover:bg-indigo-600 text-indigo-400 hover:text-white px-2.5 py-1 rounded-lg shrink-0 transition-colors">
-                    Thêm
+                    {t.flow.addBtn}
                   </button>
                 </div>
               ))}
@@ -230,7 +291,7 @@ export function FlowEmptyState() {
                 onClick={() => setIsPickTaskModalOpen(false)}
                 className="text-slate-400 hover:text-white hover:bg-slate-900 w-full rounded-xl text-xs h-9 cursor-pointer"
               >
-                Hủy bỏ
+                {t.flow.cancelBtn}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -255,9 +316,9 @@ export function FlowEmptyState() {
         <svg className="w-16 h-16 text-muted-foreground mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <h2 className="text-2xl font-bold text-foreground tracking-wide">Sẵn sàng tập trung?</h2>
+        <h2 className="text-2xl font-bold text-foreground tracking-wide">{t.flow.readyToFocus}</h2>
         <p className="text-muted-foreground font-medium leading-relaxed max-w-[280px] mx-auto">
-          Chọn một công việc ở cột bên trái để bắt đầu phiên làm việc sâu.
+          {t.flow.selectLeftTask}
         </p>
       </div>
     </div>

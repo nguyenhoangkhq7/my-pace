@@ -5,8 +5,10 @@ import { Settings2, Volume2, VolumeX } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { useTranslation } from "@/hooks/use-translation";
 
 export function PomodoroSettingsModal() {
+  const { t } = useTranslation();
   const { 
     isSettingsOpen, 
     setIsSettingsOpen, 
@@ -44,15 +46,15 @@ export function PomodoroSettingsModal() {
       <DialogContent className="sm:max-w-xs bg-card border-border text-foreground">
         <DialogHeader>
           <DialogTitle className="text-foreground flex items-center gap-2">
-            <Settings2 className="w-5 h-5" /> Cấu hình Pomodoro
+            <Settings2 className="w-5 h-5" /> {t.flow.pomodoroConfig}
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Tùy chỉnh thời gian tập trung và nghỉ ngơi.
+            {t.flow.pomodoroConfigDesc}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-5 py-4">
           <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Thời gian tập trung (phút)</label>
+            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t.flow.focusDurationLabel}</label>
             <Input 
               type="number" 
               min="1"
@@ -63,7 +65,7 @@ export function PomodoroSettingsModal() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Thời gian nghỉ (phút)</label>
+            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t.flow.restDurationLabel}</label>
             <Input 
               type="number" 
               min="1"
@@ -76,7 +78,7 @@ export function PomodoroSettingsModal() {
           <div className="flex items-center justify-between pt-2">
             <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
               {tempSound ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-              Âm thanh thông báo
+              {t.flow.notificationSoundLabel}
             </label>
             <Checkbox 
               checked={tempSound}
@@ -87,10 +89,10 @@ export function PomodoroSettingsModal() {
         </div>
         <DialogFooter>
           <Button variant="outline" className="border-border hover:bg-muted text-muted-foreground" onClick={() => setIsSettingsOpen(false)}>
-            Hủy
+            {t.common.cancel}
           </Button>
           <Button className="bg-indigo-600 hover:bg-indigo-500 text-white" onClick={handleSaveSettings}>
-            Lưu thay đổi
+            {t.flow.saveChanges}
           </Button>
         </DialogFooter>
       </DialogContent>

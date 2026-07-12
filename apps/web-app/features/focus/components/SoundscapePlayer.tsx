@@ -1,12 +1,10 @@
 "use client";
 
 import { useFocusStore } from "@/features/focus/store/focus.store";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { FullscreenIcon, Cancel01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
 
 export function SoundscapePlayer() {
-  const { youtubeUrl, isZenMaximized, toggleZenMaximize, pomodoroState } = useFocusStore();
+  const { youtubeUrl, isZenFull, pomodoroState } = useFocusStore();
 
   const parseYouTubeUrl = (url: string) => {
     let videoId = null;
@@ -42,16 +40,47 @@ export function SoundscapePlayer() {
 
   const embedUrl = getEmbedUrl();
 
+  if (isZenFull) {
+    // ─── Zen Full mode: full-width video with 16:9 aspect ratio ──────────────
+    // paddingBottom: "min(56.25%, 62vh)" gives a 16:9 ratio (56.25% = 9/16 × 100)
+    // capped at 62% of viewport height so it never overwhelms the screen.
+    return (
+      <div className="px-5 pt-5 pb-3 shrink-0">
+        <div
+          className="relative w-full overflow-hidden rounded-2xl border border-border/30 shadow-[0_8px_40px_rgba(0,0,0,0.35)] bg-black"
+          style={{ paddingBottom: "min(56.25%, 62vh)" }}
+        >
+          {embedUrl ? (
+            <iframe
+              className="absolute inset-0 w-full h-full"
+              src={embedUrl}
+              title="YouTube video player"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              sandbox="allow-same-origin allow-scripts allow-presentation allow-popups allow-popups-to-escape-sandbox"
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm font-medium">
+              Invalid YouTube URL
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Normal 3-column mode: compact video with padding-bottom ratio ────────────
   return (
     <div className="p-4 border-b border-border shrink-0">
       <div
-        className="relative w-full rounded-xl overflow-hidden border border-border shadow-[0_4px_20px_rgba(0,0,0,0.15)] bg-black group cursor-pointer"
+        className="relative overflow-hidden border border-border shadow-[0_4px_20px_rgba(0,0,0,0.15)] bg-black group cursor-pointer transition-all duration-300 w-full rounded-xl"
         style={{ paddingBottom: "min(56.25%, 220px)" }}
       >
         <div
           className={cn(
             "absolute inset-0 transition-colors duration-500 pointer-events-none z-10",
-            pomodoroState === "focusing" && !isZenMaximized
+            pomodoroState === "focusing"
               ? "bg-black/40 group-hover:bg-transparent"
               : "bg-transparent"
           )}
@@ -60,7 +89,7 @@ export function SoundscapePlayer() {
           <iframe
             className={cn(
               "absolute inset-0 w-full h-full transition-all duration-700",
-              pomodoroState === "focusing" && !isZenMaximized
+              pomodoroState === "focusing"
                 ? "grayscale-[60%] group-hover:grayscale-0"
                 : "grayscale-0"
             )}
@@ -69,19 +98,13 @@ export function SoundscapePlayer() {
             frameBorder="0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
+            sandbox="allow-same-origin allow-scripts allow-presentation allow-popups allow-popups-to-escape-sandbox"
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm font-medium">
             Invalid YouTube URL
           </div>
         )}
-        <button
-          onClick={toggleZenMaximize}
-          title={isZenMaximized ? "Thu nhỏ" : "Phóng to"}
-          className="absolute top-2 right-2 z-20 p-1.5 rounded-lg bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-black/80 hover:scale-110"
-        >
-          <HugeiconsIcon icon={isZenMaximized ? Cancel01Icon : FullscreenIcon} size={14} />
-        </button>
       </div>
     </div>
   );

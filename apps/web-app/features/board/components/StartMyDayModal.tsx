@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useBoardStore } from "../store/board.store";
-import { useCalendarStore } from "@/features/calendar/store/calendar.store";
+import { calendarApi } from "@/features/calendar/api/calendar.api";
 import { useAuthStore } from "@/features/auth";
 import { autoSchedule, type OccupiedSlot } from "../utils/autoSchedule";
 import { toast } from "sonner";
@@ -33,7 +33,6 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
   const [isScheduling, setIsScheduling] = useState(false);
   const { t } = useTranslation();
   const { dailyPlanToday, saveTimeBlocks, confirmPlan } = useBoardStore();
-  const { events: fixedEvents } = useCalendarStore();
   const { isTourActive, tourStepIndex, advanceTourStep } = useOnboardingStore();
   const user = useAuthStore((s) => s.user);
 
@@ -60,6 +59,7 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
 
     setIsScheduling(true);
     try {
+        const { data: fixedEvents } = await calendarApi.getEvents(todayStr, todayStr);
         const occupiedSlots: OccupiedSlot[] = fixedEvents.map((event) => ({
           date: event.occurrenceDate,
           startTime: event.startTime.substring(0, 5),

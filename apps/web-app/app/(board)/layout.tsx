@@ -1,9 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { useAuthStore } from "@/features/auth";
 import { OnboardingModal, AppTour } from "@/features/auth";
+import { usePathname } from "next/navigation";
+import { useFocusStore } from "@/features/focus/store/focus.store";
+import { cn } from "@/lib/utils";
 
 export default function AppLayout({
   children,
@@ -11,7 +14,27 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   const user = useAuthStore((s) => s.user);
+  const pathname = usePathname();
+  const isFlowFullscreen = useFocusStore((s) => s.isFlowFullscreen);
+
+  const isFlowPage = pathname === "/flow";
+  const isFullscreenMode = isFlowPage && isFlowFullscreen;
   const showSetup = user && (!user.wakeTime || !user.sleepTime);
+
+  // Sync state if user exits browser fullscreen using Esc or browser controls
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const isBrowserFullscreen = !!document.fullscreenElement;
+      if (!isBrowserFullscreen && isFlowFullscreen) {
+        useFocusStore.setState({ isFlowFullscreen: false });
+      }
+    };
+    
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, [isFlowFullscreen]);
 
   if (showSetup) {
     return (
@@ -23,8 +46,13 @@ export default function AppLayout({
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">
-      <Sidebar />
-      <main className="flex min-w-0 flex-1 flex-col overflow-y-auto px-8 py-6 scrollbar-thin">
+      {!isFullscreenMode && <Sidebar />}
+      <main 
+        className={cn(
+          "flex min-w-0 flex-1 flex-col overflow-y-auto scrollbar-thin transition-all duration-300",
+          isFullscreenMode ? "p-0" : "px-8 py-6"
+        )}
+      >
         {children}
       </main>
       {/* Rendered here so it's accessible on all board routes via the Sidebar button */}

@@ -245,23 +245,26 @@ export function TaskFormModal({
       taskData.status = initialStatus;
     }
 
-    if (onSubmit) {
-      onSubmit(taskData);
-    } else {
-      try {
+    try {
+      if (onSubmit) {
+        await onSubmit(taskData);
+      } else {
         if (initialData?.id) {
           await updateTask(initialData.id, taskData);
         } else {
           await createTask(taskData);
         }
-        localStorage.removeItem('my_pace_task_draft_new');
         if (isTourActive && tourStepIndex === 3) {
           advanceTourStep();
         }
         handleClose();
-      } catch (err) {
-        setError(getApiErrorMessage(err));
       }
+      if (!initialData?.id) {
+        localStorage.removeItem('my_pace_task_draft_new');
+        setHasDraft(false);
+      }
+    } catch (err) {
+      setError(getApiErrorMessage(err));
     }
   };
 
