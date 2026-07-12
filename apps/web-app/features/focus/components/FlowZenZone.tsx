@@ -13,7 +13,7 @@ export function FlowZenZone() {
   const [isAdding, setIsAdding] = useState(false);
 
   return (
-    <div className="h-full flex flex-col border-l border-border bg-background min-h-0">
+    <div className="h-full flex flex-col border-l border-border bg-background min-h-0 min-w-[220px]">
       {/* Top Half: YouTube Player */}
       <SoundscapePlayer />
 

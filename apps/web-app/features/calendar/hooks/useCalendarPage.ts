@@ -16,7 +16,10 @@ const EVENT_TEXT      = "#ffffff";
 const TASK_COLOR_MIT  = "#6366f1"; // indigo for MITs
 const TASK_COLOR_REG  = "#475569"; // slate for regular tasks
 
-const todayStr = () => new Date().toISOString().split("T")[0];
+const todayStr = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
 const toHHMM = (t: string) => t.substring(0, 5);
 const toSlotTime = (t: string | null | undefined, fallback: string) =>
   t ? t.substring(0, 5) + ":00" : fallback;
@@ -196,6 +199,18 @@ export function useCalendarPage() {
     const timer = setTimeout(() => setIsCalendarMounted(true), 0);
     return () => clearTimeout(timer);
   }, []);
+
+  // Update FullCalendar size to prevent scrollbar gutter gaps on mount or sidebar toggle
+  useEffect(() => {
+    if (isCalendarMounted && calendarRef.current) {
+      const api = calendarRef.current.getApi();
+      api.updateSize();
+      const timer = setTimeout(() => {
+        api.updateSize();
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [isCalendarMounted, isSidebarOpen]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleDatesSet = useCallback((arg: DatesSetArg) => {

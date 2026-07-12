@@ -88,7 +88,7 @@ export function FlowTodoList({ onTaskSelect }: FlowTodoListProps) {
   return (
     <div
       className={cn(
-        "h-full flex flex-col border-r border-border bg-background transition-opacity duration-700",
+        "h-full flex flex-col border-r border-border bg-background transition-opacity duration-700 min-w-[220px]",
         isFocusing ? "opacity-30 hover:opacity-100" : "opacity-100"
       )}
     >
