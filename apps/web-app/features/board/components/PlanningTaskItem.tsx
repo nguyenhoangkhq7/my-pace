@@ -21,7 +21,7 @@ export function PlanningTaskItem({ task, onRemove }: PlanningTaskItemProps) {
           onSave={async (newTitle) => {
             await updateTask(task.id, { title: newTitle });
           }}
-          className={cn("text-sm text-foreground cursor-text hover:bg-muted/60 px-1 -mx-1 rounded block", task.isImportant && "font-medium")}
+          className={cn("text-sm text-foreground cursor-text hover:bg-muted/60 px-1 -mx-1 rounded inline-block break-words max-w-full", task.isImportant && "font-medium")}
           inputClassName="h-7 text-sm bg-card border-border"
         />
         <TaskDetails task={task} />
