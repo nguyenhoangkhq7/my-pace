@@ -38,6 +38,7 @@ export const vi: Translations = {
     theme: "Giao diện",
     chooseTheme: "Chọn giao diện",
     language: "Ngôn ngữ",
+    settings: "Cài đặt",
   },
   board: {
     today: "Hôm nay",

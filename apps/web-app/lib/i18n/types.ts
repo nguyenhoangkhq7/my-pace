@@ -38,6 +38,7 @@ export interface Translations {
     theme: string;
     chooseTheme: string;
     language: string;
+    settings: string;
   };
   board: {
     today: string;

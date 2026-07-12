@@ -21,6 +21,8 @@ import { HelpIcon, FeedbackIcon } from "./SidebarIcons";
 import { ThemePicker } from "./ThemePicker";
 import { LanguagePicker } from "./LanguagePicker";
 import { useTranslation } from "@/hooks/use-translation";
+import { Settings } from "lucide-react";
+import { SettingsModal } from "@/features/settings/components/SettingsModal";
 
 import { Time02Icon } from "@hugeicons/core-free-icons";
 
@@ -34,6 +36,7 @@ export function Sidebar() {
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
@@ -167,10 +170,9 @@ export function Sidebar() {
 
         {/* ── Bottom section ──────────────────────────────────────── */}
         <div className="flex flex-col gap-1 border-t border-border pt-4">
-          {/* User Profile Button */}
           <button
-            onClick={() => setIsProfileOpen(true)}
-            title={isCollapsed ? getShortName(user?.name) : undefined}
+            onClick={() => setIsSettingsOpen(true)}
+            title={isCollapsed ? t.sidebar.settings : undefined}
             className={cn(
               "flex w-full items-center rounded-xl py-2.5",
               isCollapsed ? "justify-center px-0" : "gap-2.5 px-3",
@@ -180,55 +182,22 @@ export function Sidebar() {
               "active:scale-[0.97]"
             )}
           >
-            <HugeiconsIcon icon={UserCircleIcon} size={18} className="shrink-0" />
-            {!isCollapsed && <span className="truncate">{getShortName(user?.name)}</span>}
+            <Settings className="w-[18px] h-[18px] shrink-0" />
+            {!isCollapsed && <span>{t.sidebar.settings}</span>}
           </button>
-
-          {/* Help Button */}
-          <button
-            onClick={() => startOnboarding(true)}
-            title={isCollapsed ? t.sidebar.philosophy : undefined}
-            className={cn(
-              "flex w-full items-center rounded-xl py-2.5",
-              isCollapsed ? "justify-center px-0" : "gap-2.5 px-3",
-              "text-sm font-medium text-muted-foreground",
-              "transition-all duration-150",
-              "hover:bg-accent hover:text-foreground",
-              "active:scale-[0.97]"
-            )}
-          >
-            <HelpIcon className="w-[18px] h-[18px] shrink-0" />
-            {!isCollapsed && <span>{t.sidebar.philosophy}</span>}
-          </button>
-
-          {/* Feedback Button */}
-          <button
-            onClick={() => setIsFeedbackOpen(true)}
-            title={isCollapsed ? t.sidebar.feedback : undefined}
-            className={cn(
-              "flex w-full items-center rounded-xl py-2.5",
-              isCollapsed ? "justify-center px-0" : "gap-2.5 px-3",
-              "text-sm font-medium text-muted-foreground",
-              "transition-all duration-150",
-              "hover:bg-accent hover:text-foreground",
-              "active:scale-[0.97]"
-            )}
-          >
-            <FeedbackIcon className="w-[18px] h-[18px] shrink-0" />
-            {!isCollapsed && <span>{t.sidebar.feedback}</span>}
-          </button>
-
-          {/* Theme Picker */}
-          <ThemePicker isCollapsed={isCollapsed} />
-
-          {/* Language Picker */}
-          <LanguagePicker isCollapsed={isCollapsed} />
         </div>
       </aside>
 
-      {/* Profile Edit Dialog */}
+      {/* Dialogs */}
       <ProfileDialog isOpen={isProfileOpen} onOpenChange={setIsProfileOpen} />
       <FeedbackModal isOpen={isFeedbackOpen} onOpenChange={setIsFeedbackOpen} />
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onOpenChange={setIsSettingsOpen}
+        onOpenProfile={() => setIsProfileOpen(true)}
+        onOpenPhilosophy={() => startOnboarding(true)}
+        onOpenFeedback={() => setIsFeedbackOpen(true)}
+      />
     </>
   );
 }
