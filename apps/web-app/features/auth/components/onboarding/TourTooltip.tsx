@@ -5,6 +5,19 @@ import { X } from "lucide-react";
 import { useOnboardingStore } from "../../store/onboarding.store";
 import { useTranslation } from "@/hooks/use-translation";
 
+// Map step index -> selector of element that should be auto-clicked when user
+// presses "Tiếp tục" (i.e. the button BOTH advances tour AND triggers a UI action).
+// Only list steps where the action (opening a modal, saving data, navigating) is
+// REQUIRED before the next step's element can appear in the DOM.
+const STEP_AUTO_CLICK: Record<number, string> = {
+  1: ".tour-new-task-btn",          // Step 2: click to open task creation modal
+  4: ".tour-save-task-btn",         // Step 5: click to save task to backlog
+  5: ".tour-plan-my-day-btn",       // Step 6: click to enter planning mode
+  7: ".tour-save-plan-btn",         // Step 8: click to save plan (needed before start-day btn appears)
+  8: ".tour-start-day-btn",         // Step 9: click to open Start My Day modal
+  9: ".tour-manual-schedule-btn",   // Step 10: click to close modal & navigate to calendar
+};
+
 interface TourTooltipProps {
   stepIndex: number;
   totalSteps: number;
@@ -25,6 +38,28 @@ export function TourTooltip({
 }: TourTooltipProps) {
   const { advanceTourStep, completeOnboarding } = useOnboardingStore();
   const { t } = useTranslation();
+
+  const handleContinue = () => {
+    if (stepIndex >= totalSteps - 1) {
+      completeOnboarding();
+      return;
+    }
+
+    // For steps that require opening a UI element before the next step renders,
+    // programmatically click that element. The element's own onClick handler will
+    // call advanceTourStep() internally, so we do NOT call it here.
+    const autoClickSelector = STEP_AUTO_CLICK[stepIndex];
+    if (autoClickSelector) {
+      const el = document.querySelector<HTMLElement>(autoClickSelector);
+      if (el) {
+        el.click();
+        return; // advancement handled by element's onClick
+      }
+    }
+
+    // Default: just advance to next step
+    advanceTourStep();
+  };
 
   return (
     <div
@@ -61,13 +96,7 @@ export function TourTooltip({
 
         {hasNextBtn && (
           <button
-            onClick={() => {
-              if (stepIndex >= totalSteps - 1) {
-                completeOnboarding();
-              } else {
-                advanceTourStep();
-              }
-            }}
+            onClick={handleContinue}
             className="mt-4 w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/20 transition-all hover:brightness-110 active:scale-[0.98]"
           >
             {stepIndex >= totalSteps - 1 ? "Hoàn thành 🎉" : `${t.common.continue} →`}

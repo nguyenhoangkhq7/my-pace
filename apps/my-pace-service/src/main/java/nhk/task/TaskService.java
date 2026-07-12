@@ -96,6 +96,40 @@ public class TaskService {
         
         taskMapper.updateFromRequest(request, task);
         
+        // Update checklists manually if present in the request
+        if (request.getChecklists() != null) {
+            java.util.Map<UUID, TaskChecklistItem> existingItems = task.getChecklists().stream()
+                    .filter(c -> c.getId() != null)
+                    .collect(java.util.stream.Collectors.toMap(TaskChecklistItem::getId, c -> c));
+
+            java.util.List<TaskChecklistItem> updatedChecklists = new java.util.ArrayList<>();
+            for (int i = 0; i < request.getChecklists().size(); i++) {
+                TaskChecklistItemRequest itemReq = request.getChecklists().get(i);
+                if (itemReq.getTitle() == null || itemReq.getTitle().trim().isEmpty()) {
+                    continue;
+                }
+
+                TaskChecklistItem item;
+                if (itemReq.getId() != null && existingItems.containsKey(itemReq.getId())) {
+                    item = existingItems.get(itemReq.getId());
+                    item.setTitle(itemReq.getTitle());
+                    item.setIsCompleted(itemReq.getIsCompleted() != null ? itemReq.getIsCompleted() : false);
+                    item.setOrderIndex(itemReq.getOrderIndex() != null ? itemReq.getOrderIndex() : i);
+                } else {
+                    item = new TaskChecklistItem();
+                    item.setTaskId(task.getId());
+                    item.setTask(task);
+                    item.setTitle(itemReq.getTitle());
+                    item.setIsCompleted(itemReq.getIsCompleted() != null ? itemReq.getIsCompleted() : false);
+                    item.setOrderIndex(itemReq.getOrderIndex() != null ? itemReq.getOrderIndex() : i);
+                }
+                updatedChecklists.add(item);
+            }
+
+            task.getChecklists().clear();
+            task.getChecklists().addAll(updatedChecklists);
+        }
+
         boolean isNowDone = "Done".equals(task.getStatus());
         if (!wasDone && isNowDone) {
             task.setDoneAt(java.time.OffsetDateTime.now());

@@ -72,7 +72,6 @@ export function TaskFormModal({
   const currentTask = initialData?.id ? tasks.find(t => t.id === initialData.id) : null;
   const checklists = currentTask?.checklists || [];
 
-  const draftKey = initialData?.id ? `my_pace_task_draft_${initialData.id}` : 'my_pace_task_draft_new';
   const [hasDraft, setHasDraft] = useState(false);
 
   const prevIsOpenRef = useRef(false);
@@ -88,6 +87,8 @@ export function TaskFormModal({
       initialDueDate = new Date();
     }
 
+    const checklistsToUse = initialData?.id ? currentTask?.checklists : initialData?.checklists;
+
     return {
       title: initialData?.title || "",
       estimatedMinutes: initialData?.estimatedMinutes ? String(initialData.estimatedMinutes) : "",
@@ -97,8 +98,8 @@ export function TaskFormModal({
       categoryId: initialData?.categoryId || undefined,
       goalId: prefilledGoalId || initialData?.goalId || undefined,
       dueDate: initialDueDate,
-      localChecklists: initialData?.checklists
-        ? initialData.checklists.map(c => ({ title: c.title, isCompleted: c.isCompleted, orderIndex: c.orderIndex }))
+      localChecklists: checklistsToUse
+        ? checklistsToUse.map(c => ({ id: c.id, title: c.title, isCompleted: c.isCompleted, orderIndex: c.orderIndex }))
         : []
     };
   };
@@ -115,48 +116,55 @@ export function TaskFormModal({
     setDueDate(initialState.dueDate);
     setLocalChecklists(initialState.localChecklists as any[]);
     setError("");
-    localStorage.removeItem(draftKey);
+    localStorage.removeItem('my_pace_task_draft_new');
     setHasDraft(false);
   };
 
   useEffect(() => {
-    const justOpened = isOpen && !prevIsOpenRef.current;
-    prevIsOpenRef.current = isOpen;
+    if (!isOpen) return;
 
-    if (justOpened) {
+    fetchGoals();
+    setIsConfirmDeleteOpen(false);
+    setError("");
 
-      Promise.resolve().then(() => {
-        fetchGoals();
-        
-        const savedDraft = localStorage.getItem(draftKey);
-        if (savedDraft) {
-          try {
-            const draft = JSON.parse(savedDraft);
-            setTitle(draft.title || "");
-            setEstimatedMinutes(draft.estimatedMinutes || "");
-            setNotes(draft.notes || "");
-            setIsUrgent(draft.isUrgent ?? false);
-            setIsImportant(draft.isImportant ?? false);
-            setCategoryId(draft.categoryId);
-            setGoalId(draft.goalId);
-            setDueDate(draft.dueDate ? new Date(draft.dueDate) : undefined);
-            setLocalChecklists(draft.localChecklists || []);
-            setError("");
-            setIsConfirmDeleteOpen(false);
-            return;
-          } catch (e) {
-            console.error("Failed to parse draft", e);
-          }
+    // Only restore draft for Create Task (initialData?.id is falsy)
+    if (!initialData?.id) {
+      const savedDraft = localStorage.getItem('my_pace_task_draft_new');
+      if (savedDraft) {
+        try {
+          const draft = JSON.parse(savedDraft);
+          setTitle(draft.title || "");
+          setEstimatedMinutes(draft.estimatedMinutes || "");
+          setNotes(draft.notes || "");
+          setIsUrgent(draft.isUrgent ?? false);
+          setIsImportant(draft.isImportant ?? false);
+          setCategoryId(draft.categoryId);
+          setGoalId(draft.goalId);
+          setDueDate(draft.dueDate ? new Date(draft.dueDate) : undefined);
+          setLocalChecklists(draft.localChecklists || []);
+          return;
+        } catch (e) {
+          console.error("Failed to parse draft", e);
         }
-        
-        resetToInitial();
-        setIsConfirmDeleteOpen(false);
-      });
+      }
     }
-  }, [isOpen, initialData, prefilledGoalId, prefilledUrgent, prefilledImportant, planningTarget, initialStatus, fetchGoals, draftKey]);
+
+    // Synchronously initialize form values from database task data or defaults
+    const initialState = getInitialState();
+    setTitle(initialState.title);
+    setEstimatedMinutes(initialState.estimatedMinutes);
+    setNotes(initialState.notes);
+    setIsUrgent(initialState.isUrgent);
+    setIsImportant(initialState.isImportant);
+    setCategoryId(initialState.categoryId);
+    setGoalId(initialState.goalId);
+    setDueDate(initialState.dueDate);
+    setLocalChecklists(initialState.localChecklists as any[]);
+  }, [isOpen, initialData]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    // Only save draft for Create Task!
+    if (!isOpen || !!initialData?.id) return;
 
     const initialState = getInitialState();
     const formatDateForCompare = (d?: Date) => d ? format(d, "yyyy-MM-dd") : "";
@@ -180,11 +188,11 @@ export function TaskFormModal({
         dueDate: dueDate ? dueDate.toISOString() : undefined, 
         localChecklists
       };
-      localStorage.setItem(draftKey, JSON.stringify(draft));
+      localStorage.setItem('my_pace_task_draft_new', JSON.stringify(draft));
     } else {
-      localStorage.removeItem(draftKey);
+      localStorage.removeItem('my_pace_task_draft_new');
     }
-  }, [title, estimatedMinutes, notes, isUrgent, isImportant, categoryId, goalId, dueDate, localChecklists, isOpen, draftKey]);
+  }, [title, estimatedMinutes, notes, isUrgent, isImportant, categoryId, goalId, dueDate, localChecklists, isOpen, initialData]);
 
   const handleClose = () => {
     if (onOpenChange) onOpenChange(false);
@@ -246,7 +254,7 @@ export function TaskFormModal({
         } else {
           await createTask(taskData);
         }
-        localStorage.removeItem(draftKey);
+        localStorage.removeItem('my_pace_task_draft_new');
         if (isTourActive && tourStepIndex === 3) {
           advanceTourStep();
         }
@@ -261,7 +269,7 @@ export function TaskFormModal({
     if (!initialData?.id) return;
     try {
       await deleteTask(initialData.id);
-      localStorage.removeItem(draftKey);
+      localStorage.removeItem('my_pace_task_draft_new');
       setIsConfirmDeleteOpen(false);
       handleClose();
     } catch (err) {
@@ -301,27 +309,15 @@ export function TaskFormModal({
                 id="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                onBlur={async () => {
-                  if (initialData?.id && title.trim() && title !== initialData.title) {
-                    try {
-                      await updateTask(initialData.id, { title: title.trim() });
-                    } catch (err) {
-                      console.error(err);
-                    }
+                onBlur={() => {
+                  // Tour: advance from "enter title" step to "save task" step when user finishes typing
+                  if (isTourActive && tourStepIndex === 3 && title.trim().length > 0) {
+                    advanceTourStep();
                   }
                 }}
-                onKeyDown={async (e) => {
+                onKeyDown={(e) => {
                   if (e.key === "Enter") {
-                    if (initialData?.id && title.trim() && title !== initialData.title) {
-                      try {
-                        await updateTask(initialData.id, { title: title.trim() });
-                        (e.target as HTMLInputElement).blur();
-                      } catch (err) {
-                        console.error(err);
-                      }
-                    } else if (!initialData?.id) {
-                      handleSubmitInternal();
-                    }
+                    handleSubmitInternal();
                   }
                 }}
                 className="bg-card border-border focus:border-primary text-lg font-medium tour-task-title-input"
@@ -460,7 +456,7 @@ export function TaskFormModal({
                 {t.taskForm.deleteTask}
               </Button>
             )}
-            {!requireDuration && hasDraft && (
+            {!requireDuration && !initialData?.id && hasDraft && (
               <Button
                 type="button"
                 variant="ghost"
