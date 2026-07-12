@@ -36,7 +36,7 @@ export function TaskBacklogCard({
         onSave={async (newTitle) => {
           await updateTask(task.id, { title: newTitle });
         }}
-        className="font-medium line-clamp-2 hover:bg-muted/60 px-1 -mx-1 rounded cursor-text block"
+        className="font-medium hover:bg-muted/60 px-1 -mx-1 rounded cursor-text inline-block break-words max-w-full"
         inputClassName="h-7 text-sm bg-card border-border"
       />
       

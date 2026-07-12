@@ -26,7 +26,7 @@ export function ExecutionTaskItem({ task, isMit, isConfirmed }: ExecutionTaskIte
             await updateTask(task.id, { title: newTitle });
           }}
           className={cn(
-            "text-sm cursor-text hover:bg-muted/60 px-1 -mx-1 rounded block",
+            "text-sm cursor-text hover:bg-muted/60 px-1 -mx-1 rounded inline-block break-words max-w-full",
             isMit && "font-medium",
             isDone ? "text-muted-foreground line-through" : "text-foreground"
           )}
