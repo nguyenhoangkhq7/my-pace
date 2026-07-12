@@ -39,8 +39,13 @@ export function useCalendarEvents(options?: UseCalendarEventsOptions) {
     }
     
     // Auto-refresh today & tomorrow's available time globally after calendar updates
-    const today = new Date().toISOString().split("T")[0];
-    const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
+    const getLocalDateStr = (d: Date) => 
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    
+    const today = getLocalDateStr(new Date());
+    const tomorrowDate = new Date();
+    tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+    const tomorrow = getLocalDateStr(tomorrowDate);
     try {
       await useAvailableTimeStore.getState().fetchAvailableTimeToday(today);
       await useAvailableTimeStore.getState().fetchAvailableTimeTomorrow(tomorrow);

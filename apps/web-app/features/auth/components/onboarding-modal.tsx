@@ -64,21 +64,21 @@ export function OnboardingModal() {
       <Dialog open={isOpen} onOpenChange={(open) => { if (!open) closeOnboardingModal(); }}>
         <DialogContent
           showCloseButton={isHelpMode}
-          className="sm:max-w-[650px] w-[95vw] rounded-3xl p-8 border-none bg-card shadow-2xl overflow-y-auto max-h-[90vh] duration-300 scrollbar-thin z-50"
+          className="sm:max-w-[500px] w-[95vw] rounded-3xl p-6 border-none bg-card shadow-2xl overflow-y-auto max-h-[90vh] duration-300 scrollbar-thin z-50"
         >
-          <DialogHeader className="mb-6 mt-2">
-            <DialogTitle className="text-3xl font-extrabold tracking-tight text-center text-foreground">
+          <DialogHeader className="mb-4 mt-1">
+            <DialogTitle className="text-2xl font-extrabold tracking-tight text-center text-foreground">
               {t.onboarding.title}
             </DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Eisenhower */}
-            <div className="flex gap-4 items-start bg-muted/30 p-4 rounded-2xl">
-              <div className="mt-1 p-2 bg-blue-500/10 text-blue-500 rounded-xl shrink-0">
-                <Target className="w-6 h-6" />
+            <div className="flex gap-3 items-start bg-muted/30 p-3 rounded-2xl">
+              <div className="mt-0.5 p-1.5 bg-blue-500/10 text-blue-500 rounded-xl shrink-0">
+                <Target className="w-5 h-5" />
               </div>
-              <p className="text-[15px] leading-relaxed text-muted-foreground pt-1.5">
+              <p className="text-sm leading-relaxed text-muted-foreground pt-0.5">
                 {renderWithKeyword(
                   t.onboarding.eisenhower, 
                   t.onboarding.eisenhowerKeyword, 
@@ -89,11 +89,11 @@ export function OnboardingModal() {
             </div>
 
             {/* Fixed Events */}
-            <div className="flex gap-4 items-start bg-muted/30 p-4 rounded-2xl">
-              <div className="mt-1 p-2 bg-purple-500/10 text-purple-500 rounded-xl shrink-0">
-                <Calendar className="w-6 h-6" />
+            <div className="flex gap-3 items-start bg-muted/30 p-3 rounded-2xl">
+              <div className="mt-0.5 p-1.5 bg-purple-500/10 text-purple-500 rounded-xl shrink-0">
+                <Calendar className="w-5 h-5" />
               </div>
-              <p className="text-[15px] leading-relaxed text-muted-foreground pt-1.5">
+              <p className="text-sm leading-relaxed text-muted-foreground pt-0.5">
                 {renderWithKeyword(
                   t.onboarding.fixedEvents, 
                   t.onboarding.fixedEventsKeyword, 
@@ -104,11 +104,11 @@ export function OnboardingModal() {
             </div>
 
             {/* MITs & Available Time */}
-            <div className="flex gap-4 items-start bg-muted/30 p-4 rounded-2xl">
-              <div className="mt-1 p-2 bg-green-500/10 text-green-500 rounded-xl shrink-0">
-                <Clock className="w-6 h-6" />
+            <div className="flex gap-3 items-start bg-muted/30 p-3 rounded-2xl">
+              <div className="mt-0.5 p-1.5 bg-green-500/10 text-green-500 rounded-xl shrink-0">
+                <Clock className="w-5 h-5" />
               </div>
-              <p className="text-[15px] leading-relaxed text-muted-foreground pt-1.5">
+              <p className="text-sm leading-relaxed text-muted-foreground pt-0.5">
                 {renderWithKeyword(
                   t.onboarding.mits, 
                   t.onboarding.mitsKeyword, 
@@ -119,11 +119,11 @@ export function OnboardingModal() {
             </div>
 
             {/* Flow Mode */}
-            <div className="flex gap-4 items-start bg-muted/30 p-4 rounded-2xl">
-              <div className="mt-1 p-2 bg-amber-500/10 text-amber-500 rounded-xl shrink-0">
-                <Sparkles className="w-6 h-6" />
+            <div className="flex gap-3 items-start bg-muted/30 p-3 rounded-2xl">
+              <div className="mt-0.5 p-1.5 bg-amber-500/10 text-amber-500 rounded-xl shrink-0">
+                <Sparkles className="w-5 h-5" />
               </div>
-              <p className="text-[15px] leading-relaxed text-muted-foreground pt-1.5">
+              <p className="text-sm leading-relaxed text-muted-foreground pt-0.5">
                 {renderWithKeyword(
                   t.onboarding.flow, 
                   t.onboarding.flowKeyword, 
@@ -134,7 +134,7 @@ export function OnboardingModal() {
             </div>
           </div>
 
-          <DialogFooter className="mt-8 sm:justify-center w-full">
+          <DialogFooter className="mt-6 sm:justify-center w-full">
             <Button 
               type="button" 
               onClick={() => {
@@ -142,7 +142,7 @@ export function OnboardingModal() {
                 // Wait for the modal exit animation (300ms) and scrollbar restoration to prevent spotlight misalignment
                 setTimeout(() => startTour(), 400);
               }}
-              className="h-12 w-full sm:w-3/4 rounded-xl font-bold text-base bg-primary text-primary-foreground hover:brightness-110 transition-all active:scale-[0.98]"
+              className="h-11 w-full sm:w-3/4 rounded-xl font-bold text-sm bg-primary text-primary-foreground hover:brightness-110 transition-all active:scale-[0.98]"
             >
               {t.onboarding.tryNow}
             </Button>

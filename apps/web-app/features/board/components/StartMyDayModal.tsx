@@ -42,8 +42,8 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
       await confirmPlan(todayStr);
       onClose();
       router.push(`/calendar?view=day&date=${todayStr}`);
-      if (isTourActive && tourStepIndex === 8) {
-        // Advance to step 9 (drag-drop on calendar) after a short delay for navigation
+      if (isTourActive && tourStepIndex === 9) {
+        // Advance to step 10 (drag-drop on calendar) after a short delay for navigation
         setTimeout(() => advanceTourStep(), 600);
       }
     } catch (err) {
@@ -92,7 +92,7 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
         toast.success(t.startMyDay.successAutoSchedule);
         onClose();
         router.push(`/calendar?view=day&date=${todayStr}`);
-        if (isTourActive && tourStepIndex === 8) {
+        if (isTourActive && tourStepIndex === 9) {
           setTimeout(() => advanceTourStep(), 500); // Wait for route & modal animation
         }
     } catch (err) {
@@ -112,8 +112,7 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
     }}>
       <DialogContent className="sm:max-w-[480px] bg-slate-950 text-slate-50 border-slate-800">
         <DialogHeader>
-          <div className="flex items-center space-x-3 mb-1">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-2xl">🚀</div>
+          <div className="flex items-center mb-1">
             <DialogTitle className="text-xl">{t.startMyDay.title}</DialogTitle>
           </div>
           <DialogDescription className="text-slate-400 text-sm leading-relaxed pt-1">
@@ -128,8 +127,7 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
             disabled={isScheduling}
             className="group relative flex flex-col items-start p-4 rounded-xl border border-primary/30 bg-primary/5 hover:bg-primary/10 hover:border-primary/60 transition-all text-left disabled:opacity-50"
           >
-            <div className="flex items-center space-x-3 mb-2">
-              <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-lg">⚡</div>
+            <div className="flex items-center mb-2 w-full">
               <span className="font-semibold text-slate-100">{t.startMyDay.autoSchedule}</span>
               {isScheduling && <span className="text-xs text-primary animate-pulse ml-auto">{t.startMyDay.processing}</span>}
             </div>
@@ -143,8 +141,7 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
             onClick={handleManualSchedule}
             className="tour-manual-schedule-btn group flex flex-col items-start p-4 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 hover:border-slate-600 transition-all text-left"
           >
-            <div className="flex items-center space-x-3 mb-2">
-              <div className="w-8 h-8 rounded-lg bg-slate-700 flex items-center justify-center text-lg">✋</div>
+            <div className="flex items-center mb-2">
               <span className="font-semibold text-slate-200">{t.startMyDay.manualSchedule}</span>
             </div>
             <p className="text-sm text-slate-400 leading-snug">
@@ -153,11 +150,6 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
           </button>
         </div>
 
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose} className="text-slate-500 hover:text-slate-300">
-            {t.startMyDay.skipJustList}
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

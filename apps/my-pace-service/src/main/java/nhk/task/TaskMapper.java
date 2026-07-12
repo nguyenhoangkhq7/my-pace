@@ -12,5 +12,6 @@ public interface TaskMapper {
     @Mapping(target = "checklists", ignore = true)
     Task toEntity(TaskCreateRequest request);
 
+    @Mapping(target = "checklists", ignore = true)
     void updateFromRequest(TaskUpdateRequest request, @MappingTarget Task task);
 }

@@ -120,7 +120,6 @@ export function useBacklogMatrix() {
             });
           } else {
             setRequireDurationForTask(task);
-            setIsModalOpen(true);
           }
         } else {
           checkTimeLimit(task.estimatedMinutes);

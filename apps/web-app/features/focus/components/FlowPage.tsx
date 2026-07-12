@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import { useAuthStore } from "@/features/auth";
 import { useBoardStore } from "@/features/board/store/board.store";
+import { useAppVisibility } from "@/features/available-time";
 import { FlowTodoList } from "@/features/focus/components/FlowTodoList";
 import { FlowPomodoro } from "@/features/focus/components/FlowPomodoro";
 import { PomodoroSettingsModal } from "@/features/focus/components/PomodoroSettingsModal";
@@ -26,6 +27,7 @@ import { Clock01Icon } from "@hugeicons/core-free-icons";
 import { useTranslation } from "@/hooks/use-translation";
 
 export function FlowPage() {
+  useAppVisibility();
   const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const pomodoroState = useFocusStore((s) => s.pomodoroState);
@@ -93,12 +95,18 @@ export function FlowPage() {
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length === 3 && parsed[0] === 15 && parsed[1] === 70 && parsed[2] === 15) {
-            setSizes([20, 60, 20]);
-            localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify([20, 60, 20]));
-            return;
-          }
           if (Array.isArray(parsed) && parsed.length === expectedLen) {
+            // Auto-correct if sidebar panels are saved with too small/squished sizes (less than 15%)
+            if (expectedLen === 3 && (parsed[0] < 15 || parsed[2] < 15)) {
+              setSizes([20, 60, 20]);
+              localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify([20, 60, 20]));
+              return;
+            }
+            if (expectedLen === 2 && parsed[0] < 15) {
+              setSizes([25, 75]);
+              localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify([25, 75]));
+              return;
+            }
             setSizes(parsed);
             return;
           }
@@ -239,7 +247,7 @@ export function FlowPage() {
               id="todo-panel" 
               {...({ order: 1 } as Record<string, unknown>)} 
               defaultSize={todoSize} 
-              minSize={10} 
+              minSize={15} 
               collapsible={true} 
               collapsedSize={0}
               {...({ onCollapse: () => setIsLeftCollapsed(true), onExpand: () => setIsLeftCollapsed(false) } as Record<string, unknown>)}
@@ -285,7 +293,7 @@ export function FlowPage() {
               id="zenzone-panel" 
               {...({ order: 3 } as Record<string, unknown>)} 
               defaultSize={isZenMaximized ? 100 : zenzoneSize} 
-              minSize={isZenMaximized ? 100 : 10} 
+              minSize={isZenMaximized ? 100 : 15} 
               collapsible={!isZenMaximized} 
               collapsedSize={0}
               {...({ onCollapse: () => setIsRightCollapsed(true), onExpand: () => setIsRightCollapsed(false) } as Record<string, unknown>)}
