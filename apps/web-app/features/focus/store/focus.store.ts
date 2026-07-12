@@ -31,18 +31,27 @@ interface FocusState {
   isSettingsOpen: boolean;
   setIsSettingsOpen: (open: boolean) => void;
 
-  // Zen Zone maximize
-  isZenMaximized: boolean;
-  toggleZenMaximize: () => void;
+  // Zen Zone full mode (auto-triggered when panel dragged >= 65%)
+  isZenFull: boolean;
+  setZenFull: (value: boolean) => void;
+
+  // Flow Fullscreen mode
+  isFlowFullscreen: boolean;
+  toggleFlowFullscreen: () => void;
 
   // Completion prompt state (micro-modal)
   promptTask: { id: string; title: string; estimatedMinutes: number } | null;
   setPromptTask: (task: { id: string; title: string; estimatedMinutes: number } | null) => void;
 
+  // Floating Pomodoro widget state
+  isPomodoroFloating: boolean;
+  setPomodoroFloating: (value: boolean) => void;
+
   // Actions
   setYoutubeUrl: (url: string) => void;
   addToHistory: (url: string, title: string) => void;
   removeFromHistory: (url: string) => void;
+  updateHistoryTitle: (url: string, newTitle: string) => void;
   openFocusMode: (taskId: string, planTaskId: string, estimatedMinutes: number) => void;
   closeFocusMode: () => void;
   
@@ -78,13 +87,17 @@ export const useFocusStore = create<FocusState>()(
         { url: "https://www.youtube.com/live/X4VbdwhkE10?si=gV884ky2WVfhPwQQ", title: "Lofi Girl" }
       ],
       isSettingsOpen: false,
-      isZenMaximized: false,
+      isZenFull: false,
+      isFlowFullscreen: false,
       promptTask: null,
+      isPomodoroFloating: false,
 
+      setPomodoroFloating: (value) => set({ isPomodoroFloating: value }),
       setPromptTask: (task) => set({ promptTask: task }),
       setYoutubeUrl: (url) => set({ youtubeUrl: url }),
       setIsSettingsOpen: (open) => set({ isSettingsOpen: open }),
-      toggleZenMaximize: () => set((state) => ({ isZenMaximized: !state.isZenMaximized })),
+      setZenFull: (value) => set({ isZenFull: value }),
+      toggleFlowFullscreen: () => set((state) => ({ isFlowFullscreen: !state.isFlowFullscreen })),
       
       addToHistory: (url, title) => set((state) => {
         // Prevent duplicates
@@ -95,6 +108,12 @@ export const useFocusStore = create<FocusState>()(
 
       removeFromHistory: (url) => set((state) => ({
         youtubeHistory: state.youtubeHistory.filter(item => item.url !== url)
+      })),
+
+      updateHistoryTitle: (url, newTitle) => set((state) => ({
+        youtubeHistory: state.youtubeHistory.map(item => 
+          item.url === url ? { ...item, title: newTitle } : item
+        )
       })),
       
       openFocusMode: (taskId, planTaskId, estimatedMinutes) => {
