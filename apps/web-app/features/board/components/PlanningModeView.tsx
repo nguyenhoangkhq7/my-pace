@@ -83,7 +83,7 @@ export function PlanningModeView({
               <Button variant="outline" size="sm" onClick={onCancel} className="border-primary/20 text-foreground hover:bg-primary/10 cursor-pointer">
                 {t.common.cancel}
               </Button>
-              <Button size="sm" onClick={onSave} className="bg-primary text-primary-foreground cursor-pointer shadow-md shadow-primary/20 tour-save-plan-btn">
+              <Button size="sm" onClick={onSave} className="bg-primary text-primary-foreground cursor-pointer shadow-md shadow-primary/20">
                 {t.planning.savePlan}
               </Button>
             </div>

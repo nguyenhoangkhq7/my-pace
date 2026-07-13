@@ -13,6 +13,8 @@ import { useBoardStore } from "@/features/board/store/board.store";
 import { cn, fetchYouTubeTitle } from "@/lib/utils";
 import { CopyPlus, Settings2, LayoutGrid, List, LogOut } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ZenMediaDropzone } from "./ZenMediaDropzone";
+import { SoundscapeHistoryList } from "./SoundscapeHistoryList";
 
 interface FlowZenZoneProps {
   /** Called when user clicks X or squeezes panel to exit Zen Full mode */
@@ -83,7 +85,7 @@ export function FlowZenZone({ onExit }: FlowZenZoneProps) {
         toast.error("Không tìm thấy link YouTube hợp lệ. Vui lòng thử lại!");
         console.error("Drop data:", { uri, plain, html });
       }
-    } catch (err) {
+    } catch {
       toast.error("Không thể lấy dữ liệu kéo thả.");
     }
   };
@@ -102,7 +104,7 @@ export function FlowZenZone({ onExit }: FlowZenZoneProps) {
       } else {
         toast.error("Clipboard không chứa link YouTube hợp lệ.");
       }
-    } catch (error) {
+    } catch {
       toast.error("Không thể đọc từ Clipboard. Hãy cấp quyền cho trình duyệt.");
     }
   };
@@ -164,21 +166,14 @@ export function FlowZenZone({ onExit }: FlowZenZoneProps) {
         <SoundscapePlayer />
 
         {/* Soundscape list — scrollable below video */}
-        <div 
-          className={cn("flex-1 flex flex-col min-h-0 overflow-hidden relative transition-colors", isDragOver ? "bg-primary/5" : "")}
+        <ZenMediaDropzone
+          className="flex-1 flex flex-col min-h-0 overflow-hidden"
+          isDragOver={isDragOver}
           onDragEnter={handleDragEnter}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
-          {isDragOver && (
-            <div className="absolute inset-0 z-50 bg-background/90 backdrop-blur-md border-2 border-dashed border-primary flex items-center justify-center rounded-xl m-2 pointer-events-none">
-              <div className="text-center">
-                <HugeiconsIcon icon={PlusSignIcon} size={32} className="mx-auto text-primary mb-2" />
-                <p className="text-primary font-bold tracking-wide">Thả để thêm video</p>
-              </div>
-            </div>
-          )}
 
           <div className="px-6 py-3 flex items-center justify-between shrink-0 border-b border-border/50">
             <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
@@ -281,26 +276,17 @@ export function FlowZenZone({ onExit }: FlowZenZoneProps) {
             </div>
           )}
 
-          <div className={cn("flex-1 px-6 py-3 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent", layoutMode === "grid" ? "grid grid-rows-2 grid-flow-col auto-cols-[240px] sm:auto-cols-[280px] md:auto-cols-[320px] gap-4 overflow-x-auto overflow-y-hidden content-start" : "overflow-y-auto space-y-2")}>
-            {youtubeHistory.length === 0 && !isAdding && (
-              <div className="text-center text-xs font-medium text-muted-foreground py-6 col-span-full">
-                No saved playlists yet.
-              </div>
-            )}
-            {youtubeHistory.map((item) => (
-              <SoundscapeHistoryItem
-                key={item.url}
-                title={item.title}
-                url={item.url}
-                isPlaying={item.url === youtubeUrl}
-                onPlay={() => setYoutubeUrl(item.url)}
-                onRemove={() => removeFromHistory(item.url)}
-                onRename={(newTitle) => updateHistoryTitle(item.url, newTitle)}
-                layout={layoutMode}
-              />
-            ))}
-          </div>
-        </div>
+          <SoundscapeHistoryList
+            history={youtubeHistory}
+            isAdding={isAdding}
+            layoutMode={layoutMode}
+            currentUrl={youtubeUrl}
+            onPlay={setYoutubeUrl}
+            onRemove={removeFromHistory}
+            onRename={updateHistoryTitle}
+            isZenFull={true}
+          />
+        </ZenMediaDropzone>
       </div>
     );
   }
@@ -312,21 +298,14 @@ export function FlowZenZone({ onExit }: FlowZenZoneProps) {
       <SoundscapePlayer />
 
       {/* Soundscape History */}
-      <div 
-        className={cn("flex-1 flex flex-col min-h-0 relative transition-colors", isDragOver ? "bg-primary/5" : "")}
+      <ZenMediaDropzone
+        className="flex-1 flex flex-col min-h-0"
+        isDragOver={isDragOver}
         onDragEnter={handleDragEnter}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        {isDragOver && (
-          <div className="absolute inset-0 z-50 bg-background/90 backdrop-blur-md border-2 border-dashed border-primary flex items-center justify-center rounded-xl m-2 pointer-events-none">
-            <div className="text-center">
-              <HugeiconsIcon icon={PlusSignIcon} size={32} className="mx-auto text-primary mb-2" />
-              <p className="text-primary font-bold tracking-wide">Thả để thêm video</p>
-            </div>
-          </div>
-        )}
 
         <div className="p-5 pb-3 flex items-center justify-between">
           <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t.flow.soundscapeTitle}</h3>
@@ -359,26 +338,17 @@ export function FlowZenZone({ onExit }: FlowZenZoneProps) {
           <SoundscapeAddForm onCancel={() => setIsAdding(false)} />
         )}
 
-        <div className={cn("flex-1 px-4 pb-4 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent", layoutMode === "grid" ? "grid grid-rows-2 grid-flow-col auto-cols-[240px] gap-3 overflow-x-auto overflow-y-hidden content-start" : "overflow-y-auto space-y-3")}>
-          {youtubeHistory.length === 0 && !isAdding && (
-            <div className="text-center text-xs font-medium text-muted-foreground py-6 col-span-full">
-              No saved playlists yet.
-            </div>
-          )}
-          {youtubeHistory.map((item) => (
-            <SoundscapeHistoryItem
-              key={item.url}
-              title={item.title}
-              url={item.url}
-              isPlaying={item.url === youtubeUrl}
-              onPlay={() => setYoutubeUrl(item.url)}
-              onRemove={() => removeFromHistory(item.url)}
-              onRename={(newTitle) => updateHistoryTitle(item.url, newTitle)}
-              layout={layoutMode}
-            />
-          ))}
-        </div>
-      </div>
+        <SoundscapeHistoryList
+          history={youtubeHistory}
+          isAdding={isAdding}
+          layoutMode={layoutMode}
+          currentUrl={youtubeUrl}
+          onPlay={setYoutubeUrl}
+          onRemove={removeFromHistory}
+          onRename={updateHistoryTitle}
+          isZenFull={false}
+        />
+      </ZenMediaDropzone>
     </div>
   );
 }

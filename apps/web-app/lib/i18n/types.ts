@@ -345,6 +345,18 @@ export interface Translations {
     flowKeyword: string;
     flowDetail: string;
     tryNow: string;
+    workflowTitle: string;
+    wfStep1Title: string;
+    wfStep1Desc: string;
+    wfStep2Title: string;
+    wfStep2Desc: string;
+    wfStep3Title: string;
+    wfStep3Desc: string;
+    wfStep4Title: string;
+    wfStep4Desc: string;
+    wfStep5Title: string;
+    wfStep5Desc: string;
+    startNow: string;
     tour: {
       calendarTitle: string;
       calendarDesc: string;
@@ -406,7 +418,6 @@ export interface Translations {
     q4Pace: string;
     autoPriorityTip: string;
     matrixName: string;
-    goalBacklogName: string;
   };
   stats: {
     title: string;
@@ -445,8 +456,13 @@ export interface Translations {
     categorySelectRequired: string;
     startDate: string;
     endDate: string;
-    targetLabel: string;
-    periodLabel: string;
+    durationLabel: string;
+    preferTimeLabel: string;
+    preferTimeHint: string;
+    optionalLabel: string;
+    daysOfWeekLabel: string;
+    everyday: string;
+    customDays: string;
     targetCountLabel: string;
     autoCreateLabel: string;
     defaultSessionLabel: string;

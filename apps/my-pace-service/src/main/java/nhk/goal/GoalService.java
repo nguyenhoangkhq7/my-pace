@@ -35,22 +35,13 @@ public class GoalService {
 
         Goal goal = goalMapper.toEntity(request);
         goal.setUserId(userDetails.user().getId());
-        goal.setStatus(goal.getParentGoalId() != null ? "In Progress" : "Freeze");
+        goal.setStatus("In Progress");
         goal.setProgressPct(0);
 
-        if (goal.getTimeBoxedGoal() != null) {
-            goal.getTimeBoxedGoal().setGoal(goal);
-            goal.getTimeBoxedGoal().setAccumulatedMinutes(0);
-        }
-        if (goal.getMilestoneGoal() != null) {
-            goal.getMilestoneGoal().setGoal(goal);
-            goal.getMilestoneGoal().setCurrentCount(0);
-        }
-
         Goal saved = goalRepository.save(goal);
-        if (saved.getParentGoalId() != null) {
-            recalculateBinaryGoalProgress(saved.getParentGoalId());
-        }
+        
+        recalculateBinaryGoalProgress(saved.getId());
+        
         return goalMapper.toDto(saved);
     }
 
@@ -74,14 +65,10 @@ public class GoalService {
 
         goalMapper.updateFromRequest(request, goal);
 
-        if (goal.getTimeBoxedGoal() != null) {
-            goal.getTimeBoxedGoal().setGoal(goal);
-        }
-        if (goal.getMilestoneGoal() != null) {
-            goal.getMilestoneGoal().setGoal(goal);
-        }
-
         Goal saved = goalRepository.save(goal);
+        
+        recalculateBinaryGoalProgress(saved.getId());
+        
         return goalMapper.toDto(saved);
     }
 
@@ -97,35 +84,14 @@ public class GoalService {
         } else {
             goalRepository.delete(goal);
         }
-        
-        if (goal.getParentGoalId() != null) {
-            recalculateBinaryGoalProgress(goal.getParentGoalId());
-        }
     }
 
     @Transactional
-    public void updateGoalProgress(UUID goalId, int addedMinutes, int addedCount) {
+    public void updateGoalProgress(UUID goalId) {
         if (goalId == null) return;
 
         Goal goal = goalRepository.findById(goalId).orElse(null);
         if (goal == null) return;
-
-        if ("Time-boxed".equals(goal.getGoalType()) && goal.getTimeBoxedGoal() != null) {
-            TimeBoxedGoal tb = goal.getTimeBoxedGoal();
-            tb.setAccumulatedMinutes(tb.getAccumulatedMinutes() + addedMinutes);
-            int target = tb.getTargetMinutes() * Math.max(tb.getPeriodDays(), 1); // Simple target calculation
-            if (target > 0) {
-                double pct = (double) tb.getAccumulatedMinutes() / target * 100.0;
-                goal.setProgressPct((int) Math.min(pct, 100.0));
-            }
-        } else if ("Milestone".equals(goal.getGoalType()) && goal.getMilestoneGoal() != null) {
-            MilestoneGoal mg = goal.getMilestoneGoal();
-            mg.setCurrentCount(mg.getCurrentCount() + addedCount);
-            if (mg.getTargetCount() > 0) {
-                double pct = (double) mg.getCurrentCount() / mg.getTargetCount() * 100.0;
-                goal.setProgressPct((int) Math.min(pct, 100.0));
-            }
-        }
 
         if ("Binary".equals(goal.getGoalType())) {
             recalculateBinaryGoalProgress(goal.getId());
@@ -135,38 +101,26 @@ public class GoalService {
             }
             goalRepository.save(goal);
         }
-
-        if (goal.getParentGoalId() != null) {
-            recalculateBinaryGoalProgress(goal.getParentGoalId());
-        }
     }
 
-    private void recalculateBinaryGoalProgress(UUID parentGoalId) {
-        Goal parent = goalRepository.findById(parentGoalId).orElse(null);
-        if (parent == null || !"Binary".equals(parent.getGoalType())) return;
+    private void recalculateBinaryGoalProgress(UUID goalId) {
+        Goal goal = goalRepository.findById(goalId).orElse(null);
+        if (goal == null || !"Binary".equals(goal.getGoalType())) return;
 
-        long totalTasks = taskRepository.countByGoalId(parentGoalId);
-        long totalSubgoals = goalRepository.countByParentGoalId(parentGoalId);
-        long totalItems = totalTasks + totalSubgoals;
+        long totalTasks = taskRepository.countByGoalId(goalId);
         
-        if (totalItems == 0) {
-            parent.setProgressPct(0);
+        if (totalTasks == 0) {
+            goal.setProgressPct(0);
         } else {
-            long doneTasks = taskRepository.countByGoalIdAndStatus(parentGoalId, "Done");
-            long doneSubgoals = goalRepository.countByParentGoalIdAndStatus(parentGoalId, "Done");
-            long doneItems = doneTasks + doneSubgoals;
+            long doneTasks = taskRepository.countByGoalIdAndStatus(goalId, "Done");
             
-            parent.setProgressPct((int) ((double) doneItems / totalItems * 100));
-            if (parent.getProgressPct() >= 100) {
-                parent.setStatus("Done");
-            } else if ("Done".equals(parent.getStatus())) {
-                parent.setStatus("In Progress");
+            goal.setProgressPct((int) ((double) doneTasks / totalTasks * 100));
+            if (goal.getProgressPct() >= 100) {
+                goal.setStatus("Done");
+            } else if ("Done".equals(goal.getStatus())) {
+                goal.setStatus("In Progress");
             }
         }
-        goalRepository.save(parent);
-
-        if (parent.getParentGoalId() != null) {
-            recalculateBinaryGoalProgress(parent.getParentGoalId());
-        }
+        goalRepository.save(goal);
     }
 }

@@ -30,12 +30,13 @@ export function GoalDashboard() {
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [prefilledGoalId, setPrefilledGoalId] = useState<string | undefined>(undefined);
 
-  const { fetchCategories } = useBoardStore();
+  const { fetchCategories, fetchTasks } = useBoardStore();
 
   useEffect(() => {
     fetchGoals();
     fetchCategories();
-  }, [fetchGoals, fetchCategories]);
+    fetchTasks();
+  }, [fetchGoals, fetchCategories, fetchTasks]);
 
   // Handle errors from backend e.g. Limit Exceeded
   useEffect(() => {
@@ -45,7 +46,6 @@ export function GoalDashboard() {
   }, [error]);
 
   const filteredGoals = goals.filter((g) => {
-    if (g.parentGoalId) return false;
     if (filterType !== "ALL" && g.goalType !== filterType) return false;
     if (filterStatus !== "ALL" && g.status !== filterStatus) return false;
     return true;

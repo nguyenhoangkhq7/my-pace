@@ -2,15 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+
 import { useBoardStore } from "../store/board.store";
 import { calendarApi } from "@/features/calendar/api/calendar.api";
 import { useAuthStore } from "@/features/auth";
 import { autoSchedule, type OccupiedSlot } from "../utils/autoSchedule";
 import { toast } from "sonner";
 import { useTranslation } from "@/hooks/use-translation";
-import { useOnboardingStore } from "@/features/auth/store/onboarding.store";
+
 
 interface StartMyDayModalProps {
   isOpen: boolean;
@@ -33,7 +33,6 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
   const [isScheduling, setIsScheduling] = useState(false);
   const { t } = useTranslation();
   const { dailyPlanToday, saveTimeBlocks, confirmPlan } = useBoardStore();
-  const { isTourActive, tourStepIndex, advanceTourStep } = useOnboardingStore();
   const user = useAuthStore((s) => s.user);
 
   const handleManualSchedule = async () => {
@@ -41,10 +40,6 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
       await confirmPlan(todayStr);
       onClose();
       router.push(`/calendar?view=day&date=${todayStr}`);
-      if (isTourActive && tourStepIndex === 9) {
-        // Advance to step 10 (drag-drop on calendar) after a short delay for navigation
-        setTimeout(() => advanceTourStep(), 600);
-      }
     } catch (err) {
       console.error(err);
       toast.error(t.startMyDay.errorConfirm);
@@ -92,9 +87,6 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
         toast.success(t.startMyDay.successAutoSchedule);
         onClose();
         router.push(`/calendar?view=day&date=${todayStr}`);
-        if (isTourActive && tourStepIndex === 9) {
-          setTimeout(() => advanceTourStep(), 500); // Wait for route & modal animation
-        }
     } catch (err) {
       console.error(err);
       toast.error(t.startMyDay.errorAutoSchedule);
@@ -104,9 +96,8 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
   };
 
   return (
-    <Dialog modal={!isTourActive} open={isOpen} onOpenChange={(open) => {
+    <Dialog open={isOpen} onOpenChange={(open) => {
       if (!open) {
-        if (isTourActive) return;
         onClose();
       }
     }}>
@@ -120,7 +111,7 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 gap-3 py-4 tour-schedule-area">
+        <div className="grid grid-cols-1 gap-3 py-4">
           {/* Auto Schedule Card */}
           <button
             onClick={handleAutoSchedule}
@@ -139,7 +130,7 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
           {/* Manual Schedule Card */}
           <button
             onClick={handleManualSchedule}
-            className="tour-manual-schedule-btn group flex flex-col items-start p-4 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 hover:border-slate-600 transition-all text-left"
+            className="group flex flex-col items-start p-4 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 hover:border-slate-600 transition-all text-left"
           >
             <div className="flex items-center mb-2">
               <span className="font-semibold text-slate-200">{t.startMyDay.manualSchedule}</span>

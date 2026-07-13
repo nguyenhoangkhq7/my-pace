@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/incompatible-library */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -6,7 +7,6 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Clock01Icon, InformationCircleIcon } from "@hugeicons/core-free-icons";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { put, getApiErrorMessage } from "@/lib/fetchClient";
@@ -16,6 +16,7 @@ import { AppAlert } from "@/components/feedback/app-alert";
 import { cn } from "@/lib/utils";
 import { TimeSelect } from "@/components/ui/time-select";
 import { useTranslation } from "@/hooks/use-translation";
+
 
 interface SetupFormValues {
   wakeTime: string;

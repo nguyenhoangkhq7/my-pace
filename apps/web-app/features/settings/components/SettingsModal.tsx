@@ -3,7 +3,6 @@ import { useTranslation } from "@/hooks/use-translation";
 import { UserCircleIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useAuthStore } from "@/features/auth";
-import { getShortName } from "@/lib/name-helper";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useLanguageStore } from "@/features/settings/store/useLanguageStore";
@@ -50,8 +49,10 @@ export function SettingsModal({
 
   useEffect(() => {
     if (isOpen) {
-      const savedTheme = (localStorage.getItem("theme") as ThemeId) || "dark";
-      setTheme(savedTheme);
+      Promise.resolve().then(() => {
+        const savedTheme = (localStorage.getItem("theme") as ThemeId) || "dark";
+        setTheme(savedTheme);
+      });
     }
   }, [isOpen]);
 
@@ -62,6 +63,7 @@ export function SettingsModal({
     root.classList.remove("dark", "light", "graphite", "nord", "sage", "rose");
     root.classList.add(newTheme);
     const isDark = THEMES.find(t => t.id === newTheme)?.dark ?? true;
+    // eslint-disable-next-line react-hooks/immutability
     root.style.colorScheme = isDark ? "dark" : "light";
   };
 

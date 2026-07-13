@@ -15,18 +15,13 @@ interface FormValues {
   goalType: GoalType;
   status: string;
   categoryId: string;
-  parentGoalId?: string;
   startDate: string;
   endDate: string;
   autoCreateTask: boolean;
-  defaultSessionMinutes?: number;
-  timeBoxedGoal: {
-    targetMinutes: number;
-    periodDays: number;
-  };
-  milestoneGoal: {
-    targetCount: number;
-  };
+  durationMinutes: number;
+  daysOfWeek: string;
+  preferTime: string;
+
 }
 
 interface GoalFormTypeSelectProps {
@@ -38,28 +33,30 @@ export function GoalFormTypeSelect({ control, disabled }: GoalFormTypeSelectProp
   const { t } = useTranslation();
 
   return (
-    <div className="space-y-2">
-      <label className="text-sm font-medium">{t.goals.typeLabel}</label>
+    <div className="space-y-1.5">
       <Controller
         name="goalType"
         control={control}
         render={({ field }) => (
           <>
+            <label className="text-sm font-medium flex items-center gap-1.5 mb-1.5">
+              {t.goals.typeLabel}
+              <span 
+                className="flex items-center justify-center w-3.5 h-3.5 rounded-full bg-muted text-[9px] text-muted-foreground cursor-help hover:bg-muted-foreground hover:text-background transition-colors"
+                title={field.value === 'Binary' ? t.goals.descriptionBinary : t.goals.descriptionTimeBoxed}
+              >
+                ?
+              </span>
+            </label>
             <Select value={field.value} onValueChange={field.onChange} disabled={disabled}>
-              <SelectTrigger className="bg-card border-border text-foreground">
+              <SelectTrigger className="bg-card border-border text-foreground h-9">
                 <SelectValue placeholder={t.goals.typeSelectPlaceholder} />
               </SelectTrigger>
               <SelectContent className="bg-popover border-border text-foreground">
                 <SelectItem value="Binary">{t.goals.project}</SelectItem>
                 <SelectItem value="Time-boxed">{t.goals.habit}</SelectItem>
-                <SelectItem value="Milestone">{t.goals.target}</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-[11px] text-muted-foreground mt-1 h-8">
-              {field.value === 'Binary' && t.goals.descriptionBinary}
-              {field.value === 'Time-boxed' && t.goals.descriptionTimeBoxed}
-              {field.value === 'Milestone' && t.goals.descriptionMilestone}
-            </p>
           </>
         )}
       />

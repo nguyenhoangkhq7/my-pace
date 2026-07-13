@@ -18,6 +18,7 @@ import java.util.ArrayList;
 @Setter
 @Entity
 @Table(name = "tasks")
+@NamedEntityGraph(name = "Task.withChecklists", attributeNodes = @NamedAttributeNode("checklists"))
 public class Task {
     @Id
     @UuidGenerator

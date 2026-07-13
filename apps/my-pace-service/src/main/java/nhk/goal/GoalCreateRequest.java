@@ -22,10 +22,8 @@ public class GoalCreateRequest {
     @NotNull
     private java.util.UUID categoryId;
     
-    private java.util.UUID parentGoalId;
     private Boolean autoCreateTask;
-    private Integer defaultSessionMinutes;
-    
-    private TimeBoxedGoalDto timeBoxedGoal;
-    private MilestoneGoalDto milestoneGoal;
+    private Integer durationMinutes;
+    private String daysOfWeek;
+    private java.time.LocalTime preferTime;
 }

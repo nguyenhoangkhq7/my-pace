@@ -28,8 +28,9 @@ export function HabitDetail({
   const { t, locale } = useTranslation();
   const isVi = locale === "vi";
 
-  const targetMins = goal.timeBoxedGoal?.targetMinutes || 0;
-  const periodDays = Math.max(goal.timeBoxedGoal?.periodDays || 1, 1);
+  const durationMins = goal.durationMinutes || 0;
+  const daysPerWeek = goal.daysOfWeek?.split(',').filter(Boolean).length || 7;
+  const weeklyMins = durationMins * daysPerWeek;
 
   let targetMinsForPeriod = 0;
   let label = "";
@@ -37,16 +38,16 @@ export function HabitDetail({
 
   const isCurrent = isFuturePeriod();
   if (timeFilter === "week") {
-    targetMinsForPeriod = (targetMins / periodDays) * 7;
+    targetMinsForPeriod = weeklyMins;
     label = isCurrent ? t.goals.totalMinutesWeekCurrent : t.goals.totalMinutesWeekSelected;
     daysLabel = isVi ? "/ 7 ngày" : "/ 7 days";
   } else if (timeFilter === "month") {
-    targetMinsForPeriod = (targetMins / periodDays) * 30;
+    targetMinsForPeriod = (weeklyMins / 7) * 30;
     label = isCurrent ? t.goals.totalMinutesMonthCurrent : t.goals.totalMinutesMonthSelected;
     const daysInMonth = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 0).getDate();
     daysLabel = isVi ? `/ ${daysInMonth} ngày` : `/ ${daysInMonth} days`;
   } else if (timeFilter === "year") {
-    targetMinsForPeriod = (targetMins / periodDays) * 365;
+    targetMinsForPeriod = (weeklyMins / 7) * 365;
     label = isCurrent ? t.goals.totalMinutesYearCurrent : t.goals.totalMinutesYearSelected;
     daysLabel = isVi ? "/ 12 tháng" : "/ 12 months";
   }

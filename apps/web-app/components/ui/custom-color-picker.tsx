@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
-import { Input } from "./input";
 import { Button } from "./button";
 import { Pipette } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
+
 
 // --- HSL Conversion Utilities ---
 
@@ -90,21 +90,26 @@ export function CustomColorPicker({ color, onChange, children }: CustomColorPick
   const [isEyeDropperSupported, setIsEyeDropperSupported] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Check if browser supports modern EyeDropper API
-  useEffect(() => {
-    if (typeof window !== "undefined" && "EyeDropper" in window) {
-      setIsEyeDropperSupported(true);
-    }
-  }, []);
-
-  // Sync local color when prop color changes externally
-  useEffect(() => {
+  // Sync local color when prop color changes externally (during render)
+  const [prevColor, setPrevColor] = useState(color);
+  if (color !== prevColor) {
+    setPrevColor(color);
     if (color) {
       setLocalHex(color);
       setTypedHex(color);
       setHsl(hexToHsl(color));
     }
-  }, [color]);
+  }
+
+  // Check if browser supports modern EyeDropper API
+  useEffect(() => {
+    if (typeof window !== "undefined" && "EyeDropper" in window) {
+      Promise.resolve().then(() => {
+        setIsEyeDropperSupported(true);
+      });
+    }
+  }, []);
+
 
   // Debounced callback to parent onChange (150ms) to prevent performance lags on sliders
   useEffect(() => {

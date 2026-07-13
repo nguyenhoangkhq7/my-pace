@@ -1,28 +1,23 @@
-import { useEffect, useState } from "react";
-
-function getInitialValue(query: string): boolean {
-  // Đọc giá trị thực ngay lập tức để tránh render sai ở lần đầu
-  if (typeof window !== "undefined") {
-    return window.matchMedia(query).matches;
-  }
-  return false;
-}
+import { useSyncExternalStore, useCallback } from "react";
 
 export function useMediaQuery(query: string) {
-  const [value, setValue] = useState(() => getInitialValue(query));
+  const subscribe = useCallback(
+    (callback: () => void) => {
+      const matchMedia = window.matchMedia(query);
+      matchMedia.addEventListener("change", callback);
+      return () => matchMedia.removeEventListener("change", callback);
+    },
+    [query]
+  );
 
-  useEffect(() => {
-    function onChange(event: MediaQueryListEvent) {
-      setValue(event.matches);
-    }
-
-    const result = window.matchMedia(query);
-    result.addEventListener("change", onChange);
-    // Sync lại phòng trường hợp query thay đổi giữa chừng
-    setValue(result.matches);
-
-    return () => result.removeEventListener("change", onChange);
+  const getSnapshot = useCallback(() => {
+    return window.matchMedia(query).matches;
   }, [query]);
 
-  return value;
+  const getServerSnapshot = useCallback(() => {
+    return false;
+  }, []);
+
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
+
