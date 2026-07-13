@@ -4,7 +4,6 @@ import type { EventDropArg } from "@fullcalendar/core";
 import type { EventReceiveArg } from "@fullcalendar/interaction";
 import type { FixedEventOccurrence, CreateEventPayload, UpdateOccurrencePayload } from "@/features/calendar/types";
 import type { DailyPlan, TaskTimeBlock } from "@/features/board/types";
-import { useOnboardingStore } from "@/features/auth/store/onboarding.store";
 
 interface UseCalendarInteractionsProps {
   dailyPlanToday: DailyPlan | null;
@@ -76,11 +75,6 @@ export function useCalendarInteractions({
       try {
         await saveTimeBlocks([...existingBlocks, newBlock]);
         toast.success(`Đã lên lịch: "${planTask.task.title}"`);
-        // Advance tour if user just completed the drag-drop step (step index 9)
-        const { isTourActive, tourStepIndex, advanceTourStep } = useOnboardingStore.getState();
-        if (isTourActive && tourStepIndex === 9) {
-          setTimeout(() => advanceTourStep(), 500);
-        }
       } catch {
         info.revert();
         toast.error("Không thể lưu lịch.");

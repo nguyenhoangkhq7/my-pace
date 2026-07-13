@@ -1,16 +1,12 @@
-export type GoalType = 'Time-boxed' | 'Milestone' | 'Binary';
+export type GoalType = 'Time-boxed' | 'Binary';
 export type GoalStatus = 'Freeze' | 'In Progress' | 'Done' | 'Archived';
 
 export interface TimeBoxedGoal {
-  targetMinutes: number;
-  periodDays: number;
-  accumulatedMinutes?: number;
+  durationMinutes: number;
+  daysOfWeek: string;
+  preferTime?: string;
 }
 
-export interface MilestoneGoal {
-  targetCount: number;
-  currentCount?: number;
-}
 
 export interface Goal {
   id: string;
@@ -22,36 +18,33 @@ export interface Goal {
   createdAt: string;
   updatedAt: string;
   categoryId?: string;
-  parentGoalId?: string;
   progressPct?: number;
   autoCreateTask?: boolean;
-  defaultSessionMinutes?: number;
-  timeBoxedGoal?: TimeBoxedGoal;
-  milestoneGoal?: MilestoneGoal;
+  durationMinutes?: number;
+  daysOfWeek?: string;
+  preferTime?: string;
 }
 
 export interface GoalCreateRequest {
   title: string;
   goalType: GoalType;
   categoryId: string;
-  parentGoalId?: string;
   startDate?: string;
   endDate?: string;
   autoCreateTask?: boolean;
-  defaultSessionMinutes?: number;
-  timeBoxedGoal?: TimeBoxedGoal;
-  milestoneGoal?: MilestoneGoal;
+  durationMinutes?: number;
+  daysOfWeek?: string;
+  preferTime?: string;
 }
 
 export interface GoalUpdateRequest {
   title?: string;
   status?: GoalStatus;
   categoryId?: string;
-  parentGoalId?: string;
   startDate?: string;
   endDate?: string;
   autoCreateTask?: boolean;
-  defaultSessionMinutes?: number;
-  timeBoxedGoal?: TimeBoxedGoal;
-  milestoneGoal?: MilestoneGoal;
+  durationMinutes?: number;
+  daysOfWeek?: string;
+  preferTime?: string;
 }

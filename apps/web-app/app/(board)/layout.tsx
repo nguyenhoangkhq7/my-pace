@@ -3,7 +3,7 @@
 import React, { useEffect } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { useAuthStore } from "@/features/auth";
-import { OnboardingModal, AppTour } from "@/features/auth";
+import { OnboardingModal } from "@/features/auth";
 import { usePathname } from "next/navigation";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import { cn } from "@/lib/utils";
@@ -57,7 +57,6 @@ export default function AppLayout({
       </main>
       {/* Rendered here so it's accessible on all board routes via the Sidebar button */}
       <OnboardingModal />
-      <AppTour />
     </div>
   );
 }

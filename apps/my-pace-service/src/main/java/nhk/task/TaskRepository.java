@@ -1,6 +1,7 @@
 package nhk.task;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -11,7 +12,9 @@ import org.springframework.data.repository.query.Param;
 
 @Repository
 public interface TaskRepository extends JpaRepository<Task, UUID> {
+    @EntityGraph(value = "Task.withChecklists", type = EntityGraph.EntityGraphType.LOAD)
     List<Task> findByUserId(UUID userId);
+    @EntityGraph(value = "Task.withChecklists", type = EntityGraph.EntityGraphType.LOAD)
     List<Task> findByUserIdAndStatus(UUID userId, String status);
     boolean existsByGoalId(UUID goalId);
     boolean existsByGoalIdAndDueDate(UUID goalId, java.time.LocalDate dueDate);

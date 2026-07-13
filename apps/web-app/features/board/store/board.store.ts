@@ -42,7 +42,7 @@ interface BoardState {
   confirmPlan: (date: string) => Promise<void>;
   reviewDailyPlan: (date: string) => Promise<void>;
   cancelPlan: (date: string, target: 'today' | 'tomorrow') => Promise<void>;
-  toggleTaskDone: (date: string, planTaskId: string, addedCount?: number) => Promise<void>;
+  toggleTaskDone: (date: string, planTaskId: string) => Promise<void>;
   saveTimeBlocks: (blocks: Omit<TaskTimeBlock, 'id'>[]) => Promise<TaskTimeBlock[]>;
 }
 
@@ -318,9 +318,9 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     }
   },
 
-  toggleTaskDone: async (date, planTaskId, addedCount) => {
+  toggleTaskDone: async (date, planTaskId) => {
     try {
-      await boardApi.toggleTaskDone(planTaskId, addedCount);
+      await boardApi.toggleTaskDone(planTaskId);
       await get().fetchDailyPlanToday(date);
       await get().fetchTasks();
       // Sync goals to update progress

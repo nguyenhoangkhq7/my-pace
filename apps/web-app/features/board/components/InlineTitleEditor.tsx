@@ -11,11 +11,14 @@ interface InlineTitleEditorProps {
 export function InlineTitleEditor({ initialTitle, onSave, className, inputClassName }: InlineTitleEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(initialTitle);
+  const [prevInitialTitle, setPrevInitialTitle] = useState(initialTitle);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
+  if (initialTitle !== prevInitialTitle) {
+    setPrevInitialTitle(initialTitle);
     setTitle(initialTitle);
-  }, [initialTitle]);
+  }
+
 
   // Ensure input is focused and text is selected when editing starts
   useEffect(() => {

@@ -128,7 +128,7 @@ public class DailyPlanService {
     }
 
     @Transactional
-    public void toggleTaskDone(UUID dailyPlanTaskId, Integer addedCount, UserDetailsCustom userDetails) {
+    public void toggleTaskDone(UUID dailyPlanTaskId, UserDetailsCustom userDetails) {
         DailyPlanTask planTask = dailyPlanTaskRepository.findById(dailyPlanTaskId)
                 .orElseThrow(() -> new EntityNotFoundException("Plan task not found"));
         
@@ -153,13 +153,12 @@ public class DailyPlanService {
         taskRepository.save(task);
 
         if (task.getGoalId() != null) {
-            int countVal = addedCount != null ? addedCount : 1;
             if (wasDone) {
                 // went from Done -> Not Done: subtract
-                goalService.updateGoalProgress(task.getGoalId(), -actualMinutes, -countVal);
+                goalService.updateGoalProgress(task.getGoalId());
             } else {
                 // went from Not Done -> Done: add
-                goalService.updateGoalProgress(task.getGoalId(), actualMinutes, countVal);
+                goalService.updateGoalProgress(task.getGoalId());
             }
         }
     }

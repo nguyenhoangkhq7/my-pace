@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/use-translation";
-import { useOnboardingStore } from "@/features/auth/store/onboarding.store";
+
 
 interface NoPlanStateProps {
   activeTab: string;
@@ -9,18 +9,8 @@ interface NoPlanStateProps {
 
 export function NoPlanState({ activeTab, onStartPlanning }: NoPlanStateProps) {
   const { t } = useTranslation();
-  const { isTourActive, tourStepIndex, advanceTourStep } = useOnboardingStore();
-
   const handleStartPlanning = () => {
     onStartPlanning();
-    if (isTourActive && tourStepIndex === 5) {
-      setTimeout(() => {
-        const state = useOnboardingStore.getState();
-        if (state.isTourActive && state.tourStepIndex === 5) {
-          state.setTourStep(6);
-        }
-      }, 400);
-    }
   };
 
   return (
@@ -32,7 +22,7 @@ export function NoPlanState({ activeTab, onStartPlanning }: NoPlanStateProps) {
           {t.board.noPlanDesc(activeTab)}
         </p>
       </div>
-      <Button onClick={handleStartPlanning} className="bg-primary hover:bg-primary/90 text-white mt-4 cursor-pointer tour-plan-my-day-btn">
+      <Button onClick={handleStartPlanning} className="bg-primary hover:bg-primary/90 text-white mt-4 cursor-pointer">
         {activeTab === 'today' ? t.board.planMyDay : t.board.planTomorrow}
       </Button>
     </div>

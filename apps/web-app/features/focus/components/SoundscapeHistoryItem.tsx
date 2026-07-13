@@ -53,6 +53,7 @@ export function SoundscapeHistoryItem({
       >
         <div className="relative w-full pt-[56.25%] bg-muted shrink-0">
           {thumb ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img src={thumb} alt={title} className="absolute inset-0 w-full h-full object-cover" />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-muted-foreground"><HugeiconsIcon icon={PlayIcon} /></div>

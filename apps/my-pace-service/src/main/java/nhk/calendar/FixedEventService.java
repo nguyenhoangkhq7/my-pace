@@ -34,6 +34,7 @@ public class FixedEventService {
     private final TaskRepository taskRepo;
     private final DailyPlanRepository dailyPlanRepo;
     private final DailyPlanTaskRepository dailyPlanTaskRepo;
+    private final nhk.timeblock.TaskTimeBlockRepository taskTimeBlockRepo;
 
     // ─── Read ────────────────────────────────────────────────────────────────
 
@@ -206,56 +207,38 @@ public class FixedEventService {
         if (activeGoals.isEmpty()) return;
 
         DailyPlan plan = null;
+        User user = userRepo.findById(userId).orElse(null);
+        if (user == null) return;
+        java.time.ZoneId zoneId = java.time.ZoneId.of(user.getTimezone());
 
         for (Goal goal : activeGoals) {
             if (Boolean.TRUE.equals(goal.getAutoCreateTask())) {
-                boolean isTimeBoxed = "Time-boxed".equals(goal.getGoalType()) && goal.getTimeBoxedGoal() != null;
-                boolean isMilestone = "Milestone".equals(goal.getGoalType()) && goal.getMilestoneGoal() != null;
-                
-                if (!isTimeBoxed && !isMilestone) continue;
+                boolean isTimeBoxed = "Time-boxed".equals(goal.getGoalType());
+                if (!isTimeBoxed) continue;
 
                 if (taskRepo.existsByGoalIdAndDueDate(goal.getId(), date)) {
                     continue;
                 }
-
-                int estimatedMinutes = 0;
-
-                if (isMilestone) {
-                    estimatedMinutes = goal.getDefaultSessionMinutes() != null ? goal.getDefaultSessionMinutes() : 45;
-                } else {
-                    var tb = goal.getTimeBoxedGoal();
-                    int targetMinutes = tb.getTargetMinutes() != null ? tb.getTargetMinutes() : 0;
-                    int periodDays = tb.getPeriodDays() != null ? tb.getPeriodDays() : 1;
-
-                    LocalDate startDate = goal.getStartDate() != null ? goal.getStartDate() : goal.getCreatedAt().toLocalDate();
-                    long daysSinceStart = ChronoUnit.DAYS.between(startDate, date);
-                    if (daysSinceStart < 0) {
-                        continue;
-                    }
-                    long periodIndex = daysSinceStart / periodDays;
-                    LocalDate periodStart = startDate.plusDays(periodIndex * periodDays);
-                    LocalDate periodEnd = periodStart.plusDays(periodDays - 1);
-
-                    int accumulated = taskRepo.sumActualMinutesByGoalIdAndDueDateBetween(goal.getId(), periodStart, periodEnd);
-                    int remaining = targetMinutes - accumulated;
-
-                    if (remaining <= 0) {
-                        continue;
-                    }
-
-                    int defaultDaily = goal.getDefaultSessionMinutes() != null 
-                            ? goal.getDefaultSessionMinutes() 
-                            : (int) Math.ceil((double) targetMinutes / periodDays);
+                
+                // For Habit (Time-boxed), check start/end date and days of week
+                if (isTimeBoxed) {
+                    if (goal.getStartDate() != null && date.isBefore(goal.getStartDate())) continue;
+                    if (goal.getEndDate() != null && date.isAfter(goal.getEndDate())) continue;
                     
-                    long dayInPeriod = daysSinceStart % periodDays;
-                    boolean isLastDayOfPeriod = (dayInPeriod == periodDays - 1);
-
-                    if (isLastDayOfPeriod) {
-                        estimatedMinutes = remaining;
-                    } else {
-                        estimatedMinutes = Math.min(remaining, defaultDaily);
+                    int dayOfWeek = date.getDayOfWeek().getValue();
+                    String daysStr = goal.getDaysOfWeek() != null ? goal.getDaysOfWeek() : "1,2,3,4,5,6,7";
+                    String[] days = daysStr.split(",");
+                    boolean matchDay = false;
+                    for (String d : days) {
+                        if (d.trim().equals(String.valueOf(dayOfWeek))) {
+                            matchDay = true;
+                            break;
+                        }
                     }
+                    if (!matchDay) continue;
                 }
+
+                int estimatedMinutes = goal.getDurationMinutes() != null ? goal.getDurationMinutes() : 60;
 
                 if (estimatedMinutes <= 0) continue;
 
@@ -298,6 +281,73 @@ public class FixedEventService {
                     planTask.setSortOrder(0);
                     dailyPlanTaskRepo.save(planTask);
                 }
+
+                // If Time-boxed and has preferTime, schedule it
+                if (isTimeBoxed && goal.getPreferTime() != null) {
+                    LocalTime preferTime = goal.getPreferTime();
+                    scheduleTaskTimeBlock(plan, task, preferTime, estimatedMinutes, zoneId);
+                }
+            }
+        }
+    }
+
+    private void scheduleTaskTimeBlock(DailyPlan plan, Task task, LocalTime preferTime, int estimatedMinutes, java.time.ZoneId zoneId) {
+        LocalDate date = plan.getPlanDate();
+        java.time.ZonedDateTime startZdt = java.time.ZonedDateTime.of(date, preferTime, zoneId);
+        java.time.OffsetDateTime candidateStart = startZdt.toOffsetDateTime();
+        java.time.OffsetDateTime candidateEnd = candidateStart.plusMinutes(estimatedMinutes);
+
+        List<FixedEventResponse> fixedEvents = getEventsInRange(plan.getUserId(), date, date);
+        // Create mutable list from repo
+        List<nhk.timeblock.TaskTimeBlock> existingBlocks = new java.util.ArrayList<>(taskTimeBlockRepo.findByDailyPlanIdOrderByStartTimeAsc(plan.getId()));
+
+        java.time.OffsetDateTime dayEnd = java.time.ZonedDateTime.of(date, LocalTime.MAX, zoneId).toOffsetDateTime();
+        
+        while (candidateEnd.isBefore(dayEnd) || candidateEnd.equals(dayEnd)) {
+            boolean overlap = false;
+            
+            // Check fixed events
+            for (FixedEventResponse ev : fixedEvents) {
+                LocalTime evStartLt = ev.getStartTime();
+                LocalTime evEndLt = ev.getEndTime();
+                java.time.OffsetDateTime evStart = java.time.ZonedDateTime.of(date, evStartLt, zoneId).toOffsetDateTime();
+                java.time.OffsetDateTime evEnd = java.time.ZonedDateTime.of(date, evEndLt, zoneId).toOffsetDateTime();
+                
+                if (candidateStart.isBefore(evEnd) && candidateEnd.isAfter(evStart)) {
+                    overlap = true;
+                    if (evEnd.isAfter(candidateStart)) {
+                        candidateStart = evEnd;
+                        candidateEnd = candidateStart.plusMinutes(estimatedMinutes);
+                    }
+                    break;
+                }
+            }
+            
+            if (overlap) continue;
+            
+            // Check existing time blocks
+            for (nhk.timeblock.TaskTimeBlock tb : existingBlocks) {
+                if (candidateStart.isBefore(tb.getEndTime()) && candidateEnd.isAfter(tb.getStartTime())) {
+                    overlap = true;
+                    if (tb.getEndTime().isAfter(candidateStart)) {
+                        candidateStart = tb.getEndTime();
+                        candidateEnd = candidateStart.plusMinutes(estimatedMinutes);
+                    }
+                    break;
+                }
+            }
+            
+            if (!overlap) {
+                nhk.timeblock.TaskTimeBlock tb = new nhk.timeblock.TaskTimeBlock();
+                tb.setTaskId(task.getId());
+                tb.setDailyPlanId(plan.getId());
+                tb.setStartTime(candidateStart);
+                tb.setEndTime(candidateEnd);
+                tb.setPartIndex(1);
+                tb.setTotalParts(1);
+                taskTimeBlockRepo.save(tb);
+                existingBlocks.add(tb);
+                break;
             }
         }
     }

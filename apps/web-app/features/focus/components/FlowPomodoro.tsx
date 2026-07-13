@@ -2,14 +2,12 @@ import { useState, useEffect } from "react";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import { useBoardStore } from "@/features/board/store/board.store";
 import { useGoalStore } from "@/features/goal/store/goal.store";
-import { Goal } from "@/features/goal/types";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, Square, Check, ListTodo } from "lucide-react";
 
 import { FlowEmptyState } from "@/features/focus/components/FlowEmptyState";
 import { PomodoroTimerDisplay } from "@/features/focus/components/PomodoroTimerDisplay";
 import { ChecklistModal } from "@/features/focus/components/ChecklistModal";
-import { QuantityGoalModal } from "@/features/focus/components/QuantityGoalModal";
 
 export function FlowPomodoro() {
   const { 
@@ -27,13 +25,10 @@ export function FlowPomodoro() {
     totalSessions,
   } = useFocusStore();
   const { tasks, toggleTaskDone, updateTask } = useBoardStore();
-  const { goals, fetchGoals } = useGoalStore();
+  const { fetchGoals } = useGoalStore();
 
   const [isFinishing, setIsFinishing] = useState(false);
   const [isChecklistModalOpen, setIsChecklistModalOpen] = useState(false);
-  const [isQuantityDialogOpen, setIsQuantityDialogOpen] = useState(false);
-  const [quantityGoal, setQuantityGoal] = useState<Goal | null>(null);
-  const [addedCount, setAddedCount] = useState<string>("1");
 
   useEffect(() => {
     fetchGoals().catch(console.error);
@@ -48,17 +43,10 @@ export function FlowPomodoro() {
   const handleCompleteClick = () => {
     if (!activeTaskId || !activePlanTaskId || isFinishing) return;
 
-    const associatedGoal = goals.find((g) => g.id === activeTask?.goalId);
-    if (associatedGoal && associatedGoal.goalType === "Milestone") {
-      setQuantityGoal(associatedGoal);
-      setAddedCount("1");
-      setIsQuantityDialogOpen(true);
-    } else {
-      handleComplete(1);
-    }
+    handleComplete();
   };
 
-  const handleComplete = async (countVal: number = 1) => {
+  const handleComplete = async () => {
     if (!activeTaskId || !activePlanTaskId || isFinishing) return;
     setIsFinishing(true);
     try {
@@ -77,11 +65,9 @@ export function FlowPomodoro() {
         const d = new Date();
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       })();
-      await toggleTaskDone(todayStr, activePlanTaskId, countVal);
+      await toggleTaskDone(todayStr, activePlanTaskId);
       
       pauseTimer();
-      setIsQuantityDialogOpen(false);
-      setQuantityGoal(null);
       
       const { dailyPlanToday } = useBoardStore.getState();
       const currentTaskIndex = dailyPlanToday?.tasks.findIndex((t) => t.id === activePlanTaskId) ?? -1;
@@ -203,15 +189,7 @@ export function FlowPomodoro() {
           onAllCompleted={handleCompleteClick}
         />
 
-        <QuantityGoalModal
-          isOpen={isQuantityDialogOpen}
-          onOpenChange={setIsQuantityDialogOpen}
-          quantityGoal={quantityGoal}
-          addedCount={addedCount}
-          setAddedCount={setAddedCount}
-          onConfirm={handleComplete}
-          isFinishing={isFinishing}
-        />
+
       </div>
     </div>
   );

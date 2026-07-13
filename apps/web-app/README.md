@@ -35,9 +35,8 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
-## Kanban UI Structure
+## UI Structure
 
-- `app/page.tsx` renders the Kanban layout and board.
+- `app/(board)` contains the main layouts and pages (today, tomorrow, backlog, flow).
 - `components/layout` holds the sidebar and header.
-- `components/kanban` contains board, columns, cards, and mock data.
-- `components/ui` includes the shadcn-style UI primitives used by the board.
+- `components/ui` includes the shadcn-style UI primitives.

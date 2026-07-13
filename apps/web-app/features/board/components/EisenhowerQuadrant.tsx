@@ -11,6 +11,7 @@ interface EisenhowerQuadrantProps {
   isPlanningMode: boolean;
   selectedFilterId: string | null;
   onTaskClick: (task: Task) => void;
+  onTaskDrop: (taskId: string, isUrgent: boolean, isImportant: boolean) => void;
 }
 
 export function EisenhowerQuadrant({
@@ -23,6 +24,7 @@ export function EisenhowerQuadrant({
   isPlanningMode,
   selectedFilterId,
   onTaskClick,
+  onTaskDrop,
 }: EisenhowerQuadrantProps) {
   
   let qTasks = tasks.filter(t => 
@@ -46,7 +48,25 @@ export function EisenhowerQuadrant({
   });
 
   return (
-    <div className="flex flex-col border border-border rounded-xl overflow-hidden bg-muted/20">
+    <div 
+      className="flex flex-col border border-border rounded-xl overflow-hidden bg-muted/20 transition-colors duration-200"
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.currentTarget.classList.add("bg-muted/40", "border-primary/50");
+      }}
+      onDragLeave={(e) => {
+        e.preventDefault();
+        e.currentTarget.classList.remove("bg-muted/40", "border-primary/50");
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        e.currentTarget.classList.remove("bg-muted/40", "border-primary/50");
+        const taskId = e.dataTransfer.getData("taskId");
+        if (taskId) {
+          onTaskDrop(taskId, isUrgent, isImportant);
+        }
+      }}
+    >
       <div className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider ${colorClass} border-b border-border/40 bg-muted/40`}>
         {title} <span className="text-muted-foreground ml-1">({qTasks.length})</span>
       </div>

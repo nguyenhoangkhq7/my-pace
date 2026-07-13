@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useBoardStore } from "../store/board.store";
 import { useAvailableTimeStore } from "@/features/available-time/store/available-time.store";
-import { useOnboardingStore } from "@/features/auth/store/onboarding.store";
+
 
 interface UseExecutionBoardProps {
   currentDate: string;
@@ -48,10 +48,6 @@ export function useExecutionBoard({ currentDate, tomorrowDate }: UseExecutionBoa
 
   const handleSavePlan = () => {
     savePlan(targetDate, currentAvailable, activeTab as 'today' | 'tomorrow');
-    const { isTourActive, tourStepIndex, advanceTourStep } = useOnboardingStore.getState();
-    if (isTourActive && tourStepIndex === 7) {
-      setTimeout(() => advanceTourStep(), 400); // Wait for modal animation
-    }
   };
 
   const handleCancelPlan = () => {

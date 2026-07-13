@@ -123,13 +123,11 @@ export function useTaskForm({
           if (selectedGoal.categoryId) {
             setCategoryId(selectedGoal.categoryId);
           }
-          if (!title && (selectedGoal.goalType === 'Time-boxed' || selectedGoal.goalType === 'Milestone')) {
+          if (!title && selectedGoal.goalType === 'Time-boxed') {
             setTitle(selectedGoal.title);
           }
-          if (!estimatedMinutes && selectedGoal.goalType === 'Time-boxed' && selectedGoal.timeBoxedGoal) {
-            const target = selectedGoal.timeBoxedGoal.targetMinutes;
-            const period = Math.max(selectedGoal.timeBoxedGoal.periodDays, 1);
-            setEstimatedMinutes(String(Math.round(target / period)));
+          if (!estimatedMinutes && selectedGoal.goalType === 'Time-boxed') {
+            setEstimatedMinutes(String(selectedGoal.durationMinutes || 30));
           }
         });
       }

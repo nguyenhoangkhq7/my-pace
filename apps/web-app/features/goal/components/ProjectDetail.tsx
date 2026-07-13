@@ -2,70 +2,59 @@ import React from "react";
 import { Goal } from "../types";
 import { Task } from "@/features/board/types";
 import { TaskList } from "./TaskList";
-import { SubgoalAccordion } from "./SubgoalAccordion";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { CheckmarkCircle01Icon, PlusSignIcon } from "@hugeicons/core-free-icons";
+import { CheckmarkCircle01Icon } from "@hugeicons/core-free-icons";
 import { toast } from "sonner";
 import { useTranslation } from "@/hooks/use-translation";
 
 interface ProjectDetailProps {
   goal: Goal;
   goalTasks: Task[];
-  subgoals: Goal[];
-  isEditingProject: boolean;
   updateGoal: (id: string, data: Partial<Goal>) => Promise<unknown>;
-  handleOpenCreateSubgoal: (parentId: string) => void;
-  onTaskClick: (task: Task) => void;
 }
 
 export function ProjectDetail({
   goal,
   goalTasks,
-  subgoals,
-  isEditingProject,
   updateGoal,
-  handleOpenCreateSubgoal,
-  onTaskClick,
 }: ProjectDetailProps) {
   const { t, locale } = useTranslation();
   const isVi = locale === "vi";
 
-  const totalItems = goalTasks.length + subgoals.length;
+  const totalItems = goalTasks.length;
   const doneTasks = goalTasks.filter((t) => t.status === "Done").length;
-  const doneSubgoals = subgoals.filter((g) => g.status === "Done").length;
-  const doneItems = doneTasks + doneSubgoals;
-  const pct = totalItems > 0 ? Math.round((doneItems / totalItems) * 100) : 0;
+  const pct = totalItems > 0 ? Math.round((doneTasks / totalItems) * 100) : 0;
 
   const handleMarkAsDone = async () => {
     try {
       await updateGoal(goal.id, { status: "Done" });
-      toast.success(isVi ? "Chúc mừng! Đã hoàn thành dự án!" : "Congratulations! Project completed!");
+      toast.success(isVi ? "Chúc mừng! Đã hoàn thành cột mốc!" : "Congratulations! Milestone completed!");
     } catch {
-      toast.error(isVi ? "Lỗi khi hoàn thành Project." : "Error completing Project.");
+      toast.error(isVi ? "Lỗi khi hoàn thành cột mốc." : "Error completing Milestone.");
     }
   };
 
   return (
     <div className="space-y-6">
-      <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
+      <div className="bg-muted/50 p-4 rounded-xl border border-border flex items-center justify-between">
         <div>
-          <h3 className="text-xs text-slate-400 mb-1 uppercase tracking-wider font-semibold">
+          <h3 className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">
             {t.goals.projectProgress}
           </h3>
-          <div className="text-2xl font-bold text-slate-100">
-            {doneItems} / {totalItems} <span className="text-sm font-normal text-slate-500">{t.goals.itemsUnit}</span>
+          <div className="text-2xl font-bold text-foreground">
+            {doneTasks} / {totalItems} <span className="text-sm font-normal text-muted-foreground">{t.goals.itemsUnit}</span>
           </div>
         </div>
         <div className="text-right">
-          <h3 className="text-xs text-slate-400 mb-1 uppercase tracking-wider font-semibold">
+          <h3 className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">
             {isVi ? "Hoàn thành" : "Completed"}
           </h3>
           <div className="text-2xl font-bold text-primary">{pct}%</div>
         </div>
       </div>
 
-      <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden -mt-2">
+      <div className="w-full bg-secondary rounded-full h-2 overflow-hidden -mt-2">
         <div className="bg-primary h-full transition-all duration-500" style={{ width: `${pct}%` }} />
       </div>
 
@@ -73,7 +62,7 @@ export function ProjectDetail({
         <div className="flex justify-center mt-2 mb-4">
           <Button className="bg-emerald-600 hover:bg-emerald-500 text-white w-full" onClick={handleMarkAsDone}>
             <HugeiconsIcon icon={CheckmarkCircle01Icon} size={18} className="mr-2" />
-            {isVi ? "Đánh dấu Dự án đã hoàn thành" : "Mark Project as Done"}
+            {isVi ? "Đánh dấu Cột mốc đã hoàn thành" : "Mark Milestone as Done"}
           </Button>
         </div>
       )}
@@ -83,43 +72,7 @@ export function ProjectDetail({
           taskList={goalTasks}
           gId={goal.id}
           gStatus={goal.status}
-          isEditingProject={isEditingProject}
-          onTaskClick={onTaskClick}
         />
-
-        <div>
-          <div className="flex items-center justify-between mb-3 border-b border-slate-800/50 pb-2">
-            <h3 className="text-sm font-semibold text-slate-200">{t.goals.subgoals}</h3>
-            {isEditingProject && (
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-6 text-xs text-primary hover:text-primary/80"
-                onClick={() => handleOpenCreateSubgoal(goal.id)}
-                disabled={goal.status === "Freeze" || goal.status === "Archived"}
-              >
-                <HugeiconsIcon icon={PlusSignIcon} size={14} className="mr-1" />
-                {isVi ? "+ Mục tiêu con" : "+ Subgoal"}
-              </Button>
-            )}
-          </div>
-          <div className="space-y-1">
-            {subgoals.length === 0 ? (
-              <p className="text-sm text-slate-500 italic">{t.goals.noSubgoals}</p>
-            ) : (
-              subgoals.map((g) => (
-                <SubgoalAccordion
-                  key={g.id}
-                  subgoal={g}
-                  level={2}
-                  isEditingProject={isEditingProject}
-                  handleOpenCreateSubgoal={handleOpenCreateSubgoal}
-                  onTaskClick={onTaskClick}
-                />
-              ))
-            )}
-          </div>
-        </div>
       </div>
     </div>
   );

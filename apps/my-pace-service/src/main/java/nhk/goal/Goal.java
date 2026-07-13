@@ -41,7 +41,7 @@ public class Goal {
     @Size(max = 50)
     @NotNull
     @Column(name = "status", nullable = false)
-    private String status = "Freeze"; // 'Freeze', 'In Progress', 'Done', 'Archived'
+    private String status = "In Progress"; // 'Freeze', 'In Progress', 'Done', 'Archived'
 
     @Column(name = "start_date")
     private LocalDate startDate;
@@ -63,10 +63,6 @@ public class Goal {
     @JoinColumn(name = "category_id", insertable = false, updatable = false)
     private nhk.category.Category category;
 
-    @Column(name = "parent_goal_id")
-    private UUID parentGoalId;
-
-    @NotNull
     @Column(name = "progress_pct", nullable = false)
     private Integer progressPct = 0;
 
@@ -74,12 +70,15 @@ public class Goal {
     @Column(name = "auto_create_task", nullable = false)
     private Boolean autoCreateTask = false;
 
-    @Column(name = "default_session_minutes")
-    private Integer defaultSessionMinutes;
-    
-    @OneToOne(mappedBy = "goal", cascade = CascadeType.ALL, orphanRemoval = true)
-    private TimeBoxedGoal timeBoxedGoal;
-    
-    @OneToOne(mappedBy = "goal", cascade = CascadeType.ALL, orphanRemoval = true)
-    private MilestoneGoal milestoneGoal;
+
+
+    // Fields migrated from TimeBoxedGoal
+    @Column(name = "duration_minutes")
+    private Integer durationMinutes;
+
+    @Column(name = "days_of_week")
+    private String daysOfWeek = "1,2,3,4,5,6,7";
+
+    @Column(name = "prefer_time")
+    private java.time.LocalTime preferTime;
 }

@@ -10,7 +10,6 @@ interface GoalState {
   fetchGoals: () => Promise<void>;
   createGoal: (request: GoalCreateRequest) => Promise<Goal>;
   updateGoal: (id: string, request: GoalUpdateRequest) => Promise<Goal>;
-  toggleMilestone: (goalId: string, milestoneId: string, isDone: boolean) => Promise<Goal>;
   deleteGoal: (id: string) => Promise<void>;
 }
 
@@ -59,21 +58,6 @@ export const useGoalStore = create<GoalState>((set, get) => ({
       throw err;
     } finally {
       set({ isLoading: false });
-    }
-  },
-
-  toggleMilestone: async (goalId, milestoneId, isDone) => {
-    set({ error: null });
-    // Optimistic update locally? No, let's just wait for API for simplicity and consistency
-    try {
-      const res = await goalApi.updateMilestone(goalId, milestoneId, isDone);
-      set((state) => ({
-        goals: state.goals.map((g) => (g.id === goalId ? res.data : g)),
-      }));
-      return res.data;
-    } catch (err) {
-      set({ error: getApiErrorMessage(err) });
-      throw err;
     }
   },
 
