@@ -4,8 +4,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { useBoardStore } from "@/features/board/store/board.store";
 import { useAvailableTimeStore } from "@/features/available-time/store/available-time.store";
 import { toast } from "sonner";
-import type { Task } from "@/features/board/types";
+import type { Task, DailyPlanTask } from "@/features/board/types";
 import { TaskFormModal } from "@/features/board/components/TaskFormModal";
+import { FlowReviewModal } from "./FlowReviewModal";
+import { FlowPickTaskModal } from "./FlowPickTaskModal";
 import { useTranslation } from "@/hooks/use-translation";
 import { useAuthStore } from "@/features/auth";
 import { calendarApi } from "@/features/calendar/api/calendar.api";
@@ -91,9 +93,15 @@ export function FlowEmptyState() {
             endTime: toLocalTimeStr(block.endTime),
           }));
 
-          const newDailyPlanTask = { task: task, isCompleted: false, orderIndex: dailyPlanToday.tasks.length, dailyPlanId: dailyPlanToday.id };
+          const newDailyPlanTask: DailyPlanTask = {
+            id: "",
+            task: task,
+            isMit: false,
+            sortOrder: dailyPlanToday.tasks.length,
+            dailyPlanId: dailyPlanToday.id
+          };
           const blocks = autoSchedule(
-            [newDailyPlanTask as any],
+            [newDailyPlanTask],
             [...occupiedSlots, ...existingBlocks],
             dailyPlanToday.id,
             todayStr,
@@ -184,118 +192,29 @@ export function FlowEmptyState() {
           )}
         </div>
 
-        <Dialog open={isReviewModalOpen} onOpenChange={setIsReviewModalOpen}>
-          <DialogContent className="sm:max-w-[500px] bg-card text-foreground border-border shadow-2xl max-h-[90vh] overflow-y-auto scrollbar-thin">
-            <DialogHeader>
-              <DialogTitle className="text-2xl text-center font-bold tracking-wide">{t.flow.summaryTitle}</DialogTitle>
-              <DialogDescription className="text-center pt-2 text-muted-foreground font-medium">
-                {t.flow.summaryDesc}
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="grid grid-cols-2 gap-4 py-6">
-              <div className="bg-indigo-950/10 border border-indigo-500/20 hover:border-indigo-500/30 transition-all rounded-2xl p-5 text-center">
-                <div className="text-5xl font-black text-indigo-400 mb-2 drop-shadow-md">{completedCount}</div>
-                <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">{t.flow.tasksDone}</div>
-              </div>
-              <div className="bg-emerald-950/10 border border-emerald-500/20 hover:border-emerald-500/30 transition-all rounded-2xl p-5 text-center">
-                <div className="text-5xl font-black text-emerald-400 mb-2 drop-shadow-md">{totalMinutes}</div>
-                <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">{t.flow.focusMinutes}</div>
-              </div>
-              <div className="bg-cyan-950/10 border border-cyan-500/20 hover:border-cyan-500/30 transition-all rounded-2xl p-5 text-center col-span-2">
-                <div className="text-3xl font-bold text-cyan-400 mb-2 drop-shadow-sm">{totalEstimated}m</div>
-                <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">{t.flow.estimatedTime}</div>
-              </div>
-            </div>
+        <FlowReviewModal
+          isOpen={isReviewModalOpen}
+          onOpenChange={setIsReviewModalOpen}
+          completedCount={completedCount}
+          totalMinutes={totalMinutes}
+          totalEstimated={totalEstimated}
+          remainingMinutes={remainingMinutes}
+          backlogTasks={backlogTasks}
+          onReviewConfirm={() => {
+            setIsReviewModalOpen(false);
+            if (dailyPlanToday) {
+              reviewDailyPlan(dailyPlanToday.planDate);
+            }
+          }}
+          onPickTaskClick={() => setIsPickTaskModalOpen(true)}
+        />
 
-            <div className="text-center text-xs italic text-muted-foreground/80 font-medium max-w-sm mx-auto leading-relaxed pb-4 px-4">
-              {t.flow.quote}
-            </div>
-
-            {/* Elegant inline task picker prompting relaxation or extra tasks */}
-            {backlogTasks.length > 0 ? (
-              <div className="flex flex-col items-center justify-center text-center space-y-1 pb-2 pt-4 border-t border-border mt-2">
-                <p className="text-xs text-muted-foreground font-medium">
-                  {t.flow.takeRest}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {t.flow.remainingPrompt(remainingMinutes)}
-                  <span 
-                    onClick={() => setIsPickTaskModalOpen(true)}
-                    className="text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer underline decoration-dotted underline-offset-4 transition-colors"
-                  >
-                    {t.flow.addTaskLink}
-                  </span>
-                </p>
-              </div>
-            ) : (
-              <div className="text-center text-xs text-muted-foreground font-medium pt-2 mt-2">
-                {t.flow.allDoneLetRest}
-              </div>
-            )}
-
-            <DialogFooter className="flex justify-center sm:justify-center border-t border-border pt-5 mt-4">
-              <Button 
-                onClick={() => {
-                  setIsReviewModalOpen(false);
-                  if (dailyPlanToday) {
-                    reviewDailyPlan(dailyPlanToday.planDate);
-                  }
-                }} 
-                className="bg-indigo-600 hover:bg-indigo-500 text-white w-full rounded-full font-bold shadow-[0_4px_20px_rgba(79,70,229,0.35)] h-12 transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
-              >
-                {t.flow.closeBtn}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Beautiful Pick Task from Backlog Modal */}
-        <Dialog open={isPickTaskModalOpen} onOpenChange={setIsPickTaskModalOpen}>
-          <DialogContent className="sm:max-w-[420px] bg-slate-950 text-slate-50 border-slate-800 p-6 rounded-2xl shadow-2xl flex flex-col gap-4">
-            <DialogHeader className="space-y-1">
-              <DialogTitle className="text-lg font-bold">{t.flow.addTaskToday}</DialogTitle>
-              <DialogDescription className="text-slate-400 text-xs">
-                {t.flow.selectBacklogTask}
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="max-h-[250px] overflow-y-auto space-y-2 pr-1 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
-              {backlogTasks.map((task) => (
-                <div 
-                  key={task.id} 
-                  onClick={() => {
-                    setIsPickTaskModalOpen(false);
-                    handlePickTask(task);
-                  }}
-                  className="flex items-center justify-between p-3 bg-slate-900 hover:bg-slate-800/80 border border-slate-800 hover:border-indigo-500/40 rounded-xl cursor-pointer transition-all duration-200 group active:scale-[0.98]"
-                >
-                  <div className="min-w-0 flex-1 pr-2">
-                    <div className="text-xs font-semibold text-slate-200 truncate group-hover:text-indigo-400 transition-colors">
-                      {task.title}
-                    </div>
-                    {task.estimatedMinutes && (
-                      <div className="text-[10px] text-slate-400 mt-0.5">{task.estimatedMinutes} {t.flow.minutesUnit}</div>
-                    )}
-                  </div>
-                  <button className="text-[10px] font-bold bg-indigo-600/20 hover:bg-indigo-600 text-indigo-400 hover:text-white px-2.5 py-1 rounded-lg shrink-0 transition-colors">
-                    {t.flow.addBtn}
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <DialogFooter className="border-t border-slate-800/60 pt-3">
-              <Button 
-                variant="ghost" 
-                onClick={() => setIsPickTaskModalOpen(false)}
-                className="text-slate-400 hover:text-white hover:bg-slate-900 w-full rounded-xl text-xs h-9 cursor-pointer"
-              >
-                {t.flow.cancelBtn}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <FlowPickTaskModal
+          isOpen={isPickTaskModalOpen}
+          onOpenChange={setIsPickTaskModalOpen}
+          backlogTasks={backlogTasks}
+          onPickTask={handlePickTask}
+        />
 
         {/* Modal to prompt for estimated duration if missing */}
         <TaskFormModal 

@@ -1,5 +1,4 @@
 import React from "react";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -37,7 +36,7 @@ export function GoalFormCategoryFields({
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       <label className="text-sm font-medium">{t.goals.categoryLabel}</label>
       {isCreatingCategory ? (
         <CategoryCreateForm
@@ -45,12 +44,12 @@ export function GoalFormCategoryFields({
           onSuccess={handleCategoryCreateSuccess}
         />
       ) : (
-        <div className="flex items-center space-x-1.5">
+        <div className="flex items-center space-x-2">
           <Select
              value={categoryId}
              onValueChange={(val: string) => setCategoryId(val)}
           >
-            <SelectTrigger className="w-full bg-card border-border">
+            <SelectTrigger className="w-full bg-card border-border h-9">
               <SelectValue placeholder={t.goals.categoryLabel} />
             </SelectTrigger>
             <SelectContent className="bg-popover border-border text-foreground">
@@ -65,24 +64,22 @@ export function GoalFormCategoryFields({
               ))}
             </SelectContent>
           </Select>
-          <Button
+          <button
             type="button"
-            variant="outline"
-            className="border-border bg-card text-foreground px-2 shrink-0 h-7"
+            className="text-muted-foreground hover:text-foreground shrink-0 cursor-pointer p-1 transition-colors"
             onClick={() => setIsCreatingCategory(true)}
             title={t.goals.categoryLabel}
           >
             <HugeiconsIcon icon={PlusSignIcon} className="w-4 h-4" />
-          </Button>
-          <Button
+          </button>
+          <button
             type="button"
-            variant="outline"
-            className="border-border bg-card text-foreground px-2 shrink-0 h-7"
+            className="text-muted-foreground hover:text-foreground shrink-0 cursor-pointer p-1 transition-colors"
             onClick={() => setIsManagingCategories(true)}
             title={t.goals.categoryLabel}
           >
             <HugeiconsIcon icon={Settings01Icon} className="w-4 h-4" />
-          </Button>
+          </button>
         </div>
       )}
     </div>

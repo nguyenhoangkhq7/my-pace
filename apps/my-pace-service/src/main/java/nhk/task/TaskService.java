@@ -76,7 +76,7 @@ public class TaskService {
         }
 
         if (saved.getGoalId() != null) {
-            goalService.updateGoalProgress(saved.getGoalId(), 0, 0);
+            goalService.updateGoalProgress(saved.getGoalId());
         }
         return taskMapper.toDto(saved);
     }
@@ -143,11 +143,11 @@ public class TaskService {
 
         if (task.getGoalId() != null) {
             if (!wasDone && isNowDone) {
-                goalService.updateGoalProgress(task.getGoalId(), newActualMinutes, 1);
+                goalService.updateGoalProgress(task.getGoalId());
             } else if (wasDone && !isNowDone) {
-                goalService.updateGoalProgress(task.getGoalId(), -oldActualMinutes, -1);
+                goalService.updateGoalProgress(task.getGoalId());
             } else if (wasDone && isNowDone && oldActualMinutes != newActualMinutes) {
-                goalService.updateGoalProgress(task.getGoalId(), newActualMinutes - oldActualMinutes, 0);
+                goalService.updateGoalProgress(task.getGoalId());
             }
         }
 
@@ -161,7 +161,7 @@ public class TaskService {
                 .orElseThrow(() -> new EntityNotFoundException("Task not found"));
         taskRepository.delete(task);
         if (task.getGoalId() != null) {
-            goalService.updateGoalProgress(task.getGoalId(), 0, 0);
+            goalService.updateGoalProgress(task.getGoalId());
         }
     }
 

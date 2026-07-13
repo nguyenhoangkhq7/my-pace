@@ -1,107 +1,86 @@
 # My Pace Project Rules & Context
 
-This file contains the workspace configuration, technology stack details, and coding guidelines for the **My Pace** project. Any AI agent assisting in this workspace should read and adhere to these guidelines.
+This file contains the workspace configuration, technology stack details, and coding guidelines for the **My Pace** project. Any AI agent assisting in this workspace should read and adhere to these guidelines to understand the project architecture and work correctly.
 
 ---
 
-## 1. Project Overview
-**My Pace** is a Kanban board productivity application. It is structured as a monorepo containing a Next.js frontend and a Spring Boot backend, orchestrated with Docker Compose.
+## 1. Project Overview & Architecture
+**My Pace** is a Timeboxing and Daily Planning productivity application. It is structured as a monorepo containing a Next.js frontend and a Spring Boot backend, orchestrated with Docker Compose.
 
----
-
-## 2. Directory Structure & Architecture
-
-```
+```text
 my-pace-app/
 ├── apps/
-│   ├── web-app/            # Frontend (Next.js, React 19)
-│   └── my-pace-service/    # Backend (Spring Boot, Java 21)
-├── docker-compose.yml      # Docker orchestrator (Postgres 17, Redis 7, web, api)
+│   ├── web-app/            # Frontend (Next.js 16, React 19, Zustand, Tailwind v4)
+│   └── my-pace-service/    # Backend (Spring Boot 4.x, Java 21, PostgreSQL, Redis)
+├── docker-compose.yml      # Docker orchestrator
 └── .env                    # Local environment variables
 ```
 
 ### Frontend (`apps/web-app`)
-- **Framework:** Next.js 16 (App Router) + React 19 + TypeScript
-- **Styling:** Tailwind CSS v4
+- **Core:** Next.js 16 (App Router), React 19, TypeScript
+- **Styling & UI:** Tailwind CSS v4, shadcn/ui components (`components/ui`)
 - **State Management:** Zustand
-- **UI Library:** shadcn/ui components (located in `components/ui`)
-- **Key Folders:**
-  - `app/`: Contains application routes and the core page layout/logic (`app/page.tsx` renders the Kanban board).
-  - `components/layout/`: Global layout components (sidebar, header).
-  - `components/kanban/`: Kanban board, column, and card components.
-  - `components/ui/`: Reusable UI primitives.
+- **Architecture:** 
+  - `app/(board)`: Main application routes and page layouts (e.g., today, tomorrow, flow, backlog).
+  - `components/layout/`: Global layout components.
+  - `components/features/`: Core feature components for timeboxing and daily planning.
 
 ### Backend (`apps/my-pace-service`)
-- **Framework:** Spring Boot 4.x + Java 21
-- **Build Tool:** Maven (`pom.xml`, wrapper files `mvnw`, `mvnw.cmd`)
-- **Package Structure:** Base package `nhk`
-  - `nhk.auth`: Security and authentication configurations, controllers, services.
-  - `nhk.user`: User profile, credentials, and settings controllers, services, repositories.
-  - `nhk.calendar`: Fixed events management, daily check-ins, and available time calculations.
-  - `nhk.timeblock`: Task time boxing and scheduled time blocks controllers, services, repositories.
-  - `nhk.mail`: Email sending features (configured for Gmail SMTP).
-  - `nhk.common`: Common utilities and shared helpers.
-- **Database & JPA:** Spring Data JPA with PostgreSQL.
-- **Caching:** Redis.
-- **Authentication:** JWT (using `jjwt` library).
-- **Other Libs:** MapStruct (DTO mapping), Lombok (boilerplate reduction), dotenv-java.
+- **Core:** Spring Boot 4.x, Java 21, Maven
+- **Database & Caching:** Spring Data JPA (PostgreSQL), Redis
+- **Authentication:** JWT (`jjwt`), Redis Blacklist
+- **Package Structure (`nhk`):**
+  - `auth`, `user`: Security, auth, user profiles.
+  - `calendar`: Fixed events, daily check-ins, available time calculation.
+  - `timeblock`: Task time boxing and scheduling.
 
 ---
 
-## 3. Coding Guidelines & Best Practices
+## 2. FRONTEND STRICT CLEAN CODE CONSTRAINTS
 
-### General
-- Store configurations and sensitive credentials in individual service-level `.env` files (e.g. `apps/web-app/.env` and `apps/my-pace-service/.env`). Do NOT use a shared root `.env` file. Never hardcode secrets in code.
-- Ensure cross-service compatibility (e.g., when adding a feature in frontend, ensure the backend endpoints match).
+Mọi Agent khi làm việc với UI components (tạo mới hoặc refactor) phải coi mình là **chuyên gia kiến trúc frontend**, áp dụng triệt để tư duy **"Atomic Design"** và **"Single Responsibility Principle"**:
 
-### Security & Authentication (JWT & Redis Blacklist)
-- User IDs must always be represented as `UUID` on both the PostgreSQL schema and Java backend (e.g., in repositories, DTOs, mappers, and services) to prevent casting and consistency issues.
-- Logout flow must be handled securely on both client and server:
-  - **Client-side**: Call `POST /api/auth/logout` first, then clear the Zustand store session (`clearSession`), and redirect the user to `/login`.
-  - **Backend-side**: Expose `POST /api/auth/logout` which parses the token, calculates its remaining TTL, saves it in Redis with key prefix `blacklist:token:{token}`, and clears the `refreshToken` HTTP-only cookie.
-  - **Filter interceptor**: The `JwtAuthFilter` must query Redis for `blacklist:token:{token}` and block any blacklisted requests before authentication details are set in the security context.
+1. **Component Cha (Container / Layout):**
+   - Chỉ đóng vai trò bố cục (Structural Grid/Flex) và điều phối các State dùng chung.
+   - **Tuyệt đối không** chứa logic UI chi tiết hay xử lý sự kiện cá nhân của component con.
+2. **Component Con (Item / Atom):**
+   - Toàn bộ UI lặp (ví dụ: vòng lặp `.map`) **PHẢI** được tách thành một Component riêng biệt (VD: `TaskItem`, `UserRow`, `ColumnCard`).
+   - Component này tự quản lý logic tương tác nội bộ của nó (hover, active) hoặc nhận callback từ cha.
+3. **Component Input / Form inline:**
+   - Bất kỳ phần tạo mới hoặc chỉnh sửa dạng inline nào (nhập text, bắt phím Enter/Escape, quản lý state input tạm thời) **PHẢI** bóc tách hoàn toàn thành một component độc lập riêng (VD: `InlineTaskInput`).
+4. **Clean Code & Reusability:**
+   - Giữ cho các file sau khi chia nhỏ có độ dài tối giản (**thường dưới 50-70 dòng**) và cực kỳ dễ đọc.
+   - Nếu có logic state/business phức tạp, phải tách ra custom hook (VD: `useBacklogMatrix`).
+   - Tối đa hóa tái sử dụng từ `components/ui/` (shadcn/ui).
+   - Dựa vào React 19 Compiler để tối ưu memoization, hạn chế `useMemo`/`useCallback` thủ công trừ khi có profile hiệu năng rõ ràng.
+
+---
+
+## 3. CORE DOMAIN RULES & BACKEND GUIDELINES
+
+### Security & Authentication
+- **UUID:** User IDs phải luôn là `UUID` trên cả DB (PostgreSQL) và Java backend để tránh sai lệch.
+- **Logout Flow:** 
+  - *Client:* Gọi `POST /api/auth/logout`, clear session Zustand, redirect về `/login`.
+  - *Server:* Lưu JWT vào Redis với key `blacklist:token:{token}`.
+  - *Filter:* `JwtAuthFilter` phải check Redis blacklist trước khi authenticate.
+
+### Goals & Work Breakdown Structure
+- **Flat Architecture (3 Cấp):** `Milestone (Goal) -> Task -> Checklist`. Lưu phẳng trong DB, nhưng frontend build thành Tree View để dễ nhìn.
+- **Daily Pick:** Task nằm ở Backlog -> Chọn vào kế hoạch hằng ngày (Ma trận Eisenhower).
 
 ### Fixed Events & Calendar
-- **FullCalendar Integration**: FullCalendar v6 (React wrapper) is used for rendering. Avoid rendering complex recurrence rules on the client. The backend expands recurring events into flat occurrence records within range requests.
-- **Exceptions Table**: Multi-occurrence modifications (editing "only this occurrence") must use a separate exceptions table (`fixed_event_exceptions`) mapping date overrides, avoiding cloning full series templates.
-- **Timezone Safety**: Any server-side calculations involving `LocalTime.now()` or time boundary adjustments must be resolved relative to the user's profile timezone (e.g., `LocalTime.now(ZoneId.of(user.getTimezone()))`) to prevent container-default UTC mismatches.
+- **FullCalendar v6:** Dùng trên Frontend. Backend giải nén các sự kiện định kỳ (recurring events) thành các object phẳng theo khoảng thời gian request.
+- **Timezone Safety:** Mọi tính toán liên quan đến `LocalTime.now()` hoặc boundary phải gắn với Timezone của User (`ZoneId.of(user.getTimezone())`), không được dùng UTC mặc định của container.
 
 ### Available Time & Daily Check-in
-- **Union-Interval Engine**: Recalculate available time using the union of overlapping fixed events to prevent duplicate reductions.
-- **+15m Buffer for Start Time**: 
-  - Planning today: `Start_Time = Current_Time + 15 minutes` (accounts for plan creation lag).
-  - Planning tomorrow: `Start_Time = Wake_Time + 15 minutes`.
-- **First Check-in Freeze**: The `checkinTime` is recorded automatically on the user's first app access and remains frozen once stored. Focus changes or page refreshes do not overwrite it.
-- **Auto Check-in Hook**: Next.js hook `useAppVisibility` runs silently, posting check-in times in the background when the app is first opened on a new day. It also recalculates remaining available time when window focus changes.
-- **Frontend Hybrid Architecture**: State is managed globally via Zustand stores (`useAvailableTimeStore` and `useCalendarStore`) but exposed to UI components via custom hooks. `useAvailableTimeStore` maintains separate `dataToday` and `dataTomorrow` objects to prevent today's decaying available time from bleeding into tomorrow's plan.
+- **Union-Interval Engine:** Tính Available Time bằng việc gộp (union) các sự kiện cố định trùng lặp để không trừ thời gian hai lần.
+- **Auto Check-in & Freeze:** Khóa thời điểm check-in (frozen) ngay lần mở app đầu tiên trong ngày. Mở hook Next.js `useAppVisibility` chạy ngầm.
+- **+15m Buffer:** Lên lịch ngày hôm nay tính từ `Hiện tại + 15 phút`. Ngày mai tính từ `Giờ thức dậy + 15 phút`. Tách biệt State `dataToday` và `dataTomorrow`.
 
-### Timeboxing & Scheduled Time Blocks
-- **Task Time Blocks Table (`task_time_blocks`)**: Tracks scheduled times for tasks. Single source of truth (do not store scheduled time directly in task or daily plan task tables).
-- **Auto-Schedule Algorithm**: Client-side TypeScript algorithm with time-splitting capabilities. 
-  - Priority: Eisenhower Matrix (Q1 > Q2 > Q3 > Q4) -> Due Date Ascending -> Estimated Duration Descending.
-  - Minimum chunk limit: Blocks must not be split below 30 minutes. Gaps below 30 minutes are ignored.
-  - Simulated Fixed Events: Manual time blocks are converted to occupied slots when running auto-schedule again to avoid overlapping.
-- **Cascade Unschedule**: Removing a scheduled time block from the calendar (via drag-to-unschedule or modal button) automatically clears all other chunks associated with that task ID.
-- **Execution Mode UI Locking (`isStarted` / `isConfirmed`)**: When `isConfirmed` is true, the user is locked into execution mode. Editing and cancelling plan buttons are hidden, and planning interactions (like adding tasks from backlog to today) are completely disabled.
-
-### Daily Lifecycle & Multi-Day Planning
-- **Read-Only Execution Board**: The "Hôm nay" (Today) tab does not allow direct checkbox completion. Completion must be driven via the **Flow** tab.
-- **Completion Flow**: When all daily tasks are marked `Done`, the Flow tab displays a completion celebration screen with a "Complete my day" action, and the Today tab displays a full-page celebratory screen instead of the task list.
-- **Tomorrow Planning**: Users can prepare for the next day. The "Ngày mai" (Tomorrow) tab lets users toggle planning mode specifically for tomorrow (`planningTarget: 'today' | 'tomorrow'`), fetching tomorrow's available time and saving the plan with tomorrow's date.
-
-### Frontend (Next.js / TypeScript)
-- Use standard functional components with TypeScript typings.
-- Prefer Tailwind CSS v4 for styling. Ensure UI matches the existing dark/modern aesthetics.
-- **Component Design (Clean Code & Reusability)**:
-  - **Single Responsibility Principle**: Components should do one thing well. Avoid "fat components" (over 200-300 lines). If a component grows too large, extract complex UI sections, forms, or SVG animations into smaller, independent sub-components.
-  - **Reusability**: Always check `components/ui/` or existing feature folders before building a new UI primitive. Reuse existing buttons, inputs, dialogs, and select components.
-  - **Separation of Concerns**: Keep components clean by separating presentation logic from state management. Move complex business logic into custom hooks (e.g. `useEventForm`, `useBacklogMatrix`) or Zustand stores.
-  - **Performance Optimization**: Since we are using React 19 (via Next.js 16), rely on the **React Compiler** for automatic memoization. Avoid manual `React.memo`, `useMemo`, or `useCallback` unless explicitly profiling a specific bottleneck. Ensure `useEffect` dependencies are correctly specified to avoid infinite loops.
-- Use `Zustand` for global state management.
-
-### Backend (Spring Boot / Java)
-- Write REST controllers adhering to RESTful API best practices (appropriate HTTP status codes, routing conventions).
-- Keep domain logic inside the service layer, keeping controllers thin.
-- Use MapStruct mappers for mapping between entities and DTOs.
-- Use Lombok annotations (`@Getter`, `@Setter`, `@Builder`, `@NoArgsConstructor`, etc.) to keep boilerplate minimal.
-- Utilize `@RequiredArgsConstructor` for constructor injection.
+### Timeboxing & Daily Lifecycle
+- **Auto-Schedule:** Thuật toán ở client, ưu tiên Q1 > Q2 > Q3 > Q4. Chia khối tối thiểu 30 phút. Bỏ qua gap < 30 phút.
+- **Execution Mode (isConfirmed):** Khi đã chốt lịch, khóa UI (ẩn nút thêm/sửa/xóa task).
+- **Read-Only Board:** Tab "Hôm nay" chỉ đọc. Việc hoàn thành task phải đi qua tab "Flow" để tận hưởng màn hình ăn mừng khi xong hết việc.
+- **Backend Coding:** Controller mỏng, đẩy logic vào Service. Dùng MapStruct mapper và Lombok boilerplate. Dùng `@RequiredArgsConstructor`.
+- **Environment:** Không dùng file `.env` chung ở root. Mỗi app có `.env` riêng (e.g. `apps/web-app/.env`).

@@ -6,4 +6,3 @@ export { useOnboardingStore } from "./store/onboarding.store";
 export { InitialSetupForm } from "./components/initial-setup-form";
 export { OnboardingModal } from "./components/onboarding-modal";
 export { ProfileDialog } from "./components/profile-dialog";
-export { AppTour } from "./components/onboarding/AppTour";

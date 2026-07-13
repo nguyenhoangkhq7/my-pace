@@ -33,7 +33,7 @@ export function ConfirmDeleteDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="sm:max-w-[360px] max-w-xs rounded-3xl p-6 border-none bg-slate-950 text-slate-50 border-slate-800 shadow-2xl text-center"
+        className="sm:max-w-[360px] max-w-xs rounded-3xl p-6 border border-border bg-background text-foreground shadow-2xl text-center"
       >
         <div className="flex flex-col items-center space-y-4 py-2">
           <div className="h-12 w-12 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500 animate-pulse">

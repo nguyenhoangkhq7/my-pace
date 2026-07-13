@@ -312,7 +312,7 @@ export function useCalendarPage() {
 
   const planTasks = dailyPlanToday?.tasks || [];
   const hasPlan   = planTasks.length > 0;
-  const unscheduledTasks = planTasks.filter((pt) => !scheduledTaskIds.has(pt.task.id));
+  const unscheduledTasks = planTasks.filter((pt) => !scheduledTaskIds.has(pt.task.id) && pt.task.status !== 'Done');
   const hasUnscheduled = hasPlan && unscheduledTasks.length > 0;
 
   return {

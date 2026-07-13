@@ -1,0 +1,220 @@
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { useFocusStore } from "@/features/focus/store/focus.store";
+import type { GroupImperativeHandle } from "react-resizable-panels";
+
+const ZEN_FULL_THRESHOLD = 65;
+
+export function useFlowLayoutState() {
+  const isLg = useMediaQuery("(min-width: 1024px)");
+  const isXl = useMediaQuery("(min-width: 1280px)");
+  const [mounted, setMounted] = useState(false);
+  const [resetKey, setResetKey] = useState(0);
+  const [isLeftCollapsed, setIsLeftCollapsed] = useState(false);
+  const [isRightCollapsed, setIsRightCollapsed] = useState(false);
+  const [sizes, setSizes] = useState<number[] | null>(null);
+
+  const groupRef = useRef<GroupImperativeHandle | null>(null);
+  const lastGoodSizesRef = useRef<[number, number, number]>([20, 60, 20]);
+  const canSaveRef = useRef(false);
+  const canSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const scheduleCanSave = useCallback(() => {
+    canSaveRef.current = false;
+    if (canSaveTimerRef.current) clearTimeout(canSaveTimerRef.current);
+    canSaveTimerRef.current = setTimeout(() => {
+      canSaveRef.current = true;
+    }, 1000);
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    scheduleCanSave();
+    const handleFocusOrVisible = () => {
+      if (document.visibilityState === "visible") scheduleCanSave();
+    };
+    window.addEventListener("focus", handleFocusOrVisible);
+    document.addEventListener("visibilitychange", handleFocusOrVisible);
+    return () => {
+      window.removeEventListener("focus", handleFocusOrVisible);
+      document.removeEventListener("visibilitychange", handleFocusOrVisible);
+      if (canSaveTimerRef.current) clearTimeout(canSaveTimerRef.current);
+    };
+  }, [scheduleCanSave]);
+
+  const layoutKey = isXl ? "layout-xl" : isLg ? "layout-lg" : "layout-base";
+
+  useEffect(() => {
+    if (!isXl && useFocusStore.getState().isZenFull) {
+      useFocusStore.getState().setZenFull(false);
+    }
+  }, [isXl]);
+
+  useEffect(() => {
+    const expectedLen = isXl ? 3 : isLg ? 2 : 1;
+    Promise.resolve().then(() => {
+      const saved = localStorage.getItem(`myPaceFlowSizes_${layoutKey}`);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length === expectedLen) {
+            if (expectedLen === 3 && (parsed[0] < 15 || parsed[2] < 15)) {
+              setSizes([20, 60, 20]);
+              localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify([20, 60, 20]));
+              return;
+            }
+            if (expectedLen === 2 && parsed[0] < 15) {
+              setSizes([25, 75]);
+              localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify([25, 75]));
+              return;
+            }
+            setSizes(parsed);
+            return;
+          }
+          localStorage.removeItem(`myPaceFlowSizes_${layoutKey}`);
+        } catch {}
+      }
+      if (isXl) setSizes([20, 60, 20]);
+      else if (isLg) setSizes([25, 75]);
+      else setSizes([100]);
+    });
+  }, [layoutKey, resetKey, isXl, isLg]);
+
+  const requestFullscreen = () => {
+    if (typeof document !== 'undefined' && !document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+  };
+
+  const exitFullscreen = () => {
+    if (typeof document !== 'undefined' && document.fullscreenElement && document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
+
+  const handleLayoutChanged = useCallback((layout: Record<string, number>) => {
+    const store = useFocusStore.getState();
+    const zenzonePercent = layout["zenzone-panel"] ?? 0;
+
+    if (store.isZenFull) {
+      if (isXl && zenzonePercent < 99.5) {
+        const restoredSizes: [number, number, number] = [
+          layout["todo-panel"] ?? lastGoodSizesRef.current[0],
+          layout["pomodoro-panel"] ?? lastGoodSizesRef.current[1],
+          zenzonePercent,
+        ];
+        store.setZenFull(false);
+        exitFullscreen();
+        setSizes(restoredSizes);
+        try { localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify(restoredSizes)); } catch {}
+      }
+      return;
+    }
+
+    if (isXl && zenzonePercent >= ZEN_FULL_THRESHOLD) {
+      lastGoodSizesRef.current = [
+        layout["todo-panel"] ?? 20,
+        layout["pomodoro-panel"] ?? 60,
+        zenzonePercent,
+      ];
+      store.setZenFull(true);
+      requestFullscreen();
+      groupRef.current?.setLayout({
+        "todo-panel": 0,
+        "pomodoro-panel": 0,
+        "zenzone-panel": 100,
+      });
+      return;
+    }
+
+    if (!canSaveRef.current || document.visibilityState !== "visible") return;
+
+    if (isXl && layout["todo-panel"] !== undefined && layout["zenzone-panel"] !== undefined) {
+      const arr = [layout["todo-panel"], layout["pomodoro-panel"] ?? 60, layout["zenzone-panel"]];
+      if ((arr[0] > 0 && arr[0] < 14) || (arr[2] > 0 && arr[2] < 14)) return;
+      try { localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify(arr)); } catch {}
+    } else if (isLg && !isXl && layout["todo-panel"] !== undefined) {
+      const arr = [layout["todo-panel"], layout["pomodoro-panel"] ?? 75];
+      if (arr[0] > 0 && arr[0] < 14) return;
+      try { localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify(arr)); } catch {}
+    }
+  }, [isXl, isLg, layoutKey]);
+
+  const handleResetLayout = useCallback(() => {
+    try {
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith("myPaceFlowSizes_") || key.includes("PanelGroup")) {
+          localStorage.removeItem(key);
+        }
+      });
+    } catch {}
+    if (useFocusStore.getState().isZenFull) {
+      useFocusStore.getState().setZenFull(false);
+    }
+    setSizes(null);
+    setResetKey(prev => prev + 1);
+  }, []);
+
+  const handleExitZenFull = useCallback(() => {
+    const store = useFocusStore.getState();
+    store.setZenFull(false);
+    exitFullscreen();
+    const restored = lastGoodSizesRef.current;
+    groupRef.current?.setLayout({
+      "todo-panel": restored[0],
+      "pomodoro-panel": restored[1],
+      "zenzone-panel": restored[2],
+    });
+    setSizes([...restored]);
+    try { localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify(restored)); } catch {}
+  }, [layoutKey]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && useFocusStore.getState().isZenFull) {
+        handleExitZenFull();
+      }
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, [handleExitZenFull]);
+
+  const handleEnterZenFull = useCallback(() => {
+    if (!isXl) return;
+    const store = useFocusStore.getState();
+    lastGoodSizesRef.current = [
+      sizes?.[0] ?? 20,
+      sizes?.[1] ?? 60,
+      sizes?.[2] ?? 20,
+    ];
+    store.setZenFull(true);
+    requestFullscreen();
+    groupRef.current?.setLayout({
+      "todo-panel": 0,
+      "pomodoro-panel": 0,
+      "zenzone-panel": 100,
+    });
+  }, [isXl, sizes]);
+
+  return {
+    isLg,
+    isXl,
+    layoutKey,
+    mounted,
+    resetKey,
+    sizes,
+    isLeftCollapsed,
+    setIsLeftCollapsed,
+    isRightCollapsed,
+    setIsRightCollapsed,
+    groupRef,
+    handleLayoutChanged,
+    handleResetLayout,
+    handleExitZenFull,
+    handleEnterZenFull
+  };
+}

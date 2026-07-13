@@ -24,8 +24,17 @@ export function TaskBacklogCard({
   return (
     <div 
       onClick={onClick}
+      draggable={!isPlanned}
+      onDragStart={(e) => {
+        if (isPlanned) return;
+        e.dataTransfer.setData("taskId", task.id);
+        e.currentTarget.style.opacity = '0.4';
+      }}
+      onDragEnd={(e) => {
+        e.currentTarget.style.opacity = '1';
+      }}
       className={cn(
-        "p-3 rounded-lg border text-sm cursor-pointer transition-all tour-backlog-item",
+        "p-3 rounded-lg border text-sm cursor-pointer transition-all",
         isPlanned
           ? "border-primary bg-primary/10 text-primary"
           : "border-border bg-card hover:border-border/80 hover:bg-muted text-foreground"

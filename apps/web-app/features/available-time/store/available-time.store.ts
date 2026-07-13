@@ -9,7 +9,7 @@ interface AvailableTimeState {
   streakToCelebrate: number | null;
   fetchAvailableTimeToday: (date: string) => Promise<void>;
   fetchAvailableTimeTomorrow: (date: string) => Promise<void>;
-  checkin: (date: string, checkinTime?: string) => Promise<any>;
+  checkin: (date: string, checkinTime?: string) => Promise<AvailableTimeData | undefined>;
   setStreakToCelebrate: (streak: number | null) => void;
 }
 

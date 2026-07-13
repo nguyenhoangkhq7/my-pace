@@ -37,7 +37,6 @@ export function GoalDashboardFilters({
           <SelectItem value="ALL">{t.goals.allTypes}</SelectItem>
           <SelectItem value="Binary">{t.goals.project}</SelectItem>
           <SelectItem value="Time-boxed">{t.goals.habit}</SelectItem>
-          <SelectItem value="Milestone">{t.goals.target}</SelectItem>
         </SelectContent>
       </Select>
     </div>

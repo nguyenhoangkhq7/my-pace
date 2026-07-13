@@ -40,6 +40,7 @@ import { post, getApiErrorMessage } from "@/lib/fetchClient";
 import { AppAlert } from "@/components/feedback/app-alert";
 import { appToast } from "@/components/feedback/app-toast";
 import { useTranslation } from "@/hooks/use-translation";
+import { useOtpCountdown } from "../../hooks/useOtpCountdown";
 
 interface OtpVerificationStepProps {
     onNext: () => void;
@@ -58,6 +59,7 @@ export function OtpVerificationStep({onNext}: OtpVerificationStepProps) {
         setRegisterData,
     } = useRegisterStore();
     const { t } = useTranslation();
+    const { timeLeft, isCounting, handleResend } = useOtpCountdown(60);
     const form = useForm<OtpStepValues>({
         resolver: zodResolver(otpStepSchema),
         defaultValues: {
@@ -99,6 +101,18 @@ export function OtpVerificationStep({onNext}: OtpVerificationStepProps) {
             });
         }
     };
+
+    const onResendClick = () => {
+        if (!registerFormData.email) return;
+        
+        handleResend(
+            async () => {
+                await post("auth/request-otp", { email: registerFormData.email });
+            },
+            "OTP has been resent to your email"
+        );
+    };
+
     return (
         <form
             onSubmit={form.handleSubmit(onSubmit)}
@@ -137,13 +151,16 @@ export function OtpVerificationStep({onNext}: OtpVerificationStepProps) {
                                 variant="outline"
                                 size="sm"
                                 type="button"
-                                className="gap-2 rounded-xl"
+                                className="gap-2 rounded-xl min-w-[90px]"
+                                onClick={onResendClick}
+                                disabled={isCounting}
                             >
                                 <HugeiconsIcon
                                     icon={RefreshIcon}
                                     size={16}
+                                    className={isCounting ? "opacity-50" : ""}
                                 />
-                                {t.auth.resend}
+                                {isCounting ? `${timeLeft}s` : t.auth.resend}
                             </Button>
                         </div>
 

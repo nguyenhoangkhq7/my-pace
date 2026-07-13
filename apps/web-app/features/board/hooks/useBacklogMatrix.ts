@@ -1,11 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { useBoardStore } from "../store/board.store";
 import { useAvailableTimeStore } from "../../available-time/store/available-time.store";
-import { useGoalStore } from "@/features/goal/store/goal.store";
 import { Task } from "../types";
-import { Goal } from "@/features/goal/types";
-import { useOnboardingStore } from "@/features/auth/store/onboarding.store";
 
 export function useBacklogMatrix() {
   const {
@@ -25,23 +22,13 @@ export function useBacklogMatrix() {
   } = useBoardStore();
 
   const { dataToday, dataTomorrow } = useAvailableTimeStore();
-  const { goals, fetchGoals } = useGoalStore();
-
   const availableTimeData = planningTarget === 'today' ? dataToday : dataTomorrow;
   const availableMinutes = availableTimeData?.availableMinutes || 0;
 
-  const [activeTab, setActiveTab] = useState<'tasks' | 'goals'>('tasks');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
   const [requireDurationForTask, setRequireDurationForTask] = useState<Task | undefined>(undefined);
   const [prefilledGoalForTask, setPrefilledGoalForTask] = useState<string | undefined>(undefined);
-
-  const [isGoalDetailModalOpen, setIsGoalDetailModalOpen] = useState(false);
-  const [selectedGoalForDetail, setSelectedGoalForDetail] = useState<Goal | null>(null);
-
-  useEffect(() => {
-    fetchGoals();
-  }, [fetchGoals]);
 
   const checkTimeLimit = (newEstimatedMinutes: number) => {
     const plannedTasks = tasks.filter(t => plannedTaskIds.includes(t.id));
@@ -65,34 +52,9 @@ export function useBacklogMatrix() {
         }
       }
     }
-    const { isTourActive, tourStepIndex, setTourStep } = useOnboardingStore.getState();
-    if (isTourActive && (tourStepIndex >= 2 && tourStepIndex <= 4)) {
-      // Always go to step 5 (Plan My Day) after task creation — never skip it
-      setTourStep(5);
-    }
     setIsModalOpen(false);
     setEditingTask(undefined);
     setPrefilledGoalForTask(undefined);
-  };
-
-  const handleGoalClick = (goal: Goal) => {
-    if (goal.goalType === 'Binary') {
-      setSelectedGoalForDetail(goal);
-      setIsGoalDetailModalOpen(true);
-      return;
-    }
-
-    if (isPlanningMode) {
-      const isTargetStarted = planningTarget === 'today' ? isStarted : (dailyPlanTomorrow?.isConfirmed ?? false);
-      if (isTargetStarted) {
-        toast.error("Kế hoạch đã chốt và đang thực thi, không thể chỉnh sửa.");
-        return;
-      }
-      setPrefilledGoalForTask(goal.id);
-      setIsModalOpen(true);
-    } else {
-      toast.info("Chỉ có thể tạo Task từ Goal trong chế độ Lập kế hoạch.");
-    }
   };
 
   const handleTaskClick = (task: Task) => {
@@ -106,45 +68,20 @@ export function useBacklogMatrix() {
         removePlannedTaskLocally(task.id);
       } else {
         if (!task.estimatedMinutes) {
-          if (useOnboardingStore.getState().isTourActive) {
-            updateTask(task.id, { estimatedMinutes: 30 }).then(updated => {
-              if (updated) {
-                checkTimeLimit(30);
-                addPlannedTaskLocally(updated);
-                // Advance tour to step 7 (save plan) after task added
-                const { isTourActive, tourStepIndex } = useOnboardingStore.getState();
-                if (isTourActive && (tourStepIndex === 5 || tourStepIndex === 6)) {
-                  setTimeout(() => {
-                    const state = useOnboardingStore.getState();
-                    if (state.isTourActive && (state.tourStepIndex === 5 || state.tourStepIndex === 6)) {
-                      state.setTourStep(7);
-                    }
-                  }, 400);
-                }
-              }
-            });
-          } else {
-            setRequireDurationForTask(task);
-          }
+          setRequireDurationForTask(task);
         } else {
           checkTimeLimit(task.estimatedMinutes);
           addPlannedTaskLocally(task);
-          // Advance tour to step 7 (save plan) after task added
-          const { isTourActive, tourStepIndex } = useOnboardingStore.getState();
-          if (isTourActive && (tourStepIndex === 5 || tourStepIndex === 6)) {
-            setTimeout(() => {
-              const state = useOnboardingStore.getState();
-              if (state.isTourActive && (state.tourStepIndex === 5 || state.tourStepIndex === 6)) {
-                state.setTourStep(7);
-              }
-            }, 400);
-          }
         }
       }
     } else {
       setEditingTask(task);
       setIsModalOpen(true);
     }
+  };
+
+  const handleTaskDrop = async (taskId: string, isUrgent: boolean, isImportant: boolean) => {
+    await updateTask(taskId, { isUrgent, isImportant });
   };
 
   const handleMissingDurationSubmit = async (data: Partial<Task>) => {
@@ -162,8 +99,6 @@ export function useBacklogMatrix() {
     tasks,
     isPlanningMode,
     plannedTaskIds,
-    activeTab,
-    setActiveTab,
     isModalOpen,
     setIsModalOpen,
     editingTask,
@@ -172,18 +107,14 @@ export function useBacklogMatrix() {
     setRequireDurationForTask,
     prefilledGoalForTask,
     setPrefilledGoalForTask,
-    isGoalDetailModalOpen,
-    setIsGoalDetailModalOpen,
-    selectedGoalForDetail,
-    goals,
     selectedFilterId,
     setFilter,
     categories,
 
     // Handlers
     handleCreateTask,
-    handleGoalClick,
     handleTaskClick,
+    handleTaskDrop,
     handleMissingDurationSubmit,
   };
 }

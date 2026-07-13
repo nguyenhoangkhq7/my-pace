@@ -4,12 +4,10 @@ import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useAuthStore, useOnboardingStore, ProfileDialog } from "@/features/auth";
-import { getShortName } from "@/lib/name-helper";
+import { useOnboardingStore, ProfileDialog } from "@/features/auth";
 import {
   Calendar03Icon,
   Grid02Icon,
-  UserCircleIcon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
   Target02Icon,
@@ -17,9 +15,6 @@ import {
 } from "@hugeicons/core-free-icons";
 import { useAvailableTime } from "@/features/available-time";
 import { FeedbackModal } from "../feedback/FeedbackModal";
-import { HelpIcon, FeedbackIcon } from "./SidebarIcons";
-import { ThemePicker } from "./ThemePicker";
-import { LanguagePicker } from "./LanguagePicker";
 import { useTranslation } from "@/hooks/use-translation";
 import { Settings } from "lucide-react";
 import { SettingsModal } from "@/features/settings/components/SettingsModal";
@@ -27,12 +22,11 @@ import { SettingsModal } from "@/features/settings/components/SettingsModal";
 import { Time02Icon } from "@hugeicons/core-free-icons";
 
 export function Sidebar() {
-  const user = useAuthStore((s) => s.user);
   const startOnboarding = useOnboardingStore((s) => s.startOnboarding);
-  const { isTourActive, tourStepIndex, advanceTourStep, completeOnboarding } = useOnboardingStore();
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useTranslation();
+
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
@@ -71,11 +65,11 @@ export function Sidebar() {
     icon: typeof Grid02Icon;
   };
 
-  const NAV_ITEMS: (NavItem & { tourClass?: string })[] = [
+  const NAV_ITEMS: NavItem[] = [
     { id: "dashboard", label: t.nav.planYourDay, href: "/", icon: Grid02Icon },
     { id: "goals", label: t.nav.goals, href: "/goals", icon: Target02Icon },
-    { id: "calendar", label: t.nav.calendar, href: "/calendar", icon: Calendar03Icon, tourClass: "tour-calendar-nav" },
-    { id: "flow", label: t.nav.flow, href: "/flow", icon: Time02Icon, tourClass: "tour-focus-nav" },
+    { id: "calendar", label: t.nav.calendar, href: "/calendar", icon: Calendar03Icon },
+    { id: "flow", label: t.nav.flow, href: "/flow", icon: Time02Icon },
     { id: "stats", label: t.nav.analytics, href: "/stats", icon: Analytics01Icon },
   ];
 
@@ -122,12 +116,6 @@ export function Sidebar() {
                 key={item.id}
                 onClick={() => {
                   router.push(item.href);
-                  if (item.id === 'flow' && isTourActive && tourStepIndex === 11) {
-                    // Last step: complete onboarding when user navigates to Flow
-                    setTimeout(() => completeOnboarding(), 800);
-                  } else if (item.id === 'flow' && isTourActive && tourStepIndex < 11) {
-                    setTimeout(() => advanceTourStep(), 400);
-                  }
                 }}
                 title={isCollapsed ? item.label : undefined}
                 className={cn(
@@ -138,8 +126,7 @@ export function Sidebar() {
                   isActive
                     ? "bg-primary/10 text-primary shadow-xs"
                     : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                  "active:scale-[0.97]",
-                  item.tourClass
+                  "active:scale-[0.97]"
                 )}
               >
                 <HugeiconsIcon

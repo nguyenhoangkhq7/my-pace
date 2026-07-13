@@ -17,10 +17,9 @@ public class GoalDto {
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private UUID categoryId;
-    private UUID parentGoalId;
     private Integer progressPct;
     private Boolean autoCreateTask;
-    private Integer defaultSessionMinutes;
-    private TimeBoxedGoalDto timeBoxedGoal;
-    private MilestoneGoalDto milestoneGoal;
+    private Integer durationMinutes;
+    private String daysOfWeek;
+    private java.time.LocalTime preferTime;
 }

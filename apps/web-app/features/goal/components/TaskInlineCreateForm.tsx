@@ -1,41 +1,46 @@
 import React, { useState } from "react";
 
 interface TaskInlineCreateFormProps {
-  onSubmit: (title: string) => void;
+  onSubmit: (title: string) => void | Promise<void>;
   onCancel: () => void;
+  placeholder?: string;
+  indent?: boolean;
 }
 
-export function TaskInlineCreateForm({ onSubmit, onCancel }: TaskInlineCreateFormProps) {
+export function TaskInlineCreateForm({ onSubmit, onCancel, placeholder, indent }: TaskInlineCreateFormProps) {
   const [title, setTitle] = useState("");
 
-  const handleCreate = () => {
+  const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      const trimmed = title.trim();
+      if (trimmed) {
+        await onSubmit(trimmed);
+        setTitle("");
+      } else {
+        onCancel();
+      }
+    }
+    if (e.key === 'Escape') onCancel();
+  };
+
+  const handleBlur = () => {
     const trimmed = title.trim();
     if (trimmed) {
       onSubmit(trimmed);
-    } else {
-      onCancel();
     }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleCreate();
-    }
-    if (e.key === 'Escape') {
-      onCancel();
-    }
+    onCancel();
   };
 
   return (
-    <div className="p-2.5 bg-slate-900/60 rounded-md border border-primary/50 flex items-center">
+    <div className={`p-2.5 bg-card rounded-md border border-primary/50 flex items-center ${indent ? 'ml-8' : ''}`}>
       <input
         autoFocus
-        className="bg-transparent border-none outline-none text-sm text-slate-200 w-full"
-        placeholder="Nhập tên task và nhấn Enter..."
+        className="bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground w-full"
+        placeholder={placeholder || "Nhập tên task và nhấn Enter..."}
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         onKeyDown={handleKeyDown}
-        onBlur={handleCreate}
+        onBlur={handleBlur}
       />
     </div>
   );
