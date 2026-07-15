@@ -2,9 +2,7 @@ package nhk.calendar;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.Generated;
 import org.hibernate.annotations.UuidGenerator;
-import org.hibernate.generator.EventType;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -17,6 +15,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
+@EntityListeners(org.springframework.data.jpa.domain.support.AuditingEntityListener.class)
 @Table(name = "fixed_event_exceptions")
 public class FixedEventException {
 
@@ -51,10 +50,10 @@ public class FixedEventException {
     private LocalTime overrideEndTime;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    @Generated(event = EventType.INSERT)
+    @org.springframework.data.annotation.CreatedDate
     private OffsetDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    @Generated(event = {EventType.INSERT, EventType.UPDATE})
+    @org.springframework.data.annotation.LastModifiedDate
     private OffsetDateTime updatedAt;
 }

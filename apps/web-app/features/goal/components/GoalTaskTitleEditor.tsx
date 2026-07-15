@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 interface GoalTaskTitleEditorProps {
@@ -9,12 +9,14 @@ interface GoalTaskTitleEditorProps {
 
 export function GoalTaskTitleEditor({ initialTitle, isDone, onSave }: GoalTaskTitleEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [prevInitialTitle, setPrevInitialTitle] = useState(initialTitle);
   const [editTitle, setEditTitle] = useState(initialTitle);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
+  if (initialTitle !== prevInitialTitle) {
+    setPrevInitialTitle(initialTitle);
     setEditTitle(initialTitle);
-  }, [initialTitle]);
+  }
 
   const handleTitleClick = (e: React.MouseEvent) => {
     e.stopPropagation();

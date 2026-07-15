@@ -17,7 +17,7 @@ export function TaskChecklistCreateForm({ onSubmit }: TaskChecklistCreateFormPro
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2 mt-2">
+    <form onSubmit={handleSubmit} className="flex gap-2">
       <Input 
         value={newChecklistTitle}
         onChange={e => setNewChecklistTitle(e.target.value)}

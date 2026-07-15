@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
 
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -29,12 +30,12 @@ public class TaskTimeBlock {
     private UUID dailyPlanId;
 
     @NotNull
-    @Column(name = "start_time", nullable = false, columnDefinition = "TIMESTAMPTZ")
-    private OffsetDateTime startTime;
+    @Column(name = "start_time", nullable = false, columnDefinition = "TIMESTAMP")
+    private LocalDateTime startTime;
 
     @NotNull
-    @Column(name = "end_time", nullable = false, columnDefinition = "TIMESTAMPTZ")
-    private OffsetDateTime endTime;
+    @Column(name = "end_time", nullable = false, columnDefinition = "TIMESTAMP")
+    private LocalDateTime endTime;
 
     @NotNull
     @Column(name = "part_index", nullable = false)

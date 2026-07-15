@@ -8,8 +8,9 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { PlusSignIcon, Cancel01Icon } from "@hugeicons/core-free-icons";
 import { SoundscapePlayer } from "./SoundscapePlayer";
 import { SoundscapeAddForm } from "./SoundscapeAddForm";
-import { SoundscapeHistoryItem } from "./SoundscapeHistoryItem";
-import { useBoardStore } from "@/features/board/store/board.store";
+import { useQuery } from "@tanstack/react-query";
+import { getTasksAction } from "@/features/board/actions/task.action";
+import type { Task } from "@/features/board/types";
 import { cn, fetchYouTubeTitle } from "@/lib/utils";
 import { CopyPlus, Settings2, LayoutGrid, List, LogOut } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -28,12 +29,12 @@ export function FlowZenZone({ onExit }: FlowZenZoneProps) {
     activeTaskId, pomodoroState, timeLeft, startTimer, pauseTimer, isPomodoroFloating, setPomodoroFloating,
     addToHistory, setIsSettingsOpen
   } = useFocusStore();
-  const { tasks } = useBoardStore();
+  const { data: tasks = [] } = useQuery({ queryKey: ['tasks'], queryFn: getTasksAction });
   const [isAdding, setIsAdding] = useState(false);
   const [layoutMode, setLayoutMode] = useState<"list" | "grid">("list");
   const [isDragOver, setIsDragOver] = useState(false);
 
-  const activeTask = tasks.find((t) => t.id === activeTaskId);
+  const activeTask = tasks.find((t: Task) => t.id === activeTaskId);
 
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();

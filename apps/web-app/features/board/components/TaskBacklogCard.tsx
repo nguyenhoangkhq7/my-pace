@@ -2,8 +2,6 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Calendar01Icon } from "@hugeicons/core-free-icons";
 import { Task } from "../types";
 import { TaskCardChecklist } from "./TaskCardChecklist";
-import { useBoardStore } from "../store/board.store";
-import { InlineTitleEditor } from "./InlineTitleEditor";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 
@@ -19,7 +17,6 @@ export function TaskBacklogCard({
   isPlanned,
 }: TaskBacklogCardProps) {
   const { t } = useTranslation();
-  const { updateTask } = useBoardStore();
 
   return (
     <div 
@@ -40,14 +37,9 @@ export function TaskBacklogCard({
           : "border-border bg-card hover:border-border/80 hover:bg-muted text-foreground"
       )}
     >
-      <InlineTitleEditor
-        initialTitle={task.title}
-        onSave={async (newTitle) => {
-          await updateTask(task.id, { title: newTitle });
-        }}
-        className="font-medium hover:bg-muted/60 px-1 -mx-1 rounded cursor-text inline-block break-words max-w-full"
-        inputClassName="h-7 text-sm bg-card border-border"
-      />
+      <div className="font-semibold text-foreground break-words text-sm mb-1 leading-snug">
+        {task.title}
+      </div>
       
       <div className="flex items-center gap-2 mt-2 flex-wrap">
         {task.goalId ? (
@@ -70,7 +62,12 @@ export function TaskBacklogCard({
         {task.dueDate && (
           <span className="inline-flex items-center text-[10px] text-muted-foreground">
             <HugeiconsIcon icon={Calendar01Icon} size={10} className="mr-1" />
-            {new Date(task.dueDate).toLocaleDateString()}
+            {(() => {
+              const d = new Date(task.dueDate);
+              const timeStr = task.dueDate.includes("T") ? task.dueDate.split("T")[1].substring(0, 5) : "";
+              const displayTime = timeStr && timeStr !== "00:00" && timeStr !== "23:59" ? ` ${timeStr}` : "";
+              return `${d.toLocaleDateString()}${displayTime}`;
+            })()}
           </span>
         )}
         

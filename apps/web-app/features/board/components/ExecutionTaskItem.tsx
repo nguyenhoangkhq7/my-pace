@@ -1,7 +1,8 @@
 import { TaskDetails } from "./TaskDetails";
 import { Task } from "../types";
 import { cn } from "@/lib/utils";
-import { useBoardStore } from "../store/board.store";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { updateTaskAction } from "@/features/board/actions/task.action";
 import { InlineTitleEditor } from "./InlineTitleEditor";
 
 interface ExecutionTaskItemProps {
@@ -11,7 +12,11 @@ interface ExecutionTaskItemProps {
 }
 
 export function ExecutionTaskItem({ task, isMit, isConfirmed }: ExecutionTaskItemProps) {
-  const { updateTask } = useBoardStore();
+  const queryClient = useQueryClient();
+  const updateTaskMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string, data: Partial<Task> }) => updateTaskAction(id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+  });
   const isDone = task.status === "Done";
   
   return (
@@ -23,7 +28,7 @@ export function ExecutionTaskItem({ task, isMit, isConfirmed }: ExecutionTaskIte
         <InlineTitleEditor
           initialTitle={task.title}
           onSave={async (newTitle) => {
-            await updateTask(task.id, { title: newTitle });
+            await updateTaskMutation.mutateAsync({ id: task.id, data: { title: newTitle } });
           }}
           className={cn(
             "text-sm cursor-text hover:bg-muted/60 px-1 -mx-1 rounded inline-block break-words max-w-full",

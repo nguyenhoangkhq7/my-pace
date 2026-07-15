@@ -3,7 +3,8 @@
 import React from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { useBoardStore } from "@/features/board/store/board.store";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { updateChecklistItemAction } from "@/features/board/actions/checklist.action";
 
 interface ChecklistItemProps {
   taskId: string;
@@ -24,11 +25,15 @@ export function ChecklistItem({
   onOpenChange,
   onAllCompleted,
 }: ChecklistItemProps) {
-  const updateChecklistItem = useBoardStore((s) => s.updateChecklistItem);
+  const queryClient = useQueryClient();
+  const updateChecklistItemMutation = useMutation({
+    mutationFn: ({ taskId, checklistId, data }: { taskId: string, checklistId: string, data: { isCompleted: boolean } }) => updateChecklistItemAction(taskId, checklistId, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+  });
 
   const handleCheckedChange = (checked: boolean | "indeterminate") => {
     const isCompletedVal = checked === true;
-    updateChecklistItem(taskId, itemId, { isCompleted: isCompletedVal });
+    updateChecklistItemMutation.mutate({ taskId, checklistId: itemId, data: { isCompleted: isCompletedVal } });
 
     const allDone = (checklists || []).every((c) =>
       c.id === itemId ? isCompletedVal : c.isCompleted

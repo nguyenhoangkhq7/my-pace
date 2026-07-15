@@ -1,4 +1,5 @@
 import { DailyPlanTask, TaskTimeBlock } from "../types";
+import { getNowInTimezone, toLocalISOString } from "@/lib/date";
 
 
 interface ScheduleSlot {
@@ -98,9 +99,10 @@ export function autoSchedule(
   dailyPlanId: string,
   todayStr: string,
   wakeTimeStr: string,
-  sleepTimeStr: string
+  sleepTimeStr: string,
+  timezone?: string
 ): Omit<TaskTimeBlock, "id">[] {
-  const now = new Date();
+  const now = timezone ? getNowInTimezone(timezone) : new Date();
   const [wh, wm] = wakeTimeStr.split(":").map(Number);
   const [sh, sm] = sleepTimeStr.split(":").map(Number);
 
@@ -162,8 +164,8 @@ export function autoSchedule(
         blocks.push({
           taskId: item.planTask.task.id,
           dailyPlanId,
-          startTime: gapCursor.toISOString(),
-          endTime: blockEnd.toISOString(),
+          startTime: toLocalISOString(gapCursor),
+          endTime: toLocalISOString(blockEnd),
           partIndex: item.partsFilled,
           totalParts: item.totalParts,
         });
@@ -179,8 +181,8 @@ export function autoSchedule(
           blocks.push({
             taskId: item.planTask.task.id,
             dailyPlanId,
-            startTime: gapCursor.toISOString(),
-            endTime: gap.endTime.toISOString(),
+            startTime: toLocalISOString(gapCursor),
+            endTime: toLocalISOString(gap.endTime),
             partIndex: item.partsFilled,
             totalParts: 999, // sẽ được chuẩn hóa ở bước post-process
           });

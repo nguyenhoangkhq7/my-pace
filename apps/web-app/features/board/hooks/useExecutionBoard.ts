@@ -1,7 +1,9 @@
 import { useState, useMemo } from "react";
 import { useBoardStore } from "../store/board.store";
-import { useAvailableTimeStore } from "@/features/available-time/store/available-time.store";
+import { useAvailableTimeQuery } from "@/features/available-time/hooks/useAvailableTime";
 
+import { useTasks } from "./useTasks";
+import { useDailyPlan } from "./useDailyPlan";
 
 interface UseExecutionBoardProps {
   currentDate: string;
@@ -9,25 +11,30 @@ interface UseExecutionBoardProps {
 }
 
 export function useExecutionBoard({ currentDate, tomorrowDate }: UseExecutionBoardProps) {
+
   const { 
-    tasks, 
-    dailyPlanToday, 
-    dailyPlanTomorrow,
     isPlanningMode, 
     planningTarget,
     setPlanningMode, 
     plannedTaskIds, 
     removePlannedTaskLocally,
-    savePlan,
-    cancelPlan,
     isStarted
   } = useBoardStore();
 
-  const { dataToday, dataTomorrow } = useAvailableTimeStore();
+  const { tasks } = useTasks();
+  const todayPlan = useDailyPlan(currentDate);
+  const tomorrowPlan = useDailyPlan(tomorrowDate);
+
+  const dailyPlanToday = todayPlan.dailyPlan;
+  const dailyPlanTomorrow = tomorrowPlan.dailyPlan;
+
+  const { data: dataToday } = useAvailableTimeQuery(currentDate);
+  const { data: dataTomorrow } = useAvailableTimeQuery(tomorrowDate);
   const [activeTab, setActiveTab] = useState("today");
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isStartMyDayOpen, setIsStartMyDayOpen] = useState(false);
 
+  const activePlanHook = activeTab === "today" ? todayPlan : tomorrowPlan;
   const currentPlan = activeTab === "today" ? dailyPlanToday : dailyPlanTomorrow;
   const targetDate = activeTab === "today" ? currentDate : tomorrowDate;
 
@@ -46,12 +53,34 @@ export function useExecutionBoard({ currentDate, tomorrowDate }: UseExecutionBoa
     return Math.max(0, baseAvailable - usedTime);
   }, [isPlanningMode, baseAvailable, plannedTaskIds, tasks]);
 
-  const handleSavePlan = () => {
-    savePlan(targetDate, currentAvailable, activeTab as 'today' | 'tomorrow');
+  const handleSavePlan = async () => {
+    const planTasks = plannedTaskIds.map((id, index) => {
+      const task = tasks.find(t => t.id === id);
+      return {
+        taskId: id,
+        isMit: task ? task.isImportant : false,
+        sortOrder: index,
+      };
+    });
+
+    const data = await activePlanHook.savePlan({
+      availableMinutes: currentAvailable,
+      tasks: planTasks,
+    });
+
+    setPlanningMode(false);
+    if (activeTab === "today") {
+      useBoardStore.setState({ isStarted: data?.isConfirmed ?? false });
+    }
   };
 
-  const handleCancelPlan = () => {
-    cancelPlan(targetDate, activeTab as 'tomorrow' | 'today');
+  const handleCancelPlan = async () => {
+    await activePlanHook.cancelPlan();
+    setPlanningMode(false);
+    useBoardStore.setState({ plannedTaskIds: [] });
+    if (activeTab === "today") {
+      useBoardStore.setState({ isStarted: false });
+    }
     setIsCancelModalOpen(false);
   };
 

@@ -36,7 +36,7 @@ export function ExecutionBoard({ currentDate, tomorrowDate }: { currentDate: str
       return (
         <PlanningModeView
           currentAvailable={currentAvailable}
-          availableData={availableData}
+          availableData={availableData ?? null}
           plannedTaskIds={plannedTaskIds}
           tasks={tasks}
           onCancel={() => setPlanningMode(false)}
@@ -52,7 +52,7 @@ export function ExecutionBoard({ currentDate, tomorrowDate }: { currentDate: str
         <ExecutionModeView
           currentPlan={currentPlan}
           currentAvailable={currentAvailable}
-          availableData={availableData}
+          availableData={availableData ?? null}
           activeTab={activeTab}
           isStarted={isStarted}
           onEditPlan={() => setPlanningMode(true, activeTab as 'today' | 'tomorrow')}

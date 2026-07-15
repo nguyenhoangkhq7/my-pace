@@ -5,9 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.Generated;
 import org.hibernate.annotations.UuidGenerator;
-import org.hibernate.generator.EventType;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -15,6 +13,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
+@EntityListeners(org.springframework.data.jpa.domain.support.AuditingEntityListener.class)
 @Table(name = "task_checklists")
 public class TaskChecklistItem {
     @Id
@@ -43,11 +42,11 @@ public class TaskChecklistItem {
     @Column(name = "order_index", nullable = false)
     private Integer orderIndex = 0;
 
-    @Column(name = "created_at", nullable = false)
-    @Generated(event = EventType.INSERT)
+    @Column(name = "created_at", nullable = false, updatable = false)
+    @org.springframework.data.annotation.CreatedDate
     private OffsetDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    @Generated(event = {EventType.INSERT, EventType.UPDATE})
+    @org.springframework.data.annotation.LastModifiedDate
     private OffsetDateTime updatedAt;
 }

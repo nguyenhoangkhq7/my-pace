@@ -1,26 +1,21 @@
-/* eslint-disable react-hooks/incompatible-library */
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Clock01Icon, Logout03Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuthStore } from "@/features/auth/store/auth.store";
-import { put } from "@/lib/fetchClient";
+import { updateProfileAction, logoutAction } from "@/features/auth/actions/auth.action";
 import { AppAlert } from "@/components/feedback/app-alert";
 import { cn } from "@/lib/utils";
 import { TimeSelect } from "@/components/ui/time-select";
 import { useTranslation } from "@/hooks/use-translation";
 import { DialogFooter } from "@/components/ui/dialog";
-
-interface ProfileFormValues {
-  fullName: string;
-  wakeTime: string;
-  sleepTime: string;
-}
+import { zodResolver } from "@hookform/resolvers/zod";
+import { profileSchema, ProfileFormValues } from "../schema/auth.schema";
 
 interface ProfileFormContentProps {
   onSuccess: () => void;
@@ -32,45 +27,42 @@ interface ProfileFormContentProps {
 export function ProfileFormContent({ onSuccess, onCancel, onLogoutClick, isOpen }: ProfileFormContentProps) {
   const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
-  const accessToken = useAuthStore((s) => s.accessToken);
   const setSession = useAuthStore((s) => s.setSession);
 
   const [buffer, setBuffer] = useState(20);
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     register,
     handleSubmit,
-    setValue,
-    watch,
-    formState: { errors, isValid },
+    control,
+    reset,
+    formState: { errors, isValid, isSubmitting },
   } = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileSchema),
     mode: "onChange",
+    defaultValues: {
+      fullName: "",
+      wakeTime: "07:00",
+      sleepTime: "23:00",
+    }
   });
-
-  const wakeTime = watch("wakeTime") || "07:00";
-  const sleepTime = watch("sleepTime") || "23:00";
-
-  useEffect(() => {
-    register("wakeTime", { required: true });
-    register("sleepTime", { required: true });
-  }, [register]);
 
   useEffect(() => {
     if (user && isOpen) {
       Promise.resolve().then(() => {
-        setValue("fullName", user.name || "");
-        setValue("wakeTime", user.wakeTime ? user.wakeTime.substring(0, 5) : "07:00");
-        setValue("sleepTime", user.sleepTime ? user.sleepTime.substring(0, 5) : "23:00");
+        reset({
+          fullName: user.name || "",
+          wakeTime: user.wakeTime ? user.wakeTime.substring(0, 5) : "07:00",
+          sleepTime: user.sleepTime ? user.sleepTime.substring(0, 5) : "23:00",
+        });
         setBuffer(user.bufferPct ?? 20);
         setError(null);
       });
     }
-  }, [user, isOpen, setValue]);
+  }, [user, isOpen, reset]);
 
   const onSubmit = async (data: ProfileFormValues) => {
-    setIsSubmitting(true);
     setError(null);
 
     const payload = {
@@ -81,11 +73,10 @@ export function ProfileFormContent({ onSuccess, onCancel, onLogoutClick, isOpen 
     };
 
     try {
-      const response = await put<Record<string, unknown>, typeof payload>("users/profile", payload);
-      if (response.data && "id" in response.data) {
-        if (accessToken && user) {
+      const response = await updateProfileAction(payload);
+      if (response.success) {
+        if (user) {
           setSession({
-            accessToken,
             user: {
               ...user,
               name: data.fullName,
@@ -97,14 +88,12 @@ export function ProfileFormContent({ onSuccess, onCancel, onLogoutClick, isOpen 
         }
         onSuccess();
       } else {
-        setError(t.profile.updateError);
+        setError(response.error || t.profile.updateError);
       }
-    } catch (err: unknown) {
+    } catch (err) {
       console.error("Profile update error:", err);
       const errorMessage = err instanceof Error ? err.message : t.profile.connectionError;
       setError(errorMessage);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -122,7 +111,7 @@ export function ProfileFormContent({ onSuccess, onCancel, onLogoutClick, isOpen 
                 "h-10 rounded-xl bg-muted/20 border-border/40 focus:border-primary px-3 text-xs",
                 errors.fullName && "border-rose-500 focus:border-rose-500"
               )}
-              {...register("fullName", { required: t.profile.fullNameRequired })}
+              {...register("fullName")}
             />
           </div>
           {errors.fullName && (
@@ -137,20 +126,38 @@ export function ProfileFormContent({ onSuccess, onCancel, onLogoutClick, isOpen 
               <HugeiconsIcon icon={Clock01Icon} size={14} className="text-emerald-500" />
               {t.profile.wakeTime}
             </Label>
-            <TimeSelect
-              value={wakeTime}
-              onChange={(val) => setValue("wakeTime", val, { shouldValidate: true })}
+            <Controller
+              name="wakeTime"
+              control={control}
+              render={({ field }) => (
+                <TimeSelect
+                  value={field.value}
+                  onChange={field.onChange}
+                />
+              )}
             />
+            {errors.wakeTime && (
+              <span className="text-[10px] text-rose-500 font-medium pl-1">{errors.wakeTime.message}</span>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
               <HugeiconsIcon icon={Clock01Icon} size={14} className="text-indigo-400" />
               {t.profile.sleepTime}
             </Label>
-            <TimeSelect
-              value={sleepTime}
-              onChange={(val) => setValue("sleepTime", val, { shouldValidate: true })}
+            <Controller
+              name="sleepTime"
+              control={control}
+              render={({ field }) => (
+                <TimeSelect
+                  value={field.value}
+                  onChange={field.onChange}
+                />
+              )}
             />
+            {errors.sleepTime && (
+              <span className="text-[10px] text-rose-500 font-medium pl-1">{errors.sleepTime.message}</span>
+            )}
           </div>
         </div>
 
@@ -196,7 +203,10 @@ export function ProfileFormContent({ onSuccess, onCancel, onLogoutClick, isOpen 
         <Button
           type="button"
           variant="ghost"
-          onClick={onLogoutClick}
+          onClick={async () => {
+              await logoutAction();
+              onLogoutClick();
+          }}
           className="h-10 px-3 rounded-xl font-medium text-rose-500 hover:bg-rose-500/10 hover:text-rose-500 transition-colors flex items-center gap-2 shrink-0 cursor-pointer"
         >
           <HugeiconsIcon icon={Logout03Icon} size={18} className="shrink-0" />

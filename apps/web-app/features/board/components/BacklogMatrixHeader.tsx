@@ -27,7 +27,7 @@ export function BacklogMatrixHeader({ categories, selectedFilterId, setFilter, o
           value={selectedFilterId || "none"} 
           onValueChange={(val) => setFilter(val === "none" ? null : val)}
         >
-          <SelectTrigger className="h-8 border-border bg-card text-foreground w-[180px] cursor-pointer">
+          <SelectTrigger className="!h-8 border-border bg-card text-foreground w-[180px] cursor-pointer">
             <div className="flex items-center">
               <HugeiconsIcon icon={FilterIcon} size={16} className="mr-2" />
               <SelectValue placeholder={t.common.filter} />

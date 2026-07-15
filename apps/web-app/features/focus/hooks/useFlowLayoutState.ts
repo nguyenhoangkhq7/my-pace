@@ -3,7 +3,7 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import type { GroupImperativeHandle } from "react-resizable-panels";
 
-const ZEN_FULL_THRESHOLD = 65;
+const ZEN_FULL_THRESHOLD = 80;
 
 export function useFlowLayoutState() {
   const isLg = useMediaQuery("(min-width: 1024px)");

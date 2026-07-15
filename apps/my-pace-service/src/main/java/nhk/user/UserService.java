@@ -1,15 +1,26 @@
 package nhk.user;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import nhk.common.UserNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.UUID;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
-    public User getUserProxy(UUID userId) {
-        return userRepository.getReferenceById(userId);
+    @Transactional
+    public UserSimpleResponse updateProfile(UUID userId, UserProfileUpdateRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
+
+        userMapper.updateFromUpdateRequest(request, user);
+        User savedUser = userRepository.save(user);
+
+        return userMapper.toUserSimpleResponse(savedUser);
     }
 }

@@ -1,13 +1,15 @@
 package nhk.auth;
 
-
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Builder;
 import nhk.user.UserSimpleResponse;
 
-@Data
-@AllArgsConstructor
-public class JwtResponse {
-   private String token;
-   private UserSimpleResponse user;
+@Builder
+public record JwtResponse(
+    String token,
+    String refreshToken,
+    UserSimpleResponse user
+) {
+    public JwtResponse(String token, UserSimpleResponse user) {
+        this(token, null, user);
+    }
 }

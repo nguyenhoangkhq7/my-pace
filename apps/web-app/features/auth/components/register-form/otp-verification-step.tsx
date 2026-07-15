@@ -36,22 +36,16 @@ import {
     RefreshIcon,
     Mail01Icon,
 } from "@hugeicons/core-free-icons";
-import { post, getApiErrorMessage } from "@/lib/fetchClient";
 import { AppAlert } from "@/components/feedback/app-alert";
 import { appToast } from "@/components/feedback/app-toast";
 import { useTranslation } from "@/hooks/use-translation";
 import { useOtpCountdown } from "../../hooks/useOtpCountdown";
+import { verifyOtpAction, requestOtpAction } from "../../actions/auth.action";
 
 interface OtpVerificationStepProps {
     onNext: () => void;
 }
 
-type VerifyOtpRequest = {
-    email: string;
-    otp: string;
-};
-
-type VerifyOtpResponse = Record<string, unknown>;
 
 export function OtpVerificationStep({onNext}: OtpVerificationStepProps) {
     const {
@@ -78,13 +72,17 @@ export function OtpVerificationStep({onNext}: OtpVerificationStepProps) {
         }
 
         try {
-            await post<VerifyOtpResponse, VerifyOtpRequest>(
-                "auth/verify-otp",
-                {
-                    email: registerFormData.email,
-                    otp: data.otp,
-                }
-            );
+            const result = await verifyOtpAction({
+                email: registerFormData.email,
+                otp: data.otp,
+            });
+
+            if (!result.success) {
+                form.setError("root", {
+                    message: result.error || "Invalid OTP",
+                });
+                return;
+            }
 
             setRegisterData({
                 otp: data.otp,
@@ -95,19 +93,20 @@ export function OtpVerificationStep({onNext}: OtpVerificationStepProps) {
             });
 
             onNext();
-        } catch (error: unknown) {
+        } catch (error) {
             form.setError("root", {
-                message: getApiErrorMessage(error),
+                message: error instanceof Error ? error.message : "Cannot connect to server",
             });
         }
     };
 
     const onResendClick = () => {
-        if (!registerFormData.email) return;
+        const currentEmail = registerFormData.email;
+        if (!currentEmail) return;
         
         handleResend(
             async () => {
-                await post("auth/request-otp", { email: registerFormData.email });
+                await requestOtpAction({ email: currentEmail });
             },
             "OTP has been resent to your email"
         );

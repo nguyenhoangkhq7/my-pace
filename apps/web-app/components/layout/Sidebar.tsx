@@ -13,7 +13,7 @@ import {
   Target02Icon,
   Analytics01Icon
 } from "@hugeicons/core-free-icons";
-import { useAvailableTime } from "@/features/available-time";
+import { useAvailableTimeQuery } from "@/features/available-time";
 import { FeedbackModal } from "../feedback/FeedbackModal";
 import { useTranslation } from "@/hooks/use-translation";
 import { Settings } from "lucide-react";
@@ -52,11 +52,7 @@ export function Sidebar() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   })();
-  const { data: availableTime, fetchAvailableTime } = useAvailableTime();
-
-  useEffect(() => {
-    fetchAvailableTime(today);
-  }, [today, fetchAvailableTime]);
+  const { data: availableTime } = useAvailableTimeQuery(today);
 
   type NavItem = {
     id: string;

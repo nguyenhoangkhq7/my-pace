@@ -2,7 +2,6 @@ package nhk.stats;
 
 import lombok.RequiredArgsConstructor;
 import nhk.user.UserDetailsCustom;
-import nhk.user.User;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,8 +20,7 @@ public class StatsController {
             @AuthenticationPrincipal UserDetailsCustom userDetails,
             @org.springframework.web.bind.annotation.RequestParam(required = false) String startDate,
             @org.springframework.web.bind.annotation.RequestParam(required = false) String endDate) {
-        User user = userDetails.user();
-        StatsResponse response = statsService.getOverview(user, startDate, endDate);
+        StatsResponse response = statsService.getOverview(userDetails.user().getId(), startDate, endDate);
         return ResponseEntity.ok(response);
     }
 }

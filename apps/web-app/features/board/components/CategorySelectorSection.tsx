@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Category } from "../types";
-import { CATEGORY_COLORS } from "../hooks/useTaskForm";
+import { CATEGORY_COLORS } from "./CategoryCreateForm";
 import { CustomColorPicker } from "@/components/ui/custom-color-picker";
 
 interface CategorySelectorSectionProps {

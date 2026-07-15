@@ -19,38 +19,38 @@ public class DailyPlanController {
     @GetMapping("/{date}")
     public DailyPlanDto getDailyPlan(@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
                                      @AuthenticationPrincipal UserDetailsCustom userDetails) {
-        return dailyPlanService.getDailyPlan(date, userDetails);
+        return dailyPlanService.getDailyPlan(date, userDetails.user().getId());
     }
 
     @PostMapping("/plan-my-day")
     public DailyPlanDto planMyDay(@RequestBody PlanMyDayRequest request,
                                   @AuthenticationPrincipal UserDetailsCustom userDetails) {
-        return dailyPlanService.planMyDay(request, userDetails);
+        return dailyPlanService.planMyDay(request, userDetails.user().getId());
     }
 
     @PostMapping("/{date}/confirm")
     public DailyPlanDto confirmPlan(@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
                                     @AuthenticationPrincipal UserDetailsCustom userDetails) {
-        return dailyPlanService.confirmPlan(date, userDetails);
+        return dailyPlanService.confirmPlan(date, userDetails.user().getId());
     }
 
     @PostMapping("/{date}/cancel")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void cancelPlan(@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
                            @AuthenticationPrincipal UserDetailsCustom userDetails) {
-        dailyPlanService.cancelPlan(date, userDetails);
+        dailyPlanService.cancelPlan(date, userDetails.user().getId());
     }
 
     @PostMapping("/{date}/review")
     public DailyPlanDto reviewPlan(@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
                                    @AuthenticationPrincipal UserDetailsCustom userDetails) {
-        return dailyPlanService.reviewPlan(date, userDetails);
+        return dailyPlanService.reviewPlan(date, userDetails.user().getId());
     }
 
     @PutMapping("/tasks/{planTaskId}/toggle-done")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void toggleTaskDone(@PathVariable UUID planTaskId,
                                @AuthenticationPrincipal UserDetailsCustom userDetails) {
-        dailyPlanService.toggleTaskDone(planTaskId, userDetails);
+        dailyPlanService.toggleTaskDone(planTaskId, userDetails.user().getId());
     }
 }

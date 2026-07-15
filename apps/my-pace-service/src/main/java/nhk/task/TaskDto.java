@@ -1,28 +1,29 @@
 package nhk.task;
 
-import lombok.Data;
-import java.time.LocalDate;
+import lombok.Builder;
+
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
-@Data
-public class TaskDto {
-    private UUID id;
-    private UUID userId;
-    private UUID goalId;
-    private UUID categoryId;
-    private nhk.category.CategoryDto category;
-    private String title;
-    private Integer estimatedMinutes;
-    private Integer actualMinutes;
-    private Boolean isUrgent;
-    private Boolean isImportant;
-    private String status;
-    private LocalDate dueDate;
-    private String notes;
-    private OffsetDateTime doneAt;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
-    private List<TaskChecklistItemDto> checklists;
-}
+@Builder(toBuilder = true)
+public record TaskDto(
+    UUID id,
+    UUID userId,
+    UUID goalId,
+    UUID categoryId,
+    nhk.category.CategoryDto category,
+    String title,
+    Integer estimatedMinutes,
+    Integer actualMinutes,
+    Boolean isUrgent,
+    Boolean isImportant,
+    String status,
+    LocalDateTime dueDate,
+    String notes,
+    OffsetDateTime doneAt,
+    OffsetDateTime createdAt,
+    OffsetDateTime updatedAt,
+    List<TaskChecklistItemDto> checklists
+) {}

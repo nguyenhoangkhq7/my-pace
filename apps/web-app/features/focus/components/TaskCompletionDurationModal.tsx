@@ -4,12 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFocusStore } from "../store/focus.store";
-import { useBoardStore } from "@/features/board/store/board.store";
+import type { Task } from "@/features/board/types";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { updateTaskAction } from "@/features/board/actions/task.action";
 
 export function TaskCompletionDurationModal() {
   const promptTask = useFocusStore((s) => s.promptTask);
   const setPromptTask = useFocusStore((s) => s.setPromptTask);
-  const { updateTask } = useBoardStore();
+  const queryClient = useQueryClient();
+  const updateTaskMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string, data: Partial<Task> }) => updateTaskAction(id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+  });
 
   const [isCustom, setIsCustom] = useState(false);
   const [customValue, setCustomValue] = useState("");
@@ -30,7 +36,7 @@ export function TaskCompletionDurationModal() {
   const handleSaveDuration = async (minutes: number) => {
     setIsSaving(true);
     try {
-      await updateTask(promptTask.id, { actualMinutes: minutes });
+      await updateTaskMutation.mutateAsync({ id: promptTask.id, data: { actualMinutes: minutes } });
       setPromptTask(null);
       setIsCustom(false);
       setCustomValue("");

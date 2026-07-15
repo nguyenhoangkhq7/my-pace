@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/incompatible-library */
 "use client";
 
 import { useState } from "react";
@@ -6,16 +5,10 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { UserCircleIcon } from "@hugeicons/core-free-icons";
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader } from "@/components/ui/dialog";
 import { useAuthStore } from "@/features/auth/store/auth.store";
-import { post } from "@/lib/fetchClient";
 import { useTranslation } from "@/hooks/use-translation";
+import { logoutAction } from "@/features/auth/actions/auth.action";
 import { ConfirmLogoutDialog } from "./ConfirmLogoutDialog";
 import { ProfileFormContent } from "./ProfileFormContent";
-
-interface ProfileFormValues {
-  fullName: string;
-  wakeTime: string;
-  sleepTime: string;
-}
 
 interface ProfileDialogProps {
   isOpen: boolean;
@@ -24,14 +17,12 @@ interface ProfileDialogProps {
 
 export function ProfileDialog({ isOpen, onOpenChange }: ProfileDialogProps) {
   const { t } = useTranslation();
-  const user = useAuthStore((s) => s.user);
-  const accessToken = useAuthStore((s) => s.accessToken);
   const clearSession = useAuthStore((s) => s.clearSession);
   const [isConfirmLogoutOpen, setIsConfirmLogoutOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
-      await post("auth/logout", {});
+      await logoutAction();
     } catch (err) {
       console.error("Logout failed at backend", err);
     } finally {

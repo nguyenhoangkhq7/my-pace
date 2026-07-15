@@ -5,31 +5,34 @@ import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 import { useAuthStore, normalizeAuthSession } from "../../store/auth.store";
-import { get } from "@/lib/fetchClient";
+import { getSessionAction } from "../../actions/auth.action";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
     const setSession = useAuthStore((state) => state.setSession);
     const clearSession = useAuthStore((state) => state.clearSession);
-    const accessToken = useAuthStore((state) => state.accessToken);
     const user = useAuthStore((state) => state.user);
     const isInitialized = useAuthStore((state) => state.isInitialized);
     const isAuthRoute = pathname === "/login" || pathname === "/register";
-    const hasSession = Boolean(accessToken && user);
+    const hasSession = Boolean(user);
 
     useEffect(() => {
         let isMounted = true;
 
         const hydrateAuth = async () => {
             try {
-                const response = await get<unknown>("auth/refresh");
-                const session = normalizeAuthSession(response.data);
+                const response = await getSessionAction();
                 if (!isMounted) {
                     return;
                 }
-                if (session) {
-                    setSession(session);
+                if (response.success && response.user) {
+                    const session = normalizeAuthSession({ user: response.user });
+                    if (session) {
+                        setSession(session);
+                    } else {
+                        clearSession();
+                    }
                 } else {
                     clearSession();
                 }

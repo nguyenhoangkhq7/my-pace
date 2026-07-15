@@ -5,18 +5,18 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.Generated;
 import org.hibernate.annotations.UuidGenerator;
-import org.hibernate.generator.EventType;
+
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
-import java.util.List;
-import java.util.ArrayList;
 
 @Getter
 @Setter
 @Entity
+@EntityListeners(org.springframework.data.jpa.domain.support.AuditingEntityListener.class)
+@org.hibernate.annotations.SQLDelete(sql = "UPDATE goals SET is_deleted = true WHERE id = ?")
+@org.hibernate.annotations.SQLRestriction("is_deleted = false")
 @Table(name = "goals")
 public class Goal {
     @Id
@@ -50,12 +50,15 @@ public class Goal {
     private LocalDate endDate;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    @Generated(event = EventType.INSERT)
+    @org.springframework.data.annotation.CreatedDate
     private OffsetDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    @Generated(event = {EventType.INSERT, EventType.UPDATE})
+    @org.springframework.data.annotation.LastModifiedDate
     private OffsetDateTime updatedAt;
+
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
     @Column(name = "category_id")
     private UUID categoryId;
 

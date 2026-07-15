@@ -30,11 +30,11 @@ import {
     FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { getApiErrorMessage, post } from "@/lib/fetchClient";
 import {
     normalizeAuthSession,
     useAuthStore,
 } from "../../store/auth.store";
+import { registerAction } from "../../actions/auth.action";
 import {
     userDataStepSchema,
     type UserDataStepValues,
@@ -42,11 +42,6 @@ import {
 import { useRegisterStore } from "../../store/register.store";
 import { useTranslation } from "@/hooks/use-translation";
 
-type RegisterRequest = {
-    email: string;
-    password: string;
-    fullName: string;
-};
 
 export function OtpUserDataStep() {
     const { t } = useTranslation();
@@ -86,22 +81,24 @@ export function OtpUserDataStep() {
         });
 
         try {
-            const response = await post<unknown, RegisterRequest>("auth/register", {
+            const result = await registerAction({
                 email: registerFormData.email,
                 password: data.password,
                 fullName: data.fullName,
+                otp: registerFormData.otp || "",
             });
 
-            const session = normalizeAuthSession(response.data);
-
-            if (!session) {
+            if (!result.success || !result.user) {
                 form.setError("root", {
-                    message: "Invalid auth response from server",
+                    message: result.error || "Invalid auth response from server",
                 });
                 return;
             }
 
-            setSession(session);
+            const session = normalizeAuthSession({ user: result.user });
+            if (session) {
+                setSession(session);
+            }
 
             appToast.success(t.auth.registerSuccess, {
                 description: t.auth.registerSuccessDesc,
@@ -109,9 +106,9 @@ export function OtpUserDataStep() {
 
             resetRegisterData();
             router.replace("/");
-        } catch (error: unknown) {
+        } catch (error) {
             form.setError("root", {
-                message: getApiErrorMessage(error),
+                message: error instanceof Error ? error.message : "Cannot connect to server",
             });
         }
     };

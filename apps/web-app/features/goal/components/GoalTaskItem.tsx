@@ -3,7 +3,9 @@ import { Task } from "@/features/board/types";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CheckmarkCircle01Icon, PlusSignIcon, InboxIcon, Delete01Icon, Archive02Icon, ArrowRight01Icon, ArrowDown01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
-import { useBoardStore } from "@/features/board/store/board.store";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { updateTaskAction, deleteTaskAction } from "@/features/board/actions/task.action";
+import { addChecklistItemAction, updateChecklistItemAction, deleteChecklistItemAction } from "@/features/board/actions/checklist.action";
 import { toast } from "sonner";
 import { ConfirmDeleteDialog } from "@/components/feedback/ConfirmDeleteDialog";
 import { useTranslation } from "@/hooks/use-translation";
@@ -23,7 +25,27 @@ export function GoalTaskItem({ task, defaultExpanded = false, onAddToBacklog, on
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [isAddingChecklist, setIsAddingChecklist] = useState(false);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
-  const { updateTask, deleteTask, addChecklistItem, updateChecklistItem, deleteChecklistItem } = useBoardStore();
+  const queryClient = useQueryClient();
+  const updateTaskMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string, data: Partial<Task> }) => updateTaskAction(id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+  });
+  const deleteTaskMutation = useMutation({
+    mutationFn: deleteTaskAction,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+  });
+  const addChecklistItemMutation = useMutation({
+    mutationFn: ({ taskId, data }: { taskId: string, data: { title: string, isCompleted?: boolean } }) => addChecklistItemAction(taskId, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+  });
+  const updateChecklistItemMutation = useMutation({
+    mutationFn: ({ taskId, checklistId, data }: { taskId: string, checklistId: string, data: { title?: string, isCompleted?: boolean } }) => updateChecklistItemAction(taskId, checklistId, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+  });
+  const deleteChecklistItemMutation = useMutation({
+    mutationFn: ({ taskId, checklistId }: { taskId: string, checklistId: string }) => deleteChecklistItemAction(taskId, checklistId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+  });
   const { locale } = useTranslation();
   const isVi = locale === "vi";
 
@@ -34,7 +56,7 @@ export function GoalTaskItem({ task, defaultExpanded = false, onAddToBacklog, on
 
   const handleTitleSave = async (newTitle: string) => {
     try {
-      await updateTask(task.id, { title: newTitle });
+      await updateTaskMutation.mutateAsync({ id: task.id, data: { title: newTitle } });
     } catch {
       toast.error(isVi ? "Lỗi khi lưu tên task" : "Error saving task name");
       throw new Error();
@@ -43,7 +65,7 @@ export function GoalTaskItem({ task, defaultExpanded = false, onAddToBacklog, on
 
   const handleDeleteTask = async () => {
     try {
-      await deleteTask(task.id);
+      await deleteTaskMutation.mutateAsync(task.id);
       toast.success(isVi ? "Đã xoá task!" : "Task deleted!");
     } catch {
       toast.error(isVi ? "Lỗi khi xoá task" : "Error deleting task");
@@ -53,7 +75,7 @@ export function GoalTaskItem({ task, defaultExpanded = false, onAddToBacklog, on
 
   const handleAddChecklistItem = async (title: string) => {
     try {
-      await addChecklistItem(task.id, title);
+      await addChecklistItemMutation.mutateAsync({ taskId: task.id, data: { title } });
       if (!isExpanded) setIsExpanded(true);
     } catch {
       toast.error(isVi ? "Lỗi khi thêm checklist" : "Error adding checklist");
@@ -148,8 +170,8 @@ export function GoalTaskItem({ task, defaultExpanded = false, onAddToBacklog, on
               key={cl.id}
               taskId={task.id}
               item={cl}
-              updateChecklistItem={updateChecklistItem}
-              deleteChecklistItem={deleteChecklistItem}
+              updateChecklistItem={async (taskId, itemId, data) => { await updateChecklistItemMutation.mutateAsync({ taskId, checklistId: itemId, data }); }}
+              deleteChecklistItem={async (taskId, itemId) => { await deleteChecklistItemMutation.mutateAsync({ taskId, checklistId: itemId }); }}
             />
           ))}
         </div>

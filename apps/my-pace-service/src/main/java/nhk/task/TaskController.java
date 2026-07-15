@@ -18,28 +18,28 @@ public class TaskController {
 
     @GetMapping
     public List<TaskDto> getTasks(@AuthenticationPrincipal UserDetailsCustom userDetails) {
-        return taskService.getTasks(userDetails);
+        return taskService.getTasks(userDetails.user().getId());
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public TaskDto createTask(@Valid @RequestBody TaskCreateRequest request,
                               @AuthenticationPrincipal UserDetailsCustom userDetails) {
-        return taskService.createTask(request, userDetails);
+        return taskService.createTask(request, userDetails.user().getId());
     }
 
     @PutMapping("/{taskId}")
     public TaskDto updateTask(@PathVariable UUID taskId,
                               @RequestBody TaskUpdateRequest request,
                               @AuthenticationPrincipal UserDetailsCustom userDetails) {
-        return taskService.updateTask(taskId, request, userDetails);
+        return taskService.updateTask(taskId, request, userDetails.user().getId());
     }
 
     @DeleteMapping("/{taskId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteTask(@PathVariable UUID taskId,
                            @AuthenticationPrincipal UserDetailsCustom userDetails) {
-        taskService.deleteTask(taskId, userDetails);
+        taskService.deleteTask(taskId, userDetails.user().getId());
     }
 
     @PostMapping("/{taskId}/checklists")
@@ -47,7 +47,7 @@ public class TaskController {
     public TaskChecklistItemDto addChecklistItem(@PathVariable UUID taskId,
                                                  @Valid @RequestBody TaskChecklistItemRequest request,
                                                  @AuthenticationPrincipal UserDetailsCustom userDetails) {
-        return taskService.addChecklistItem(taskId, request, userDetails);
+        return taskService.addChecklistItem(taskId, request, userDetails.user().getId());
     }
 
     @PutMapping("/{taskId}/checklists/{checklistId}")
@@ -55,14 +55,14 @@ public class TaskController {
                                                     @PathVariable UUID checklistId,
                                                     @RequestBody TaskChecklistItemRequest request,
                                                     @AuthenticationPrincipal UserDetailsCustom userDetails) {
-        return taskService.updateChecklistItem(taskId, checklistId, request, userDetails);
+        return taskService.updateChecklistItem(taskId, checklistId, request, userDetails.user().getId());
     }
 
     @PutMapping("/{taskId}/checklists/reorder")
     public void reorderChecklists(@PathVariable UUID taskId,
                                   @RequestBody List<UUID> checklistIds,
                                   @AuthenticationPrincipal UserDetailsCustom userDetails) {
-        taskService.reorderChecklists(taskId, checklistIds, userDetails);
+        taskService.reorderChecklists(taskId, checklistIds, userDetails.user().getId());
     }
 
     @DeleteMapping("/{taskId}/checklists/{checklistId}")
@@ -70,6 +70,6 @@ public class TaskController {
     public void deleteChecklistItem(@PathVariable UUID taskId,
                                     @PathVariable UUID checklistId,
                                     @AuthenticationPrincipal UserDetailsCustom userDetails) {
-        taskService.deleteChecklistItem(taskId, checklistId, userDetails);
+        taskService.deleteChecklistItem(taskId, checklistId, userDetails.user().getId());
     }
 }
