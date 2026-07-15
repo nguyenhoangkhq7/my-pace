@@ -7,7 +7,15 @@ const nextConfig: NextConfig = {
   ...(process.env.NEXT_OUTPUT_MODE === "standalone" ? { output: "standalone" } : {}),
   experimental: {
       turbopackFileSystemCacheForDev: true
-  }
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${process.env.API_URL}/:path*`, // Proxy to Backend
+      },
+    ];
+  },
 };
 
 export default nextConfig;
