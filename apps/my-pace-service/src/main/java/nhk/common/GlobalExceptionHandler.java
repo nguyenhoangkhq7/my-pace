@@ -2,13 +2,14 @@ package nhk.common;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
-import nhk.auth.EmailRegistered;
-import nhk.auth.InvalidOtp;
-import nhk.auth.TokenInvalid;
+import nhk.auth.EmailAlreadyRegisteredException;
+import nhk.auth.InvalidOtpException;
+import nhk.auth.InvalidTokenException;
+import nhk.goal.GoalLimitExceededException;
+import nhk.mail.EmailSendingException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import nhk.mail.EmailSendingException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -40,13 +41,13 @@ public class GlobalExceptionHandler {
       return buildResponse(HttpStatus.BAD_REQUEST, "Dữ liệu đầu vào không hợp lệ", errors);
    }
 
-   @ExceptionHandler(EmailRegistered.class)
-   public ResponseEntity<ErrorResponse> handleEmailRegisteredException(EmailRegistered ex) {
+   @ExceptionHandler(EmailAlreadyRegisteredException.class)
+   public ResponseEntity<ErrorResponse> handleEmailRegisteredException(EmailAlreadyRegisteredException ex) {
       return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
    }
 
-   @ExceptionHandler(InvalidOtp.class)
-   public ResponseEntity<ErrorResponse> handleInvalidOtpException(InvalidOtp ex) {
+   @ExceptionHandler(InvalidOtpException.class)
+   public ResponseEntity<ErrorResponse> handleInvalidOtpException(InvalidOtpException ex) {
       log.error("Error validation OTP: ", ex);
       return buildResponse(HttpStatus.BAD_REQUEST, "OTP not exist or not valid in system");
    }
@@ -61,10 +62,21 @@ public class GlobalExceptionHandler {
       return buildResponse(HttpStatus.FORBIDDEN, "Bạn không có quyền truy cập chức năng này");
    }
 
-   @ExceptionHandler(EntityNotFoundException.class)
-   public ResponseEntity<ErrorResponse> handleNotFound(EntityNotFoundException ex) {
-      return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
-   }
+    @ExceptionHandler({
+            EntityNotFoundException.class,
+            UserNotFoundException.class,
+            EventNotFoundException.class,
+            CategoryNotFoundException.class,
+            GoalNotFoundException.class
+    })
+    public ResponseEntity<ErrorResponse> handleNotFound(Exception ex) {
+       return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(GoalLimitExceededException.class)
+    public ResponseEntity<ErrorResponse> handleGoalLimitExceeded(GoalLimitExceededException ex) {
+       return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
 
    @ExceptionHandler(DataIntegrityViolationException.class)
    public ResponseEntity<ErrorResponse> handleConflict(DataIntegrityViolationException ex) {
@@ -100,7 +112,7 @@ public class GlobalExceptionHandler {
       return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Có lỗi hệ thống xảy ra, vui lòng thử lại sau");
    }
 
-   @ExceptionHandler({TokenInvalid.class})
+   @ExceptionHandler({InvalidTokenException.class})
    public ResponseEntity<ErrorResponse> handleTokenInvalid(Exception ex) {
       log.error("System Error: ", ex);
       return buildResponse(HttpStatus.UNAUTHORIZED, "Token hết hạn hoặc không hợp lệ");

@@ -5,18 +5,19 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.Generated;
 import org.hibernate.annotations.UuidGenerator;
-import org.hibernate.generator.EventType;
-import java.time.LocalDate;
+
 import java.time.OffsetDateTime;
-import java.util.UUID;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 @Getter
 @Setter
 @Entity
+@EntityListeners(org.springframework.data.jpa.domain.support.AuditingEntityListener.class)
+@org.hibernate.annotations.SQLDelete(sql = "UPDATE tasks SET is_deleted = true WHERE id = ?")
+@org.hibernate.annotations.SQLRestriction("is_deleted = false")
 @Table(name = "tasks")
 @NamedEntityGraph(name = "Task.withChecklists", attributeNodes = @NamedAttributeNode("checklists"))
 public class Task {
@@ -65,7 +66,7 @@ public class Task {
     private String status = "Backlog"; // 'Backlog', 'Picked for Today', 'Done'
 
     @Column(name = "due_date")
-    private LocalDate dueDate;
+    private java.time.LocalDateTime dueDate;
 
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
@@ -73,13 +74,16 @@ public class Task {
     @Column(name = "done_at")
     private OffsetDateTime doneAt;
 
-    @Column(name = "created_at", nullable = false)
-    @Generated(event = EventType.INSERT)
+    @Column(name = "created_at", nullable = false, updatable = false)
+    @org.springframework.data.annotation.CreatedDate
     private OffsetDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    @Generated(event = {EventType.INSERT, EventType.UPDATE})
+    @org.springframework.data.annotation.LastModifiedDate
     private OffsetDateTime updatedAt;
+
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
 
     @Size(max = 20)
     @NotNull

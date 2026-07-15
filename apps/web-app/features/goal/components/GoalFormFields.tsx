@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/use-translation";
 import { useLanguageStore } from "@/features/settings/store/useLanguageStore";
 import { TimeSelect } from "@/components/ui/time-select";
@@ -37,6 +38,10 @@ export function HabitGoalFields() {
   
   const daysOfWeekValue = useWatch({ control, name: "daysOfWeek" }) || "1,2,3,4,5,6,7";
   const preferTimeValue = useWatch({ control, name: "preferTime" }) || "";
+
+  const [daysMode, setDaysMode] = useState<"daily" | "custom">(() => {
+    return (daysOfWeekValue === "1,2,3,4,5,6,7" || !daysOfWeekValue) ? "daily" : "custom";
+  });
   
   const toggleDay = (day: number) => {
     const current = daysOfWeekValue.split(',').filter(Boolean).map(Number);
@@ -66,42 +71,90 @@ export function HabitGoalFields() {
     <div className="space-y-4">
       <div className="space-y-1.5">
         <label className="text-sm font-medium flex items-center justify-between">
-            {t.goals.preferTimeLabel} 
-            {preferTimeValue ? (
-              <button
-                type="button"
-                onClick={() => setValue("preferTime", "")}
-                className="text-[10px] text-rose-500 hover:underline"
-              >
-                {isVi ? "Xoá" : "Clear"}
-              </button>
-            ) : (
-              <span className="text-muted-foreground text-[11px] font-normal">{t.goals.preferTimeHint}</span>
-            )}
-          </label>
+          {t.goals.preferTimeLabel} 
+          {preferTimeValue ? (
+            <button
+              type="button"
+              onClick={() => setValue("preferTime", "")}
+              className="text-[10px] text-rose-500 hover:underline"
+            >
+              {isVi ? "Xoá" : "Clear"}
+            </button>
+          ) : null}
+        </label>
+        {preferTimeValue ? (
           <TimeSelect 
             value={preferTimeValue} 
             onChange={(val) => setValue("preferTime", val)} 
+            size="md"
           />
-        </div>
+        ) : (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full justify-start text-muted-foreground text-xs !h-9 bg-card border-border hover:bg-input/20 hover:text-foreground font-normal"
+            onClick={() => setValue("preferTime", "09:00")}
+          >
+            + {isVi ? "Thêm giờ mong muốn" : "Add preferred time"}
+          </Button>
+        )}
+      </div>
       
       <div className="space-y-2">
         <label className="text-sm font-medium">{t.goals.daysOfWeekLabel}</label>
-        <div className="flex gap-1.5">
-          {days.map((day) => {
-            const isSelected = selectedDays.includes(day.value);
-            return (
-              <button
-                key={day.value}
-                type="button"
-                onClick={() => toggleDay(day.value)}
-                className={`w-9 h-9 rounded-full flex items-center justify-center text-sm transition-colors cursor-pointer border ${isSelected ? 'bg-teal-500/10 text-teal-500 border-teal-500/50 font-semibold shadow-sm' : 'bg-transparent text-muted-foreground/60 border-border hover:bg-muted'}`}
-              >
-                {day.label}
-              </button>
-            )
-          })}
+        
+        {/* Toggle Mode */}
+        <div className="flex gap-2 w-full">
+          <button
+            type="button"
+            onClick={() => {
+              setDaysMode("daily");
+              setValue("daysOfWeek", "1,2,3,4,5,6,7");
+            }}
+            className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-medium border transition-colors cursor-pointer text-center ${
+              daysMode === "daily"
+                ? "bg-teal-500/10 text-teal-500 border-teal-500/30"
+                : "bg-card border-border text-muted-foreground hover:bg-muted"
+            }`}
+          >
+            {isVi ? "Hàng ngày" : "Daily"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setDaysMode("custom");
+              if (daysOfWeekValue === "1,2,3,4,5,6,7") {
+                setValue("daysOfWeek", "1,2,3,4,5");
+              }
+            }}
+            className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-medium border transition-colors cursor-pointer text-center ${
+              daysMode === "custom"
+                ? "bg-teal-500/10 text-teal-500 border-teal-500/30"
+                : "bg-card border-border text-muted-foreground hover:bg-muted"
+            }`}
+          >
+            {isVi ? "Tự chọn" : "Custom"}
+          </button>
         </div>
+
+        {/* Custom Days Selector */}
+        {daysMode === "custom" && (
+          <div className="flex gap-1.5 pt-1.5 transition-all duration-300">
+            {days.map((day) => {
+              const isSelected = selectedDays.includes(day.value);
+              return (
+                <button
+                  key={day.value}
+                  type="button"
+                  onClick={() => toggleDay(day.value)}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center text-sm transition-colors cursor-pointer border ${isSelected ? 'bg-teal-500/10 text-teal-500 border-teal-500/50 font-semibold shadow-sm' : 'bg-transparent text-muted-foreground/60 border-border hover:bg-muted'}`}
+                >
+                  {day.label}
+                </button>
+              )
+            })}
+          </div>
+        )}
         <input type="hidden" {...register("daysOfWeek")} />
       </div>
       

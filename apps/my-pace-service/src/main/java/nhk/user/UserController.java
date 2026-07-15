@@ -1,8 +1,8 @@
 package nhk.user;
 
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -12,10 +12,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/users")
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class UserController {
-    private final UserRepository userRepository;
-    private final UserMapper userMapper;
+    private final UserService userService;
 
     @PutMapping("/profile")
     public ResponseEntity<UserSimpleResponse> updateProfile(
@@ -23,14 +22,9 @@ public class UserController {
             @AuthenticationPrincipal UserDetailsCustom userDetails
     ) {
         if (userDetails == null) {
-            return ResponseEntity.status(401).build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        User user = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new EntityNotFoundException("User not found with email: " + userDetails.getUsername()));
-
-        userMapper.updateFromUpdateRequest(request, user);
-        User savedUser = userRepository.save(user);
-
-        return ResponseEntity.ok(userMapper.toUserSimpleResponse(savedUser));
+        UserSimpleResponse response = userService.updateProfile(userDetails.user().getId(), request);
+        return ResponseEntity.ok(response);
     }
 }

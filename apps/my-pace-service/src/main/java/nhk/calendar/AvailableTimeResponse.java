@@ -1,33 +1,22 @@
 package nhk.calendar;
 
 import lombok.Builder;
-import lombok.Data;
+import java.util.List;
 
-/**
- * Response DTO for the Available Time calculation endpoint.
- */
-@Data
 @Builder
-public class AvailableTimeResponse {
-
-    /** Total available minutes for the requested date (after events and buffer). */
-    private int availableMinutes;
-
-    /** Total minutes blocked by fixed events (union of intervals). */
-    private int blockedMinutes;
-
-    /** Buffer percentage applied (from user profile). */
-    private int bufferPct;
-
-    /** Total minutes in the working window (sleepTime - max(wakeTime, now)). */
-    private int workingWindowMinutes;
-
-    /** True if the user has checked in for this date. */
-    private boolean checkedIn;
-
-    /** The time the user checked in (if checkedIn is true), formatted as "HH:mm". */
-    private String checkinTime;
-
-    /** The user's current checkin streak. */
-    private int streak;
+public record AvailableTimeResponse(
+    int availableMinutes,
+    int blockedMinutes,
+    int bufferPct,
+    int workingWindowMinutes,
+    boolean checkedIn,
+    String checkinTime,
+    int streak,
+    List<TimeInterval> blockedIntervals
+) {
+    @Builder
+    public record TimeInterval(
+        String startTime, // "HH:mm"
+        String endTime   // "HH:mm"
+    ) {}
 }

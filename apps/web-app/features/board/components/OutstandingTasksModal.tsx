@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useBoardStore } from "../store/board.store";
+import { useTasks } from "../hooks/useTasks";
 import { Task } from "../types";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Delete01Icon, Undo02Icon } from "@hugeicons/core-free-icons";
@@ -14,17 +14,17 @@ interface OutstandingTasksModalProps {
 }
 
 export function OutstandingTasksModal({ isOpen, onClose, tasks }: OutstandingTasksModalProps) {
-  const { updateTask, deleteTask } = useBoardStore();
+  const { updateTask, deleteTask } = useTasks();
   const [actioningId, setActioningId] = useState<string | null>(null);
   const { t } = useTranslation();
 
   const handleMoveToBacklog = async (task: Task) => {
     setActioningId(task.id);
     try {
-      await updateTask(task.id, {
+      await updateTask({ id: task.id, data: {
         title: task.title,
         status: "Backlog"
-      });
+      }});
     } catch (err) {
       console.error(err);
     } finally {

@@ -6,4 +6,5 @@ export interface AvailableTimeData {
   checkedIn: boolean;
   checkinTime: string | null;
   streak: number;
+  blockedIntervals?: { startTime: string; endTime: string }[];
 }

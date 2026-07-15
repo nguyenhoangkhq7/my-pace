@@ -23,7 +23,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 import { Button } from "@/components/ui/button";
 
-import { post, getApiErrorMessage } from "@/lib/fetchClient";
+import { requestOtpAction } from "../../actions/auth.action";
 
 import { useRegisterStore } from "../../store/register.store";
 
@@ -39,13 +39,6 @@ interface OtpEmailStepProps {
     onNext: () => void;
 }
 
-type OtpResponse = {
-    otp: string;
-};
-
-type SendOtpRequest = {
-    email: string;
-};
 
 export function OtpEmailStep({
                                  onNext,
@@ -67,12 +60,14 @@ export function OtpEmailStep({
         data: EmailStepValues
     ) => {
         try {
-            await post<OtpResponse, SendOtpRequest>(
-                "auth/send-otp",
-                {
-                    email: data.email,
-                }
-            );
+            const result = await requestOtpAction({ email: data.email });
+
+            if (!result.success) {
+                form.setError("root", {
+                    message: result.error || "Failed to send OTP",
+                });
+                return;
+            }
 
             setRegisterData({
                 email: data.email,
@@ -83,9 +78,9 @@ export function OtpEmailStep({
             });
 
             onNext();
-        } catch (error: unknown) {
+        } catch (error) {
             form.setError("root", {
-                message: getApiErrorMessage(error),
+                message: error instanceof Error ? error.message : "Cannot connect to server",
             });
         }
     };

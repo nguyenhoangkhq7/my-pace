@@ -1,27 +1,31 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { useBoardStore } from "../store/board.store";
-import { useAvailableTimeStore } from "../../available-time/store/available-time.store";
+import { useAvailableTimeQuery } from "../../available-time/hooks/useAvailableTime";
 import { Task } from "../types";
+import { useTasks } from "./useTasks";
+import { useDailyPlan } from "./useDailyPlan";
+import { useCategories } from "./useCategories";
 
-export function useBacklogMatrix() {
+export function useBacklogMatrix(currentDate: string, tomorrowDate: string) {
   const {
-    tasks,
     isPlanningMode,
     plannedTaskIds,
     addPlannedTaskLocally,
     removePlannedTaskLocally,
-    createTask,
-    updateTask,
     isStarted,
     planningTarget,
-    dailyPlanTomorrow,
     selectedFilterId,
     setFilter,
-    categories,
   } = useBoardStore();
 
-  const { dataToday, dataTomorrow } = useAvailableTimeStore();
+  const { tasks, createTask, updateTask } = useTasks();
+  const { categories } = useCategories();
+  const { dailyPlan: dailyPlanTomorrow } = useDailyPlan(tomorrowDate);
+
+  const { data: dataToday } = useAvailableTimeQuery(currentDate);
+  const { data: dataTomorrow } = useAvailableTimeQuery(tomorrowDate);
+  
   const availableTimeData = planningTarget === 'today' ? dataToday : dataTomorrow;
   const availableMinutes = availableTimeData?.availableMinutes || 0;
 
@@ -42,7 +46,7 @@ export function useBacklogMatrix() {
   const handleCreateTask = async (data: Partial<Task>) => {
     let newTask;
     if (editingTask) {
-      newTask = await updateTask(editingTask.id, data);
+      newTask = await updateTask({ id: editingTask.id, data });
     } else {
       newTask = await createTask(data);
       if (isPlanningMode && newTask) {
@@ -81,12 +85,12 @@ export function useBacklogMatrix() {
   };
 
   const handleTaskDrop = async (taskId: string, isUrgent: boolean, isImportant: boolean) => {
-    await updateTask(taskId, { isUrgent, isImportant });
+    await updateTask({ id: taskId, data: { isUrgent, isImportant } });
   };
 
   const handleMissingDurationSubmit = async (data: Partial<Task>) => {
     if (requireDurationForTask) {
-      const updatedTask = await updateTask(requireDurationForTask.id, data);
+      const updatedTask = await updateTask({ id: requireDurationForTask.id, data });
       if (updatedTask && updatedTask.estimatedMinutes) {
         checkTimeLimit(updatedTask.estimatedMinutes);
       }

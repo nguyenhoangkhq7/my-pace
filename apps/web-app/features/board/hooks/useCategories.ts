@@ -1,0 +1,46 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getCategoriesAction, createCategoryAction, updateCategoryAction, deleteCategoryAction } from "../actions/category.action";
+import type { Category } from "../types";
+
+export function useCategories() {
+  const queryClient = useQueryClient();
+
+  const { data: categories = [], isLoading, error } = useQuery({
+    queryKey: ["categories"],
+    queryFn: getCategoriesAction,
+  });
+
+  const createCategoryMutation = useMutation({
+    mutationFn: createCategoryAction,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+    },
+  });
+
+  const updateCategoryMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Category> }) => updateCategoryAction(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+    },
+  });
+
+  const deleteCategoryMutation = useMutation({
+    mutationFn: deleteCategoryAction,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      queryClient.invalidateQueries({ queryKey: ["tasks"] }); // tasks reference categories
+    },
+  });
+
+  return {
+    categories,
+    isLoading,
+    error,
+    createCategory: createCategoryMutation.mutateAsync,
+    updateCategory: updateCategoryMutation.mutateAsync,
+    deleteCategory: deleteCategoryMutation.mutateAsync,
+    isCreatingCategory: createCategoryMutation.isPending,
+    isUpdatingCategory: updateCategoryMutation.isPending,
+    isDeletingCategory: deleteCategoryMutation.isPending,
+  };
+}

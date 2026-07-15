@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
-import { useBoardStore } from "../store/board.store";
+import { useCategories } from "../hooks/useCategories";
 import { ConfirmDeleteDialog } from "@/components/feedback/ConfirmDeleteDialog";
 import { CategoryEditForm } from "./CategoryEditForm";
 import { CategoryListItem } from "./CategoryListItem";
@@ -14,7 +14,7 @@ interface ManageCategoriesModalProps {
 }
 
 export function ManageCategoriesModal({ isOpen, onClose }: ManageCategoriesModalProps) {
-  const { categories, updateCategory, deleteCategory } = useBoardStore();
+  const { categories, updateCategory, deleteCategory } = useCategories();
   const { t } = useTranslation();
   
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -46,7 +46,7 @@ export function ManageCategoriesModal({ isOpen, onClose }: ManageCategoriesModal
     }
 
     try {
-      await updateCategory(id, { name: name.trim(), color: color });
+      await updateCategory({ id, data: { name: name.trim(), color: color } });
       setEditingId(null);
       setError("");
     } catch (err) {

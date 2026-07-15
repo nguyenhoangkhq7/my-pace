@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import { useForm, useWatch, FormProvider } from "react-hook-form";
-import { Goal, GoalCreateRequest, GoalUpdateRequest, GoalType } from "../types";
-import { useGoalStore } from "../store/goal.store";
+import { useForm, useWatch, FormProvider, Controller } from "react-hook-form";
+import { Goal, GoalCreateRequest, GoalUpdateRequest, GoalStatus } from "../types";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createGoalAction, updateGoalAction, deleteGoalAction } from "../actions/goal.action";
 import {
   DialogContent,
   DialogHeader,
@@ -24,6 +25,9 @@ import { GoalFormCategoryFields } from "./GoalFormCategoryFields";
 import { GoalFormTypeSelect } from "./GoalFormTypeSelect";
 import { useTranslation } from "@/hooks/use-translation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { goalFormSchema, GoalFormValues } from "../schema/goal.schema";
+import { cn } from "@/lib/utils";
 
 interface GoalFormContentProps {
   isOpen: boolean;
@@ -32,28 +36,31 @@ interface GoalFormContentProps {
   onSuccess?: (goal: Goal) => void;
 }
 
-interface FormValues {
-  title: string;
-  goalType: GoalType;
-  status: string;
-  categoryId: string;
-  startDate: string;
-  endDate: string;
-  autoCreateTask: boolean;
-  durationMinutes: number;
-  daysOfWeek: string;
-  preferTime: string;
-}
-
 export function GoalFormContent({ isOpen, onOpenChange, goal, onSuccess }: GoalFormContentProps) {
   const { t } = useTranslation();
-  const { createGoal, updateGoal, deleteGoal } = useGoalStore();
+  const queryClient = useQueryClient();
+  
+  const createMutation = useMutation({
+    mutationFn: createGoalAction,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['goals'] }),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string, data: GoalUpdateRequest }) => updateGoalAction(id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['goals'] }),
+  });
+  
+  const deleteMutation = useMutation({
+    mutationFn: deleteGoalAction,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['goals'] }),
+  });
   const [isManagingCategories, setIsManagingCategories] = useState(false);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const hasInitializedRef = useRef(false);
 
-  const methods = useForm<FormValues>({
+  const methods = useForm<GoalFormValues>({
+    resolver: zodResolver(goalFormSchema),
     defaultValues: {
       title: "", goalType: "Time-boxed", status: "In Progress", categoryId: "none",
       startDate: "", endDate: "", autoCreateTask: true, durationMinutes: 30,
@@ -61,10 +68,8 @@ export function GoalFormContent({ isOpen, onOpenChange, goal, onSuccess }: GoalF
     },
   });
 
-  const { register, handleSubmit, reset, setValue, control } = methods;
+  const { register, handleSubmit, reset, control, formState } = methods;
   const goalType = useWatch({ control, name: "goalType" });
-  const status = useWatch({ control, name: "status" });
-  const categoryId = useWatch({ control, name: "categoryId" });
 
   useEffect(() => {
     if (isOpen) {
@@ -92,25 +97,23 @@ export function GoalFormContent({ isOpen, onOpenChange, goal, onSuccess }: GoalF
     }
   }, [isOpen, goal, reset]);
 
-  const onSubmit = async (data: FormValues) => {
+  const onSubmit = async (data: GoalFormValues) => {
     try {
-      if (data.categoryId === "none") { alert(t.goals.categorySelectRequired); return; }
-
-      const payload: any = {
-        title: data.title, goalType: data.goalType, status: data.status,
+      const payload: GoalCreateRequest & { status?: GoalStatus } = {
+        title: data.title, goalType: data.goalType, status: data.status as GoalStatus,
         categoryId: data.categoryId, startDate: data.startDate || undefined,
         endDate: data.endDate || undefined, autoCreateTask: data.autoCreateTask ?? false,
       };
 
       if (data.goalType === "Time-boxed") {
-        payload.durationMinutes = Number(data.durationMinutes);
-        payload.daysOfWeek = data.daysOfWeek;
-        payload.preferTime = data.preferTime || null;
+        payload.durationMinutes = (data.durationMinutes && !Number.isNaN(data.durationMinutes)) ? Number(data.durationMinutes) : undefined;
+        payload.daysOfWeek = data.daysOfWeek || undefined;
+        payload.preferTime = data.preferTime || undefined;
       }
 
       const result = goal 
-        ? await updateGoal(goal.id, payload as GoalUpdateRequest)
-        : await createGoal(payload as GoalCreateRequest);
+        ? await updateMutation.mutateAsync({ id: goal.id, data: payload as GoalUpdateRequest })
+        : await createMutation.mutateAsync(payload as GoalCreateRequest);
       
       if (onSuccess) onSuccess(result);
       onOpenChange(false);
@@ -120,7 +123,7 @@ export function GoalFormContent({ isOpen, onOpenChange, goal, onSuccess }: GoalF
   const handleConfirmDelete = async () => {
     if (!goal) return;
     try {
-      await deleteGoal(goal.id);
+      await deleteMutation.mutateAsync(goal.id);
       setIsConfirmDeleteOpen(false);
       onOpenChange(false);
     } catch (err) { console.error(err); setIsConfirmDeleteOpen(false); }
@@ -136,39 +139,79 @@ export function GoalFormContent({ isOpen, onOpenChange, goal, onSuccess }: GoalF
         <FormProvider {...methods}>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">{t.goals.titleLabel}</label>
-              <Input {...register("title", { required: true })} placeholder={t.goals.titlePlaceholder} className="h-9" />
+              <label className={cn("text-sm font-medium", formState.errors.title && "text-red-500")}>
+                {t.goals.titleLabel}
+              </label>
+              <Input 
+                {...register("title")} 
+                placeholder={t.goals.titlePlaceholder} 
+                className={cn("h-9", formState.errors.title && "border-red-500 focus-visible:ring-red-500")} 
+              />
+              {formState.errors.title && (
+                <p className="text-red-500 text-xs">{formState.errors.title.message}</p>
+              )}
             </div>
 
             <div className={`grid grid-cols-1 gap-6 ${goalType === "Time-boxed" ? "sm:grid-cols-2" : ""}`}>
               <div className="space-y-4">
-                <GoalFormCategoryFields
-                  categoryId={categoryId} setCategoryId={(val) => setValue("categoryId", val)}
-                  isCreatingCategory={isCreatingCategory} setIsCreatingCategory={setIsCreatingCategory}
-                  setIsManagingCategories={setIsManagingCategories}
+                <Controller
+                  name="categoryId"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-1">
+                      <GoalFormCategoryFields
+                        categoryId={field.value || ""}
+                        setCategoryId={field.onChange}
+                        isCreatingCategory={isCreatingCategory}
+                        setIsCreatingCategory={setIsCreatingCategory}
+                        setIsManagingCategories={setIsManagingCategories}
+                      />
+                      {formState.errors.categoryId && (
+                        <p className="text-red-500 text-xs">{formState.errors.categoryId.message}</p>
+                      )}
+                    </div>
+                  )}
                 />
+
                 {!goal && <GoalFormTypeSelect control={control} disabled={!!goal} />}
                 
                 {goal && (
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium">{t.goals.statusLabel}</label>
-                    <Select value={status} onValueChange={(val: string) => setValue("status", val)}>
-                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Freeze">{t.goals.freeze}</SelectItem>
-                        <SelectItem value="In Progress">{t.goals.inProgress}</SelectItem>
-                        <SelectItem value="Done">{t.goals.done}</SelectItem>
-                        <SelectItem value="Archived">{t.goals.archived}</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Controller
+                      name="status"
+                      control={control}
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                          <SelectContent className="bg-popover border-border text-foreground">
+                            <SelectItem value="Freeze">{t.goals.freeze}</SelectItem>
+                            <SelectItem value="In Progress">{t.goals.inProgress}</SelectItem>
+                            <SelectItem value="Done">{t.goals.done}</SelectItem>
+                            <SelectItem value="Archived">{t.goals.archived}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
                   </div>
                 )}
                 
                 {goalType === "Binary" && <GoalDateRangeFields />}
                 {goalType === "Time-boxed" && (
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium">{t.goals.durationLabel}</label>
-                    <Input type="number" {...register("durationMinutes")} min="1" placeholder="30" className="h-9" />
+                    <label className={cn("text-sm font-medium", formState.errors.durationMinutes && "text-red-500")}>
+                      {t.goals.durationLabel}
+                    </label>
+                    <Input 
+                      type="number" 
+                      {...register("durationMinutes", { valueAsNumber: true })} 
+                      min="1" 
+                      placeholder="30" 
+                      className={cn("h-9", formState.errors.durationMinutes && "border-red-500 focus-visible:ring-red-500")} 
+                    />
+                    {formState.errors.durationMinutes && (
+                      <p className="text-red-500 text-xs">{formState.errors.durationMinutes.message}</p>
+                    )}
                   </div>
                 )}
               </div>

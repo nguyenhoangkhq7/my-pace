@@ -20,6 +20,8 @@ import java.util.UUID;
 public class FixedEventController {
 
     private final FixedEventService service;
+    private final AvailableTimeService availableTimeService;
+    private final DailyCheckinService dailyCheckinService;
 
     // ─── Events ──────────────────────────────────────────────────────────────
 
@@ -108,7 +110,7 @@ public class FixedEventController {
     public ResponseEntity<AvailableTimeResponse> getAvailableTime(
             @AuthenticationPrincipal UserDetailsCustom principal,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        return ResponseEntity.ok(service.getAvailableTime(principal.user().getId(), date));
+        return ResponseEntity.ok(availableTimeService.getAvailableTime(principal.user().getId(), date));
     }
 
     /**
@@ -121,7 +123,9 @@ public class FixedEventController {
             @AuthenticationPrincipal UserDetailsCustom principal,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) LocalTime checkinTime) {
-        LocalDate targetDate = date != null ? date : LocalDate.now();
-        return ResponseEntity.ok(service.checkin(principal.user().getId(), targetDate, checkinTime));
+        String tz = principal.user().getTimezone();
+        java.time.ZoneId zoneId = java.time.ZoneId.of(tz != null && !tz.isBlank() ? tz : "UTC");
+        LocalDate targetDate = date != null ? date : LocalDate.now(zoneId);
+        return ResponseEntity.ok(dailyCheckinService.checkin(principal.user().getId(), targetDate, checkinTime));
     }
 }

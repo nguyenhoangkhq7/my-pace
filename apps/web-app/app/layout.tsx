@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { AppToastHost } from "@/components/feedback/toast-host";
 import { AuthProvider } from "@/features/auth";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ReactQueryProvider } from "@/components/providers/react-query-provider";
 import React from "react";
 
 const inter = Inter({
@@ -20,7 +21,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "MyPACE",
-  description: "NHK self project - use by myself",
+  description: "Master your daily schedule with MyPACE. Combine timeboxing, calendar integration, and smart daily planning to eliminate distractions and boost your focus.",
 };
 
 export default function RootLayout({
@@ -51,12 +52,14 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-background text-foreground">
-        <AuthProvider>
-          <TooltipProvider>
-            {children}
-            <AppToastHost />
-          </TooltipProvider>
-        </AuthProvider>
+        <ReactQueryProvider>
+          <AuthProvider>
+            <TooltipProvider>
+              {children}
+              <AppToastHost />
+            </TooltipProvider>
+          </AuthProvider>
+        </ReactQueryProvider>
       </body>
     </html>
   );

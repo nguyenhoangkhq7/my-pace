@@ -21,7 +21,7 @@ public class TaskTimeBlockController {
     public List<TaskTimeBlockDto> getTimeBlocks(
             @RequestParam UUID planId,
             @AuthenticationPrincipal UserDetailsCustom userDetails) {
-        return timeBlockService.getTimeBlocks(planId, userDetails);
+        return timeBlockService.getTimeBlocks(planId, userDetails.user().getId());
     }
 
     @PostMapping("/batch")
@@ -29,6 +29,6 @@ public class TaskTimeBlockController {
     public List<TaskTimeBlockDto> saveTimeBlocks(
             @Valid @RequestBody SaveTimeBlocksRequest request,
             @AuthenticationPrincipal UserDetailsCustom userDetails) {
-        return timeBlockService.saveTimeBlocks(request, userDetails);
+        return timeBlockService.saveTimeBlocks(request, userDetails.user().getId());
     }
 }

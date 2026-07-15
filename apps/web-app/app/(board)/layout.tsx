@@ -55,7 +55,6 @@ export default function AppLayout({
       >
         {children}
       </main>
-      {/* Rendered here so it's accessible on all board routes via the Sidebar button */}
       <OnboardingModal />
     </div>
   );

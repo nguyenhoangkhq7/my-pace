@@ -1,10 +1,15 @@
 import { useState, useEffect } from "react";
 import { useFocusStore } from "@/features/focus/store/focus.store";
-import { useBoardStore } from "@/features/board/store/board.store";
-import { useGoalStore } from "@/features/goal/store/goal.store";
+import type { Task, DailyPlanTask } from "@/features/board/types";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getTasksAction, updateTaskAction } from "@/features/board/actions/task.action";
+import { getDailyPlanAction, toggleTaskDoneAction } from "@/features/board/actions/plan.action";
+import { getGoalsAction } from "@/features/goal/actions/goal.action";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, Square, Check, ListTodo } from "lucide-react";
 
+import { useAuthStore } from "@/features/auth";
+import { getTodayStr } from "@/lib/date";
 import { FlowEmptyState } from "@/features/focus/components/FlowEmptyState";
 import { PomodoroTimerDisplay } from "@/features/focus/components/PomodoroTimerDisplay";
 import { ChecklistModal } from "@/features/focus/components/ChecklistModal";
@@ -24,8 +29,25 @@ export function FlowPomodoro() {
     currentSession,
     totalSessions,
   } = useFocusStore();
-  const { tasks, toggleTaskDone, updateTask } = useBoardStore();
-  const { fetchGoals } = useGoalStore();
+  const queryClient = useQueryClient();
+  const user = useAuthStore((s) => s.user);
+  const todayStr = getTodayStr(user?.timezone);
+
+  const { data: tasks = [] } = useQuery({ queryKey: ['tasks'], queryFn: getTasksAction });
+  const { data: dailyPlanToday } = useQuery({ queryKey: ['dailyPlan', todayStr], queryFn: () => getDailyPlanAction(todayStr) });
+
+  const updateTaskMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string, data: Partial<Task> }) => updateTaskAction(id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+  });
+  const toggleTaskDoneMutation = useMutation({
+    mutationFn: ({ taskId }: { taskId: string }) => toggleTaskDoneAction(taskId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['dailyPlan'] });
+    },
+  });
+  const { refetch: fetchGoals } = useQuery({ queryKey: ['goals'], queryFn: getGoalsAction, enabled: false });
 
   const [isFinishing, setIsFinishing] = useState(false);
   const [isChecklistModalOpen, setIsChecklistModalOpen] = useState(false);
@@ -34,7 +56,7 @@ export function FlowPomodoro() {
     fetchGoals().catch(console.error);
   }, [fetchGoals]);
 
-  const activeTask = tasks.find((t) => t.id === activeTaskId);
+  const activeTask = tasks.find((t: Task) => t.id === activeTaskId);
 
   if (!activeTaskId || !activeTask) {
     return <FlowEmptyState />;
@@ -52,7 +74,7 @@ export function FlowPomodoro() {
     try {
       const actualMinutes = Math.floor(accumulatedFocusTime / 60);
       if (actualMinutes > 0) {
-        await updateTask(activeTaskId, { actualMinutes });
+        await updateTaskMutation.mutateAsync({ id: activeTaskId, data: { actualMinutes } });
       } else {
         useFocusStore.getState().setPromptTask({
           id: activeTaskId,
@@ -61,20 +83,15 @@ export function FlowPomodoro() {
         });
       }
       
-      const todayStr = (() => {
-        const d = new Date();
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      })();
-      await toggleTaskDone(todayStr, activePlanTaskId);
+      await toggleTaskDoneMutation.mutateAsync({ taskId: activePlanTaskId });
       
       pauseTimer();
       
-      const { dailyPlanToday } = useBoardStore.getState();
-      const currentTaskIndex = dailyPlanToday?.tasks.findIndex((t) => t.id === activePlanTaskId) ?? -1;
+      const currentTaskIndex = dailyPlanToday?.tasks.findIndex((t: DailyPlanTask) => t.id === activePlanTaskId) ?? -1;
       
       if (dailyPlanToday && currentTaskIndex !== -1) {
         const remainingTasks = dailyPlanToday.tasks.slice(currentTaskIndex + 1).concat(dailyPlanToday.tasks.slice(0, currentTaskIndex));
-        const nextTask = remainingTasks.find((t) => t.task.status !== "Done" && t.id !== activePlanTaskId);
+        const nextTask = remainingTasks.find((t: DailyPlanTask) => t.task.status !== "Done" && t.id !== activePlanTaskId);
         
         if (nextTask) {
           useFocusStore.getState().openFocusMode(nextTask.task.id, nextTask.id, nextTask.task.estimatedMinutes || 25);
@@ -95,7 +112,7 @@ export function FlowPomodoro() {
   const handleStop = () => {
     if (activeTaskId && accumulatedFocusTime > 60) {
       const actualMinutes = Math.round(accumulatedFocusTime / 60);
-      updateTask(activeTaskId, { actualMinutes }).catch(console.error);
+      updateTaskMutation.mutateAsync({ id: activeTaskId, data: { actualMinutes } }).catch(console.error);
     }
     pauseTimer();
     closeFocusMode();

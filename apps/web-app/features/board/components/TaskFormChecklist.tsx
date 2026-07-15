@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useBoardStore } from "../store/board.store";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { addChecklistItemAction, updateChecklistItemAction, deleteChecklistItemAction, reorderChecklistsAction } from "@/features/board/actions/checklist.action";
 import type { TaskChecklistItem } from "../types";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Tick01Icon } from "@hugeicons/core-free-icons";
@@ -24,7 +25,23 @@ export function TaskFormChecklist({
   onDeleteChecklistLocal,
   onReorderLocal
 }: TaskFormChecklistProps) {
-  const { addChecklistItem, updateChecklistItem, deleteChecklistItem, reorderChecklists } = useBoardStore();
+  const queryClient = useQueryClient();
+  const addChecklistItemMutation = useMutation({
+    mutationFn: ({ taskId, title }: { taskId: string, title: string }) => addChecklistItemAction(taskId, { title }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+  });
+  const updateChecklistItemMutation = useMutation({
+    mutationFn: ({ taskId, checklistId, data }: { taskId: string, checklistId: string, data: { title?: string, isCompleted?: boolean } }) => updateChecklistItemAction(taskId, checklistId, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+  });
+  const deleteChecklistItemMutation = useMutation({
+    mutationFn: ({ taskId, checklistId }: { taskId: string, checklistId: string }) => deleteChecklistItemAction(taskId, checklistId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+  });
+  const reorderChecklistsMutation = useMutation({
+    mutationFn: ({ taskId, checklistIds }: { taskId: string, checklistIds: string[] }) => reorderChecklistsAction(taskId, checklistIds),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+  });
   const { t } = useTranslation();
 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -36,7 +53,7 @@ export function TaskFormChecklist({
   const handleAddChecklist = async (title: string) => {
     if (taskId) {
       try {
-        await addChecklistItem(taskId, title);
+        await addChecklistItemMutation.mutateAsync({ taskId, title });
       } catch (err) {
         console.error(err);
       }
@@ -70,7 +87,7 @@ export function TaskFormChecklist({
       const newIds = newOrder.map(c => c.id).filter((id): id is string => !!id);
       if (newIds.length === checklists.length) {
         try {
-          await reorderChecklists(taskId, newIds);
+          await reorderChecklistsMutation.mutateAsync({ taskId, checklistIds: newIds });
         } catch (err) {
           console.error(err);
         }
@@ -93,7 +110,6 @@ export function TaskFormChecklist({
   return (
     <div className="grid gap-3 pt-2">
       <div className="flex items-center gap-2">
-        <HugeiconsIcon icon={Tick01Icon} className="w-5 h-5 text-muted-foreground" />
         <h3 className="font-semibold text-foreground">{t.taskForm.checklistTitle}</h3>
       </div>
       
@@ -109,38 +125,40 @@ export function TaskFormChecklist({
         </div>
       )}
 
-      <div className="space-y-2">
-        {sortedChecklists.map((item, index) => (
-          <TaskChecklistItemRow
-            key={item.id || index}
-            item={{
-              title: item.title || "",
-              isCompleted: !!item.isCompleted,
-              id: item.id
-            }}
-            draggable={true}
-            onDragStart={(e) => handleDragStart(e, index)}
-            onDragOver={(e) => handleDragOver(e, index)}
-            onDrop={(e) => handleDrop(e, index)}
-            onDragEnd={handleDragEnd}
-            isDragOver={dragOverIndex === index}
-            onUpdate={(updates) => {
-              if (taskId && item.id) {
-                updateChecklistItem(taskId, item.id, updates);
-              } else if (onUpdateChecklistLocal) {
-                onUpdateChecklistLocal(index, updates);
-              }
-            }}
-            onDelete={() => {
-              if (taskId && item.id) {
-                deleteChecklistItem(taskId, item.id);
-              } else if (onDeleteChecklistLocal) {
-                onDeleteChecklistLocal(index);
-              }
-            }}
-          />
-        ))}
-      </div>
+      {sortedChecklists.length > 0 && (
+        <div className="space-y-2">
+          {sortedChecklists.map((item, index) => (
+            <TaskChecklistItemRow
+              key={item.id || index}
+              item={{
+                title: item.title || "",
+                isCompleted: !!item.isCompleted,
+                id: item.id
+              }}
+              draggable={true}
+              onDragStart={(e) => handleDragStart(e, index)}
+              onDragOver={(e) => handleDragOver(e, index)}
+              onDrop={(e) => handleDrop(e, index)}
+              onDragEnd={handleDragEnd}
+              isDragOver={dragOverIndex === index}
+              onUpdate={(updates) => {
+                if (taskId && item.id) {
+                  updateChecklistItemMutation.mutateAsync({ taskId, checklistId: item.id, data: updates });
+                } else if (onUpdateChecklistLocal) {
+                  onUpdateChecklistLocal(index, updates);
+                }
+              }}
+              onDelete={() => {
+                if (taskId && item.id) {
+                  deleteChecklistItemMutation.mutateAsync({ taskId, checklistId: item.id });
+                } else if (onDeleteChecklistLocal) {
+                  onDeleteChecklistLocal(index);
+                }
+              }}
+            />
+          ))}
+        </div>
+      )}
 
       <TaskChecklistCreateForm onSubmit={handleAddChecklist} />
     </div>

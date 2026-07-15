@@ -1,12 +1,10 @@
 package nhk.category;
 
 import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
 
-@Data
-public class CategoryUpdateRequest {
+public record CategoryUpdateRequest(
     @NotBlank(message = "Name is required")
-    private String name;
+    String name,
     
-    private String color;
-}
+    String color
+) {}

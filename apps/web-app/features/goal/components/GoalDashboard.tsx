@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useGoalStore } from "../store/goal.store";
+import { useQuery } from "@tanstack/react-query";
+import { getGoalsAction } from "../actions/goal.action";
 import { GoalFormModal } from "./GoalFormModal";
 import { GoalRulesModal } from "./GoalRulesModal";
 import { Goal } from "../types";
 import { TaskFormModal } from "@/features/board/components/TaskFormModal";
 import { toast } from "sonner";
-import { useBoardStore } from "@/features/board/store/board.store";
+import { getCategoriesAction } from "@/features/board/actions/category.action";
+import { getTasksAction } from "@/features/board/actions/task.action";
 import { GoalDetailModal } from "./GoalDetailModal";
 
 // Sub-components
@@ -17,8 +19,12 @@ import { GoalDashboardGrid } from "./GoalDashboardGrid";
 import { GoalStatusGroup } from "./GoalStatusGroup";
 import { GoalEmptyState } from "./GoalEmptyState";
 
-export function GoalDashboard() {
-  const { goals, fetchGoals, isLoading, error } = useGoalStore();
+export function GoalDashboard({ initialGoals = [] }: { initialGoals?: Goal[] }) {
+  const { data: goals = [], isLoading, error } = useQuery({
+    queryKey: ['goals'],
+    queryFn: () => getGoalsAction(),
+    initialData: initialGoals,
+  });
   const [filterType, setFilterType] = useState<string>("ALL");
   const [filterStatus, setFilterStatus] = useState<string>("In Progress");
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
@@ -30,18 +36,13 @@ export function GoalDashboard() {
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [prefilledGoalId, setPrefilledGoalId] = useState<string | undefined>(undefined);
 
-  const { fetchCategories, fetchTasks } = useBoardStore();
-
-  useEffect(() => {
-    fetchGoals();
-    fetchCategories();
-    fetchTasks();
-  }, [fetchGoals, fetchCategories, fetchTasks]);
+  useQuery({ queryKey: ['categories'], queryFn: getCategoriesAction });
+  useQuery({ queryKey: ['tasks'], queryFn: getTasksAction });
 
   // Handle errors from backend e.g. Limit Exceeded
   useEffect(() => {
     if (error) {
-      toast.error(error);
+      toast.error(error.message);
     }
   }, [error]);
 

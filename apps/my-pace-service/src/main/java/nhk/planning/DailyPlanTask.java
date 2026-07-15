@@ -4,8 +4,8 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.UuidGenerator;
 import nhk.task.Task;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.util.UUID;
 

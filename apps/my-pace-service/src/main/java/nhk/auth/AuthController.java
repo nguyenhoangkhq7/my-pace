@@ -19,7 +19,7 @@ public class AuthController {
    private final UserMapper userMapper;
 
    @PostMapping("/verify-otp")
-   public ResponseEntity<?> verifyOtpRegister(@Valid @RequestBody VerifyOtpRequest request) {
+   public ResponseEntity<Void> verifyOtpRegister(@Valid @RequestBody VerifyOtpRequest request) {
       authService.verifyOtp(request);
       return ResponseEntity.ok().build();
    }
@@ -30,32 +30,32 @@ public class AuthController {
       return ResponseEntity.ok().body(otp);
    }
 
-   @PostMapping("/register")
-   public ResponseEntity<?> register(
-           @Valid @RequestBody RegisterRequest request,
-           HttpServletResponse response
-   ) {
-      var user = authService.registerUser(request);
-      String accessToken = jwtService.generateAccessToken(user).toString();
-      String refreshToken = jwtService.generateRefreshToken(user).toString();
-      setRefreshTokenCookie(response, refreshToken);
+    @PostMapping("/register")
+    public ResponseEntity<JwtResponse> register(
+            @Valid @RequestBody RegisterRequest request,
+            HttpServletResponse response
+    ) {
+       var user = authService.registerUser(request);
+       String accessToken = jwtService.generateAccessToken(user).toString();
+       String refreshToken = jwtService.generateRefreshToken(user).toString();
+       setRefreshTokenCookie(response, refreshToken);
 
-      return ResponseEntity.ok(new JwtResponse(accessToken, userMapper.toUserSimpleResponse(user)));
-   }
+       return ResponseEntity.ok(new JwtResponse(accessToken, refreshToken, userMapper.toUserSimpleResponse(user)));
+    }
 
-   @PostMapping("/login")
-   public ResponseEntity<JwtResponse> login(
-           @RequestBody LoginRequest request,
-           HttpServletResponse response
-   ) {
-      var user = authService.loginUser(request);
+    @PostMapping("/login")
+    public ResponseEntity<JwtResponse> login(
+            @RequestBody LoginRequest request,
+            HttpServletResponse response
+    ) {
+       var user = authService.loginUser(request);
 
-      String accessToken = jwtService.generateAccessToken(user).toString();
-      String refreshToken = jwtService.generateRefreshToken(user).toString();
-      setRefreshTokenCookie(response, refreshToken);
+       String accessToken = jwtService.generateAccessToken(user).toString();
+       String refreshToken = jwtService.generateRefreshToken(user).toString();
+       setRefreshTokenCookie(response, refreshToken);
 
-      return ResponseEntity.ok(new JwtResponse(accessToken, userMapper.toUserSimpleResponse(user)));
-   }
+       return ResponseEntity.ok(new JwtResponse(accessToken, refreshToken, userMapper.toUserSimpleResponse(user)));
+    }
 
    @GetMapping("/refresh")
    public ResponseEntity<JwtResponse> refresh(
@@ -66,7 +66,7 @@ public class AuthController {
    }
 
    @PostMapping("/logout")
-   public ResponseEntity<?> logout(
+   public ResponseEntity<Void> logout(
            @RequestHeader(name = "Authorization", required = false) String authHeader,
            HttpServletResponse response
    ) {

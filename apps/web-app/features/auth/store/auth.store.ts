@@ -8,16 +8,14 @@ export interface AuthUser {
   wakeTime?: string | null;
   sleepTime?: string | null;
   bufferPct?: number;
+  timezone?: string;
 }
 
 export interface AuthSession {
-  accessToken: string;
   user: AuthUser;
 }
 
 export type AuthSessionPayload = AuthSession | {
-  token?: unknown;
-  accessToken?: unknown;
   user?: unknown;
   data?: unknown;
 };
@@ -36,7 +34,8 @@ function isAuthUser(value: unknown): value is AuthUser {
     (candidate.role === undefined || typeof candidate.role === "string") &&
     (candidate.wakeTime === undefined || candidate.wakeTime === null || typeof candidate.wakeTime === "string") &&
     (candidate.sleepTime === undefined || candidate.sleepTime === null || typeof candidate.sleepTime === "string") &&
-    (candidate.bufferPct === undefined || typeof candidate.bufferPct === "number")
+    (candidate.bufferPct === undefined || typeof candidate.bufferPct === "number") &&
+    (candidate.timezone === undefined || typeof candidate.timezone === "string")
   );
 }
 
@@ -47,16 +46,8 @@ export function normalizeAuthSession(payload: unknown): AuthSession | null {
 
   const candidate = payload as Record<string, unknown>;
 
-  const accessToken =
-    typeof candidate.accessToken === "string"
-      ? candidate.accessToken
-      : typeof candidate.token === "string"
-        ? candidate.token
-        : null;
-
-  if (accessToken && isAuthUser(candidate.user)) {
+  if (isAuthUser(candidate.user)) {
     return {
-      accessToken,
       user: candidate.user,
     };
   }
@@ -73,7 +64,6 @@ export function normalizeAuthSession(payload: unknown): AuthSession | null {
 }
 
 interface AuthState {
-  accessToken: string | null;
   user: AuthUser | null;
   isInitialized: boolean;
   setSession: (session: AuthSession | null) => void;
@@ -81,15 +71,13 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  accessToken: null,
   user: null,
   isInitialized: false,
   setSession: (session) =>
     set({
-      accessToken: session?.accessToken ?? null,
       user: session?.user ?? null,
       isInitialized: true,
     }),
   clearSession: () =>
-    set({ accessToken: null, user: null, isInitialized: true }),
+    set({ user: null, isInitialized: true }),
 }));

@@ -1,5 +1,5 @@
 import React from "react";
-import { Controller, Control } from "react-hook-form";
+import { Controller, Control, FieldValues, Path } from "react-hook-form";
 import {
   Select,
   SelectContent,
@@ -7,35 +7,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { GoalType } from "../types";
 import { useTranslation } from "@/hooks/use-translation";
 
-interface FormValues {
-  title: string;
-  goalType: GoalType;
-  status: string;
-  categoryId: string;
-  startDate: string;
-  endDate: string;
-  autoCreateTask: boolean;
-  durationMinutes: number;
-  daysOfWeek: string;
-  preferTime: string;
-
-}
-
-interface GoalFormTypeSelectProps {
-  control: Control<FormValues>;
+interface GoalFormTypeSelectProps<TFieldValues extends FieldValues = FieldValues> {
+  control: Control<TFieldValues>;
   disabled?: boolean;
 }
 
-export function GoalFormTypeSelect({ control, disabled }: GoalFormTypeSelectProps) {
+export function GoalFormTypeSelect<TFieldValues extends FieldValues = FieldValues>({ control, disabled }: GoalFormTypeSelectProps<TFieldValues>) {
   const { t } = useTranslation();
 
   return (
     <div className="space-y-1.5">
       <Controller
-        name="goalType"
+        name={"goalType" as Path<TFieldValues>}
         control={control}
         render={({ field }) => (
           <>

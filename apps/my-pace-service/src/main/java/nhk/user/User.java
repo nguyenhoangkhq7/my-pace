@@ -5,9 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.Generated;
 import org.hibernate.annotations.UuidGenerator;
-import org.hibernate.generator.EventType;
+
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -15,6 +14,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
+@EntityListeners(org.springframework.data.jpa.domain.support.AuditingEntityListener.class)
 @Table(name = "users")
 public class User {
     @Id
@@ -56,11 +56,11 @@ public class User {
     @Column(name = "timezone", nullable = false, length = 50)
     private String timezone = "Asia/Ho_Chi_Minh";
 
-    @Column(name = "created_at", nullable = false)
-    @Generated(event = EventType.INSERT)
+    @Column(name = "created_at", nullable = false, updatable = false)
+    @org.springframework.data.annotation.CreatedDate
     private OffsetDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    @Generated(event = {EventType.INSERT, EventType.UPDATE})
+    @org.springframework.data.annotation.LastModifiedDate
     private OffsetDateTime updatedAt;
 }

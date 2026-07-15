@@ -1,9 +1,11 @@
 "use client";
 
 import { useFocusStore } from "@/features/focus/store/focus.store";
-import { useBoardStore } from "@/features/board/store/board.store";
+import { useQuery } from "@tanstack/react-query";
+import { getTasksAction } from "@/features/board/actions/task.action";
 import { useDraggable } from "@/hooks/use-draggable";
 import { cn } from "@/lib/utils";
+import type { Task } from "@/features/board/types";
 
 export function FloatingPomodoroWidget() {
   const isZenFull = useFocusStore((s) => s.isZenFull);
@@ -14,9 +16,8 @@ export function FloatingPomodoroWidget() {
   const startTimer = useFocusStore((s) => s.startTimer);
   const pauseTimer = useFocusStore((s) => s.pauseTimer);
   const setPomodoroFloating = useFocusStore((s) => s.setPomodoroFloating);
-  const { tasks } = useBoardStore();
-
-  const activeTask = tasks.find((t) => t.id === activeTaskId);
+  const { data: tasks = [] } = useQuery({ queryKey: ['tasks'], queryFn: getTasksAction });
+  const activeTask = tasks.find((t: Task) => t.id === activeTaskId);
 
   const {
     position: pomodoroPos,

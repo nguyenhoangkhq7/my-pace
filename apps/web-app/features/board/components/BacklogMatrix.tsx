@@ -6,7 +6,7 @@ import { useBacklogMatrix } from "../hooks/useBacklogMatrix";
 import { useTranslation } from "@/hooks/use-translation";
 
 
-export function BacklogMatrix() {
+export function BacklogMatrix({ currentDate, tomorrowDate }: { currentDate: string, tomorrowDate: string }) {
   const { t } = useTranslation();
 
   const {
@@ -30,7 +30,7 @@ export function BacklogMatrix() {
     handleTaskClick,
     handleTaskDrop,
     handleMissingDurationSubmit,
-  } = useBacklogMatrix();
+  } = useBacklogMatrix(currentDate, tomorrowDate);
 
   return (
     <div className="h-full flex flex-col space-y-4">

@@ -7,7 +7,8 @@ import { EisenhowerMatrixChart } from "./EisenhowerMatrixChart";
 import { CategoryChart } from "./CategoryChart";
 import { StatsLoadingState } from "./StatsLoadingState";
 import { StatsErrorState } from "./StatsErrorState";
-import { useAvailableTimeStore } from "@/features/available-time/store/available-time.store";
+import { useAvailableTimeQuery } from "@/features/available-time/hooks/useAvailableTime";
+import { formatDateStr } from "../utils/statsDateUtils";
 
 export function StatsPage() {
   const {
@@ -23,7 +24,9 @@ export function StatsPage() {
     categoryData,
   } = useStatsPage();
 
-  const streak = useAvailableTimeStore((s) => s.dataToday?.streak ?? 0);
+  const todayStr = formatDateStr(new Date());
+  const { data: dataToday } = useAvailableTimeQuery(todayStr);
+  const streak = dataToday?.streak ?? 0;
 
   if (isLoading && !matrixData.length && !categoryData.length) {
     return <StatsLoadingState />;

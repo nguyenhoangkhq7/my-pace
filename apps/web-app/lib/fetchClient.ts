@@ -30,11 +30,7 @@ type RequestOptions = RequestInit & {
 const isClient = typeof window !== "undefined";
 
 const getAccessToken = () => {
-    if (!isClient) {
-        return null;
-    }
-
-    return useAuthStore.getState().accessToken;
+    return null; // accessToken is now an HttpOnly cookie, browser sends it automatically via credentials: 'include'
 };
 
 const setAuthSession = (payload: unknown) => {

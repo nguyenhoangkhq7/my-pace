@@ -19,26 +19,26 @@ public class GoalController {
 
     @GetMapping
     public ResponseEntity<List<GoalDto>> getGoals(@AuthenticationPrincipal UserDetailsCustom userDetails) {
-        return ResponseEntity.ok(goalService.getGoals(userDetails));
+        return ResponseEntity.ok(goalService.getGoals(userDetails.user().getId()));
     }
 
     @PostMapping
     public ResponseEntity<GoalDto> createGoal(@Valid @RequestBody GoalCreateRequest request,
                                               @AuthenticationPrincipal UserDetailsCustom userDetails) {
-        return ResponseEntity.ok(goalService.createGoal(request, userDetails));
+        return ResponseEntity.ok(goalService.createGoal(request, userDetails.user().getId()));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<GoalDto> updateGoal(@PathVariable UUID id,
                                               @Valid @RequestBody GoalUpdateRequest request,
                                               @AuthenticationPrincipal UserDetailsCustom userDetails) {
-        return ResponseEntity.ok(goalService.updateGoal(id, request, userDetails));
+        return ResponseEntity.ok(goalService.updateGoal(id, request, userDetails.user().getId()));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteGoal(@PathVariable UUID id,
                                            @AuthenticationPrincipal UserDetailsCustom userDetails) {
-        goalService.deleteGoal(id, userDetails);
+        goalService.deleteGoal(id, userDetails.user().getId());
         return ResponseEntity.ok().build();
     }
 

@@ -5,9 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.Generated;
 import org.hibernate.annotations.UuidGenerator;
-import org.hibernate.generator.EventType;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -15,6 +13,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
+@EntityListeners(org.springframework.data.jpa.domain.support.AuditingEntityListener.class)
 @Table(name = "categories", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"user_id", "name"})
 })
@@ -38,11 +37,11 @@ public class Category {
     @Column(name = "color", nullable = false)
     private String color = "#64748b";
 
-    @Column(name = "created_at", nullable = false)
-    @Generated(event = EventType.INSERT)
+    @Column(name = "created_at", nullable = false, updatable = false)
+    @org.springframework.data.annotation.CreatedDate
     private OffsetDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    @Generated(event = {EventType.INSERT, EventType.UPDATE})
+    @org.springframework.data.annotation.LastModifiedDate
     private OffsetDateTime updatedAt;
 }

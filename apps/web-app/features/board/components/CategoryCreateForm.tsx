@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useBoardStore } from "../store/board.store";
+import { useCategories } from "../hooks/useCategories";
 import { cn } from "@/lib/utils";
 import { CustomColorPicker } from "@/components/ui/custom-color-picker";
 
@@ -10,7 +10,7 @@ interface CategoryCreateFormProps {
   onSuccess: (catId: string) => void;
 }
 
-const CATEGORY_COLORS = [
+export const CATEGORY_COLORS = [
   "#0ea5e9", // sky
   "#10b981", // emerald
   "#8b5cf6", // violet
@@ -25,7 +25,7 @@ const CATEGORY_COLORS = [
 ];
 
 export function CategoryCreateForm({ onCancel, onSuccess }: CategoryCreateFormProps) {
-  const { createCategory } = useBoardStore();
+  const { createCategory } = useCategories();
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryColor, setNewCategoryColor] = useState(CATEGORY_COLORS[0]);
 

@@ -3,9 +3,7 @@ package nhk.calendar;
 import jakarta.persistence.*;
 import lombok.*;
 import nhk.user.User;
-import org.hibernate.annotations.Generated;
 import org.hibernate.annotations.UuidGenerator;
-import org.hibernate.generator.EventType;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -18,6 +16,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
+@EntityListeners(org.springframework.data.jpa.domain.support.AuditingEntityListener.class)
 @Table(name = "daily_checkins")
 public class DailyCheckin {
 
@@ -37,6 +36,6 @@ public class DailyCheckin {
     private LocalTime checkinTime;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    @Generated(event = EventType.INSERT)
+    @org.springframework.data.annotation.CreatedDate
     private OffsetDateTime createdAt;
 }
