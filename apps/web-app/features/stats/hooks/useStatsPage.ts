@@ -1,19 +1,21 @@
-import { useState, useEffect, useMemo } from "react";
-import { useStatsStore } from "@/features/stats/store/stats.store";
+import { useState, useMemo } from "react";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { getStatsOverviewAction } from "../actions/stats.action";
 import { getRangeBounds, formatDateStr } from "../utils/statsDateUtils";
 
 export function useStatsPage() {
-  const { overview, isLoading, error, fetchOverview } = useStatsStore();
   const [range, setRange] = useState<"week" | "month" | "year">("month");
   const [referenceDate, setReferenceDate] = useState<Date>(() => new Date());
 
   const { start, end } = useMemo(() => getRangeBounds(referenceDate, range), [referenceDate, range]);
+  const startDateStr = formatDateStr(start);
+  const endDateStr = formatDateStr(end);
 
-  useEffect(() => {
-    const startDateStr = formatDateStr(start);
-    const endDateStr = formatDateStr(end);
-    fetchOverview(startDateStr, endDateStr);
-  }, [fetchOverview, start, end]);
+  const { data: overview, isLoading, error } = useQuery({
+    queryKey: ["stats", "overview", range, startDateStr, endDateStr],
+    queryFn: () => getStatsOverviewAction(startDateStr, endDateStr),
+    placeholderData: keepPreviousData,
+  });
 
   const handlePrev = () => {
     setReferenceDate(prev => {
@@ -63,7 +65,7 @@ export function useStatsPage() {
   return {
     overview,
     isLoading,
-    error,
+    error: error ? error.message : null,
     range,
     setRange,
     referenceDate,

@@ -9,7 +9,8 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Settings01Icon, PlusSignIcon } from "@hugeicons/core-free-icons";
 import { CategoryCreateForm } from "@/features/board/components/CategoryCreateForm";
-import { useBoardStore } from "@/features/board/store/board.store";
+import { useQuery } from "@tanstack/react-query";
+import { getCategoriesAction } from "@/features/board/actions/category.action";
 import { useTranslation } from "@/hooks/use-translation";
 
 interface GoalFormCategoryFieldsProps {
@@ -27,7 +28,7 @@ export function GoalFormCategoryFields({
   setIsCreatingCategory,
   setIsManagingCategories,
 }: GoalFormCategoryFieldsProps) {
-  const { categories } = useBoardStore();
+  const { data: categories = [] } = useQuery({ queryKey: ['categories'], queryFn: getCategoriesAction });
   const { t } = useTranslation();
 
   const handleCategoryCreateSuccess = (catId: string) => {
@@ -49,7 +50,7 @@ export function GoalFormCategoryFields({
              value={categoryId}
              onValueChange={(val: string) => setCategoryId(val)}
           >
-            <SelectTrigger className="w-full bg-card border-border h-9">
+            <SelectTrigger className="w-full bg-card border-border !h-9">
               <SelectValue placeholder={t.goals.categoryLabel} />
             </SelectTrigger>
             <SelectContent className="bg-popover border-border text-foreground">

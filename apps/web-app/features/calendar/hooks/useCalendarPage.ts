@@ -2,24 +2,23 @@ import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import FullCalendar from "@fullcalendar/react";
 import type { DateSelectArg, EventClickArg, DatesSetArg, EventInput } from "@fullcalendar/core";
 import { useCalendarEvents } from "@/features/calendar";
-import { useAvailableTime } from "@/features/available-time";
+
 import type { FixedEventOccurrence, ModalMode } from "@/features/calendar/types";
 import { useAuthStore } from "@/features/auth";
-import { useBoardStore } from "@/features/board/store/board.store";
-import type { TaskTimeBlock, Task } from "@/features/board/types";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getDailyPlanAction } from "@/features/board/actions/plan.action";
+import { saveTimeBlocksAction } from "@/features/board/actions/timeblock.action";
+import type { TaskTimeBlock, Task, DailyPlanTask } from "@/features/board/types";
 import { toast } from "sonner";
 import { autoSchedule, type OccupiedSlot } from "@/features/board/utils/autoSchedule";
 import { useCalendarInteractions } from "./useCalendarInteractions";
+import { getTodayStr } from "@/lib/date";
 
 // ─── Constants & Helpers ──────────────────────────────────────────────────────
 const EVENT_TEXT      = "#ffffff";
 const TASK_COLOR_MIT  = "#6366f1"; // indigo for MITs
 const TASK_COLOR_REG  = "#475569"; // slate for regular tasks
 
-const todayStr = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-};
 const toHHMM = (t: string) => t.substring(0, 5);
 const toSlotTime = (t: string | null | undefined, fallback: string) =>
   t ? t.substring(0, 5) + ":00" : fallback;
@@ -37,29 +36,33 @@ export function useCalendarPage() {
   const calendarRef = useRef<FullCalendar>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
-  const today = todayStr();
-  const { fetchAvailableTime } = useAvailableTime();
-  const { dailyPlanToday, timeBlocks, saveTimeBlocks, fetchDailyPlanToday } = useBoardStore();
+  const today = getTodayStr(user?.timezone);
+
+  const queryClient = useQueryClient();
+  const { data: dailyPlanToday } = useQuery({ queryKey: ['dailyPlan', today], queryFn: () => getDailyPlanAction(today) });
+  const timeBlocks = useMemo(() => dailyPlanToday?.timeBlocks || [], [dailyPlanToday?.timeBlocks]);
+  
+  const saveTimeBlocksMutation = useMutation({
+    mutationFn: (blocks: Omit<TaskTimeBlock, 'id'>[]) => saveTimeBlocksAction({ dailyPlanId: dailyPlanToday!.id, blocks }),
+    onSuccess: (data) => {
+      if (dailyPlanToday) {
+        queryClient.setQueryData(['dailyPlan', today], { ...dailyPlanToday, timeBlocks: data });
+      }
+    }
+  });
+
+  const [dateRange, setDateRange] = useState({ start: today, end: today });
 
   const {
     events,
-    fetchEvents,
     createEvent,
     updateAllOccurrences,
     updateSingleOccurrence,
     deleteAllOccurrences,
     deleteSingleOccurrence,
-  } = useCalendarEvents({
-    onMutationSuccess: () => fetchAvailableTime(today),
-  });
+  } = useCalendarEvents(dateRange);
 
-  // Ensure daily plan (and timeBlocks) are loaded when navigating directly to /calendar
-  useEffect(() => {
-    fetchAvailableTime(today);
-    if (!dailyPlanToday) {
-      fetchDailyPlanToday(today);
-    }
-  }, [today, fetchAvailableTime, dailyPlanToday, fetchDailyPlanToday]);
+
 
   const slotMin = toSlotTime(user?.wakeTime, "05:00:00");
   const slotMax = toSlotTime(user?.sleepTime, "23:00:00");
@@ -104,8 +107,8 @@ export function useCalendarPage() {
       });
 
     try {
-      await saveTimeBlocks(updatedBlocks);
-      const planTask = dailyPlanToday.tasks.find((pt) => pt.task.id === taskId);
+      await saveTimeBlocksMutation.mutateAsync(updatedBlocks as Omit<TaskTimeBlock, 'id'>[]);
+      const planTask = dailyPlanToday.tasks.find((pt: DailyPlanTask) => pt.task.id === taskId);
       toast.success(`Đã hủy lịch công việc: "${planTask?.task.title || ""}"`);
       setBlockModalOpen(false);
     } catch (err) {
@@ -114,13 +117,13 @@ export function useCalendarPage() {
     } finally {
       setIsUnscheduling(false);
     }
-  }, [dailyPlanToday, timeBlocks, saveTimeBlocks]);
+  }, [dailyPlanToday, timeBlocks, saveTimeBlocksMutation]);
 
   // ── Custom Hooks ──────────────────────────────────────────────────────────
   const { handleEventReceive, handleEventDrop, handleEventResize, handleEventDragStop } = useCalendarInteractions({
-    dailyPlanToday,
+    dailyPlanToday: dailyPlanToday ?? null,
     timeBlocks,
-    saveTimeBlocks,
+    saveTimeBlocks: (blocks: Partial<TaskTimeBlock>[]) => saveTimeBlocksMutation.mutateAsync(blocks as Omit<TaskTimeBlock, 'id'>[]),
     updateAllOccurrences,
     updateSingleOccurrence,
     createEvent,
@@ -153,7 +156,7 @@ export function useCalendarPage() {
     if (isConfirmed) {
       list.push(
         ...timeBlocks.map((block) => {
-          const planTask = dailyPlanToday?.tasks.find((pt) => pt.task.id === block.taskId);
+          const planTask = dailyPlanToday?.tasks.find((pt: DailyPlanTask) => pt.task.id === block.taskId);
           const task     = planTask?.task;
           const isMit    = planTask?.isMit || false;
 
@@ -215,8 +218,11 @@ export function useCalendarPage() {
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleDatesSet = useCallback((arg: DatesSetArg) => {
     localStorage.setItem("myPaceCalendarView", arg.view.type);
-    fetchEvents(arg.startStr.split("T")[0], arg.endStr.split("T")[0]);
-  }, [fetchEvents]);
+    setDateRange({
+      start: arg.startStr.split("T")[0],
+      end: arg.endStr.split("T")[0],
+    });
+  }, []);
 
   const handleSelect = useCallback((arg: DateSelectArg) => {
     const start = arg.startStr;
@@ -239,7 +245,7 @@ export function useCalendarPage() {
     setIsAutoScheduling(true);
     try {
       const scheduledTaskIdsSet = new Set(timeBlocks.map((b) => b.taskId));
-      const unscheduledPlanTasks = dailyPlanToday.tasks.filter((pt) => !scheduledTaskIdsSet.has(pt.task.id));
+      const unscheduledPlanTasks = dailyPlanToday.tasks.filter((pt: DailyPlanTask) => !scheduledTaskIdsSet.has(pt.task.id));
 
       if (unscheduledPlanTasks.length === 0) {
         toast.info("Tất cả công việc đã được lên lịch!");
@@ -265,7 +271,8 @@ export function useCalendarPage() {
         dailyPlanToday.id,
         today,
         user.wakeTime,
-        user.sleepTime
+        user.sleepTime,
+        user.timezone
       );
 
       if (newBlocks.length === 0) {
@@ -278,7 +285,7 @@ export function useCalendarPage() {
         const { id: _, ...rest } = b;
         return rest as Omit<TaskTimeBlock, "id">;
       });
-      await saveTimeBlocks([...existingCleanBlocks, ...newBlocks]);
+      await saveTimeBlocksMutation.mutateAsync([...existingCleanBlocks, ...newBlocks] as Omit<TaskTimeBlock, 'id'>[]);
       toast.success("Đã tự động sắp xếp các công việc còn lại vào lịch!");
     } catch (err) {
       console.error(err);
@@ -286,14 +293,14 @@ export function useCalendarPage() {
     } finally {
       setIsAutoScheduling(false);
     }
-  }, [dailyPlanToday, timeBlocks, events, user, today, saveTimeBlocks]);
+  }, [dailyPlanToday, timeBlocks, events, user, today, saveTimeBlocksMutation]);
 
   const handleEventClick = useCallback((arg: EventClickArg) => {
     if (arg.event.extendedProps.isTimeBlock) {
       const blockId = arg.event.extendedProps.blockId;
       const taskId = arg.event.extendedProps.taskId;
       const block = timeBlocks.find((b) => b.id === blockId);
-      const planTask = dailyPlanToday?.tasks.find((pt) => pt.task.id === taskId);
+      const planTask = dailyPlanToday?.tasks.find((pt: DailyPlanTask) => pt.task.id === taskId);
 
       if (block && planTask) {
         setSelectedBlock(block);
@@ -312,7 +319,7 @@ export function useCalendarPage() {
 
   const planTasks = dailyPlanToday?.tasks || [];
   const hasPlan   = planTasks.length > 0;
-  const unscheduledTasks = planTasks.filter((pt) => !scheduledTaskIds.has(pt.task.id) && pt.task.status !== 'Done');
+  const unscheduledTasks = planTasks.filter((pt: DailyPlanTask) => !scheduledTaskIds.has(pt.task.id) && pt.task.status !== 'Done');
   const hasUnscheduled = hasPlan && unscheduledTasks.length > 0;
 
   return {

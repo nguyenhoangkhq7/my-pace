@@ -18,10 +18,10 @@ public class FeedbackController {
     private final FeedbackService feedbackService;
 
     @PostMapping
-    public ResponseEntity<Feedback> createFeedback(
+    public ResponseEntity<FeedbackResponse> createFeedback(
             @RequestBody FeedbackRequest request,
             @AuthenticationPrincipal UserDetailsCustom userDetails) {
-        Feedback feedback = feedbackService.createFeedback(request, userDetails.user());
+        FeedbackResponse feedback = feedbackService.createFeedback(request, userDetails.user().getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(feedback);
     }
 }

@@ -1,16 +1,17 @@
 package nhk.task;
 
-import lombok.Data;
+import lombok.Builder;
+
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-@Data
-public class TaskChecklistItemDto {
-    private UUID id;
-    private UUID taskId;
-    private String title;
-    private Boolean isCompleted;
-    private Integer orderIndex;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
-}
+@Builder
+public record TaskChecklistItemDto(
+    UUID id,
+    UUID taskId,
+    String title,
+    Boolean isCompleted,
+    Integer orderIndex,
+    OffsetDateTime createdAt,
+    OffsetDateTime updatedAt
+) {}

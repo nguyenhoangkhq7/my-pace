@@ -1,11 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import { useAuthStore } from "@/features/auth";
 import { useBoardStore } from "@/features/board/store/board.store";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getTasksAction } from "@/features/board/actions/task.action";
+import { getDailyPlanAction, confirmPlanAction } from "@/features/board/actions/plan.action";
+import { getCategoriesAction } from "@/features/board/actions/category.action";
 import { useAppVisibility } from "@/features/available-time";
+import { getTodayStr } from "@/lib/date";
 import { FlowTodoList } from "@/features/focus/components/FlowTodoList";
 import { FlowPomodoro } from "@/features/focus/components/FlowPomodoro";
 import { FloatingPomodoroWidget } from "@/features/focus/components/FloatingPomodoroWidget";
@@ -27,10 +32,7 @@ import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Clock01Icon } from "@hugeicons/core-free-icons";
 import { useTranslation } from "@/hooks/use-translation";
-import type { GroupImperativeHandle } from "react-resizable-panels";
 
-// Threshold: when zenzone panel reaches this %, auto-enter Zen Full mode
-const ZEN_FULL_THRESHOLD = 65;
 
 export function FlowPage() {
   useAppVisibility();
@@ -38,25 +40,24 @@ export function FlowPage() {
   usePomodoro();
   const user = useAuthStore((s) => s.user);
   const pomodoroState = useFocusStore((s) => s.pomodoroState);
-  const timeLeft = useFocusStore((s) => s.timeLeft);
-  const startTimer = useFocusStore((s) => s.startTimer);
-  const pauseTimer = useFocusStore((s) => s.pauseTimer);
   const openFocusMode = useFocusStore((s) => s.openFocusMode);
   const isZenFull = useFocusStore((s) => s.isZenFull);
-  const setZenFull = useFocusStore((s) => s.setZenFull);
-  const isPomodoroFloating = useFocusStore((s) => s.isPomodoroFloating);
-  const setPomodoroFloating = useFocusStore((s) => s.setPomodoroFloating);
-  const confirmPlan = useBoardStore((s) => s.confirmPlan);
-  const { tasks, fetchTasks, fetchDailyPlanToday, fetchCategories, dailyPlanToday } = useBoardStore();
+  const queryClient = useQueryClient();
+  const currentDate = getTodayStr(user?.timezone);
+  
+  useQuery({ queryKey: ['tasks'], queryFn: getTasksAction, enabled: !!user });
+  useQuery({ queryKey: ['categories'], queryFn: getCategoriesAction, enabled: !!user });
+  const { data: dailyPlanToday } = useQuery({ queryKey: ['dailyPlan', currentDate], queryFn: () => getDailyPlanAction(currentDate), enabled: !!user });
+  
+  const confirmPlanMutation = useMutation({
+    mutationFn: confirmPlanAction,
+    onSuccess: (data, variables) => {
+      queryClient.setQueryData(['dailyPlan', variables], data);
+      useBoardStore.setState({ isStarted: true });
+    }
+  });
 
-  const activeTaskId = useFocusStore((s) => s.activeTaskId);
-  const activeTask = tasks.find((t) => t.id === activeTaskId);
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
-  };
 
   const {
     isLg,
@@ -79,14 +80,8 @@ export function FlowPage() {
   const [pendingTask, setPendingTask] = useState<DailyPlanTask | null>(null);
 
   useEffect(() => {
-    if (user) {
-      const d = new Date();
-      const currentDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      fetchCategories();
-      fetchTasks();
-      fetchDailyPlanToday(currentDate);
-    }
-  }, [user, fetchTasks, fetchDailyPlanToday, fetchCategories]);
+    // Only kept for the dependencies if needed
+  }, [user]);
 
   useEffect(() => {
     return () => {
@@ -109,7 +104,7 @@ export function FlowPage() {
   const handleConfirmDailyPlan = async () => {
     if (!dailyPlanToday) { setIsConfirmPlanOpen(false); setPendingTask(null); return; }
     try {
-      if (!dailyPlanToday.isConfirmed) await confirmPlan(dailyPlanToday.planDate);
+      if (!dailyPlanToday.isConfirmed) await confirmPlanMutation.mutateAsync(dailyPlanToday.planDate);
       setIsConfirmPlanOpen(false);
       if (pendingTask) {
         openFocusMode(pendingTask.task.id, pendingTask.id, pendingTask.task.estimatedMinutes || 25);

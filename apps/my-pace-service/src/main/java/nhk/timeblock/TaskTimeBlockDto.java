@@ -1,16 +1,14 @@
 package nhk.timeblock;
 
-import lombok.Data;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Data
-public class TaskTimeBlockDto {
-    private UUID id;
-    private UUID taskId;
-    private UUID dailyPlanId;
-    private OffsetDateTime startTime;
-    private OffsetDateTime endTime;
-    private Integer partIndex;
-    private Integer totalParts;
-}
+public record TaskTimeBlockDto(
+    UUID id,
+    UUID taskId,
+    UUID dailyPlanId,
+    LocalDateTime startTime,
+    LocalDateTime endTime,
+    Integer partIndex,
+    Integer totalParts
+) {}

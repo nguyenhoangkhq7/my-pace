@@ -1,22 +1,20 @@
 package nhk.task;
 
 import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-@Data
-public class TaskCreateRequest {
+public record TaskCreateRequest(
     @NotBlank(message = "Title is required")
-    private String title;
-    private UUID goalId;
-    private UUID categoryId;
-    private Integer estimatedMinutes;
-    private Boolean isUrgent;
-    private Boolean isImportant;
-    private LocalDate dueDate;
-    private String status;
-    private String notes;
-    private List<TaskChecklistItemRequest> checklists;
-}
+    String title,
+    UUID goalId,
+    UUID categoryId,
+    Integer estimatedMinutes,
+    Boolean isUrgent,
+    Boolean isImportant,
+    LocalDateTime dueDate,
+    String status,
+    String notes,
+    List<TaskChecklistItemRequest> checklists
+) {}

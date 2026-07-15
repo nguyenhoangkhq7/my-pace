@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,8 +8,10 @@ import { Task, TaskChecklistItem } from "../types";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
-import { useBoardStore } from "../store/board.store";
-import { useGoalStore } from "@/features/goal/store/goal.store";
+import { useQuery } from "@tanstack/react-query";
+import { useTasks } from "../hooks/useTasks";
+import { useCategories } from "../hooks/useCategories";
+import { getGoalsAction } from "@/features/goal/actions/goal.action";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Calendar01Icon, Delete01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
@@ -17,6 +19,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDeleteDialog } from "@/components/feedback/ConfirmDeleteDialog";
 import { getApiErrorMessage } from "@/lib/fetchClient";
 import { useTranslation } from "@/hooks/use-translation";
+import { useForm, Controller, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { taskFormSchema, TaskFormValues } from "../schema/task.schema";
+import { TimeSelect } from "@/components/ui/time-select";
 
 import { TaskFormChecklist } from "./TaskFormChecklist";
 import { TaskFormDuration } from "./TaskFormDuration";
@@ -49,27 +55,55 @@ export function TaskFormContent({
   planningTarget,
   initialStatus
 }: TaskFormContentProps) {
-  const { tasks, categories, createTask, updateTask, deleteTask } = useBoardStore();
-  const { goals, fetchGoals } = useGoalStore();
+  const { tasks, createTask, updateTask, deleteTask } = useTasks();
+  const { categories } = useCategories();
+
+  const { data: goals = [], refetch: fetchGoals } = useQuery({ queryKey: ['goals'], queryFn: getGoalsAction });
   const { t } = useTranslation();
-  
-  const [title, setTitle] = useState("");
-  const [estimatedMinutes, setEstimatedMinutes] = useState("");
-  const [notes, setNotes] = useState("");
-  const [isUrgent, setIsUrgent] = useState(false);
-  const [isImportant, setIsImportant] = useState(false);
-  const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
-  const [goalId, setGoalId] = useState<string | undefined>(undefined);
-  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
-  const [error, setError] = useState("");
 
   const [localChecklists, setLocalChecklists] = useState<Partial<TaskChecklistItem>[]>([]);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+  const [error, setError] = useState("");
+  const [prevInitialData, setPrevInitialData] = useState(initialData);
+  const [dueTime, setDueTime] = useState(() => {
+    if (initialData?.dueDate && initialData.dueDate.includes("T")) {
+      return initialData.dueDate.split("T")[1].substring(0, 5);
+    }
+    return "23:59";
+  });
+
+  if (initialData !== prevInitialData) {
+    setPrevInitialData(initialData);
+    let nextDueTime = "23:59";
+    if (initialData?.dueDate && initialData.dueDate.includes("T")) {
+      nextDueTime = initialData.dueDate.split("T")[1].substring(0, 5);
+    }
+    setDueTime(nextDueTime);
+  }
 
   const currentTask = initialData?.id ? tasks.find(t => t.id === initialData.id) : null;
   const checklists = currentTask?.checklists || [];
 
-  const getInitialState = useCallback(() => {
+  const { register, handleSubmit, control, setValue, reset, watch, formState } = useForm<TaskFormValues>({
+    resolver: zodResolver(taskFormSchema(!!requireDuration)),
+    defaultValues: {
+      title: "",
+      estimatedMinutes: undefined,
+      notes: "",
+      isUrgent: false,
+      isImportant: false,
+      categoryId: undefined,
+      goalId: undefined,
+      dueDate: undefined,
+    }
+  });
+
+  const watchRef = useRef(watch);
+  useEffect(() => {
+    watchRef.current = watch;
+  });
+
+  const getInitialValues = useCallback((): TaskFormValues => {
     let initialDueDate: Date | undefined = undefined;
     if (initialData?.dueDate) {
       initialDueDate = new Date(initialData.dueDate);
@@ -80,34 +114,26 @@ export function TaskFormContent({
       initialDueDate = new Date();
     }
 
-    const checklistsToUse = initialData?.id ? currentTask?.checklists : initialData?.checklists;
-
     return {
       title: initialData?.title || "",
-      estimatedMinutes: initialData?.estimatedMinutes ? String(initialData.estimatedMinutes) : "",
+      estimatedMinutes: initialData?.estimatedMinutes || undefined,
       notes: initialData?.notes || "",
       isUrgent: prefilledUrgent !== undefined ? prefilledUrgent : (initialData?.isUrgent || false),
       isImportant: prefilledImportant !== undefined ? prefilledImportant : (initialData?.isImportant || false),
       categoryId: initialData?.categoryId || undefined,
       goalId: prefilledGoalId || initialData?.goalId || undefined,
       dueDate: initialDueDate,
-      localChecklists: checklistsToUse
-        ? checklistsToUse.map(c => ({ id: c.id, title: c.title, isCompleted: c.isCompleted, orderIndex: c.orderIndex }))
-        : []
     };
-  }, [initialData, planningTarget, prefilledGoalId, initialStatus, currentTask, prefilledUrgent, prefilledImportant]);
+  }, [initialData, planningTarget, prefilledGoalId, initialStatus, prefilledUrgent, prefilledImportant]);
 
   const resetToInitial = () => {
-    const initialState = getInitialState();
-    setTitle(initialState.title);
-    setEstimatedMinutes(initialState.estimatedMinutes);
-    setNotes(initialState.notes);
-    setIsUrgent(initialState.isUrgent);
-    setIsImportant(initialState.isImportant);
-    setCategoryId(initialState.categoryId);
-    setGoalId(initialState.goalId);
-    setDueDate(initialState.dueDate);
-    setLocalChecklists(initialState.localChecklists);
+    const initialVals = getInitialValues();
+    reset(initialVals);
+    const checklistsToUse = initialData?.id ? currentTask?.checklists : initialData?.checklists;
+    setLocalChecklists(checklistsToUse
+      ? checklistsToUse.map(c => ({ id: c.id, title: c.title, isCompleted: c.isCompleted, orderIndex: c.orderIndex }))
+      : []
+    );
     setError("");
     localStorage.removeItem('my_pace_task_draft_new');
   };
@@ -121,20 +147,20 @@ export function TaskFormContent({
       setIsConfirmDeleteOpen(false);
       setError("");
 
+      const initialVals = getInitialValues();
+      const checklistsToUse = initialData?.id ? currentTask?.checklists : initialData?.checklists;
+      setLocalChecklists(checklistsToUse
+        ? checklistsToUse.map(c => ({ id: c.id, title: c.title, isCompleted: c.isCompleted, orderIndex: c.orderIndex }))
+        : []
+      );
+
       if (!initialData?.id) {
         const savedDraft = localStorage.getItem('my_pace_task_draft_new');
         if (savedDraft) {
           try {
             const draft = JSON.parse(savedDraft);
-            setTitle(draft.title || "");
-            setEstimatedMinutes(draft.estimatedMinutes || "");
-            setNotes(draft.notes || "");
-            setIsUrgent(draft.isUrgent ?? false);
-            setIsImportant(draft.isImportant ?? false);
-            setCategoryId(draft.categoryId);
-            setGoalId(draft.goalId);
-            setDueDate(draft.dueDate ? new Date(draft.dueDate) : undefined);
-            setLocalChecklists(draft.localChecklists || []);
+            if (draft.dueDate) draft.dueDate = new Date(draft.dueDate);
+            reset(draft);
             return;
           } catch (e) {
             console.error("Failed to parse draft", e);
@@ -142,89 +168,78 @@ export function TaskFormContent({
         }
       }
 
-      const initialState = getInitialState();
-      setTitle(initialState.title);
-      setEstimatedMinutes(initialState.estimatedMinutes);
-      setNotes(initialState.notes);
-      setIsUrgent(initialState.isUrgent);
-      setIsImportant(initialState.isImportant);
-      setCategoryId(initialState.categoryId);
-      setGoalId(initialState.goalId);
-      setDueDate(initialState.dueDate);
-      setLocalChecklists(initialState.localChecklists);
+      reset(initialVals);
     });
-  }, [isOpen, initialData, fetchGoals, getInitialState]);
+  }, [isOpen, initialData, fetchGoals, getInitialValues, reset, currentTask]);
 
-  const initialState = getInitialState();
-  const formatDateForCompare = (d?: Date) => d ? format(d, "yyyy-MM-dd") : "";
+  const isChecklistsDirty = JSON.stringify(localChecklists) !== JSON.stringify(
+    (initialData?.id ? currentTask?.checklists : initialData?.checklists)?.map(c => ({ id: c.id, title: c.title, isCompleted: c.isCompleted, orderIndex: c.orderIndex })) || []
+  );
 
-  const isDirty = 
-    title !== initialState.title ||
-    estimatedMinutes !== initialState.estimatedMinutes ||
-    notes !== initialState.notes ||
-    isUrgent !== initialState.isUrgent ||
-    isImportant !== initialState.isImportant ||
-    categoryId !== initialState.categoryId ||
-    goalId !== initialState.goalId ||
-    formatDateForCompare(dueDate) !== formatDateForCompare(initialState.dueDate) ||
-    JSON.stringify(localChecklists) !== JSON.stringify(initialState.localChecklists);
+  const isDirty = formState.isDirty || isChecklistsDirty;
 
   const hasDraft = !initialData?.id && isDirty;
 
   useEffect(() => {
     if (!isOpen || !!initialData?.id) return;
 
-    if (isDirty) {
-      const draft = {
-        title, estimatedMinutes, notes, isUrgent, isImportant, categoryId, goalId, 
-        dueDate: dueDate ? dueDate.toISOString() : undefined, 
-        localChecklists
-      };
-      localStorage.setItem('my_pace_task_draft_new', JSON.stringify(draft));
-    } else {
+    const subscription = watchRef.current((value) => {
+      if (isDirty) {
+        localStorage.setItem('my_pace_task_draft_new', JSON.stringify({
+          ...value,
+          localChecklists
+        }));
+      } else {
+        localStorage.removeItem('my_pace_task_draft_new');
+      }
+    });
+
+    // Handle initial state or clean up
+    if (!isDirty) {
       localStorage.removeItem('my_pace_task_draft_new');
     }
-  }, [isDirty, title, estimatedMinutes, notes, isUrgent, isImportant, categoryId, goalId, dueDate, localChecklists, isOpen, initialData]);
+
+    return () => subscription.unsubscribe();
+  }, [isDirty, localChecklists, isOpen, initialData]);
 
   const handleClose = () => {
     if (onOpenChange) onOpenChange(false);
     if (onClose) onClose();
   };
 
+  const watchGoalId = useWatch({ control, name: "goalId" });
+  const watchTitle = useWatch({ control, name: "title" });
+  const watchEstimatedMinutes = useWatch({ control, name: "estimatedMinutes" });
+
   useEffect(() => {
-    if (goalId && goalId !== "none") {
-      const selectedGoal = goals.find(g => g.id === goalId);
+    if (watchGoalId && watchGoalId !== "none") {
+      const selectedGoal = goals.find(g => g.id === watchGoalId);
       if (selectedGoal) {
         Promise.resolve().then(() => {
-          if (selectedGoal.categoryId) setCategoryId(selectedGoal.categoryId);
-          if (!title && selectedGoal.goalType === 'Time-boxed') setTitle(selectedGoal.title);
-          if (!estimatedMinutes && selectedGoal.goalType === 'Time-boxed') {
-            setEstimatedMinutes(String(selectedGoal.durationMinutes || 30));
+          if (selectedGoal.categoryId) {
+            setValue("categoryId", selectedGoal.categoryId, { shouldDirty: true });
+          }
+          if (!watchTitle && selectedGoal.goalType === 'Time-boxed') {
+            setValue("title", selectedGoal.title, { shouldDirty: true });
+          }
+          if (!watchEstimatedMinutes && selectedGoal.goalType === 'Time-boxed') {
+            setValue("estimatedMinutes", selectedGoal.durationMinutes || 30, { shouldDirty: true });
           }
         });
       }
     }
-  }, [goalId, goals, estimatedMinutes, title]);
+  }, [watchGoalId, goals, setValue, watchTitle, watchEstimatedMinutes]);
 
-  const handleSubmitInternal = async () => {
-    if (!title.trim()) {
-      setError(t.taskForm.titleRequired);
-      return;
-    }
-    if (requireDuration && !estimatedMinutes) {
-      setError(t.taskForm.durationRequired);
-      return;
-    }
-
+  const handleFormSubmit = async (values: TaskFormValues) => {
     const taskData: Partial<Task> = {
-      title,
-      estimatedMinutes: estimatedMinutes ? parseInt(estimatedMinutes, 10) : undefined,
-      notes,
-      isUrgent,
-      isImportant,
-      categoryId: categoryId === "none" ? undefined : categoryId,
-      goalId: goalId === "none" ? undefined : goalId,
-      dueDate: dueDate ? format(dueDate, "yyyy-MM-dd") : undefined,
+      title: values.title,
+      estimatedMinutes: values.estimatedMinutes || undefined,
+      notes: values.notes || undefined,
+      isUrgent: values.isUrgent,
+      isImportant: values.isImportant,
+      categoryId: values.categoryId === "none" ? undefined : (values.categoryId || undefined),
+      goalId: values.goalId === "none" ? undefined : (values.goalId || undefined),
+      dueDate: values.dueDate ? `${format(values.dueDate, "yyyy-MM-dd")}T${dueTime || "23:59"}:00` : undefined,
     };
 
     if (!initialData?.id && localChecklists.length > 0) {
@@ -240,7 +255,7 @@ export function TaskFormContent({
         await onSubmit(taskData);
       } else {
         if (initialData?.id) {
-          await updateTask(initialData.id, taskData);
+          await updateTask({ id: initialData.id, data: taskData });
         } else {
           await createTask(taskData);
         }
@@ -267,7 +282,7 @@ export function TaskFormContent({
     }
   };
 
-  const associatedGoal = goals.find(g => g.id === (prefilledGoalId || initialData?.goalId));
+   const associatedGoal = goals.find(g => g.id === (prefilledGoalId || initialData?.goalId || watchGoalId));
 
   return (
     <>
@@ -287,18 +302,24 @@ export function TaskFormContent({
         <div className={cn("grid py-4", requireDuration ? "gap-4" : "grid-cols-1 md:grid-cols-2 gap-6")}>
           <div className="space-y-4">
             <div className="grid gap-2">
-              <Label htmlFor="title">{t.taskForm.titleLabel}</Label>
+              <Label htmlFor="title" className={cn(formState.errors.title && "text-red-500")}>
+                {t.taskForm.titleLabel}
+              </Label>
               <Input
                 id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                onBlur={() => {}}
+                {...register("title")}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSubmitInternal();
+                  if (e.key === "Enter") handleSubmit(handleFormSubmit)();
                 }}
-                className="bg-card border-border focus:border-primary text-lg font-medium"
+                className={cn(
+                  "bg-card border-border focus:border-primary text-lg font-medium",
+                  formState.errors.title && "border-red-500 focus:border-red-500"
+                )}
                 disabled={requireDuration && !!initialData?.title}
               />
+              {formState.errors.title && (
+                <p className="text-red-500 text-xs">{formState.errors.title.message}</p>
+              )}
             </div>
             
             {!requireDuration && (
@@ -327,8 +348,7 @@ export function TaskFormContent({
                 <Label htmlFor="notes">{t.taskForm.notesLabel}</Label>
                 <Textarea
                   id="notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
+                  {...register("notes")}
                   className="bg-card border-border focus:border-primary min-h-[100px]"
                   placeholder={t.taskForm.notesPlaceholder}
                 />
@@ -338,12 +358,18 @@ export function TaskFormContent({
 
           <div className="space-y-4">
             {!requireDuration && !prefilledGoalId && (
-              <TaskFormCategory 
-                categoryId={categoryId}
-                onCategoryChange={setCategoryId}
-                categories={categories}
-                goalId={goalId}
-                associatedGoal={associatedGoal}
+              <Controller
+                name="categoryId"
+                control={control}
+                render={({ field }) => (
+                  <TaskFormCategory 
+                    categoryId={field.value || undefined}
+                    onCategoryChange={field.onChange}
+                    categories={categories}
+                    goalId={watchGoalId || undefined}
+                    associatedGoal={associatedGoal}
+                  />
+                )}
               />
             )}
 
@@ -359,55 +385,95 @@ export function TaskFormContent({
             {!requireDuration && (
               <div className="grid gap-2">
                 <Label>{t.taskForm.dueDateLabel}</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full justify-start text-left font-normal bg-card border-border",
-                        !dueDate && "text-muted-foreground"
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <Controller
+                      name="dueDate"
+                      control={control}
+                      render={({ field }) => (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full justify-start text-left font-normal bg-card border-border",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              <HugeiconsIcon icon={Calendar01Icon} className="mr-2 h-4 w-4" />
+                              {field.value ? format(field.value, "PPP") : <span>{t.taskForm.pickDate}</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0 bg-popover border-border">
+                            <Calendar
+                              mode="single"
+                              selected={field.value || undefined}
+                              onSelect={field.onChange}
+                              className="text-foreground"
+                              disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                            />
+                          </PopoverContent>
+                        </Popover>
                       )}
-                    >
-                      <HugeiconsIcon icon={Calendar01Icon} className="mr-2 h-4 w-4" />
-                      {dueDate ? format(dueDate, "PPP") : <span>{t.taskForm.pickDate}</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 bg-popover border-border">
-                    <Calendar
-                      mode="single"
-                      selected={dueDate}
-                      onSelect={(d) => setDueDate(d)}
-                      className="text-foreground"
-                      disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                     />
-                  </PopoverContent>
-                </Popover>
+                  </div>
+                  <div className="w-[140px]">
+                    <TimeSelect
+                      value={dueTime}
+                      onChange={setDueTime}
+                      size="sm"
+                    />
+                  </div>
+                </div>
               </div>
             )}
             
-            <TaskFormDuration 
-              value={estimatedMinutes}
-              onChange={setEstimatedMinutes}
-              requireDuration={requireDuration}
+            <Controller
+              name="estimatedMinutes"
+              control={control}
+              render={({ field }) => (
+                <div className="grid gap-2">
+                  <TaskFormDuration 
+                    value={field.value ? String(field.value) : ""}
+                    onChange={(val) => field.onChange(val ? parseInt(val, 10) : undefined)}
+                    requireDuration={requireDuration}
+                  />
+                  {formState.errors.estimatedMinutes && (
+                    <p className="text-red-500 text-xs">{formState.errors.estimatedMinutes.message}</p>
+                  )}
+                </div>
+              )}
             />
             
             {!requireDuration && !prefilledGoalId && (
               <div className="grid grid-cols-2 gap-4 mt-2">
                 <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="urgent" 
-                    checked={isUrgent}
-                    onCheckedChange={(checked) => setIsUrgent(checked === true)}
-                    className="border-border"
+                  <Controller
+                    name="isUrgent"
+                    control={control}
+                    render={({ field }) => (
+                      <Checkbox 
+                        id="urgent" 
+                        checked={field.value}
+                        onCheckedChange={(checked) => field.onChange(checked === true)}
+                        className="border-border"
+                      />
+                    )}
                   />
                   <Label htmlFor="urgent" className="cursor-pointer font-normal text-sm">{t.taskForm.urgentLabel}</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="important" 
-                    checked={isImportant}
-                    onCheckedChange={(checked) => setIsImportant(checked === true)}
-                    className="border-border"
+                  <Controller
+                    name="isImportant"
+                    control={control}
+                    render={({ field }) => (
+                      <Checkbox 
+                        id="important" 
+                        checked={field.value}
+                        onCheckedChange={(checked) => field.onChange(checked === true)}
+                        className="border-border"
+                      />
+                    )}
                   />
                   <Label htmlFor="important" className="cursor-pointer font-normal text-sm">{t.taskForm.importantLabel}</Label>
                 </div>
@@ -447,7 +513,7 @@ export function TaskFormContent({
             <Button variant="outline" onClick={handleClose} className="border-border text-foreground hover:bg-muted">
               {t.common.cancel}
             </Button>
-            <Button onClick={handleSubmitInternal} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+            <Button onClick={handleSubmit(handleFormSubmit)} className="bg-primary hover:bg-primary/90 text-primary-foreground">
               {requireDuration ? t.taskForm.continue : t.taskForm.save}
             </Button>
           </div>

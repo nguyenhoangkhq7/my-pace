@@ -18,27 +18,27 @@ public class CategoryController {
 
     @GetMapping
     public List<CategoryDto> getCategories(@AuthenticationPrincipal UserDetailsCustom userDetails) {
-        return categoryService.getCategories(userDetails);
+        return categoryService.getCategories(userDetails.user().getId());
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public CategoryDto createCategory(@Valid @RequestBody CategoryCreateRequest request,
                                       @AuthenticationPrincipal UserDetailsCustom userDetails) {
-        return categoryService.createCategory(request, userDetails);
+        return categoryService.createCategory(request, userDetails.user().getId());
     }
 
     @PutMapping("/{id}")
     public CategoryDto updateCategory(@PathVariable UUID id,
                                       @Valid @RequestBody CategoryUpdateRequest request,
                                       @AuthenticationPrincipal UserDetailsCustom userDetails) {
-        return categoryService.updateCategory(id, request, userDetails);
+        return categoryService.updateCategory(id, request, userDetails.user().getId());
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteCategory(@PathVariable UUID id,
                                @AuthenticationPrincipal UserDetailsCustom userDetails) {
-        categoryService.deleteCategory(id, userDetails);
+        categoryService.deleteCategory(id, userDetails.user().getId());
     }
 }

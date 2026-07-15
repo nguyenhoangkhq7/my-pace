@@ -1,7 +1,6 @@
 package nhk.auth;
 
 import lombok.RequiredArgsConstructor;
-import nhk.common.LoggingFilter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

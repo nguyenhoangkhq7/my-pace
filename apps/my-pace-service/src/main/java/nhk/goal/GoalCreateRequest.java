@@ -1,29 +1,29 @@
 package nhk.goal;
 
-import lombok.Data;
-import java.time.LocalDate;
-import java.util.List;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-@Data
-public class GoalCreateRequest {
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.UUID;
+
+public record GoalCreateRequest(
     @NotNull
     @Size(max = 255)
-    private String title;
+    String title,
 
     @NotNull
     @Size(max = 50)
-    private String goalType;
+    String goalType,
     
-    private LocalDate startDate;
-    private LocalDate endDate;
+    LocalDate startDate,
+    LocalDate endDate,
     
     @NotNull
-    private java.util.UUID categoryId;
+    UUID categoryId,
     
-    private Boolean autoCreateTask;
-    private Integer durationMinutes;
-    private String daysOfWeek;
-    private java.time.LocalTime preferTime;
-}
+    Boolean autoCreateTask,
+    Integer durationMinutes,
+    String daysOfWeek,
+    LocalTime preferTime
+) {}

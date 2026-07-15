@@ -1,41 +1,48 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
-import { useAvailableTimeStore } from "../store/available-time.store";
-import { useBoardStore } from "@/features/board/store/board.store";
+import { useQuery } from "@tanstack/react-query";
+import { useAvailableTimeQuery, useCheckinMutation } from "./useAvailableTime";
+import { getDailyPlanAction } from "@/features/board/actions/plan.action";
+
+import { useAuthStore } from "@/features/auth";
+import { getTodayStr as getTodayStrHelper } from "@/lib/date";
 
 function getTodayStr() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const { user } = useAuthStore.getState();
+  return getTodayStrHelper(user?.timezone);
 }
 
 export function useAppVisibility() {
-  const fetchAvailableTimeToday = useAvailableTimeStore((s) => s.fetchAvailableTimeToday);
-  const checkin = useAvailableTimeStore((s) => s.checkin);
-  const dataToday = useAvailableTimeStore((s) => s.dataToday);
-  const { dailyPlanToday, fetchDailyPlanToday } = useBoardStore();
+  const todayStr = getTodayStr();
+  
+  const { data: dataToday, refetch: refetchAvailableTime } = useAvailableTimeQuery(todayStr);
+  const checkinMutation = useCheckinMutation();
+  const { data: dailyPlanToday, refetch: refetchDailyPlan } = useQuery({ 
+    queryKey: ['dailyPlan', todayStr], 
+    queryFn: () => getDailyPlanAction(todayStr) 
+  });
 
   const lastCheckedDate = useRef<string>("");
 
   const refreshAll = useCallback(() => {
-    const today = getTodayStr();
-    fetchAvailableTimeToday(today);
-    fetchDailyPlanToday(today);
-  }, [fetchAvailableTimeToday, fetchDailyPlanToday]);
+    refetchAvailableTime();
+    refetchDailyPlan();
+  }, [refetchAvailableTime, refetchDailyPlan]);
 
   // 1. Auto Check-in when user opens app on a new day and no plan has been created yet
   useEffect(() => {
     const today = getTodayStr();
 
     // Wait until dataToday has been fetched from the server and is not null
-    if (dataToday !== null && !dataToday.checkedIn && dailyPlanToday === null) {
+    if (dataToday !== null && dataToday !== undefined && !dataToday.checkedIn && dailyPlanToday === null) {
       if (lastCheckedDate.current !== today) {
         lastCheckedDate.current = today;
         // Auto checkin in background
-        checkin(today);
+        checkinMutation.mutate({ date: today });
       }
     }
-  }, [dailyPlanToday, dataToday, checkin]);
+  }, [dailyPlanToday, dataToday, checkinMutation]);
 
   // 2. Realtime Recalculation on window focus or visibility change
   useEffect(() => {
@@ -53,16 +60,4 @@ export function useAppVisibility() {
       document.removeEventListener("visibilitychange", handleFocusOrVisible);
     };
   }, [refreshAll]);
-
-  // 3. Periodic refresh (every 60 seconds) to keep the remaining time ticking in real-time when visible
-  useEffect(() => {
-    const today = getTodayStr();
-    const interval = setInterval(() => {
-      if (document.visibilityState === "visible") {
-        fetchAvailableTimeToday(today);
-      }
-    }, 60000);
-
-    return () => clearInterval(interval);
-  }, [fetchAvailableTimeToday]);
 }

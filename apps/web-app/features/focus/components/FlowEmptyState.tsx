@@ -1,8 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { useBoardStore } from "@/features/board/store/board.store";
-import { useAvailableTimeStore } from "@/features/available-time/store/available-time.store";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getTasksAction, updateTaskAction } from "@/features/board/actions/task.action";
+import { getDailyPlanAction, planMyDayAction, reviewPlanAction } from "@/features/board/actions/plan.action";
+import { saveTimeBlocksAction } from "@/features/board/actions/timeblock.action";
+import type { TaskTimeBlock } from "@/features/board/types";
+import { useAvailableTimeQuery } from "@/features/available-time/hooks/useAvailableTime";
 import { toast } from "sonner";
 import type { Task, DailyPlanTask } from "@/features/board/types";
 import { TaskFormModal } from "@/features/board/components/TaskFormModal";
@@ -10,8 +14,9 @@ import { FlowReviewModal } from "./FlowReviewModal";
 import { FlowPickTaskModal } from "./FlowPickTaskModal";
 import { useTranslation } from "@/hooks/use-translation";
 import { useAuthStore } from "@/features/auth";
-import { calendarApi } from "@/features/calendar/api/calendar.api";
+import { getEventsAction } from "@/features/calendar/actions/calendar.action";
 import { autoSchedule, type OccupiedSlot } from "@/features/board/utils/autoSchedule";
+import { getTodayStr } from "@/lib/date";
 
 const toLocalDateStr = (iso: string) => {
   const d = new Date(iso);
@@ -24,32 +29,35 @@ const toLocalTimeStr = (iso: string) => {
 
 export function FlowEmptyState() {
   const { t, locale } = useTranslation();
-  const { tasks, dailyPlanToday, savePlan, updateTask, reviewDailyPlan, saveTimeBlocks } = useBoardStore();
-  const { dataToday } = useAvailableTimeStore();
+  const queryClient = useQueryClient();
+  const user = useAuthStore((s) => s.user);
+  const todayStr = getTodayStr(user?.timezone);
+  
+  const { data: tasks = [] } = useQuery({ queryKey: ['tasks'], queryFn: getTasksAction });
+  const { data: dailyPlanToday } = useQuery({ queryKey: ['dailyPlan', todayStr], queryFn: () => getDailyPlanAction(todayStr) });
+  
+  const updateTaskMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string, data: Partial<Task> }) => updateTaskAction(id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+  });
+  const savePlanMutation = useMutation({
+    mutationFn: ({ date, availableMinutes, target }: { date: string, availableMinutes: number, target: 'today' | 'tomorrow' }) => planMyDayAction({ date, availableMinutes, target }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['dailyPlan'] }),
+  });
+  const saveTimeBlocksMutation = useMutation({
+    mutationFn: (blocks: Omit<TaskTimeBlock, 'id'>[]) => saveTimeBlocksAction({ dailyPlanId: dailyPlanToday!.id, blocks }),
+  });
+  const reviewDailyPlanMutation = useMutation({
+    mutationFn: reviewPlanAction,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['dailyPlan'] }),
+  });
+  const { data: dataToday } = useAvailableTimeQuery(todayStr);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [isPickTaskModalOpen, setIsPickTaskModalOpen] = useState(false);
   const [requireDurationForTask, setRequireDurationForTask] = useState<Task | undefined>(undefined);
 
   const allDone = !!dailyPlanToday?.tasks && dailyPlanToday.tasks.length > 0 && dailyPlanToday.tasks.every(t => t.task.status === "Done");
-
-  // Periodic available time refresh on Flow completion screen to keep it ticking in real-time
-  useEffect(() => {
-    if (!allDone) return;
-    const d = new Date();
-    const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    
-    // Refresh immediately
-    useAvailableTimeStore.getState().fetchAvailableTimeToday(today);
-    
-    const interval = setInterval(() => {
-      if (document.visibilityState === "visible") {
-        useAvailableTimeStore.getState().fetchAvailableTimeToday(today);
-      }
-    }, 15000); // refresh every 15s
-    
-    return () => clearInterval(interval);
-  }, [allDone]);
 
   if (allDone) {
     const totalMinutes = dailyPlanToday.tasks.reduce((sum, pt) => sum + (pt.task.actualMinutes || 0), 0);
@@ -72,15 +80,12 @@ export function FlowEmptyState() {
       useBoardStore.setState({ plannedTaskIds: updatedIds });
 
       try {
-        await savePlan(dailyPlanToday.planDate, dailyPlanToday.availableMinutes, "today");
+        await savePlanMutation.mutateAsync({ date: dailyPlanToday.planDate, availableMinutes: dailyPlanToday.availableMinutes, target: "today" });
 
         const { user } = useAuthStore.getState();
-        
-        const d = new Date();
-        const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
         if (user?.wakeTime && user?.sleepTime) {
-          const { data: fixedEvents } = await calendarApi.getEvents(todayStr, todayStr);
+          const fixedEvents = await getEventsAction(todayStr, todayStr);
           const occupiedSlots: OccupiedSlot[] = fixedEvents.map((event) => ({
             date: event.occurrenceDate,
             startTime: event.startTime.substring(0, 5),
@@ -106,11 +111,12 @@ export function FlowEmptyState() {
             dailyPlanToday.id,
             todayStr,
             user.wakeTime,
-            user.sleepTime
+            user.sleepTime,
+            user.timezone
           );
 
           if (blocks.length > 0) {
-            await saveTimeBlocks([...dailyPlanToday.timeBlocks, ...blocks]);
+            await saveTimeBlocksMutation.mutateAsync([...dailyPlanToday.timeBlocks, ...blocks] as Omit<TaskTimeBlock, 'id'>[]);
           }
         }
 
@@ -146,7 +152,7 @@ export function FlowEmptyState() {
       try {
         const estimatedMinutes = taskData.estimatedMinutes ?? 0;
         // Update task duration in DB
-        await updateTask(requireDurationForTask.id, { estimatedMinutes });
+        await updateTaskMutation.mutateAsync({ id: requireDurationForTask.id, data: { estimatedMinutes } });
         const updatedTask = { ...requireDurationForTask, estimatedMinutes };
         setRequireDurationForTask(undefined);
         // Add updated task to daily plan
@@ -203,7 +209,7 @@ export function FlowEmptyState() {
           onReviewConfirm={() => {
             setIsReviewModalOpen(false);
             if (dailyPlanToday) {
-              reviewDailyPlan(dailyPlanToday.planDate);
+              reviewDailyPlanMutation.mutateAsync(dailyPlanToday.planDate);
             }
           }}
           onPickTaskClick={() => setIsPickTaskModalOpen(true)}

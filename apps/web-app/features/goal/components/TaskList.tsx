@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Task } from "@/features/board/types";
-import { useBoardStore } from "@/features/board/store/board.store";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createTaskAction, updateTaskAction } from "@/features/board/actions/task.action";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PlusSignIcon, ArrowDown01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons";
@@ -18,7 +19,15 @@ interface TaskListProps {
 export function TaskList({ taskList, gId, gStatus }: TaskListProps) {
   const { t, locale } = useTranslation();
   const isVi = locale === "vi";
-  const { updateTask } = useBoardStore();
+  const queryClient = useQueryClient();
+  const createTaskMutation = useMutation({
+    mutationFn: createTaskAction,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+  });
+  const updateTaskMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string, data: Partial<Task> }) => updateTaskAction(id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+  });
   const [isCreating, setIsCreating] = useState(false);
   const [allExpanded, setAllExpanded] = useState(false);
 
@@ -26,7 +35,7 @@ export function TaskList({ taskList, gId, gStatus }: TaskListProps) {
 
   const handleInlineCreate = async (title: string) => {
     try {
-      await useBoardStore.getState().createTask({
+      await createTaskMutation.mutateAsync({
         title,
         goalId: gId,
         status: 'Icebox',
@@ -42,7 +51,7 @@ export function TaskList({ taskList, gId, gStatus }: TaskListProps) {
 
   const handleAddToBacklog = async (task: Task) => {
     try {
-      await updateTask(task.id, { status: 'Backlog' });
+      await updateTaskMutation.mutateAsync({ id: task.id, data: { status: 'Backlog' } });
       toast.success(isVi ? "Đã chuyển vào Backlog!" : "Task moved to Backlog!");
     } catch {
       toast.error(isVi ? "Lỗi khi chuyển công việc." : "Error moving task.");
@@ -51,7 +60,7 @@ export function TaskList({ taskList, gId, gStatus }: TaskListProps) {
 
   const handleMoveToIcebox = async (task: Task) => {
     try {
-      await updateTask(task.id, { status: 'Icebox' });
+      await updateTaskMutation.mutateAsync({ id: task.id, data: { status: 'Icebox' } });
       toast.success(isVi ? "Đã trả về Icebox!" : "Task returned to Icebox!");
     } catch {
       toast.error(isVi ? "Lỗi khi chuyển công việc." : "Error moving task.");

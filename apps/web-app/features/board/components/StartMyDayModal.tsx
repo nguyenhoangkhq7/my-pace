@@ -5,7 +5,11 @@ import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 import { useBoardStore } from "../store/board.store";
-import { calendarApi } from "@/features/calendar/api/calendar.api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getDailyPlanAction, confirmPlanAction } from "@/features/board/actions/plan.action";
+import { saveTimeBlocksAction } from "@/features/board/actions/timeblock.action";
+import { TaskTimeBlock } from "@/features/board/types";
+import { getEventsAction } from "@/features/calendar/actions/calendar.action";
 import { useAuthStore } from "@/features/auth";
 import { autoSchedule, type OccupiedSlot } from "../utils/autoSchedule";
 import { toast } from "sonner";
@@ -32,12 +36,25 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
   const router = useRouter();
   const [isScheduling, setIsScheduling] = useState(false);
   const { t } = useTranslation();
-  const { dailyPlanToday, saveTimeBlocks, confirmPlan } = useBoardStore();
+  const queryClient = useQueryClient();
+  const { data: dailyPlanToday } = useQuery({ queryKey: ['dailyPlan', todayStr], queryFn: () => getDailyPlanAction(todayStr) });
+  
+  const confirmPlanMutation = useMutation({
+    mutationFn: confirmPlanAction,
+    onSuccess: (data, variables) => {
+      queryClient.setQueryData(['dailyPlan', variables], data);
+      useBoardStore.setState({ isStarted: true });
+    }
+  });
+
+  const saveTimeBlocksMutation = useMutation({
+    mutationFn: (blocks: Omit<TaskTimeBlock, 'id'>[]) => saveTimeBlocksAction({ dailyPlanId: dailyPlanToday!.id, blocks }),
+  });
   const user = useAuthStore((s) => s.user);
 
   const handleManualSchedule = async () => {
     try {
-      await confirmPlan(todayStr);
+      await confirmPlanMutation.mutateAsync(todayStr);
       onClose();
       router.push(`/calendar?view=day&date=${todayStr}`);
     } catch (err) {
@@ -54,7 +71,7 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
 
     setIsScheduling(true);
     try {
-        const { data: fixedEvents } = await calendarApi.getEvents(todayStr, todayStr);
+        const fixedEvents = await getEventsAction(todayStr, todayStr);
         const occupiedSlots: OccupiedSlot[] = fixedEvents.map((event) => ({
           date: event.occurrenceDate,
           startTime: event.startTime.substring(0, 5),
@@ -73,7 +90,8 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
           dailyPlanToday.id,
           todayStr,
           user.wakeTime,
-          user.sleepTime
+          user.sleepTime,
+          user.timezone
         );
 
         if (blocks.length === 0) {
@@ -82,8 +100,8 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
           return;
         }
 
-        await saveTimeBlocks(blocks);
-        await confirmPlan(todayStr);
+        await saveTimeBlocksMutation.mutateAsync(blocks as Omit<TaskTimeBlock, 'id'>[]);
+        await confirmPlanMutation.mutateAsync(todayStr);
         toast.success(t.startMyDay.successAutoSchedule);
         onClose();
         router.push(`/calendar?view=day&date=${todayStr}`);

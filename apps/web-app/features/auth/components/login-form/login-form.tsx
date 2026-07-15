@@ -18,14 +18,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { appToast } from "@/components/feedback/app-toast";
 import { AppAlert } from "@/components/feedback/app-alert";
-import { getApiErrorMessage, post } from "@/lib/fetchClient";
 import {
   normalizeAuthSession,
   useAuthStore,
 } from "../../store/auth.store";
+import { loginAction } from "../../actions/auth.action";
 import { useTranslation } from "@/hooks/use-translation";
 
-type LoginRequest = LoginValues;
 
 export function LoginForm() {
   const { t } = useTranslation();
@@ -41,26 +40,29 @@ export function LoginForm() {
 
   const onSubmit = async (data: LoginValues) => {
     try {
-      const response = await post<unknown, LoginRequest>("auth/login", data);
-      const session = normalizeAuthSession(response.data);
+      const result = await loginAction(data);
 
-      if (!session) {
+      if (!result.success || !result.user) {
         loginForm.setError("root", {
-          message: "Invalid auth response from server",
+          message: result.error || "Invalid auth response from server",
         });
         return;
       }
 
-      setSession(session);
+      const session = normalizeAuthSession({ user: result.user });
+
+      if (session) {
+        setSession(session);
+      }
 
       appToast.success(t.auth.loginSuccess, {
         description: t.auth.loginSuccessDesc,
       });
 
       router.replace("/");
-    } catch (error: unknown) {
+    } catch (error) {
       loginForm.setError("root", {
-        message: getApiErrorMessage(error),
+        message: error instanceof Error ? error.message : "Cannot connect to server",
       });
     }
   };

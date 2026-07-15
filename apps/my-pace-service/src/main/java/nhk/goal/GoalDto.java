@@ -1,25 +1,23 @@
 package nhk.goal;
 
-import lombok.Data;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.UUID;
 
-@Data
-public class GoalDto {
-    private UUID id;
-    private String title;
-    private String goalType;
-    private String status;
-    private LocalDate startDate;
-    private LocalDate endDate;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
-    private UUID categoryId;
-    private Integer progressPct;
-    private Boolean autoCreateTask;
-    private Integer durationMinutes;
-    private String daysOfWeek;
-    private java.time.LocalTime preferTime;
-}
+public record GoalDto(
+    UUID id,
+    String title,
+    String goalType,
+    String status,
+    LocalDate startDate,
+    LocalDate endDate,
+    OffsetDateTime createdAt,
+    OffsetDateTime updatedAt,
+    UUID categoryId,
+    Integer progressPct,
+    Boolean autoCreateTask,
+    Integer durationMinutes,
+    String daysOfWeek,
+    LocalTime preferTime
+) {}

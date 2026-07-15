@@ -1,43 +1,37 @@
-/* eslint-disable react-hooks/incompatible-library */
 "use client";
 
-import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useState } from "react";
+import { useForm, Controller } from "react-hook-form";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Clock01Icon, InformationCircleIcon } from "@hugeicons/core-free-icons";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { put, getApiErrorMessage } from "@/lib/fetchClient";
-import { useAuthStore, AuthUser } from "../store/auth.store";
+import { updateProfileAction } from "../actions/auth.action";
+import { useAuthStore } from "../store/auth.store";
 import { appToast } from "@/components/feedback/app-toast";
 import { AppAlert } from "@/components/feedback/app-alert";
 import { cn } from "@/lib/utils";
 import { TimeSelect } from "@/components/ui/time-select";
 import { useTranslation } from "@/hooks/use-translation";
-
-
-interface SetupFormValues {
-  wakeTime: string;
-  sleepTime: string;
-  bufferPct: number;
-}
+import { zodResolver } from "@hookform/resolvers/zod";
+import { initialSetupSchema, InitialSetupFormValues } from "../schema/auth.schema";
 
 export function InitialSetupForm() {
   const { t } = useTranslation();
-  const { accessToken, setSession } = useAuthStore();
+  const setSession = useAuthStore((s) => s.setSession);
+  const user = useAuthStore((s) => s.user);
   const [buffer, setBuffer] = useState(20); // default 20%
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
-    register,
     handleSubmit,
-    setValue,
-    watch,
+    control,
     formState: { errors, isValid },
-  } = useForm<SetupFormValues>({
+  } = useForm<InitialSetupFormValues>({
+    resolver: zodResolver(initialSetupSchema),
     defaultValues: {
       wakeTime: "07:00",
       sleepTime: "23:00",
@@ -45,15 +39,7 @@ export function InitialSetupForm() {
     mode: "onChange",
   });
 
-  const wakeTime = watch("wakeTime") || "07:00";
-  const sleepTime = watch("sleepTime") || "23:00";
-
-  useEffect(() => {
-    register("wakeTime", { required: "Required" });
-    register("sleepTime", { required: "Required" });
-  }, [register]);
-
-  const onSubmit = async (data: SetupFormValues) => {
+  const onSubmit = async (data: InitialSetupFormValues) => {
     setIsSubmitting(true);
     setError(null);
 
@@ -64,20 +50,24 @@ export function InitialSetupForm() {
     };
 
     try {
-      const response = await put<AuthUser, typeof payload>("users/profile", payload);
+      const response = await updateProfileAction(payload);
 
-      if (response.data && accessToken) {
+      if (response.success && user) {
         setSession({
-          accessToken,
-          user: response.data,
+          user: {
+            ...user,
+            ...payload
+          },
         });
         
         appToast.success(t.auth.setupSuccess, {
           description: t.auth.setupSuccessDesc,
         });
+      } else {
+        setError(response.error || "Failed to update profile");
       }
     } catch (err) {
-      setError(getApiErrorMessage(err));
+      setError(err instanceof Error ? err.message : "Cannot connect to server");
     } finally {
       setIsSubmitting(false);
     }
@@ -111,9 +101,15 @@ export function InitialSetupForm() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-sm font-semibold">{t.auth.wakeTime}</Label>
-              <TimeSelect
-                value={wakeTime}
-                onChange={(val) => setValue("wakeTime", val, { shouldValidate: true })}
+              <Controller
+                name="wakeTime"
+                control={control}
+                render={({ field }) => (
+                  <TimeSelect
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
+                )}
               />
               {errors.wakeTime && (
                 <p className="text-xs text-rose-500 mt-1">{errors.wakeTime.message}</p>
@@ -122,9 +118,15 @@ export function InitialSetupForm() {
 
             <div className="space-y-2">
               <Label className="text-sm font-semibold">{t.auth.sleepTime}</Label>
-              <TimeSelect
-                value={sleepTime}
-                onChange={(val) => setValue("sleepTime", val, { shouldValidate: true })}
+              <Controller
+                name="sleepTime"
+                control={control}
+                render={({ field }) => (
+                  <TimeSelect
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
+                )}
               />
               {errors.sleepTime && (
                 <p className="text-xs text-rose-500 mt-1">{errors.sleepTime.message}</p>

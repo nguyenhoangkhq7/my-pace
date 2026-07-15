@@ -34,7 +34,12 @@ export function TaskDetails({ task, isConfirmed }: TaskDetailsProps) {
       {task.dueDate && (
         <span className="inline-flex items-center text-[10px] text-muted-foreground">
           <HugeiconsIcon icon={Calendar01Icon} size={10} className="mr-1" />
-          {new Date(task.dueDate).toLocaleDateString()}
+          {(() => {
+            const d = new Date(task.dueDate);
+            const timeStr = task.dueDate.includes("T") ? task.dueDate.split("T")[1].substring(0, 5) : "";
+            const displayTime = timeStr && timeStr !== "00:00" && timeStr !== "23:59" ? ` ${timeStr}` : "";
+            return `${d.toLocaleDateString()}${displayTime}`;
+          })()}
         </span>
       )}
       

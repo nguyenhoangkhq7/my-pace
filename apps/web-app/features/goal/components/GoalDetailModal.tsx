@@ -5,9 +5,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Goal } from "../types";
-import { useBoardStore } from "@/features/board/store/board.store";
-import { useGoalStore } from "../store/goal.store";
+import { Goal, GoalUpdateRequest } from "../types";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getTasksAction } from "@/features/board/actions/task.action";
+import { updateGoalAction } from "../actions/goal.action";
 import { useGoalStats } from "../hooks/useGoalStats";
 import { ProjectDetail } from "./ProjectDetail";
 import { HabitDetail } from "./HabitDetail";
@@ -22,8 +23,13 @@ interface GoalDetailModalProps {
 
 export function GoalDetailModal({ isOpen, onOpenChange, goal }: GoalDetailModalProps) {
   const { t } = useTranslation();
-  const { tasks } = useBoardStore();
-  const { updateGoal } = useGoalStore();
+  const { data: tasks = [] } = useQuery({ queryKey: ['tasks'], queryFn: getTasksAction });
+  const queryClient = useQueryClient();
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string, data: GoalUpdateRequest }) => updateGoalAction(id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['goals'] }),
+  });
+  const updateGoal = (id: string, data: GoalUpdateRequest) => updateMutation.mutateAsync({ id, data });
 
   // Stats Hook
   const {

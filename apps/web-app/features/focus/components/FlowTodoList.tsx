@@ -1,10 +1,13 @@
 "use client";
 
-import { useBoardStore } from "@/features/board/store/board.store";
+import { useQuery } from "@tanstack/react-query";
+import { getDailyPlanAction } from "@/features/board/actions/plan.action";
 import { useTranslation } from "@/hooks/use-translation";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import { cn } from "@/lib/utils";
-import type { DailyPlanTask } from "@/features/board/types";
+import { useAuthStore } from "@/features/auth";
+import { getTodayStr } from "@/lib/date";
+import type { DailyPlanTask, TaskTimeBlock } from "@/features/board/types";
 import { FlowTodoItem } from "./FlowTodoItem";
 
 interface FlowTodoListProps {
@@ -13,7 +16,10 @@ interface FlowTodoListProps {
 
 export function FlowTodoList({ onTaskSelect }: FlowTodoListProps) {
   const { t } = useTranslation();
-  const { dailyPlanToday, timeBlocks } = useBoardStore();
+  const user = useAuthStore((s) => s.user);
+  const todayStr = getTodayStr(user?.timezone);
+  const { data: dailyPlanToday } = useQuery({ queryKey: ['dailyPlan', todayStr], queryFn: () => getDailyPlanAction(todayStr) });
+  const timeBlocks = dailyPlanToday?.timeBlocks || [];
   const { pomodoroState } = useFocusStore();
 
   const isFocusing = pomodoroState === "focusing";
@@ -36,8 +42,8 @@ export function FlowTodoList({ onTaskSelect }: FlowTodoListProps) {
 
   const getTaskBlocks = (taskId: string) => {
     return timeBlocks
-      .filter((block) => block.taskId === taskId)
-      .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+      .filter((block: TaskTimeBlock) => block.taskId === taskId)
+      .sort((a: TaskTimeBlock, b: TaskTimeBlock) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
   };
 
   const getTaskScheduleLabel = (taskId: string) => {
