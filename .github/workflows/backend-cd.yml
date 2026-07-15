@@ -94,19 +94,26 @@ jobs:
             # 1. Đăng nhập Docker Hub
             echo "${{ secrets.DOCKER_PASSWORD }}" | docker login --username ${{ secrets.DOCKER_USERNAME }} --password-stdin
             
-            # 2. Tạo hoặc ghi đè file .env cho service Backend
+            # 2. Cập nhật source code chứa docker-compose mới nhất
+            if [ -d "$PROJECT_DIR" ]; then
+              cd $PROJECT_DIR
+              git pull origin main || true
+            else
+              git clone https://github.com/nguyenhoangkhq7/my-pace.git $PROJECT_DIR
+              cd $PROJECT_DIR
+            fi
+            
+            # 3. Tạo hoặc ghi đè file .env cho service Backend
             mkdir -p $PROJECT_DIR/apps/my-pace-service
             cat << 'EOF' > $PROJECT_DIR/apps/my-pace-service/.env
             ${{ secrets.BACKEND_ENV }}
             EOF
             
-            # 3. Ghi biến môi trường cho Docker Compose ở Root
-            mkdir -p $PROJECT_DIR
+            # 4. Ghi biến môi trường cho Docker Compose ở Root
             touch $PROJECT_DIR/.env
             sed -i '/^BACKEND_IMAGE=/d' $PROJECT_DIR/.env
             echo "BACKEND_IMAGE=$IMAGE_URI" >> $PROJECT_DIR/.env
             
-            # 4. Pull Image mới nhất và khởi động lại Backend
-            cd $PROJECT_DIR
+            # 5. Khởi động lại Backend và Postgres (bằng cấu hình Production)
             docker pull $IMAGE_URI
-            docker compose up -d --no-deps my-pace-service
+            docker compose -f docker-compose.prod.yml up -d
