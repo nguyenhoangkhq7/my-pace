@@ -77,6 +77,8 @@ export const en: Translations = {
   },
   execution: {
     totalAvailable: "Total real available time",
+    remainingAvailable: "Remaining available time",
+    total: "Total",
     howAvailable: "How available time is calculated",
     totalFreeTime: "Total free time:",
     bufferDeducted: (pct) => `Subtract buffer time (${pct}%):`,
@@ -192,6 +194,7 @@ export const en: Translations = {
     notPlanned: "No plan yet",
     notPlannedDesc: "You haven't planned your day yet.",
     planNow: "Plan now",
+    confirmPlan: "Confirm Plan",
     todoToday: "Todo Today",
     dragToSchedule: "Drag to schedule",
     autoScheduling: "Scheduling...",

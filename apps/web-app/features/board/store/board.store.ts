@@ -9,7 +9,7 @@ interface BoardClientState {
   plannedTaskIds: string[];
 
   setFilter: (categoryId: string | null) => void;
-  setPlanningMode: (isPlanning: boolean, target?: 'today' | 'tomorrow') => void;
+  setPlanningMode: (isPlanning: boolean, target?: 'today' | 'tomorrow', initialTaskIds?: string[]) => void;
   addPlannedTaskLocally: (task: Task) => void;
   removePlannedTaskLocally: (taskId: string) => void;
 }
@@ -23,11 +23,12 @@ export const useBoardStore = create<BoardClientState>((set) => ({
 
   setFilter: (categoryId) => set({ selectedFilterId: categoryId }),
 
-  setPlanningMode: (isPlanning, target = 'today') => {
-    set({ isPlanningMode: isPlanning, planningTarget: isPlanning ? target : null });
-    if (!isPlanning) {
-      set({ plannedTaskIds: [] });
-    }
+  setPlanningMode: (isPlanning, target = 'today', initialTaskIds = []) => {
+    set({
+      isPlanningMode: isPlanning,
+      planningTarget: isPlanning ? target : null,
+      plannedTaskIds: isPlanning ? initialTaskIds : []
+    });
   },
 
   addPlannedTaskLocally: (task) => {

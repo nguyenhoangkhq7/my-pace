@@ -77,6 +77,8 @@ export const vi: Translations = {
   },
   execution: {
     totalAvailable: "Tổng thời gian thực khả dụng",
+    remainingAvailable: "Thời gian còn lại",
+    total: "Tổng",
     howAvailable: "Cách tính thời gian khả dụng",
     totalFreeTime: "Tổng quỹ thời gian trống:",
     bufferDeducted: (pct) => `Trừ đi thời gian đệm (${pct}%):`,
@@ -193,6 +195,7 @@ export const vi: Translations = {
     notPlanned: "Chưa lên kế hoạch",
     notPlannedDesc: "Bạn chưa lên kế hoạch cho ngày hôm nay.",
     planNow: "Lên kế hoạch ngay",
+    confirmPlan: "Chốt lịch",
     todoToday: "Việc hôm nay",
     dragToSchedule: "Kéo vào thả để xếp lịch",
     autoScheduling: "Đang xếp lịch...",

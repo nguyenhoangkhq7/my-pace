@@ -79,6 +79,23 @@ public class DailyPlanServiceImpl implements DailyPlanService {
         plan.setAvailableMinutes(request.availableMinutes() != null ? request.availableMinutes() : 0);
         plan = dailyPlanRepository.save(plan);
 
+        // Find existing tasks in the plan to check which ones are being removed
+        List<DailyPlanTask> existingPlanTasks = dailyPlanTaskRepository.findByDailyPlanIdOrderBySortOrderAsc(plan.getId());
+        List<UUID> newTasksIds = request.tasks() != null
+                ? request.tasks().stream().map(PlanMyDayRequest.PlanTaskItem::taskId).collect(Collectors.toList())
+                : List.of();
+
+        for (DailyPlanTask pt : existingPlanTasks) {
+            Task task = pt.getTask();
+            if (task != null && !newTasksIds.contains(task.getId())) {
+                // Task is removed from the plan, set status back to Backlog (if not Done)
+                if (!"Done".equals(task.getStatus())) {
+                    task.setStatus("Backlog");
+                    taskRepository.save(task);
+                }
+            }
+        }
+
         // Clear existing tasks for this plan
         dailyPlanTaskRepository.deleteByDailyPlanId(plan.getId());
 
@@ -119,6 +136,17 @@ public class DailyPlanServiceImpl implements DailyPlanService {
         ZoneId zoneId = ZoneId.of(tz != null && !tz.isBlank() ? tz : "UTC");
 
         plan.setConfirmedAt(OffsetDateTime.now(zoneId));
+        dailyPlanRepository.save(plan);
+        return getDailyPlan(planDate, userId);
+    }
+
+    @Override
+    @Transactional
+    public DailyPlanDto unconfirmPlan(LocalDate planDate, UUID userId) {
+        DailyPlan plan = dailyPlanRepository.findByUserIdAndPlanDate(userId, planDate)
+                .orElseThrow(() -> new EntityNotFoundException("Daily plan not found"));
+        plan.setIsConfirmed(false);
+        plan.setConfirmedAt(null);
         dailyPlanRepository.save(plan);
         return getDailyPlan(planDate, userId);
     }

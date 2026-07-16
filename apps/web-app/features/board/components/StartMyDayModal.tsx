@@ -49,18 +49,18 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
 
   const saveTimeBlocksMutation = useMutation({
     mutationFn: (blocks: Omit<TaskTimeBlock, 'id'>[]) => saveTimeBlocksAction({ dailyPlanId: dailyPlanToday!.id, blocks }),
+    onSuccess: (data) => {
+      if (dailyPlanToday) {
+        queryClient.setQueryData(['dailyPlan', todayStr], { ...dailyPlanToday, timeBlocks: data });
+      }
+      queryClient.invalidateQueries({ queryKey: ['dailyPlan', todayStr] });
+    }
   });
   const user = useAuthStore((s) => s.user);
 
   const handleManualSchedule = async () => {
-    try {
-      await confirmPlanMutation.mutateAsync(todayStr);
-      onClose();
-      router.push(`/calendar?view=day&date=${todayStr}`);
-    } catch (err) {
-      console.error(err);
-      toast.error(t.startMyDay.errorConfirm);
-    }
+    onClose();
+    router.push(`/calendar?view=day&date=${todayStr}`);
   };
 
   const handleAutoSchedule = async () => {
@@ -71,22 +71,33 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
 
     setIsScheduling(true);
     try {
+        const scheduledTaskIdsSet = new Set(dailyPlanToday.timeBlocks.map((b) => b.taskId));
+        const unscheduledPlanTasks = dailyPlanToday.tasks.filter((pt) => !scheduledTaskIdsSet.has(pt.task.id));
+
+        if (unscheduledPlanTasks.length === 0) {
+          toast.info("Tất cả công việc đã được xếp lịch!");
+          onClose();
+          router.push(`/calendar?view=day&date=${todayStr}`);
+          return;
+        }
+
         const fixedEvents = await getEventsAction(todayStr, todayStr);
-        const occupiedSlots: OccupiedSlot[] = fixedEvents.map((event) => ({
-          date: event.occurrenceDate,
-          startTime: event.startTime.substring(0, 5),
-          endTime: event.endTime.substring(0, 5),
-        }));
+        const occupiedSlots: OccupiedSlot[] = [
+          ...fixedEvents.map((event) => ({
+            date: event.occurrenceDate,
+            startTime: event.startTime.substring(0, 5),
+            endTime: event.endTime.substring(0, 5),
+          })),
+          ...dailyPlanToday.timeBlocks.map((block) => ({
+            date: toLocalDateStr(block.startTime),
+            startTime: toLocalTimeStr(block.startTime),
+            endTime: toLocalTimeStr(block.endTime),
+          }))
+        ];
 
-        const existingBlocks = dailyPlanToday.timeBlocks.map((block) => ({
-          date: toLocalDateStr(block.startTime),
-          startTime: toLocalTimeStr(block.startTime),
-          endTime: toLocalTimeStr(block.endTime),
-        }));
-
-        const blocks = autoSchedule(
-          dailyPlanToday.tasks,
-          [...occupiedSlots, ...existingBlocks],
+        const newBlocks = autoSchedule(
+          unscheduledPlanTasks,
+          occupiedSlots,
           dailyPlanToday.id,
           todayStr,
           user.wakeTime,
@@ -94,14 +105,20 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
           user.timezone
         );
 
-        if (blocks.length === 0) {
+        if (newBlocks.length === 0) {
           toast.warning(t.startMyDay.errorNoTimeLeft);
           onClose();
+          router.push(`/calendar?view=day&date=${todayStr}`);
           return;
         }
 
-        await saveTimeBlocksMutation.mutateAsync(blocks as Omit<TaskTimeBlock, 'id'>[]);
-        await confirmPlanMutation.mutateAsync(todayStr);
+        const existingCleanBlocks = dailyPlanToday.timeBlocks.map((b) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { id: _, ...rest } = b;
+          return rest as Omit<TaskTimeBlock, "id">;
+        });
+
+        await saveTimeBlocksMutation.mutateAsync([...existingCleanBlocks, ...newBlocks] as Omit<TaskTimeBlock, 'id'>[]);
         toast.success(t.startMyDay.successAutoSchedule);
         onClose();
         router.push(`/calendar?view=day&date=${todayStr}`);

@@ -6,7 +6,8 @@ import { useCalendarEvents } from "@/features/calendar";
 import type { FixedEventOccurrence, ModalMode } from "@/features/calendar/types";
 import { useAuthStore } from "@/features/auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getDailyPlanAction } from "@/features/board/actions/plan.action";
+import { getDailyPlanAction, unconfirmPlanAction, confirmPlanAction } from "@/features/board/actions/plan.action";
+import { useBoardStore } from "@/features/board/store/board.store";
 import { saveTimeBlocksAction } from "@/features/board/actions/timeblock.action";
 import type { TaskTimeBlock, Task, DailyPlanTask } from "@/features/board/types";
 import { toast } from "sonner";
@@ -50,6 +51,27 @@ export function useCalendarPage() {
       }
     }
   });
+
+  const confirmPlanMutation = useMutation({
+    mutationFn: confirmPlanAction,
+    onSuccess: (data, variables) => {
+      queryClient.setQueryData(['dailyPlan', variables], data);
+      if (variables === today) {
+        useBoardStore.setState({ isStarted: true });
+      }
+      toast.success("Đã chốt lịch! Chúc bạn một ngày làm việc hiệu quả.");
+    }
+  });
+
+  const handleConfirmPlan = useCallback(async () => {
+    if (!dailyPlanToday) return;
+    try {
+      await confirmPlanMutation.mutateAsync(dailyPlanToday.planDate);
+    } catch (err) {
+      console.error(err);
+      toast.error("Không thể xác nhận lịch trình.");
+    }
+  }, [dailyPlanToday]);
 
   const [dateRange, setDateRange] = useState({ start: today, end: today });
 
@@ -108,6 +130,16 @@ export function useCalendarPage() {
 
     try {
       await saveTimeBlocksMutation.mutateAsync(updatedBlocks as Omit<TaskTimeBlock, 'id'>[]);
+      
+      // If the plan is confirmed (running), unconfirm it
+      if (dailyPlanToday.isConfirmed) {
+        await unconfirmPlanAction(dailyPlanToday.planDate);
+        if (dailyPlanToday.planDate === today) {
+          useBoardStore.setState({ isStarted: false });
+        }
+        queryClient.invalidateQueries({ queryKey: ['dailyPlan', dailyPlanToday.planDate] });
+      }
+
       const planTask = dailyPlanToday.tasks.find((pt: DailyPlanTask) => pt.task.id === taskId);
       toast.success(`Đã hủy lịch công việc: "${planTask?.task.title || ""}"`);
       setBlockModalOpen(false);
@@ -117,7 +149,7 @@ export function useCalendarPage() {
     } finally {
       setIsUnscheduling(false);
     }
-  }, [dailyPlanToday, timeBlocks, saveTimeBlocksMutation]);
+  }, [dailyPlanToday, timeBlocks, saveTimeBlocksMutation, today, queryClient]);
 
   // ── Custom Hooks ──────────────────────────────────────────────────────────
   const { handleEventReceive, handleEventDrop, handleEventResize, handleEventDragStop } = useCalendarInteractions({
@@ -153,38 +185,38 @@ export function useCalendarPage() {
       }))
     ];
 
-    if (isConfirmed) {
-      list.push(
-        ...timeBlocks.map((block) => {
-          const planTask = dailyPlanToday?.tasks.find((pt: DailyPlanTask) => pt.task.id === block.taskId);
-          const task     = planTask?.task;
-          const isMit    = planTask?.isMit || false;
+    // Render time blocks unconditionally (whether confirmed or not)
+    list.push(
+      ...timeBlocks.map((block) => {
+        const planTask = dailyPlanToday?.tasks.find((pt: DailyPlanTask) => pt.task.id === block.taskId);
+        const task     = planTask?.task;
+        const isMit    = planTask?.isMit || false;
 
-          const label = block.totalParts > 1
-            ? `${task?.title || "Task"} (${block.partIndex}/${block.totalParts})`
-            : task?.title || "Task";
+        const label = block.totalParts > 1
+          ? `${task?.title || "Task"} (${block.partIndex}/${block.totalParts})`
+          : task?.title || "Task";
 
-          const color = task?.category?.color
-            ? task.category.color
-            : isMit
-            ? TASK_COLOR_MIT
-            : TASK_COLOR_REG;
+        const color = task?.category?.color
+          ? task.category.color
+          : isMit
+          ? TASK_COLOR_MIT
+          : TASK_COLOR_REG;
 
-          return {
-            id: block.id || `block-${block.taskId}-${block.partIndex}`,
-            title: label,
-            start: block.startTime,
-            end: block.endTime,
-            backgroundColor: color,
-            borderColor: color,
-            textColor: "#ffffff",
-            editable: true,
-            durationEditable: false,
-            extendedProps: { blockId: block.id, taskId: block.taskId, isTimeBlock: true },
-          };
-        })
-      );
-    }
+        return {
+          id: block.id || `block-${block.taskId}-${block.partIndex}`,
+          title: label,
+          start: block.startTime,
+          end: block.endTime,
+          backgroundColor: color,
+          borderColor: color,
+          textColor: "#ffffff",
+          // Editable only when the plan is NOT confirmed (planning mode)
+          editable: !isConfirmed,
+          durationEditable: !isConfirmed,
+          extendedProps: { blockId: block.id, taskId: block.taskId, isTimeBlock: true },
+        };
+      })
+    );
 
     return list;
   }, [events, timeBlocks, dailyPlanToday, fixedEventColor, isConfirmed]);
@@ -355,6 +387,8 @@ export function useCalendarPage() {
     isBlockMit,
     handleUnscheduleTask,
     isUnscheduling,
+    handleConfirmPlan,
+    isConfirming: confirmPlanMutation.isPending,
 
     // Event interactions
     handleDatesSet,

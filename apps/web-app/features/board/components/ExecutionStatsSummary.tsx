@@ -7,6 +7,7 @@ import { useTranslation } from "@/hooks/use-translation";
 
 interface ExecutionStatsSummaryProps {
   currentAvailable: number;
+  totalAvailable: number;
   availableData: AvailableTimeData | null;
   activeTab: string;
   isStarted: boolean;
@@ -15,6 +16,7 @@ interface ExecutionStatsSummaryProps {
 
 export function ExecutionStatsSummary({
   currentAvailable,
+  totalAvailable,
   availableData,
   activeTab,
   isStarted,
@@ -25,12 +27,25 @@ export function ExecutionStatsSummary({
   const totalFree = availableData ? (availableData.workingWindowMinutes - availableData.blockedMinutes) : 0;
   const bufferMins = availableData ? Math.round(totalFree * (availableData.bufferPct / 100)) : 0;
   const showStats = availableData && totalFree > 0;
+  const usedTime = Math.max(0, totalAvailable - currentAvailable);
+
+  const eatenBuffer = usedTime > totalAvailable 
+    ? Math.min(bufferMins, usedTime - totalAvailable) 
+    : 0;
+
+  const remainingBuffer = Math.max(0, bufferMins - eatenBuffer);
+
+  const blueWidth = totalFree > 0 ? (Math.max(0, currentAvailable) / totalFree) * 100 : 0;
+  const redWidth = totalFree > 0 ? (eatenBuffer / totalFree) * 100 : 0;
+  const orangeWidth = totalFree > 0 ? (remainingBuffer / totalFree) * 100 : 0;
 
   return (
     <div className="flex justify-between items-center border-b border-border pb-4">
       <div className="space-y-1 w-full max-w-md">
         <div className="flex items-center gap-1.5 mb-1">
-          <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">{t.execution.totalAvailable}</div>
+          <div className={`text-xs uppercase tracking-wider font-semibold ${currentAvailable < 0 ? "text-red-500" : "text-muted-foreground"}`}>
+            {t.execution.remainingAvailable}
+          </div>
           {showStats && (
             <TooltipProvider>
               <Tooltip delayDuration={0}>
@@ -49,7 +64,15 @@ export function ExecutionStatsSummary({
                     <span className="font-medium text-amber-500 text-right">-{Math.floor(bufferMins / 60)}h {bufferMins % 60}m</span>
                     
                     <span className="text-muted-foreground font-medium pt-1.5 border-t border-border mt-0.5">{t.execution.availableToWork}</span>
-                    <span className="font-bold text-primary pt-1.5 border-t border-border mt-0.5 text-right">{Math.floor(currentAvailable / 60)}h {currentAvailable % 60}m</span>
+                    <span className="font-bold text-foreground pt-1.5 border-t border-border mt-0.5 text-right">{Math.floor(totalAvailable / 60)}h {totalAvailable % 60}m</span>
+
+                    <span className="text-muted-foreground">{t.planning.scheduledTasks || "Công việc đã xếp:"}</span>
+                    <span className="font-medium text-amber-500 text-right">-{Math.floor(usedTime / 60)}h {usedTime % 60}m</span>
+
+                    <span className="text-muted-foreground font-bold pt-1.5 border-t border-border mt-0.5">{t.execution.remainingAvailable}</span>
+                    <span className={`font-bold pt-1.5 border-t border-border mt-0.5 text-right ${currentAvailable < 0 ? 'text-red-500' : 'text-primary'}`}>
+                      {currentAvailable < 0 ? "-" : ""}{Math.floor(Math.abs(currentAvailable) / 60)}h {Math.abs(currentAvailable) % 60}m
+                    </span>
                   </div>
                 </TooltipContent>
               </Tooltip>
@@ -57,8 +80,13 @@ export function ExecutionStatsSummary({
           )}
         </div>
         <div className="flex items-center justify-between">
-          <div className="text-3xl font-black text-foreground tracking-tight">
-            {Math.floor(currentAvailable / 60)}h {currentAvailable % 60}m
+          <div className="flex items-baseline gap-2 text-foreground">
+            <span className={`text-3xl font-black tracking-tight ${currentAvailable < 0 ? "text-red-500" : ""}`}>
+              {currentAvailable < 0 ? "-" : ""}{Math.floor(Math.abs(currentAvailable) / 60)}h {Math.abs(currentAvailable) % 60}m
+            </span>
+            <span className="text-xs text-muted-foreground font-semibold">
+              / {t.execution.total}: {Math.floor(totalAvailable / 60)}h {totalAvailable % 60}m
+            </span>
           </div>
           {(!isStarted || activeTab === 'tomorrow') && (
             <Button variant="outline" size="sm" onClick={onEditPlan} className="border-border text-foreground cursor-pointer shrink-0">
@@ -69,16 +97,27 @@ export function ExecutionStatsSummary({
         {showStats && (
           <div className="pt-2">
             <div className="h-2.5 w-full bg-slate-800/80 rounded-full overflow-hidden flex shadow-inner">
-              <div 
-                className="bg-primary hover:bg-primary/90 transition-all duration-500" 
-                style={{ width: `${(currentAvailable / totalFree) * 100}%` }}
-                title={t.execution.availableTitle(`${Math.floor(currentAvailable / 60)}h ${currentAvailable % 60}m`)}
-              />
-              <div 
-                className="bg-amber-500/80 hover:bg-amber-500 transition-all duration-500" 
-                style={{ width: `${(bufferMins / totalFree) * 100}%` }}
-                title={t.execution.bufferTitle(availableData.bufferPct, `${Math.floor(bufferMins / 60)}h ${bufferMins % 60}m`)}
-              />
+              {blueWidth > 0 && (
+                <div 
+                  className="bg-primary hover:bg-primary/90 transition-all duration-500" 
+                  style={{ width: `${blueWidth}%` }}
+                  title={t.execution.availableTitle(`${Math.floor(currentAvailable / 60)}h ${currentAvailable % 60}m`)}
+                />
+              )}
+              {redWidth > 0 && (
+                <div 
+                  className="bg-red-500 hover:bg-red-600 transition-all duration-500 animate-pulse" 
+                  style={{ width: `${redWidth}%` }}
+                  title={`Đã dùng thời gian đệm: ${Math.floor(eatenBuffer / 60)}h ${eatenBuffer % 60}m`}
+                />
+              )}
+              {orangeWidth > 0 && (
+                <div 
+                  className="bg-amber-500/80 hover:bg-amber-500 transition-all duration-500" 
+                  style={{ width: `${orangeWidth}%` }}
+                  title={t.execution.bufferTitle(availableData.bufferPct, `${Math.floor(remainingBuffer / 60)}h ${remainingBuffer % 60}m`)}
+                />
+              )}
             </div>
           </div>
         )}

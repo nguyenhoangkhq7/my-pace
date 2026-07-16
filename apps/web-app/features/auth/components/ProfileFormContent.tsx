@@ -16,6 +16,7 @@ import { useTranslation } from "@/hooks/use-translation";
 import { DialogFooter } from "@/components/ui/dialog";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { profileSchema, ProfileFormValues } from "../schema/auth.schema";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface ProfileFormContentProps {
   onSuccess: () => void;
@@ -28,6 +29,7 @@ export function ProfileFormContent({ onSuccess, onCancel, onLogoutClick, isOpen 
   const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const setSession = useAuthStore((s) => s.setSession);
+  const queryClient = useQueryClient();
 
   const [buffer, setBuffer] = useState(20);
   const [error, setError] = useState<string | null>(null);
@@ -86,6 +88,11 @@ export function ProfileFormContent({ onSuccess, onCancel, onLogoutClick, isOpen 
             },
           });
         }
+        
+        // Invalidate queries to update UI in real-time
+        queryClient.invalidateQueries({ queryKey: ["availableTime"] });
+        queryClient.invalidateQueries({ queryKey: ["dailyPlan"] });
+
         onSuccess();
       } else {
         setError(response.error || t.profile.updateError);

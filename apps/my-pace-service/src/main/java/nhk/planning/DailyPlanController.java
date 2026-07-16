@@ -34,6 +34,12 @@ public class DailyPlanController {
         return dailyPlanService.confirmPlan(date, userDetails.user().getId());
     }
 
+    @PostMapping("/{date}/unconfirm")
+    public DailyPlanDto unconfirmPlan(@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+                                      @AuthenticationPrincipal UserDetailsCustom userDetails) {
+        return dailyPlanService.unconfirmPlan(date, userDetails.user().getId());
+    }
+
     @PostMapping("/{date}/cancel")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void cancelPlan(@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,

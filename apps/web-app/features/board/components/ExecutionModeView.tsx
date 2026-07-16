@@ -9,6 +9,7 @@ import { ExecutionTaskList } from "./ExecutionTaskList";
 interface ExecutionModeViewProps {
   currentPlan: DailyPlan;
   currentAvailable: number;
+  totalAvailable: number;
   availableData: AvailableTimeData | null;
   activeTab: string;
   isStarted: boolean;
@@ -20,6 +21,7 @@ interface ExecutionModeViewProps {
 export function ExecutionModeView({
   currentPlan,
   currentAvailable,
+  totalAvailable,
   availableData,
   activeTab,
   isStarted,
@@ -47,6 +49,7 @@ export function ExecutionModeView({
     <div className="flex-1 flex flex-col min-h-0 space-y-6">
       <ExecutionStatsSummary
         currentAvailable={currentAvailable}
+        totalAvailable={totalAvailable}
         availableData={availableData}
         activeTab={activeTab}
         isStarted={isStarted}
