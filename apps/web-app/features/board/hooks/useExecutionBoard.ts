@@ -19,7 +19,6 @@ export function useExecutionBoard({ currentDate, tomorrowDate }: UseExecutionBoa
     setPlanningMode, 
     plannedTaskIds, 
     removePlannedTaskLocally,
-    isStarted
   } = useBoardStore();
 
   const { tasks } = useTasks();
@@ -28,6 +27,8 @@ export function useExecutionBoard({ currentDate, tomorrowDate }: UseExecutionBoa
 
   const dailyPlanToday = todayPlan.dailyPlan;
   const dailyPlanTomorrow = tomorrowPlan.dailyPlan;
+  
+  const isStarted = dailyPlanToday?.isConfirmed ?? false;
 
   const { data: dataToday } = useAvailableTimeQuery(currentDate);
   const { data: dataTomorrow } = useAvailableTimeQuery(tomorrowDate);

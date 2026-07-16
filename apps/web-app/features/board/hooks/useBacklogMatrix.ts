@@ -13,7 +13,6 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string) {
     plannedTaskIds,
     addPlannedTaskLocally,
     removePlannedTaskLocally,
-    isStarted,
     planningTarget,
     selectedFilterId,
     setFilter,
@@ -21,7 +20,10 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string) {
 
   const { tasks, createTask, updateTask } = useTasks();
   const { categories } = useCategories();
+  const { dailyPlan: dailyPlanToday } = useDailyPlan(currentDate);
   const { dailyPlan: dailyPlanTomorrow } = useDailyPlan(tomorrowDate);
+
+  const isStarted = dailyPlanToday?.isConfirmed ?? false;
 
   const { data: dataToday } = useAvailableTimeQuery(currentDate);
   const { data: dataTomorrow } = useAvailableTimeQuery(tomorrowDate);
