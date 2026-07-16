@@ -2,8 +2,6 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { addChecklistItemAction, updateChecklistItemAction, deleteChecklistItemAction, reorderChecklistsAction } from "@/features/board/actions/checklist.action";
 import type { TaskChecklistItem } from "../types";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Tick01Icon } from "@hugeicons/core-free-icons";
 import { TaskChecklistItemRow } from "./TaskChecklistItemRow";
 import { TaskChecklistCreateForm } from "./TaskChecklistCreateForm";
 import { useTranslation } from "@/hooks/use-translation";
