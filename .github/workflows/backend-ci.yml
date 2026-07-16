@@ -30,6 +30,20 @@ jobs:
           # Ghi nội dung secret BACKEND_ENV vào file .env
           echo "${{ secrets.BACKEND_ENV }}" > .env
           
+      - name: Load .env to Github environment for host-run tests
+        run: |
+          if [ -f .env ]; then
+            while IFS= read -r line || [ -n "$line" ]; do
+              # Skip comments, blank lines, and export key-value pairs
+              if [[ ! "$line" =~ ^# && -n "$line" ]]; then
+                echo "$line" >> $GITHUB_ENV
+              fi
+            done < .env
+          fi
+          # Force connection to localhost for host runner tests (docker maps ports to localhost)
+          echo "SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/my_pace_db" >> $GITHUB_ENV
+          echo "SPRING_DATA_REDIS_HOST=localhost" >> $GITHUB_ENV
+          
       - name: Make Maven Wrapper executable
         run: chmod +x mvnw
           

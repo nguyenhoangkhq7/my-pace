@@ -77,9 +77,10 @@ export function useExecutionBoard({ currentDate, tomorrowDate }: UseExecutionBoa
         useBoardStore.setState({ isStarted: data?.isConfirmed ?? false });
       }
       toast.success("Lưu kế hoạch thành công!");
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error(err?.message || "Không thể lưu kế hoạch. Vui lòng thử lại!");
+      const message = err instanceof Error ? err.message : "Không thể lưu kế hoạch. Vui lòng thử lại!";
+      toast.error(message);
     }
   };
 

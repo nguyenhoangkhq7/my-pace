@@ -4,9 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
-import { useBoardStore } from "../store/board.store";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getDailyPlanAction, confirmPlanAction } from "@/features/board/actions/plan.action";
+import { getDailyPlanAction } from "@/features/board/actions/plan.action";
 import { saveTimeBlocksAction } from "@/features/board/actions/timeblock.action";
 import { TaskTimeBlock } from "@/features/board/types";
 import { getEventsAction } from "@/features/calendar/actions/calendar.action";
@@ -39,13 +38,7 @@ export function StartMyDayModal({ isOpen, onClose, todayStr }: StartMyDayModalPr
   const queryClient = useQueryClient();
   const { data: dailyPlanToday } = useQuery({ queryKey: ['dailyPlan', todayStr], queryFn: () => getDailyPlanAction(todayStr) });
   
-  const confirmPlanMutation = useMutation({
-    mutationFn: confirmPlanAction,
-    onSuccess: (data, variables) => {
-      queryClient.setQueryData(['dailyPlan', variables], data);
-      useBoardStore.setState({ isStarted: true });
-    }
-  });
+
 
   const saveTimeBlocksMutation = useMutation({
     mutationFn: (blocks: Omit<TaskTimeBlock, 'id'>[]) => saveTimeBlocksAction({ dailyPlanId: dailyPlanToday!.id, blocks }),

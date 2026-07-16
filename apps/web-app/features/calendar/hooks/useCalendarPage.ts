@@ -71,7 +71,7 @@ export function useCalendarPage() {
       console.error(err);
       toast.error("Không thể xác nhận lịch trình.");
     }
-  }, [dailyPlanToday]);
+  }, [dailyPlanToday, confirmPlanMutation]);
 
   const [dateRange, setDateRange] = useState({ start: today, end: today });
 

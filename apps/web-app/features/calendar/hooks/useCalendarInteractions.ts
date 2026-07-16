@@ -297,7 +297,7 @@ export function useCalendarInteractions({
         arg.revert();
       }
     },
-    [dailyPlanToday, timeBlocks, saveTimeBlocks, updateSingleOccurrence, updateAllOccurrences]
+    [dailyPlanToday, timeBlocks, saveTimeBlocks, updateSingleOccurrence, updateAllOccurrences, queryClient]
   );
 
   const handleEventDragStop = useCallback(
