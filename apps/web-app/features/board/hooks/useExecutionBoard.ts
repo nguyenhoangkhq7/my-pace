@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { toast } from "sonner";
 import { useBoardStore } from "../store/board.store";
 import { useAvailableTimeQuery } from "@/features/available-time/hooks/useAvailableTime";
 
@@ -18,7 +19,6 @@ export function useExecutionBoard({ currentDate, tomorrowDate }: UseExecutionBoa
     setPlanningMode, 
     plannedTaskIds, 
     removePlannedTaskLocally,
-    isStarted
   } = useBoardStore();
 
   const { tasks } = useTasks();
@@ -27,6 +27,8 @@ export function useExecutionBoard({ currentDate, tomorrowDate }: UseExecutionBoa
 
   const dailyPlanToday = todayPlan.dailyPlan;
   const dailyPlanTomorrow = tomorrowPlan.dailyPlan;
+  
+  const isStarted = dailyPlanToday?.isConfirmed ?? false;
 
   const { data: dataToday } = useAvailableTimeQuery(currentDate);
   const { data: dataTomorrow } = useAvailableTimeQuery(tomorrowDate);
@@ -43,34 +45,43 @@ export function useExecutionBoard({ currentDate, tomorrowDate }: UseExecutionBoa
   const baseAvailable = availableData?.availableMinutes || 0;
 
   const currentAvailable = useMemo(() => {
-    if (!isPlanningMode) {
-      return baseAvailable;
+    let usedTime = 0;
+    if (isPlanningMode) {
+      const plannedTasks = tasks.filter(t => plannedTaskIds.includes(t.id));
+      usedTime = plannedTasks.reduce((acc, t) => acc + (t.estimatedMinutes || 0), 0);
+    } else {
+      // In execution mode (overview/confirmed), deduct the tasks in the plan
+      const planTasks = currentPlan?.tasks || [];
+      usedTime = planTasks.reduce((acc, pt) => acc + (pt.task?.estimatedMinutes || 0), 0);
     }
-    
-    // In planning mode, deduct the sum of planned tasks
-    const plannedTasks = tasks.filter(t => plannedTaskIds.includes(t.id));
-    const usedTime = plannedTasks.reduce((acc, t) => acc + (t.estimatedMinutes || 0), 0);
-    return Math.max(0, baseAvailable - usedTime);
-  }, [isPlanningMode, baseAvailable, plannedTaskIds, tasks]);
+    return baseAvailable - usedTime;
+  }, [isPlanningMode, baseAvailable, plannedTaskIds, tasks, currentPlan]);
 
   const handleSavePlan = async () => {
-    const planTasks = plannedTaskIds.map((id, index) => {
-      const task = tasks.find(t => t.id === id);
-      return {
-        taskId: id,
-        isMit: task ? task.isImportant : false,
-        sortOrder: index,
-      };
-    });
+    try {
+      const planTasks = plannedTaskIds.map((id, index) => {
+        const task = tasks.find(t => t.id === id);
+        return {
+          taskId: id,
+          isMit: task ? task.isImportant : false,
+          sortOrder: index,
+        };
+      });
 
-    const data = await activePlanHook.savePlan({
-      availableMinutes: currentAvailable,
-      tasks: planTasks,
-    });
+      const data = await activePlanHook.savePlan({
+        availableMinutes: Math.max(0, currentAvailable),
+        tasks: planTasks,
+      });
 
-    setPlanningMode(false);
-    if (activeTab === "today") {
-      useBoardStore.setState({ isStarted: data?.isConfirmed ?? false });
+      setPlanningMode(false);
+      if (activeTab === "today") {
+        useBoardStore.setState({ isStarted: data?.isConfirmed ?? false });
+      }
+      toast.success("Lưu kế hoạch thành công!");
+    } catch (err) {
+      console.error(err);
+      const message = err instanceof Error ? err.message : "Không thể lưu kế hoạch. Vui lòng thử lại!";
+      toast.error(message);
     }
   };
 
@@ -103,6 +114,7 @@ export function useExecutionBoard({ currentDate, tomorrowDate }: UseExecutionBoa
     currentPlan,
     targetDate,
     currentAvailable,
+    totalAvailable: baseAvailable,
     availableData,
     handleSavePlan,
     handleCancelPlan,

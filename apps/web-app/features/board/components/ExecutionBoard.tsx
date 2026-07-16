@@ -24,6 +24,7 @@ export function ExecutionBoard({ currentDate, tomorrowDate }: { currentDate: str
     setIsStartMyDayOpen,
     currentPlan,
     currentAvailable,
+    totalAvailable,
     availableData,
     handleSavePlan,
     handleCancelPlan,
@@ -52,10 +53,14 @@ export function ExecutionBoard({ currentDate, tomorrowDate }: { currentDate: str
         <ExecutionModeView
           currentPlan={currentPlan}
           currentAvailable={currentAvailable}
+          totalAvailable={totalAvailable}
           availableData={availableData ?? null}
           activeTab={activeTab}
           isStarted={isStarted}
-          onEditPlan={() => setPlanningMode(true, activeTab as 'today' | 'tomorrow')}
+          onEditPlan={() => {
+            const initialIds = currentPlan?.tasks?.map(t => t.task?.id).filter(Boolean) as string[] || [];
+            setPlanningMode(true, activeTab as 'today' | 'tomorrow', initialIds);
+          }}
           onStartMyDay={() => {
             setIsStartMyDayOpen(true);
           }}

@@ -42,6 +42,15 @@ export function DashboardPage({
 
   const outstandingTasks = tasks.filter(task => {
     if (task.status !== "Picked for Today") return false;
+
+    // A task is only "outstanding from yesterday" if it was created and last updated before today.
+    // If it was created today or moved/updated today, it is not outstanding yet.
+    const createdDate = task.createdAt ? task.createdAt.split("T")[0] : currentDate;
+    const updatedDate = task.updatedAt ? task.updatedAt.split("T")[0] : currentDate;
+    if (createdDate === currentDate || updatedDate === currentDate) {
+      return false;
+    }
+
     const inTodayPlan = !!dailyPlanToday?.tasks?.some(pt => pt.task?.id === task.id);
     const inTomorrowPlan = !!dailyPlanTomorrow?.tasks?.some(pt => pt.task?.id === task.id);
     return !inTodayPlan && !inTomorrowPlan;

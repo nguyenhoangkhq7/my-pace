@@ -122,7 +122,7 @@ export function FlowPomodoro() {
     <div className="h-full w-full bg-background flex flex-col relative overflow-hidden items-center justify-center p-4">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-900/10 via-background to-background pointer-events-none"></div>
 
-      <div className="w-full max-w-lg flex flex-col items-center relative z-10 px-4 h-full max-h-[90vh] py-8">
+      <div className="w-full max-w-lg flex flex-col items-center relative z-10 px-4 h-full max-h-[95vh] py-4">
         <PomodoroTimerDisplay
           activeTask={activeTask}
           pomodoroState={pomodoroState}
@@ -134,7 +134,7 @@ export function FlowPomodoro() {
         />
 
         {/* Controls */}
-        <div className="mt-12 flex items-center justify-center gap-8 shrink-0">
+        <div className="mt-6 flex items-center justify-center gap-8 shrink-0">
           <Button 
             variant="outline" 
             size="icon" 
@@ -188,7 +188,7 @@ export function FlowPomodoro() {
           </Button>
         </div>
         
-        <div className="mt-8 text-sm text-muted-foreground flex flex-col items-center gap-2 shrink-0">
+        <div className="mt-4 text-sm text-muted-foreground flex flex-col items-center gap-2 shrink-0">
           <div className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
             Focused: <span className="text-foreground ml-1">{Math.floor(accumulatedFocusTime / 60)} min</span>
           </div>

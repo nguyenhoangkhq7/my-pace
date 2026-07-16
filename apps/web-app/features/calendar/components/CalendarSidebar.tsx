@@ -17,10 +17,22 @@ interface CalendarSidebarProps {
   timeBlocksLength: number;
   isSidebarOpen: boolean;
   dailyPlanToday?: DailyPlan | null;
+  onConfirmPlan?: () => void;
+  isConfirming?: boolean;
 }
 
 export const CalendarSidebar = forwardRef<HTMLDivElement, CalendarSidebarProps>(
-  ({ unscheduledTasks, isAutoScheduling, onAutoSchedule, dailyPlanLength, timeBlocksLength, isSidebarOpen, dailyPlanToday }, ref) => {
+  ({ 
+    unscheduledTasks, 
+    isAutoScheduling, 
+    onAutoSchedule, 
+    dailyPlanLength, 
+    timeBlocksLength, 
+    isSidebarOpen, 
+    dailyPlanToday,
+    onConfirmPlan,
+    isConfirming 
+  }, ref) => {
     const { t } = useTranslation();
     const sidebarRef = useRef<HTMLDivElement>(null);
     const draggableRef = useRef<Draggable | null>(null);
@@ -95,19 +107,37 @@ export const CalendarSidebar = forwardRef<HTMLDivElement, CalendarSidebarProps>(
             size="sm"
             onClick={onAutoSchedule}
             disabled={isAutoScheduling}
-            className="w-full bg-primary/20 border border-primary/30 hover:bg-primary/30 text-primary text-[11px] py-1 h-auto font-semibold rounded-lg"
+            className="w-full bg-primary/20 border border-primary/30 hover:bg-primary/30 text-primary text-[11px] py-1 h-auto font-semibold rounded-lg cursor-pointer"
           >
             {isAutoScheduling ? t.calendar.autoScheduling : t.calendar.autoSchedule}
           </Button>
         </div>
 
-        <div ref={sidebarRef} className="flex-1 overflow-y-auto p-2.5 space-y-1.5 flex flex-col">
-          {unscheduledTasks
-            .slice()
-            .sort((a, b) => (a.isMit === b.isMit ? 0 : a.isMit ? -1 : 1))
-            .map((pt) => (
-              <UnscheduledTaskItem key={pt.task.id} pt={pt} />
-            ))}
+        <div ref={sidebarRef} className="flex-1 overflow-y-auto p-2.5 space-y-1.5 flex flex-col justify-between h-full">
+          <div className="space-y-1.5 flex flex-col">
+            {unscheduledTasks
+              .slice()
+              .sort((a, b) => (a.isMit === b.isMit ? 0 : a.isMit ? -1 : 1))
+              .map((pt) => (
+                <UnscheduledTaskItem key={pt.task.id} pt={pt} />
+              ))}
+          </div>
+
+          {dailyPlanToday && !dailyPlanToday.isConfirmed && unscheduledTasks.length === 0 && (
+            <div className="pt-4 mt-auto flex flex-col items-center gap-3 text-center p-3 bg-indigo-500/5 rounded-xl border border-indigo-500/10">
+              <div className="text-[10px] text-muted-foreground leading-normal font-medium">
+                Tất cả công việc đã được xếp lịch!
+              </div>
+              <Button
+                size="sm"
+                onClick={onConfirmPlan}
+                disabled={isConfirming}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] py-2 h-auto font-bold rounded-lg shadow-md cursor-pointer transition-colors"
+              >
+                {isConfirming ? "..." : t.calendar.confirmPlan}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     );
