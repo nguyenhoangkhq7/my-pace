@@ -20,6 +20,12 @@ export async function confirmPlanAction(date: string) {
   });
 }
 
+export async function unconfirmPlanAction(date: string) {
+  return await serverFetch<DailyPlan>(`daily-plans/${date}/unconfirm`, {
+    method: 'POST',
+  });
+}
+
 export async function reviewPlanAction(date: string) {
   return await serverFetch<DailyPlan>(`daily-plans/${date}/review`, {
     method: 'POST',

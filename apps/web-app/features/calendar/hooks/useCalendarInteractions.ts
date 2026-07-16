@@ -4,6 +4,9 @@ import type { EventDropArg } from "@fullcalendar/core";
 import type { EventReceiveArg } from "@fullcalendar/interaction";
 import type { FixedEventOccurrence, CreateEventPayload, UpdateOccurrencePayload } from "@/features/calendar/types";
 import type { DailyPlan, TaskTimeBlock } from "@/features/board/types";
+import { toLocalISOString } from "@/lib/date";
+import { useQueryClient } from "@tanstack/react-query";
+import { updateTaskAction } from "@/features/board/actions/task.action";
 
 interface UseCalendarInteractionsProps {
   dailyPlanToday: DailyPlan | null;
@@ -28,12 +31,20 @@ export function useCalendarInteractions({
   handleUnscheduleTask,
   sidebarRef,
 }: UseCalendarInteractionsProps) {
+  const queryClient = useQueryClient();
+
   // ── When task dropped from sidebar → save as new time block ──────────────
   const handleEventReceive = useCallback(
     async (info: EventReceiveArg) => {
       const taskId = info.event.extendedProps?.taskId as string | undefined;
       const planTask = dailyPlanToday?.tasks.find((pt) => pt.task.id === taskId);
       if (!taskId || !planTask || !dailyPlanToday) {
+        info.revert();
+        return;
+      }
+
+      if (dailyPlanToday.isConfirmed) {
+        toast.error("Không thể xếp lịch khi kế hoạch đã được xác nhận (Running).");
         info.revert();
         return;
       }
@@ -45,9 +56,7 @@ export function useCalendarInteractions({
         return;
       }
 
-      const droppedDate = new Date(startTime.getTime() - startTime.getTimezoneOffset() * 60000)
-        .toISOString()
-        .split("T")[0];
+      const droppedDate = toLocalISOString(startTime).split("T")[0];
       if (droppedDate !== dailyPlanToday.planDate) {
         toast.error(`Chỉ được phép xếp lịch vào ngày của kế hoạch (${dailyPlanToday.planDate})`);
         info.revert();
@@ -66,8 +75,8 @@ export function useCalendarInteractions({
       const newBlock = {
         taskId,
         dailyPlanId: dailyPlanToday.id,
-        startTime: startTime.toISOString(),
-        endTime: endTime.toISOString(),
+        startTime: toLocalISOString(startTime),
+        endTime: toLocalISOString(endTime),
         partIndex: 1,
         totalParts: 1,
       };
@@ -161,6 +170,12 @@ export function useCalendarInteractions({
         info.revert();
         return;
       }
+
+      if (dailyPlanToday.isConfirmed) {
+        toast.error("Không thể di chuyển công việc khi kế hoạch đã được xác nhận (Running).");
+        info.revert();
+        return;
+      }
       const startTime = info.event.start;
       const endTime = info.event.end;
       if (!startTime || !endTime) {
@@ -168,9 +183,7 @@ export function useCalendarInteractions({
         return;
       }
 
-      const droppedDate = new Date(startTime.getTime() - startTime.getTimezoneOffset() * 60000)
-        .toISOString()
-        .split("T")[0];
+      const droppedDate = toLocalISOString(startTime).split("T")[0];
       if (droppedDate !== dailyPlanToday.planDate) {
         toast.error(`Chỉ được phép dời lịch trong ngày của kế hoạch (${dailyPlanToday.planDate})`);
         info.revert();
@@ -179,7 +192,7 @@ export function useCalendarInteractions({
 
       const updatedBlocks = timeBlocks
         .map((b) =>
-          b.id === blockId ? { ...b, startTime: startTime.toISOString(), endTime: endTime.toISOString() } : b
+          b.id === blockId ? { ...b, startTime: toLocalISOString(startTime), endTime: toLocalISOString(endTime) } : b
         )
         .map((b) => {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -215,8 +228,25 @@ export function useCalendarInteractions({
           arg.revert();
           return;
         }
+
+        if (dailyPlanToday.isConfirmed) {
+          toast.error("Không thể kéo giãn công việc khi kế hoạch đã được xác nhận (Running).");
+          arg.revert();
+          return;
+        }
+
+        const block = timeBlocks.find((b) => b.id === blockId);
+        if (!block) {
+          arg.revert();
+          return;
+        }
+
+        const startTime = new Date(block.startTime);
+        const endTime = new Date(toLocalISOString(newEnd));
+        const durationMinutes = Math.round((endTime.getTime() - startTime.getTime()) / 60000);
+
         const updatedBlocks = timeBlocks
-          .map((b) => (b.id === blockId ? { ...b, endTime: newEnd.toISOString() } : b))
+          .map((b) => (b.id === blockId ? { ...b, endTime: toLocalISOString(newEnd) } : b))
           .map((b) => {
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const { id: _, ...rest } = b;
@@ -224,6 +254,12 @@ export function useCalendarInteractions({
           });
         try {
           await saveTimeBlocks(updatedBlocks);
+          if (durationMinutes > 0) {
+            await updateTaskAction(block.taskId, { estimatedMinutes: durationMinutes });
+            queryClient.invalidateQueries({ queryKey: ["tasks"] });
+            queryClient.invalidateQueries({ queryKey: ["dailyPlan"] });
+          }
+          toast.success("Đã cập nhật lịch trình và thời lượng công việc!");
         } catch {
           arg.revert();
         }

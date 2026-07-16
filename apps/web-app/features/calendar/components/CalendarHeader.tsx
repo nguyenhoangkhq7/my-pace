@@ -4,6 +4,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { FixedEventColorPicker } from "./FixedEventColorPicker";
 import { useTranslation } from "@/hooks/use-translation";
+import { DailyPlan } from "@/features/board/types";
 
 interface CalendarHeaderProps {
   fixedEventColor: string;

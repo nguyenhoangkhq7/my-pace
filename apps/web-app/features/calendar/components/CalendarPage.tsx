@@ -47,6 +47,8 @@ export function CalendarPage() {
     isBlockMit,
     handleUnscheduleTask,
     isUnscheduling,
+    handleConfirmPlan,
+    isConfirming,
 
     // Event interactions
     handleDatesSet,
@@ -115,13 +117,15 @@ export function CalendarPage() {
         {((hasUnscheduled || !dailyPlanToday?.isConfirmed) && isSidebarOpen) && (
           <CalendarSidebar
             ref={sidebarRef}
-            unscheduledTasks={dailyPlanToday?.isConfirmed ? unscheduledTasks : []}
+            unscheduledTasks={unscheduledTasks}
             isAutoScheduling={isAutoScheduling}
             onAutoSchedule={handleAutoScheduleFromSidebar}
-            dailyPlanLength={dailyPlanToday?.isConfirmed ? (dailyPlanToday?.tasks?.length || 0) : 0}
+            dailyPlanLength={dailyPlanToday?.tasks?.length || 0}
             timeBlocksLength={timeBlocks.length}
             isSidebarOpen={isSidebarOpen}
-            dailyPlanToday={dailyPlanToday?.isConfirmed ? dailyPlanToday : null}
+            dailyPlanToday={dailyPlanToday}
+            onConfirmPlan={handleConfirmPlan}
+            isConfirming={isConfirming}
           />
         )}
       </div>

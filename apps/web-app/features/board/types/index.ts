@@ -30,6 +30,8 @@ export interface Task {
   dueDate?: string;
   notes?: string;
   checklists?: TaskChecklistItem[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface TaskTimeBlock {

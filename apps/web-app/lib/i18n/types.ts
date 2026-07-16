@@ -74,6 +74,8 @@ export interface Translations {
   };
   execution: {
     totalAvailable: string;
+    remainingAvailable: string;
+    total: string;
     howAvailable: string;
     totalFreeTime: string;
     bufferDeducted: (pct: number) => string;
@@ -183,6 +185,7 @@ export interface Translations {
     notPlanned: string;
     notPlannedDesc: string;
     planNow: string;
+    confirmPlan: string;
     todoToday: string;
     dragToSchedule: string;
     autoScheduling: string;

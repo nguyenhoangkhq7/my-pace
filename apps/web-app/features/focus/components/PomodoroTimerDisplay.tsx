@@ -49,7 +49,7 @@ export function PomodoroTimerDisplay({
   return (
     <>
       {/* Top: Status Badge, Title */}
-      <div className="text-center mb-10 shrink-0 space-y-4 relative w-full flex flex-col items-center">
+      <div className="text-center mb-6 shrink-0 space-y-4 relative w-full flex flex-col items-center">
         <div className={`inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-card border border-border ${status.color} text-[10px] font-bold uppercase tracking-widest`}>
           <div className={`w-1.5 h-1.5 rounded-full ${status.dot}`}></div>
           <span>{status.text}</span>

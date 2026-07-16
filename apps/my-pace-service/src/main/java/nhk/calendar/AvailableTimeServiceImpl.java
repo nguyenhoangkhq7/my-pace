@@ -53,15 +53,16 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
         // Check if sleepTime crosses midnight relative to wakeTime
         boolean isCrossMidnight = user.getSleepTime().isBefore(user.getWakeTime());
 
-        // If planning today, check if now is outside the active window [wakeTime, sleepTime]
-        if (date.equals(today)) {
-            boolean isInside;
-            if (!isCrossMidnight) {
-                isInside = !now.isBefore(user.getWakeTime()) && !now.isAfter(user.getSleepTime());
-            } else {
-                isInside = !now.isBefore(user.getWakeTime()) || !now.isAfter(user.getSleepTime());
-            }
-            if (!isInside) {
+        // Determine windowStart based on today vs past vs future
+        LocalTime windowStart;
+        if (date.isBefore(today)) {
+            windowStart = user.getSleepTime(); // past days have 0 available time
+        } else if (date.equals(today)) {
+            // Check if day is already over today
+            boolean isOver = !isCrossMidnight 
+                    ? now.isAfter(user.getSleepTime()) 
+                    : (now.isAfter(user.getSleepTime()) && now.isBefore(user.getWakeTime()));
+            if (isOver) {
                 return AvailableTimeResponse.builder()
                         .availableMinutes(0).blockedMinutes(0)
                         .bufferPct(user.getBufferPct()).workingWindowMinutes(0)
@@ -70,21 +71,26 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
                         .streak(getStreakForUser(userId, zoneId))
                         .build();
             }
-        }
-
-        LocalTime windowStart;
-        if (date.isBefore(today)) {
-            windowStart = user.getSleepTime(); // past days have 0 available time
-        } else if (date.equals(today)) {
-            windowStart = now;
+            
+            // Apply 15-minute buffer starting from wakeTime (if before wakeTime) or now (if inside)
+            if (now.isBefore(user.getWakeTime())) {
+                windowStart = user.getWakeTime().plusMinutes(15);
+            } else {
+                windowStart = now.plusMinutes(15);
+            }
         } else {
-            windowStart = user.getWakeTime();
+            // Tomorrow / Future starts from Giờ thức dậy + 15m
+            windowStart = user.getWakeTime().plusMinutes(15);
         }
         LocalTime windowEnd = user.getSleepTime();
 
         int workingWindow = (int) java.time.Duration.between(windowStart, windowEnd).toMinutes();
         if (workingWindow < 0) {
-            workingWindow += 1440;
+            if (isCrossMidnight) {
+                workingWindow += 1440;
+            } else {
+                workingWindow = 0;
+            }
         }
 
         if (workingWindow <= 0) {
