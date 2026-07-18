@@ -555,6 +555,7 @@ export const en: Translations = {
     readyToFocus: "Ready to Focus?",
     selectLeftTask: "Select a task on the left column to start a deep work session.",
     soundscapeTitle: "Soundscape",
+    pasteHint: "Tip: You can paste (Ctrl+V) a YouTube link directly here to play.",
     pasteYoutubePlaceholder: "Paste YouTube link...",
     titlePlaceholder: "Title (e.g. Lofi Coding)...",
     settingsTooltip: "Settings & Interface",

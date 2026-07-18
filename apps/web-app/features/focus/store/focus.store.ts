@@ -177,7 +177,25 @@ export const useFocusStore = create<FocusState>()(
 
       setPomodoroFloating: (value) => set({ isPomodoroFloating: value }),
       setPromptTask: (task) => set({ promptTask: task }),
-      setYoutubeUrl: (url) => set({ youtubeUrl: url }),
+      setYoutubeUrl: (url) => {
+        const vidRegExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|live\/|watch\?v=|&v=)([^#&?]*).*/;
+        const vidMatch = url.match(vidRegExp);
+        const videoId = (vidMatch && vidMatch[2].length === 11) ? vidMatch[2] : "";
+
+        const historyItem = get().youtubeHistory.find(item => item.url === url);
+        const title = historyItem ? historyItem.title : "";
+        
+        set({ 
+          youtubeUrl: url,
+          isPlaying: true,
+          activeVideoTitle: title || "Loading...",
+          activeVideoAuthor: title ? "My Pace Player" : "",
+          activeVideoId: videoId,
+          // Reset playback state for the new video to avoid stale duration/time
+          currentTime: 0,
+          duration: 0,
+        });
+      },
       setIsSettingsOpen: (open) => set({ isSettingsOpen: open }),
       setZenFull: (value) => set({ isZenFull: value }),
       toggleFlowFullscreen: () => set((state) => ({ isFlowFullscreen: !state.isFlowFullscreen })),

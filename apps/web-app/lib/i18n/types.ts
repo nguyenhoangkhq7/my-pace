@@ -543,6 +543,7 @@ export interface Translations {
     readyToFocus: string;
     selectLeftTask: string;
     soundscapeTitle: string;
+    pasteHint: string;
     pasteYoutubePlaceholder: string;
     titlePlaceholder: string;
     settingsTooltip: string;
