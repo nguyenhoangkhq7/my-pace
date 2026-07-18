@@ -29,15 +29,10 @@ export function ExecutionStatsSummary({
   const showStats = availableData && totalFree > 0;
   const usedTime = Math.max(0, totalAvailable - currentAvailable);
 
-  const eatenBuffer = usedTime > totalAvailable 
-    ? Math.min(bufferMins, usedTime - totalAvailable) 
-    : 0;
-
-  const remainingBuffer = Math.max(0, bufferMins - eatenBuffer);
-
-  const blueWidth = totalFree > 0 ? (Math.max(0, currentAvailable) / totalFree) * 100 : 0;
-  const redWidth = totalFree > 0 ? (eatenBuffer / totalFree) * 100 : 0;
-  const orangeWidth = totalFree > 0 ? (remainingBuffer / totalFree) * 100 : 0;
+  const isOverscheduled = usedTime > totalAvailable;
+  const availableWidth = totalFree > 0 ? (totalAvailable / totalFree) * 100 : 0;
+  const bufferWidth = totalFree > 0 ? (bufferMins / totalFree) * 100 : 0;
+  const progressPct = totalFree > 0 ? (Math.min(totalFree, usedTime) / totalFree) * 100 : 0;
 
   return (
     <div className="flex justify-between items-center border-b border-border pb-4">
@@ -96,26 +91,33 @@ export function ExecutionStatsSummary({
         </div>
         {showStats && (
           <div className="pt-2">
-            <div className="h-2.5 w-full bg-slate-800/80 rounded-full overflow-hidden flex shadow-inner">
-              {blueWidth > 0 && (
+            <div className="relative w-full h-2.5">
+              <div className="absolute inset-0 bg-slate-800/80 rounded-full overflow-hidden flex shadow-inner">
+                {availableWidth > 0 && (
+                  <div 
+                    className="bg-primary hover:bg-primary/90 transition-all duration-500" 
+                    style={{ width: `${availableWidth}%` }}
+                    title={t.execution.availableTitle(`${Math.floor(totalAvailable / 60)}h ${totalAvailable % 60}m`)}
+                  />
+                )}
+                {bufferWidth > 0 && (
+                  <div 
+                    className="bg-amber-500/80 hover:bg-amber-500 transition-all duration-500" 
+                    style={{ width: `${bufferWidth}%` }}
+                    title={t.execution.bufferTitle(availableData.bufferPct, `${Math.floor(bufferMins / 60)}h ${bufferMins % 60}m`)}
+                  />
+                )}
+              </div>
+
+              {/* Progress indicator dot */}
+              {totalFree > 0 && (
                 <div 
-                  className="bg-primary hover:bg-primary/90 transition-all duration-500" 
-                  style={{ width: `${blueWidth}%` }}
-                  title={t.execution.availableTitle(`${Math.floor(currentAvailable / 60)}h ${currentAvailable % 60}m`)}
-                />
-              )}
-              {redWidth > 0 && (
-                <div 
-                  className="bg-red-500 hover:bg-red-600 transition-all duration-500 animate-pulse" 
-                  style={{ width: `${redWidth}%` }}
-                  title={`Đã dùng thời gian đệm: ${Math.floor(eatenBuffer / 60)}h ${eatenBuffer % 60}m`}
-                />
-              )}
-              {orangeWidth > 0 && (
-                <div 
-                  className="bg-amber-500/80 hover:bg-amber-500 transition-all duration-500" 
-                  style={{ width: `${orangeWidth}%` }}
-                  title={t.execution.bufferTitle(availableData.bufferPct, `${Math.floor(remainingBuffer / 60)}h ${remainingBuffer % 60}m`)}
+                  className={`absolute top-1/2 -translate-y-1/2 -ml-1.5 w-3.5 h-3.5 rounded-full border-2 border-white shadow-[0_0_8px_rgba(255,255,255,0.9)] transition-all duration-500 ease-out z-10 ${
+                    isOverscheduled 
+                      ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.9)]" 
+                      : "bg-white"
+                  }`}
+                  style={{ left: `${progressPct}%` }}
                 />
               )}
             </div>

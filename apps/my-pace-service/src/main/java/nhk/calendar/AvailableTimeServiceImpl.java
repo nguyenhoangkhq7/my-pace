@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import nhk.planning.DailyPlan;
+import nhk.planning.DailyPlanRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +24,7 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
     private final UserRepository userRepo;
     private final DailyCheckinRepository checkinRepo;
     private final FixedEventService eventService;
+    private final DailyPlanRepository dailyPlanRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -50,8 +53,14 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
         LocalDate today = LocalDate.now(zoneId);
         LocalTime now = LocalTime.now(zoneId);
 
+        Optional<DailyPlan> planOpt = dailyPlanRepository.findByUserIdAndPlanDate(userId, date);
+        boolean isPlanConfirmed = planOpt.isPresent() && planOpt.get().getIsConfirmed();
+        if (isPlanConfirmed && planOpt.get().getConfirmedAt() != null) {
+            now = planOpt.get().getConfirmedAt().atZoneSameInstant(zoneId).toLocalTime();
+        }
+
         // Check if sleepTime crosses midnight relative to wakeTime
-        boolean isCrossMidnight = user.getSleepTime().isBefore(user.getWakeTime());
+        boolean isCrossMidnight = !user.getSleepTime().equals(LocalTime.MIDNIGHT) && user.getSleepTime().isBefore(user.getWakeTime());
 
         // Determine windowStart based on today vs past vs future
         LocalTime windowStart;
@@ -59,9 +68,14 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
             windowStart = user.getSleepTime(); // past days have 0 available time
         } else if (date.equals(today)) {
             // Check if day is already over today
-            boolean isOver = !isCrossMidnight 
-                    ? now.isAfter(user.getSleepTime()) 
-                    : (now.isAfter(user.getSleepTime()) && now.isBefore(user.getWakeTime()));
+            boolean isOver;
+            if (user.getSleepTime().equals(LocalTime.MIDNIGHT)) {
+                isOver = false;
+            } else if (!isCrossMidnight) {
+                isOver = now.isAfter(user.getSleepTime());
+            } else {
+                isOver = now.isAfter(user.getSleepTime()) && now.isBefore(user.getWakeTime());
+            }
             if (isOver) {
                 return AvailableTimeResponse.builder()
                         .availableMinutes(0).blockedMinutes(0)
@@ -84,12 +98,17 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
         }
         LocalTime windowEnd = user.getSleepTime();
 
-        int workingWindow = (int) java.time.Duration.between(windowStart, windowEnd).toMinutes();
-        if (workingWindow < 0) {
-            if (isCrossMidnight) {
-                workingWindow += 1440;
-            } else {
-                workingWindow = 0;
+        int workingWindow;
+        if (windowEnd.equals(LocalTime.MIDNIGHT)) {
+            workingWindow = 1440 - (int) (windowStart.toSecondOfDay() / 60);
+        } else {
+            workingWindow = (int) java.time.Duration.between(windowStart, windowEnd).toMinutes();
+            if (workingWindow < 0) {
+                if (isCrossMidnight) {
+                    workingWindow += 1440;
+                } else {
+                    workingWindow = 0;
+                }
             }
         }
 

@@ -303,6 +303,8 @@ export interface Translations {
     logoutConfirmDesc: string;
     logoutConfirmCancel: string;
     logoutConfirmOk: string;
+    timezone: string;
+    timezonePlaceholder: string;
   };
   onboarding: {
     back: string;
@@ -541,6 +543,7 @@ export interface Translations {
     readyToFocus: string;
     selectLeftTask: string;
     soundscapeTitle: string;
+    pasteHint: string;
     pasteYoutubePlaceholder: string;
     titlePlaceholder: string;
     settingsTooltip: string;
@@ -554,6 +557,20 @@ export interface Translations {
     todayTasksCount: (count: number) => string;
     enterFullscreen: string;
     exitFullscreen: string;
+    player: {
+      noTrack: string;
+      myPacePlayer: string;
+      shuffle: string;
+      prevSoundscape: string;
+      prevTrack: string;
+      play: string;
+      pause: string;
+      nextTrack: string;
+      nextSoundscape: string;
+      repeat: string;
+      expandZen: string;
+      volume: string;
+    };
   };
   feedback: {
     title: string;

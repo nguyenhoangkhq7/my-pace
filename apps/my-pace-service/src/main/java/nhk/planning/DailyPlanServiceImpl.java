@@ -216,4 +216,12 @@ public class DailyPlanServiceImpl implements DailyPlanService {
         dailyPlanRepository.save(plan);
         return getDailyPlan(planDate, userId);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DailyPlanDto getUnreviewedPlan(LocalDate today, UUID userId) {
+        return dailyPlanRepository.findFirstByUserIdAndPlanDateBeforeAndIsConfirmedTrueAndIsReviewedFalseOrderByPlanDateDesc(userId, today)
+                .map(plan -> getDailyPlan(plan.getPlanDate(), userId))
+                .orElse(null);
+    }
 }

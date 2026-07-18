@@ -48,7 +48,7 @@ export function SoundscapeHistoryItem({
     const thumb = getThumbnail();
     return (
       <div 
-        className={cn("relative flex flex-col h-full w-full group rounded-xl overflow-hidden border transition-all cursor-pointer", isPlaying ? "border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.2)]" : "border-border hover:border-border/80")} 
+        className={cn("relative flex flex-col h-fit w-full group rounded-xl overflow-hidden border transition-all cursor-pointer", isPlaying ? "border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.2)]" : "border-border hover:border-border/80")} 
         onClick={onPlay}
       >
         <div className="relative w-full pt-[56.25%] bg-muted shrink-0">

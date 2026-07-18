@@ -27,6 +27,17 @@ interface FocusState {
   youtubeUrl: string;
   youtubeHistory: { url: string; title: string }[];
 
+  // Soundscape Playback State (not persisted except volume & looping)
+  isPlaying: boolean;
+  volume: number;
+  currentTime: number;
+  duration: number;
+  isLooping: boolean;
+  isShuffle: boolean;
+  activeVideoTitle: string;
+  activeVideoAuthor: string;
+  activeVideoId: string;
+
   // Modal control
   isSettingsOpen: boolean;
   setIsSettingsOpen: (open: boolean) => void;
@@ -52,12 +63,36 @@ interface FocusState {
   addToHistory: (url: string, title: string) => void;
   removeFromHistory: (url: string) => void;
   updateHistoryTitle: (url: string, newTitle: string) => void;
-  openFocusMode: (taskId: string, planTaskId: string, estimatedMinutes: number) => void;
+  openFocusMode: (taskId: string, planTaskId: string, estimatedMinutes: number, alreadyWorkedMinutes?: number) => void;
   closeFocusMode: () => void;
+
+  // Playback Control Actions
+  setIsPlaying: (isPlaying: boolean) => void;
+  setVolume: (volume: number) => void;
+  setCurrentTime: (currentTime: number) => void;
+  setDuration: (duration: number) => void;
+  setIsLooping: (isLooping: boolean) => void;
+  setIsShuffle: (isShuffle: boolean) => void;
+  setActiveVideoInfo: (title: string, author: string, id: string) => void;
+
+  // Global Player instance reference registration
+  playerControls: {
+    play: () => void;
+    pause: () => void;
+    setVolume: (v: number) => void;
+    seek: (t: number) => void;
+    nextTrack: () => void;
+    prevTrack: () => void;
+  } | null;
+  registerPlayerControls: (controls: FocusState["playerControls"]) => void;
+
+  playNextSoundscape: () => void;
+  playPrevSoundscape: () => void;
   
   // Timer Actions (called by usePomodoro hook)
   startTimer: () => void;
   pauseTimer: () => void;
+  resumeTimer: (previousState: "focusing" | "breaking") => void;
   tick: (seconds: number) => void;
   transitionToBreak: () => void;
   transitionToFocus: () => void;
@@ -86,15 +121,81 @@ export const useFocusStore = create<FocusState>()(
       youtubeHistory: [
         { url: "https://www.youtube.com/live/X4VbdwhkE10?si=gV884ky2WVfhPwQQ", title: "Lofi Girl" }
       ],
+
+      isPlaying: false,
+      volume: 50,
+      currentTime: 0,
+      duration: 0,
+      isLooping: false,
+      isShuffle: false,
+      activeVideoTitle: "Lofi Girl",
+      activeVideoAuthor: "Lofi Girl",
+      activeVideoId: "X4VbdwhkE10",
+
       isSettingsOpen: false,
       isZenFull: false,
       isFlowFullscreen: false,
       promptTask: null,
       isPomodoroFloating: false,
 
+      setIsPlaying: (isPlaying) => set({ isPlaying }),
+      setVolume: (volume) => {
+        set({ volume });
+        const { playerControls } = get();
+        if (playerControls) playerControls.setVolume(volume);
+      },
+      setCurrentTime: (currentTime) => set({ currentTime }),
+      setDuration: (duration) => set({ duration }),
+      setIsLooping: (isLooping) => set({ isLooping }),
+      setIsShuffle: (isShuffle) => set({ isShuffle }),
+      setActiveVideoInfo: (title, author, id) => set({ activeVideoTitle: title, activeVideoAuthor: author, activeVideoId: id }),
+
+      playerControls: null,
+      registerPlayerControls: (controls) => set({ playerControls: controls }),
+
+      playNextSoundscape: () => {
+        const { youtubeUrl, youtubeHistory, setYoutubeUrl } = get();
+        if (youtubeHistory.length === 0) return;
+        const index = youtubeHistory.findIndex(item => item.url === youtubeUrl);
+        let nextIndex = 0;
+        if (index !== -1) {
+          nextIndex = (index + 1) % youtubeHistory.length;
+        }
+        setYoutubeUrl(youtubeHistory[nextIndex].url);
+      },
+
+      playPrevSoundscape: () => {
+        const { youtubeUrl, youtubeHistory, setYoutubeUrl } = get();
+        if (youtubeHistory.length === 0) return;
+        const index = youtubeHistory.findIndex(item => item.url === youtubeUrl);
+        let prevIndex = youtubeHistory.length - 1;
+        if (index !== -1) {
+          prevIndex = (index - 1 + youtubeHistory.length) % youtubeHistory.length;
+        }
+        setYoutubeUrl(youtubeHistory[prevIndex].url);
+      },
+
       setPomodoroFloating: (value) => set({ isPomodoroFloating: value }),
       setPromptTask: (task) => set({ promptTask: task }),
-      setYoutubeUrl: (url) => set({ youtubeUrl: url }),
+      setYoutubeUrl: (url) => {
+        const vidRegExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|live\/|watch\?v=|&v=)([^#&?]*).*/;
+        const vidMatch = url.match(vidRegExp);
+        const videoId = (vidMatch && vidMatch[2].length === 11) ? vidMatch[2] : "";
+
+        const historyItem = get().youtubeHistory.find(item => item.url === url);
+        const title = historyItem ? historyItem.title : "";
+        
+        set({ 
+          youtubeUrl: url,
+          isPlaying: true,
+          activeVideoTitle: title || "Loading...",
+          activeVideoAuthor: title ? "My Pace Player" : "",
+          activeVideoId: videoId,
+          // Reset playback state for the new video to avoid stale duration/time
+          currentTime: 0,
+          duration: 0,
+        });
+      },
       setIsSettingsOpen: (open) => set({ isSettingsOpen: open }),
       setZenFull: (value) => set({ isZenFull: value }),
       toggleFlowFullscreen: () => set((state) => ({ isFlowFullscreen: !state.isFlowFullscreen })),
@@ -116,9 +217,11 @@ export const useFocusStore = create<FocusState>()(
         )
       })),
       
-      openFocusMode: (taskId, planTaskId, estimatedMinutes) => {
+      openFocusMode: (taskId, planTaskId, estimatedMinutes, alreadyWorkedMinutes = 0) => {
         const { focusMinutes } = get();
-        const totalSessions = Math.max(1, Math.ceil(estimatedMinutes / focusMinutes));
+        // Calculate remaining sessions considering already-worked time
+        const remainingMinutes = Math.max(0, estimatedMinutes - alreadyWorkedMinutes);
+        const totalSessions = Math.max(1, Math.ceil(remainingMinutes / focusMinutes));
         
         set({
           activeTaskId: taskId,
@@ -127,7 +230,7 @@ export const useFocusStore = create<FocusState>()(
           currentSession: 1,
           totalSessions,
           timeLeft: focusMinutes * 60,
-          accumulatedFocusTime: 0,
+          accumulatedFocusTime: alreadyWorkedMinutes * 60,
           lastActiveTimestamp: Date.now()
         });
       },
@@ -152,6 +255,10 @@ export const useFocusStore = create<FocusState>()(
 
       pauseTimer: () => {
         set({ pomodoroState: "paused", lastActiveTimestamp: Date.now() });
+      },
+
+      resumeTimer: (previousState) => {
+        set({ pomodoroState: previousState, lastActiveTimestamp: Date.now() });
       },
 
       tick: (seconds) => {
@@ -270,6 +377,8 @@ export const useFocusStore = create<FocusState>()(
         totalSessions: state.totalSessions,
         accumulatedFocusTime: state.accumulatedFocusTime,
         lastActiveTimestamp: state.lastActiveTimestamp,
+        volume: state.volume,
+        isLooping: state.isLooping,
       }), 
     }
   )

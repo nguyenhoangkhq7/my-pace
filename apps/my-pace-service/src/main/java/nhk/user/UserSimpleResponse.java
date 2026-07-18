@@ -9,6 +9,7 @@ public record UserSimpleResponse (
     String role,
     LocalTime wakeTime,
     LocalTime sleepTime,
-    Integer bufferPct
+    Integer bufferPct,
+    String timezone
 ) {
 }

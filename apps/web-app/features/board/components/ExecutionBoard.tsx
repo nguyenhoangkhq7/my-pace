@@ -7,7 +7,25 @@ import { CancelPlanDialog } from "./CancelPlanDialog";
 import { useExecutionBoard } from "../hooks/useExecutionBoard";
 import { useTranslation } from "@/hooks/use-translation";
 
-export function ExecutionBoard({ currentDate, tomorrowDate }: { currentDate: string; tomorrowDate: string }) {
+const formatShortDate = (dateStr: string) => {
+  if (!dateStr) return "";
+  const parts = dateStr.split("-");
+  if (parts.length < 3) return dateStr;
+  const [, m, d] = parts;
+  return `${d}/${m}`;
+};
+
+export function ExecutionBoard({ 
+  currentDate, 
+  tomorrowDate,
+  day2Date,
+  day3Date
+}: { 
+  currentDate: string; 
+  tomorrowDate: string;
+  day2Date: string;
+  day3Date: string;
+}) {
   const {
     tasks,
     isPlanningMode,
@@ -28,7 +46,8 @@ export function ExecutionBoard({ currentDate, tomorrowDate }: { currentDate: str
     availableData,
     handleSavePlan,
     handleCancelPlan,
-  } = useExecutionBoard({ currentDate, tomorrowDate });
+    handleRemoveExcessTasks,
+  } = useExecutionBoard({ currentDate, tomorrowDate, day2Date, day3Date });
   const { t } = useTranslation();
 
   const renderContent = () => {
@@ -65,15 +84,18 @@ export function ExecutionBoard({ currentDate, tomorrowDate }: { currentDate: str
             setIsStartMyDayOpen(true);
           }}
           onCancelPlan={() => setIsCancelModalOpen(true)}
+          onRemoveExcessTasks={handleRemoveExcessTasks}
         />
       );
     }
+
+
 
     // No plan yet
     return (
       <NoPlanState
         activeTab={activeTab}
-        onStartPlanning={() => setPlanningMode(true, activeTab as 'today' | 'tomorrow')}
+        onStartPlanning={() => setPlanningMode(true, activeTab)}
       />
     );
   };
@@ -82,9 +104,11 @@ export function ExecutionBoard({ currentDate, tomorrowDate }: { currentDate: str
     <div className="h-full flex flex-col bg-background border-l border-border pl-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
         <div className="flex justify-between items-center mb-6">
-          <TabsList className="bg-muted border border-border">
+          <TabsList className="bg-muted border border-border flex flex-wrap">
             <TabsTrigger value="today" className="data-[state=active]:bg-card data-[state=active]:text-foreground cursor-pointer">{t.board.today}</TabsTrigger>
             <TabsTrigger value="tomorrow" className="data-[state=active]:bg-card data-[state=active]:text-foreground cursor-pointer">{t.board.tomorrow}</TabsTrigger>
+            <TabsTrigger value="day2" className="data-[state=active]:bg-card data-[state=active]:text-foreground cursor-pointer">{formatShortDate(day2Date)}</TabsTrigger>
+            <TabsTrigger value="day3" className="data-[state=active]:bg-card data-[state=active]:text-foreground cursor-pointer">{formatShortDate(day3Date)}</TabsTrigger>
           </TabsList>
         </div>
         
@@ -94,6 +118,14 @@ export function ExecutionBoard({ currentDate, tomorrowDate }: { currentDate: str
         
         <TabsContent value="tomorrow" className="flex-1 mt-0 outline-none flex flex-col h-full overflow-hidden">
           {activeTab === 'tomorrow' && renderContent()}
+        </TabsContent>
+
+        <TabsContent value="day2" className="flex-1 mt-0 outline-none flex flex-col h-full overflow-hidden">
+          {activeTab === 'day2' && renderContent()}
+        </TabsContent>
+
+        <TabsContent value="day3" className="flex-1 mt-0 outline-none flex flex-col h-full overflow-hidden">
+          {activeTab === 'day3' && renderContent()}
         </TabsContent>
       </Tabs>
 

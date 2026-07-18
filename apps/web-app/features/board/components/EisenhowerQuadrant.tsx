@@ -47,9 +47,17 @@ export function EisenhowerQuadrant({
     return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
   });
 
+  const isQ3 = isUrgent && !isImportant;
+  const isQ4 = !isUrgent && !isImportant;
+  const opacityClass = isQ3 
+    ? "opacity-70 hover:opacity-100 transition-all duration-300" 
+    : isQ4 
+      ? "opacity-40 hover:opacity-100 transition-all duration-300" 
+      : "";
+
   return (
     <div 
-      className="flex flex-col border border-border rounded-xl overflow-hidden bg-muted/20 transition-colors duration-200"
+      className={`flex flex-col border border-border rounded-xl overflow-hidden bg-muted/20 transition-all duration-300 ${opacityClass}`}
       onDragOver={(e) => {
         e.preventDefault();
         e.currentTarget.classList.add("bg-muted/40", "border-primary/50");

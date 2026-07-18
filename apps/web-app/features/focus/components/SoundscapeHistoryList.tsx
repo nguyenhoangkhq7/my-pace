@@ -33,7 +33,7 @@ export function SoundscapeHistoryList({
         "flex-1 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent",
         isZenFull ? "px-6 py-3" : "px-4 pb-4",
         layoutMode === "grid"
-          ? "grid grid-rows-2 grid-flow-col auto-cols-[240px] sm:auto-cols-[280px] md:auto-cols-[320px] gap-4 overflow-x-auto overflow-y-hidden content-start"
+          ? "grid grid-rows-[repeat(2,auto)] grid-flow-col auto-cols-[240px] sm:auto-cols-[280px] md:auto-cols-[320px] gap-4 overflow-x-auto overflow-y-hidden content-start"
           : "overflow-y-auto space-y-2"
       )}
     >

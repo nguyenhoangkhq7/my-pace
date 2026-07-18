@@ -185,12 +185,30 @@ export async function registerAction(data: Omit<RegisterValues, 'confirmPassword
   }
 }
 
+interface UpdateProfileResponse {
+  timezone?: string;
+  [key: string]: unknown;
+}
+
 export async function updateProfileAction(payload: Partial<AuthUser>) {
   try {
-    const data = await serverFetch('users/profile', {
+    const data = await serverFetch<UpdateProfileResponse>('users/profile', {
       method: 'PUT',
       body: JSON.stringify(payload),
     });
+
+    // Sync timezone cookie so Next.js Server Components render the correct date after page refresh
+    if (data?.timezone) {
+      const cookieStore = await cookies();
+      cookieStore.set('timezone', data.timezone, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7, // 1 week
+      });
+    }
+
     return { success: true, data };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Update failed';
