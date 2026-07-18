@@ -59,7 +59,7 @@ export const en: Translations = {
     cancelPlan: "Cancel Plan",
     editMyDay: "Edit My Day",
     editTomorrow: "Edit Tomorrow",
-    planConfirmed: "✓ Today's plan is running",
+    planConfirmed: "Today's plan is running",
     allDoneToday: "🎉 You've completed all tasks for today. Amazing!",
   },
   planning: {
@@ -315,6 +315,8 @@ export const en: Translations = {
     logoutConfirmDesc: "Are you sure you want to logout from MyPACE?",
     logoutConfirmCancel: "Cancel",
     logoutConfirmOk: "Confirm",
+    timezone: "Timezone",
+    timezonePlaceholder: "Select timezone...",
   },
   onboarding: {
     back: "Back",

@@ -7,6 +7,10 @@ export async function getDailyPlanAction(date: string) {
   return await serverFetch<DailyPlan>(`daily-plans/${date}`);
 }
 
+export async function getUnreviewedPlanAction(today: string) {
+  return await serverFetch<DailyPlan | null>(`daily-plans/unreviewed?today=${today}`);
+}
+
 export async function planMyDayAction(data: Record<string, unknown>) {
   return await serverFetch<DailyPlan>('daily-plans/plan-my-day', {
     method: 'POST',

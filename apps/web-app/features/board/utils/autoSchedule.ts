@@ -39,6 +39,9 @@ function computeGaps(
       s.setHours(sh, sm, 0, 0);
       const en = new Date(windowStart);
       en.setHours(eh, em, 0, 0);
+      if (eh < sh || (eh === sh && em < sm)) {
+        en.setDate(en.getDate() + 1);
+      }
       return { startTime: s, endTime: en };
     })
     .filter((s) => s.endTime > windowStart && s.startTime < windowEnd)
@@ -110,6 +113,9 @@ export function autoSchedule(
   dayStart.setHours(wh, wm, 0, 0);
   const dayEnd = new Date(now);
   dayEnd.setHours(sh, sm, 0, 0);
+  if (sh < wh || (sh === wh && sm < wm)) {
+    dayEnd.setDate(dayEnd.getDate() + 1);
+  }
 
   // Helper to round date up to the nearest 15 minutes
   const roundUpTo15Minutes = (d: Date): Date => {

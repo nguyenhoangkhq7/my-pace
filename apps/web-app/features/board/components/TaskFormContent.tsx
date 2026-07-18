@@ -385,12 +385,12 @@ export function TaskFormContent({
             {!requireDuration && (
               <div className="grid gap-2">
                 <Label>{t.taskForm.dueDateLabel}</Label>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1">
-                    <Controller
-                      name="dueDate"
-                      control={control}
-                      render={({ field }) => (
+                <Controller
+                  name="dueDate"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1">
                         <Popover>
                           <PopoverTrigger asChild>
                             <Button
@@ -414,17 +414,34 @@ export function TaskFormContent({
                             />
                           </PopoverContent>
                         </Popover>
+                      </div>
+                      {field.value && (
+                        <>
+                          <div className="w-[140px]">
+                            <TimeSelect
+                              value={dueTime}
+                              onChange={setDueTime}
+                              size="sm"
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              field.onChange(undefined);
+                              setDueTime("23:59");
+                            }}
+                            className="h-9 w-9 text-muted-foreground hover:text-red-400 cursor-pointer shrink-0"
+                            title="Xóa ngày giờ"
+                          >
+                            <HugeiconsIcon icon={Delete01Icon} className="h-4 w-4" />
+                          </Button>
+                        </>
                       )}
-                    />
-                  </div>
-                  <div className="w-[140px]">
-                    <TimeSelect
-                      value={dueTime}
-                      onChange={setDueTime}
-                      size="sm"
-                    />
-                  </div>
-                </div>
+                    </div>
+                  )}
+                />
               </div>
             )}
             

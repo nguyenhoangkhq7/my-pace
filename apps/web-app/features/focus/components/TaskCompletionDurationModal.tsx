@@ -5,16 +5,36 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFocusStore } from "../store/focus.store";
 import type { Task } from "@/features/board/types";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { updateTaskAction } from "@/features/board/actions/task.action";
+import { getDailyPlanAction } from "@/features/board/actions/plan.action";
+import { saveTimeBlocksAction } from "@/features/board/actions/timeblock.action";
+import { shiftTimeBlocks } from "@/features/board/utils/timeShift";
+import { useAuthStore } from "@/features/auth";
+import { getTodayStr } from "@/lib/date";
+import type { TaskTimeBlock } from "@/features/board/types";
 
 export function TaskCompletionDurationModal() {
   const promptTask = useFocusStore((s) => s.promptTask);
   const setPromptTask = useFocusStore((s) => s.setPromptTask);
   const queryClient = useQueryClient();
+  
+  const user = useAuthStore((s) => s.user);
+  const todayStr = getTodayStr(user?.timezone);
+  const { data: dailyPlanToday } = useQuery({ queryKey: ['dailyPlan', todayStr], queryFn: () => getDailyPlanAction(todayStr) });
+
   const updateTaskMutation = useMutation({
     mutationFn: ({ id, data }: { id: string, data: Partial<Task> }) => updateTaskAction(id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+  });
+
+  const saveTimeBlocksMutation = useMutation({
+    mutationFn: (blocks: Omit<TaskTimeBlock, 'id'>[]) => saveTimeBlocksAction({ dailyPlanId: dailyPlanToday!.id, blocks }),
+    onSuccess: (data) => {
+      if (dailyPlanToday) {
+        queryClient.setQueryData(['dailyPlan', todayStr], { ...dailyPlanToday, timeBlocks: data });
+      }
+    }
   });
 
   const [isCustom, setIsCustom] = useState(false);
@@ -37,6 +57,11 @@ export function TaskCompletionDurationModal() {
     setIsSaving(true);
     try {
       await updateTaskMutation.mutateAsync({ id: promptTask.id, data: { actualMinutes: minutes } });
+      if (dailyPlanToday?.timeBlocks && dailyPlanToday.timeBlocks.length > 0) {
+        const estimated = promptTask.estimatedMinutes || 0;
+        const shifted = shiftTimeBlocks(dailyPlanToday.timeBlocks, promptTask.id, minutes, estimated);
+        await saveTimeBlocksMutation.mutateAsync(shifted);
+      }
       setPromptTask(null);
       setIsCustom(false);
       setCustomValue("");

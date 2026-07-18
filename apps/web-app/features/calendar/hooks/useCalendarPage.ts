@@ -6,7 +6,7 @@ import { useCalendarEvents } from "@/features/calendar";
 import type { FixedEventOccurrence, ModalMode } from "@/features/calendar/types";
 import { useAuthStore } from "@/features/auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getDailyPlanAction, unconfirmPlanAction, confirmPlanAction } from "@/features/board/actions/plan.action";
+import { getDailyPlanAction, confirmPlanAction } from "@/features/board/actions/plan.action";
 import { useBoardStore } from "@/features/board/store/board.store";
 import { saveTimeBlocksAction } from "@/features/board/actions/timeblock.action";
 import type { TaskTimeBlock, Task, DailyPlanTask } from "@/features/board/types";
@@ -38,16 +38,27 @@ export function useCalendarPage() {
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   const today = getTodayStr(user?.timezone);
+  const [focusedDate, setFocusedDate] = useState(today);
+
+  const plannable = useMemo(() => {
+    const focused = new Date(focusedDate);
+    const t = new Date(today);
+    focused.setHours(0,0,0,0);
+    t.setHours(0,0,0,0);
+    const diffTime = focused.getTime() - t.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays >= 0 && diffDays <= 3;
+  }, [focusedDate, today]);
 
   const queryClient = useQueryClient();
-  const { data: dailyPlanToday } = useQuery({ queryKey: ['dailyPlan', today], queryFn: () => getDailyPlanAction(today) });
+  const { data: dailyPlanToday } = useQuery({ queryKey: ['dailyPlan', focusedDate], queryFn: () => getDailyPlanAction(focusedDate) });
   const timeBlocks = useMemo(() => dailyPlanToday?.timeBlocks || [], [dailyPlanToday?.timeBlocks]);
   
   const saveTimeBlocksMutation = useMutation({
     mutationFn: (blocks: Omit<TaskTimeBlock, 'id'>[]) => saveTimeBlocksAction({ dailyPlanId: dailyPlanToday!.id, blocks }),
     onSuccess: (data) => {
       if (dailyPlanToday) {
-        queryClient.setQueryData(['dailyPlan', today], { ...dailyPlanToday, timeBlocks: data });
+        queryClient.setQueryData(['dailyPlan', focusedDate], { ...dailyPlanToday, timeBlocks: data });
       }
     }
   });
@@ -87,7 +98,20 @@ export function useCalendarPage() {
 
 
   const slotMin = toSlotTime(user?.wakeTime, "05:00:00");
-  const slotMax = toSlotTime(user?.sleepTime, "23:00:00");
+  
+  let slotMax = "23:00:00";
+  if (user?.sleepTime && user?.wakeTime) {
+    const [sh, sm] = user.sleepTime.split(":").map(Number);
+    const [wh, wm] = user.wakeTime.split(":").map(Number);
+    if (sh < wh || (sh === wh && sm < wm)) {
+      const adjustedHour = sh + 24;
+      slotMax = `${String(adjustedHour).padStart(2, "0")}:${String(sm).padStart(2, "0")}:00`;
+    } else {
+      slotMax = toSlotTime(user.sleepTime, "23:00:00");
+    }
+  } else {
+    slotMax = toSlotTime(user?.sleepTime, "23:00:00");
+  }
 
   // ── Modal state ───────────────────────────────────────────────────────────
   const [modalOpen, setModalOpen] = useState(false);
@@ -118,6 +142,10 @@ export function useCalendarPage() {
 
   const handleUnscheduleTask = useCallback(async (taskId: string) => {
     if (!dailyPlanToday) return;
+    if (dailyPlanToday.isConfirmed) {
+      toast.error("Không thể hủy lịch khi kế hoạch đã được xác nhận (Running).");
+      return;
+    }
     setIsUnscheduling(true);
     // Remove all blocks associated with this task ID
     const updatedBlocks = timeBlocks
@@ -130,15 +158,6 @@ export function useCalendarPage() {
 
     try {
       await saveTimeBlocksMutation.mutateAsync(updatedBlocks as Omit<TaskTimeBlock, 'id'>[]);
-      
-      // If the plan is confirmed (running), unconfirm it
-      if (dailyPlanToday.isConfirmed) {
-        await unconfirmPlanAction(dailyPlanToday.planDate);
-        if (dailyPlanToday.planDate === today) {
-          useBoardStore.setState({ isStarted: false });
-        }
-        queryClient.invalidateQueries({ queryKey: ['dailyPlan', dailyPlanToday.planDate] });
-      }
 
       const planTask = dailyPlanToday.tasks.find((pt: DailyPlanTask) => pt.task.id === taskId);
       toast.success(`Đã hủy lịch công việc: "${planTask?.task.title || ""}"`);
@@ -149,12 +168,15 @@ export function useCalendarPage() {
     } finally {
       setIsUnscheduling(false);
     }
-  }, [dailyPlanToday, timeBlocks, saveTimeBlocksMutation, today, queryClient]);
+  }, [dailyPlanToday, timeBlocks, saveTimeBlocksMutation]);
+
+  const isConfirmed = !plannable || !!dailyPlanToday?.isConfirmed;
 
   // ── Custom Hooks ──────────────────────────────────────────────────────────
   const { handleEventReceive, handleEventDrop, handleEventResize, handleEventDragStop } = useCalendarInteractions({
     dailyPlanToday: dailyPlanToday ?? null,
     timeBlocks,
+    isConfirmed,
     saveTimeBlocks: (blocks: Partial<TaskTimeBlock>[]) => saveTimeBlocksMutation.mutateAsync(blocks as Omit<TaskTimeBlock, 'id'>[]),
     updateAllOccurrences,
     updateSingleOccurrence,
@@ -166,8 +188,6 @@ export function useCalendarPage() {
 
   // ── FullCalendar events ────────────────────────────────────────────────────
   const scheduledTaskIds = useMemo(() => new Set(timeBlocks.map((b) => b.taskId)), [timeBlocks]);
-
-  const isConfirmed = !!dailyPlanToday?.isConfirmed;
 
   const fcEvents = useMemo<EventInput[]>(() => {
     const list: EventInput[] = [
@@ -254,7 +274,19 @@ export function useCalendarPage() {
       start: arg.startStr.split("T")[0],
       end: arg.endStr.split("T")[0],
     });
-  }, []);
+    
+    const startStr = arg.startStr.split("T")[0];
+    const endStr = arg.endStr.split("T")[0];
+    if (arg.view.type === "timeGridDay" || arg.view.type === "listDay") {
+      setFocusedDate(startStr);
+    } else {
+      if (today >= startStr && today <= endStr) {
+        setFocusedDate(today);
+      } else {
+        setFocusedDate(startStr);
+      }
+    }
+  }, [today]);
 
   const handleSelect = useCallback((arg: DateSelectArg) => {
     const start = arg.startStr;
@@ -402,5 +434,7 @@ export function useCalendarPage() {
     // Store data
     dailyPlanToday,
     timeBlocks,
+    focusedDate,
+    plannable,
   };
 }

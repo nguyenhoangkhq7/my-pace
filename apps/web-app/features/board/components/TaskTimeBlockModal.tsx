@@ -13,6 +13,7 @@ interface TaskTimeBlockModalProps {
   block: TaskTimeBlock | null;
   task: Task | null;
   isMit: boolean;
+  isConfirmed?: boolean;
   onClose: () => void;
   onUnschedule: (taskId: string) => Promise<void>;
   isSubmitting?: boolean;
@@ -23,6 +24,7 @@ export function TaskTimeBlockModal({
   block,
   task,
   isMit,
+  isConfirmed = false,
   onClose,
   onUnschedule,
   isSubmitting = false,
@@ -73,13 +75,13 @@ export function TaskTimeBlockModal({
               </Badge>
             )}
           </div>
-          <DialogTitle className="text-xl font-bold leading-snug">{task.title}</DialogTitle>
+          <DialogTitle className="text-xl font-bold leading-snug break-all">{task.title}</DialogTitle>
           <DialogDescription className="text-muted-foreground text-sm">
             {t.timeblock.detailDesc}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4 py-3">
+        <div className="flex flex-col gap-4 py-3 w-full min-w-0 overflow-hidden">
           {/* Thời gian */}
           <div className="flex items-start gap-3 p-3 bg-slate-900/60 rounded-xl border border-slate-800">
             <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
@@ -104,9 +106,9 @@ export function TaskTimeBlockModal({
             </div>
 
             {task.notes && (
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 w-full min-w-0 overflow-hidden">
                 <span className="text-sm text-slate-400 font-medium">{t.timeblock.notes}</span>
-                <p className="text-sm text-slate-300 bg-slate-900/40 p-3 rounded-lg border border-slate-800 whitespace-pre-wrap">
+                <p className="text-sm text-slate-300 bg-slate-900/40 p-3 rounded-lg border border-slate-800 whitespace-pre-wrap break-all">
                   {task.notes}
                 </p>
               </div>
@@ -121,15 +123,17 @@ export function TaskTimeBlockModal({
         </div>
 
         <DialogFooter className="flex gap-2">
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={handleUnschedule}
-            disabled={isSubmitting}
-            className="w-full sm:w-auto"
-          >
-            {isSubmitting ? t.timeblock.unscheduling : t.timeblock.unschedule}
-          </Button>
+          {!isConfirmed && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleUnschedule}
+              disabled={isSubmitting}
+              className="w-full sm:w-auto"
+            >
+              {isSubmitting ? t.timeblock.unscheduling : t.timeblock.unschedule}
+            </Button>
+          )}
           <Button variant="ghost" size="sm" onClick={onClose} disabled={isSubmitting} className="w-full sm:w-auto text-slate-400">
             {t.timeblock.close}
           </Button>

@@ -25,7 +25,7 @@ export function FlowTodoItem({ task, scheduleLabel, onTaskSelect }: FlowTodoItem
       onTaskSelect(task);
       return;
     }
-    openFocusMode(task.task.id, task.id, task.task.estimatedMinutes || 25);
+    openFocusMode(task.task.id, task.id, task.task.estimatedMinutes || 25, task.task.actualMinutes || 0);
   };
 
   return (

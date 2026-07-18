@@ -303,6 +303,8 @@ export interface Translations {
     logoutConfirmDesc: string;
     logoutConfirmCancel: string;
     logoutConfirmOk: string;
+    timezone: string;
+    timezonePlaceholder: string;
   };
   onboarding: {
     back: string;

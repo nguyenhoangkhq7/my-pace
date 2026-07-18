@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Clock01Icon, Logout03Icon } from "@hugeicons/core-free-icons";
+import { Clock01Icon, Logout03Icon, Location01Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,35 @@ import { DialogFooter } from "@/components/ui/dialog";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { profileSchema, ProfileFormValues } from "../schema/auth.schema";
 import { useQueryClient } from "@tanstack/react-query";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const TIMEZONES = [
+  { value: "Asia/Ho_Chi_Minh",    label: "🇻🇳 Hà Nội / Hồ Chí Minh (UTC+7)" },
+  { value: "Asia/Bangkok",        label: "🇹🇭 Bangkok (UTC+7)" },
+  { value: "Asia/Singapore",      label: "🇸🇬 Singapore (UTC+8)" },
+  { value: "Asia/Shanghai",       label: "🇨🇳 Bắc Kinh / Thượng Hải (UTC+8)" },
+  { value: "Asia/Tokyo",          label: "🇯🇵 Tokyo (UTC+9)" },
+  { value: "Asia/Seoul",          label: "🇰🇷 Seoul (UTC+9)" },
+  { value: "Asia/Kolkata",        label: "🇮🇳 Mumbai / New Delhi (UTC+5:30)" },
+  { value: "Asia/Dubai",          label: "🇦🇪 Dubai (UTC+4)" },
+  { value: "Europe/London",       label: "🇬🇧 London (UTC+0/+1)" },
+  { value: "Europe/Paris",        label: "🇫🇷 Paris / Berlin (UTC+1/+2)" },
+  { value: "Europe/Moscow",       label: "🇷🇺 Moscow (UTC+3)" },
+  { value: "America/New_York",    label: "🇺🇸 New York (UTC-5/-4)" },
+  { value: "America/Chicago",     label: "🇺🇸 Chicago (UTC-6/-5)" },
+  { value: "America/Denver",      label: "🇺🇸 Denver (UTC-7/-6)" },
+  { value: "America/Los_Angeles", label: "🇺🇸 Los Angeles (UTC-8/-7)" },
+  { value: "America/Sao_Paulo",   label: "🇧🇷 São Paulo (UTC-3)" },
+  { value: "Australia/Sydney",    label: "🇦🇺 Sydney (UTC+10/+11)" },
+  { value: "Pacific/Auckland",    label: "🇳🇿 Auckland (UTC+12/+13)" },
+  { value: "UTC",                 label: "🌍 UTC (UTC+0)" },
+];
 
 interface ProfileFormContentProps {
   onSuccess: () => void;
@@ -47,6 +76,7 @@ export function ProfileFormContent({ onSuccess, onCancel, onLogoutClick, isOpen 
       fullName: "",
       wakeTime: "07:00",
       sleepTime: "23:00",
+      timezone: "Asia/Ho_Chi_Minh",
     }
   });
 
@@ -57,6 +87,7 @@ export function ProfileFormContent({ onSuccess, onCancel, onLogoutClick, isOpen 
           fullName: user.name || "",
           wakeTime: user.wakeTime ? user.wakeTime.substring(0, 5) : "07:00",
           sleepTime: user.sleepTime ? user.sleepTime.substring(0, 5) : "23:00",
+          timezone: user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Ho_Chi_Minh",
         });
         setBuffer(user.bufferPct ?? 20);
         setError(null);
@@ -72,6 +103,7 @@ export function ProfileFormContent({ onSuccess, onCancel, onLogoutClick, isOpen 
       wakeTime: `${data.wakeTime}:00`,
       sleepTime: `${data.sleepTime}:00`,
       bufferPct: buffer,
+      timezone: data.timezone,
     };
 
     try {
@@ -85,6 +117,7 @@ export function ProfileFormContent({ onSuccess, onCancel, onLogoutClick, isOpen 
               wakeTime: `${data.wakeTime}:00`,
               sleepTime: `${data.sleepTime}:00`,
               bufferPct: buffer,
+              timezone: data.timezone,
             },
           });
         }
@@ -124,6 +157,36 @@ export function ProfileFormContent({ onSuccess, onCancel, onLogoutClick, isOpen 
           {errors.fullName && (
             <span className="text-[10px] text-rose-500 font-medium pl-1">{errors.fullName.message}</span>
           )}
+        </div>
+
+        {/* Timezone */}
+        <div className="space-y-1.5">
+          <Label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+            <HugeiconsIcon icon={Location01Icon} size={14} className="text-sky-400" />
+            {t.profile.timezone}
+          </Label>
+          <Controller
+            name="timezone"
+            control={control}
+            render={({ field }) => (
+              <Select onValueChange={field.onChange} value={field.value}>
+                <SelectTrigger className="w-full! h-10! rounded-xl bg-muted/20 border-border/40 focus:border-primary text-xs text-foreground flex justify-between items-center cursor-pointer">
+                  <SelectValue placeholder={t.profile.timezonePlaceholder} />
+                </SelectTrigger>
+                <SelectContent className="max-h-[250px] z-[300] bg-popover text-popover-foreground border border-border/50">
+                  {TIMEZONES.map((tz) => (
+                    <SelectItem key={tz.value} value={tz.value}>
+                      {tz.label}
+                    </SelectItem>
+                  ))}
+                  {/* Fallback: nếu timezone của user không có trong list, vẫn hiển thị được */}
+                  {field.value && !TIMEZONES.find((tz) => tz.value === field.value) && (
+                    <SelectItem value={field.value}>{field.value}</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            )}
+          />
         </div>
 
         {/* Time Boundary (Wake up & Sleep) */}

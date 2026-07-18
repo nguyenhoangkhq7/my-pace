@@ -5,11 +5,11 @@ interface BoardClientState {
   selectedFilterId: string | null;
   isStarted: boolean;
   isPlanningMode: boolean;
-  planningTarget: 'today' | 'tomorrow' | null;
+  planningTarget: string | null;
   plannedTaskIds: string[];
 
   setFilter: (categoryId: string | null) => void;
-  setPlanningMode: (isPlanning: boolean, target?: 'today' | 'tomorrow', initialTaskIds?: string[]) => void;
+  setPlanningMode: (isPlanning: boolean, target?: string, initialTaskIds?: string[]) => void;
   addPlannedTaskLocally: (task: Task) => void;
   removePlannedTaskLocally: (taskId: string) => void;
 }

@@ -52,12 +52,13 @@ interface FocusState {
   addToHistory: (url: string, title: string) => void;
   removeFromHistory: (url: string) => void;
   updateHistoryTitle: (url: string, newTitle: string) => void;
-  openFocusMode: (taskId: string, planTaskId: string, estimatedMinutes: number) => void;
+  openFocusMode: (taskId: string, planTaskId: string, estimatedMinutes: number, alreadyWorkedMinutes?: number) => void;
   closeFocusMode: () => void;
   
   // Timer Actions (called by usePomodoro hook)
   startTimer: () => void;
   pauseTimer: () => void;
+  resumeTimer: (previousState: "focusing" | "breaking") => void;
   tick: (seconds: number) => void;
   transitionToBreak: () => void;
   transitionToFocus: () => void;
@@ -116,9 +117,11 @@ export const useFocusStore = create<FocusState>()(
         )
       })),
       
-      openFocusMode: (taskId, planTaskId, estimatedMinutes) => {
+      openFocusMode: (taskId, planTaskId, estimatedMinutes, alreadyWorkedMinutes = 0) => {
         const { focusMinutes } = get();
-        const totalSessions = Math.max(1, Math.ceil(estimatedMinutes / focusMinutes));
+        // Calculate remaining sessions considering already-worked time
+        const remainingMinutes = Math.max(0, estimatedMinutes - alreadyWorkedMinutes);
+        const totalSessions = Math.max(1, Math.ceil(remainingMinutes / focusMinutes));
         
         set({
           activeTaskId: taskId,
@@ -127,7 +130,7 @@ export const useFocusStore = create<FocusState>()(
           currentSession: 1,
           totalSessions,
           timeLeft: focusMinutes * 60,
-          accumulatedFocusTime: 0,
+          accumulatedFocusTime: alreadyWorkedMinutes * 60,
           lastActiveTimestamp: Date.now()
         });
       },
@@ -152,6 +155,10 @@ export const useFocusStore = create<FocusState>()(
 
       pauseTimer: () => {
         set({ pomodoroState: "paused", lastActiveTimestamp: Date.now() });
+      },
+
+      resumeTimer: (previousState) => {
+        set({ pomodoroState: previousState, lastActiveTimestamp: Date.now() });
       },
 
       tick: (seconds) => {

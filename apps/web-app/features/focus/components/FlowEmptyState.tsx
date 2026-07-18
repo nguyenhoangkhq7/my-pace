@@ -41,11 +41,22 @@ export function FlowEmptyState() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
   });
   const savePlanMutation = useMutation({
-    mutationFn: ({ date, availableMinutes, target }: { date: string, availableMinutes: number, target: 'today' | 'tomorrow' }) => planMyDayAction({ date, availableMinutes, target }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['dailyPlan'] }),
+    mutationFn: ({ planDate, availableMinutes, tasks }: { planDate: string; availableMinutes: number; tasks: Array<{ taskId: string; isMit: boolean; sortOrder: number }> }) =>
+      planMyDayAction({
+        planDate,
+        availableMinutes,
+        tasks,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dailyPlan'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
   });
   const saveTimeBlocksMutation = useMutation({
     mutationFn: (blocks: Omit<TaskTimeBlock, 'id'>[]) => saveTimeBlocksAction({ dailyPlanId: dailyPlanToday!.id, blocks }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dailyPlan'] });
+    },
   });
   const reviewDailyPlanMutation = useMutation({
     mutationFn: reviewPlanAction,
@@ -79,8 +90,21 @@ export function FlowEmptyState() {
 
       useBoardStore.setState({ plannedTaskIds: updatedIds });
 
+      const tasksPayload = updatedIds.map((taskId, index) => {
+        const existingTask = dailyPlanToday.tasks.find(pt => pt.task.id === taskId);
+        return {
+          taskId,
+          isMit: existingTask ? existingTask.isMit : false,
+          sortOrder: index,
+        };
+      });
+
       try {
-        await savePlanMutation.mutateAsync({ date: dailyPlanToday.planDate, availableMinutes: dailyPlanToday.availableMinutes, target: "today" });
+        await savePlanMutation.mutateAsync({
+          planDate: dailyPlanToday.planDate,
+          availableMinutes: dailyPlanToday.availableMinutes,
+          tasks: tasksPayload,
+        });
 
         const { user } = useAuthStore.getState();
 

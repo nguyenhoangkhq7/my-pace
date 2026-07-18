@@ -11,6 +11,7 @@ import { updateTaskAction } from "@/features/board/actions/task.action";
 interface UseCalendarInteractionsProps {
   dailyPlanToday: DailyPlan | null;
   timeBlocks: TaskTimeBlock[];
+  isConfirmed: boolean;
   saveTimeBlocks: (blocks: Omit<TaskTimeBlock, 'id'>[]) => Promise<unknown>;
   updateAllOccurrences: (seriesId: string, data: CreateEventPayload) => Promise<unknown>;
   updateSingleOccurrence: (seriesId: string, date: string, data: UpdateOccurrencePayload) => Promise<unknown>;
@@ -23,6 +24,7 @@ interface UseCalendarInteractionsProps {
 export function useCalendarInteractions({
   dailyPlanToday,
   timeBlocks,
+  isConfirmed,
   saveTimeBlocks,
   updateAllOccurrences,
   updateSingleOccurrence,
@@ -43,8 +45,8 @@ export function useCalendarInteractions({
         return;
       }
 
-      if (dailyPlanToday.isConfirmed) {
-        toast.error("Không thể xếp lịch khi kế hoạch đã được xác nhận (Running).");
+      if (isConfirmed) {
+        toast.error("Không thể xếp lịch cho ngày này (Kế hoạch đã chốt hoặc không cho phép chỉnh sửa).");
         info.revert();
         return;
       }
@@ -89,7 +91,7 @@ export function useCalendarInteractions({
         toast.error("Không thể lưu lịch.");
       }
     },
-    [dailyPlanToday, timeBlocks, saveTimeBlocks]
+    [dailyPlanToday, timeBlocks, saveTimeBlocks, isConfirmed]
   );
 
   // ── When a time block is moved on the calendar ────────────────────────────
@@ -171,8 +173,8 @@ export function useCalendarInteractions({
         return;
       }
 
-      if (dailyPlanToday.isConfirmed) {
-        toast.error("Không thể di chuyển công việc khi kế hoạch đã được xác nhận (Running).");
+      if (isConfirmed) {
+        toast.error("Không thể di chuyển công việc cho ngày này (Kế hoạch đã chốt hoặc không cho phép chỉnh sửa).");
         info.revert();
         return;
       }
@@ -215,6 +217,7 @@ export function useCalendarInteractions({
       updateAllOccurrences,
       createEvent,
       deleteSingleOccurrence,
+      isConfirmed,
     ]
   );
 
@@ -229,8 +232,8 @@ export function useCalendarInteractions({
           return;
         }
 
-        if (dailyPlanToday.isConfirmed) {
-          toast.error("Không thể kéo giãn công việc khi kế hoạch đã được xác nhận (Running).");
+        if (isConfirmed) {
+          toast.error("Không thể kéo giãn công việc cho ngày này (Kế hoạch đã chốt hoặc không cho phép chỉnh sửa).");
           arg.revert();
           return;
         }
@@ -297,12 +300,17 @@ export function useCalendarInteractions({
         arg.revert();
       }
     },
-    [dailyPlanToday, timeBlocks, saveTimeBlocks, updateSingleOccurrence, updateAllOccurrences, queryClient]
+    [dailyPlanToday, timeBlocks, saveTimeBlocks, updateSingleOccurrence, updateAllOccurrences, queryClient, isConfirmed]
   );
 
   const handleEventDragStop = useCallback(
     (info: { event: { extendedProps: Record<string, unknown> }; jsEvent: MouseEvent }) => {
       if (!info.event.extendedProps.isTimeBlock || !sidebarRef.current) return;
+
+      if (isConfirmed) {
+        toast.error("Không thể hủy lịch cho ngày này (Kế hoạch đã chốt hoặc không cho phép chỉnh sửa).");
+        return;
+      }
 
       const rect = sidebarRef.current.getBoundingClientRect();
       const x = info.jsEvent.clientX;
@@ -314,7 +322,7 @@ export function useCalendarInteractions({
         handleUnscheduleTask(taskId);
       }
     },
-    [handleUnscheduleTask, sidebarRef]
+    [handleUnscheduleTask, sidebarRef, isConfirmed]
   );
 
   return { handleEventReceive, handleEventDrop, handleEventResize, handleEventDragStop };
