@@ -96,6 +96,7 @@ export function CalendarPage() {
               firstDay={1}
               slotMinTime={slotMin}
               slotMaxTime={slotMax}
+              snapDuration="00:15:00"
               allDaySlot={false}
               nowIndicator
               selectable={plannable}

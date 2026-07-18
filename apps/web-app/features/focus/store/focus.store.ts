@@ -27,6 +27,17 @@ interface FocusState {
   youtubeUrl: string;
   youtubeHistory: { url: string; title: string }[];
 
+  // Soundscape Playback State (not persisted except volume & looping)
+  isPlaying: boolean;
+  volume: number;
+  currentTime: number;
+  duration: number;
+  isLooping: boolean;
+  isShuffle: boolean;
+  activeVideoTitle: string;
+  activeVideoAuthor: string;
+  activeVideoId: string;
+
   // Modal control
   isSettingsOpen: boolean;
   setIsSettingsOpen: (open: boolean) => void;
@@ -54,6 +65,29 @@ interface FocusState {
   updateHistoryTitle: (url: string, newTitle: string) => void;
   openFocusMode: (taskId: string, planTaskId: string, estimatedMinutes: number, alreadyWorkedMinutes?: number) => void;
   closeFocusMode: () => void;
+
+  // Playback Control Actions
+  setIsPlaying: (isPlaying: boolean) => void;
+  setVolume: (volume: number) => void;
+  setCurrentTime: (currentTime: number) => void;
+  setDuration: (duration: number) => void;
+  setIsLooping: (isLooping: boolean) => void;
+  setIsShuffle: (isShuffle: boolean) => void;
+  setActiveVideoInfo: (title: string, author: string, id: string) => void;
+
+  // Global Player instance reference registration
+  playerControls: {
+    play: () => void;
+    pause: () => void;
+    setVolume: (v: number) => void;
+    seek: (t: number) => void;
+    nextTrack: () => void;
+    prevTrack: () => void;
+  } | null;
+  registerPlayerControls: (controls: FocusState["playerControls"]) => void;
+
+  playNextSoundscape: () => void;
+  playPrevSoundscape: () => void;
   
   // Timer Actions (called by usePomodoro hook)
   startTimer: () => void;
@@ -87,11 +121,59 @@ export const useFocusStore = create<FocusState>()(
       youtubeHistory: [
         { url: "https://www.youtube.com/live/X4VbdwhkE10?si=gV884ky2WVfhPwQQ", title: "Lofi Girl" }
       ],
+
+      isPlaying: false,
+      volume: 50,
+      currentTime: 0,
+      duration: 0,
+      isLooping: false,
+      isShuffle: false,
+      activeVideoTitle: "Lofi Girl",
+      activeVideoAuthor: "Lofi Girl",
+      activeVideoId: "X4VbdwhkE10",
+
       isSettingsOpen: false,
       isZenFull: false,
       isFlowFullscreen: false,
       promptTask: null,
       isPomodoroFloating: false,
+
+      setIsPlaying: (isPlaying) => set({ isPlaying }),
+      setVolume: (volume) => {
+        set({ volume });
+        const { playerControls } = get();
+        if (playerControls) playerControls.setVolume(volume);
+      },
+      setCurrentTime: (currentTime) => set({ currentTime }),
+      setDuration: (duration) => set({ duration }),
+      setIsLooping: (isLooping) => set({ isLooping }),
+      setIsShuffle: (isShuffle) => set({ isShuffle }),
+      setActiveVideoInfo: (title, author, id) => set({ activeVideoTitle: title, activeVideoAuthor: author, activeVideoId: id }),
+
+      playerControls: null,
+      registerPlayerControls: (controls) => set({ playerControls: controls }),
+
+      playNextSoundscape: () => {
+        const { youtubeUrl, youtubeHistory, setYoutubeUrl } = get();
+        if (youtubeHistory.length === 0) return;
+        const index = youtubeHistory.findIndex(item => item.url === youtubeUrl);
+        let nextIndex = 0;
+        if (index !== -1) {
+          nextIndex = (index + 1) % youtubeHistory.length;
+        }
+        setYoutubeUrl(youtubeHistory[nextIndex].url);
+      },
+
+      playPrevSoundscape: () => {
+        const { youtubeUrl, youtubeHistory, setYoutubeUrl } = get();
+        if (youtubeHistory.length === 0) return;
+        const index = youtubeHistory.findIndex(item => item.url === youtubeUrl);
+        let prevIndex = youtubeHistory.length - 1;
+        if (index !== -1) {
+          prevIndex = (index - 1 + youtubeHistory.length) % youtubeHistory.length;
+        }
+        setYoutubeUrl(youtubeHistory[prevIndex].url);
+      },
 
       setPomodoroFloating: (value) => set({ isPomodoroFloating: value }),
       setPromptTask: (task) => set({ promptTask: task }),
@@ -277,6 +359,8 @@ export const useFocusStore = create<FocusState>()(
         totalSessions: state.totalSessions,
         accumulatedFocusTime: state.accumulatedFocusTime,
         lastActiveTimestamp: state.lastActiveTimestamp,
+        volume: state.volume,
+        isLooping: state.isLooping,
       }), 
     }
   )

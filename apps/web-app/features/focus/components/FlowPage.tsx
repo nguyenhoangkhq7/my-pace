@@ -19,6 +19,7 @@ import { FlowZenZone } from "@/features/focus/components/FlowZenZone";
 import { usePomodoro } from "@/features/focus/hooks/usePomodoro";
 import { TaskCompletionDurationModal } from "@/features/focus/components/TaskCompletionDurationModal";
 import { SwitchTaskConfirmDialog } from "@/features/focus/components/SwitchTaskConfirmDialog";
+import { SoundscapeControllerBar } from "@/features/focus/components/SoundscapeControllerBar";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -100,7 +101,9 @@ export function FlowPage() {
     handleLayoutChanged,
     handleResetLayout,
     handleExitZenFull,
-    handleEnterZenFull
+    handleEnterZenFull,
+    handleExpandZenZone,
+    handleCollapseZenZone
   } = useFlowLayoutState();
 
   const [isConfirmPlanOpen, setIsConfirmPlanOpen] = useState(false);
@@ -252,11 +255,22 @@ export function FlowPage() {
   const zenzoneSize  = isXl ? (sizes[2] ?? 20) : 0;
 
   return (
-    <div className="h-full w-full bg-background text-foreground overflow-hidden relative">
-      {/* Fix iframe stealing mouse events during resize */}
-      <style dangerouslySetInnerHTML={{__html: `
-        [data-panel-group-resizing] iframe { pointer-events: none; }
-      `}} />
+    <div className="h-full w-full bg-background text-foreground overflow-hidden flex flex-col relative">
+      <div className="flex-1 min-h-0 relative">
+        {/* Fix iframe stealing mouse events during resize, and prevent collapsed panel display:none */}
+        <style dangerouslySetInnerHTML={{__html: `
+          [data-panel-group-resizing] iframe { pointer-events: none; }
+          #zenzone-panel[data-state="collapsed"] {
+            display: block !important;
+            position: absolute !important;
+            width: 1px !important;
+            height: 1px !important;
+            opacity: 0.001 !important;
+            pointer-events: none !important;
+            overflow: hidden !important;
+            z-index: -9999 !important;
+          }
+        `}} />
 
       {/* Settings button */}
       <FlowSettingsDropdown onResetLayout={handleResetLayout} onEnterZenFull={handleEnterZenFull} />
@@ -360,12 +374,17 @@ export function FlowPage() {
                 "h-full w-full overflow-y-auto transition-opacity duration-700",
                 pomodoroState === "focusing" && !isZenFull ? "opacity-20 hover:opacity-100" : ""
               )}>
-                <FlowZenZone onExit={handleExitZenFull} />
+                <FlowZenZone onExit={handleExitZenFull} onCollapse={handleCollapseZenZone} />
               </div>
             </ResizablePanel>
           </>
         )}
       </ResizablePanelGroup>
+      </div>
+
+      {isRightCollapsed && (
+        <SoundscapeControllerBar onExpandZenZone={handleExpandZenZone} />
+      )}
 
       {/* Floating Pomodoro Widget: shown in Zen Full when a task is active AND it is popped out */}
       <FloatingPomodoroWidget />

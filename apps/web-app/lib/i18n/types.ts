@@ -556,6 +556,20 @@ export interface Translations {
     todayTasksCount: (count: number) => string;
     enterFullscreen: string;
     exitFullscreen: string;
+    player: {
+      noTrack: string;
+      myPacePlayer: string;
+      shuffle: string;
+      prevSoundscape: string;
+      prevTrack: string;
+      play: string;
+      pause: string;
+      nextTrack: string;
+      nextSoundscape: string;
+      repeat: string;
+      expandZen: string;
+      volume: string;
+    };
   };
   feedback: {
     title: string;
