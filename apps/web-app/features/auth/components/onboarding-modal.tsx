@@ -52,6 +52,7 @@ export function OnboardingModal() {
         }
       }}>
         <DialogContent
+          aria-describedby={undefined}
           showCloseButton={isHelpMode}
           className="sm:max-w-[500px] w-[95vw] rounded-3xl p-6 border-none bg-card shadow-2xl overflow-y-auto max-h-[90vh] duration-300 scrollbar-thin"
         >
