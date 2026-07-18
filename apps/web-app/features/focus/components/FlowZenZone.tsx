@@ -62,34 +62,21 @@ export function FlowZenZone({ onExit, onCollapse }: FlowZenZoneProps) {
     e.preventDefault();
     e.stopPropagation();
     setIsDragOver(false);
-    
-    try {
-      const html = e.dataTransfer.getData("text/html");
-      const uri = e.dataTransfer.getData("text/uri-list");
-      const plain = e.dataTransfer.getData("text/plain");
-      
-      let url = uri || plain;
-      
-      // If html contains href, parse it (sometimes browsers pass rich html for links)
-      if (!url && html) {
-        const match = html.match(/href="([^"]+)"/);
-        if (match) url = match[1];
-      }
 
-      if (url && (url.includes("youtube.com") || url.includes("youtu.be"))) {
-        let title = "YouTube Video (" + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ")";
-        const fetchedTitle = await fetchYouTubeTitle(url);
-        if (fetchedTitle) title = fetchedTitle;
-        
-        addToHistory(url, title);
-        setYoutubeUrl(url);
-        toast.success("Đã thêm video vào danh sách!");
-      } else {
-        toast.error("Không tìm thấy link YouTube hợp lệ. Vui lòng thử lại!");
-        console.error("Drop data:", { uri, plain, html });
-      }
-    } catch {
-      toast.error("Không thể lấy dữ liệu kéo thả.");
+    const text = e.dataTransfer.getData("text");
+    if (text && (text.includes("youtube.com") || text.includes("youtu.be"))) {
+      toast.promise(
+        (async () => {
+          const title = await fetchYouTubeTitle(text);
+          addToHistory(text, title || "YouTube Soundscape");
+          setYoutubeUrl(text);
+        })(),
+        {
+          loading: "Fetching YouTube link...",
+          success: "Soundscape added!",
+          error: "Failed to add Soundscape"
+        }
+      );
     }
   };
 
@@ -97,39 +84,43 @@ export function FlowZenZone({ onExit, onCollapse }: FlowZenZoneProps) {
     try {
       const text = await navigator.clipboard.readText();
       if (text && (text.includes("youtube.com") || text.includes("youtu.be"))) {
-        let title = "YouTube Video (" + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ")";
-        const fetchedTitle = await fetchYouTubeTitle(text);
-        if (fetchedTitle) title = fetchedTitle;
-        
-        addToHistory(text, title);
-        setYoutubeUrl(text);
-        toast.success("Đã thêm video từ Clipboard!");
+        toast.promise(
+          (async () => {
+            const title = await fetchYouTubeTitle(text);
+            addToHistory(text, title || "YouTube Soundscape");
+            setYoutubeUrl(text);
+          })(),
+          {
+            loading: "Fetching YouTube link from clipboard...",
+            success: "Soundscape added!",
+            error: "Failed to add Soundscape"
+          }
+        );
       } else {
-        toast.error("Clipboard không chứa link YouTube hợp lệ.");
+        toast.error("Clipboard does not contain a valid YouTube link.");
       }
     } catch {
-      toast.error("Không thể đọc từ Clipboard. Hãy cấp quyền cho trình duyệt.");
+      toast.error("Could not read from clipboard. Please paste (Ctrl+V) directly or add manually.");
     }
   };
 
+  // Listen for global paste events
   useEffect(() => {
     const handleGlobalPaste = async (e: ClipboardEvent) => {
-      // Ignore if user is typing inside an input or textarea
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return;
-      }
-
-      const text = e.clipboardData?.getData("text") || "";
+      const text = e.clipboardData?.getData("text");
       if (text && (text.includes("youtube.com") || text.includes("youtu.be"))) {
-        e.preventDefault();
-        
-        let title = "YouTube Video (" + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ")";
-        const fetchedTitle = await fetchYouTubeTitle(text);
-        if (fetchedTitle) title = fetchedTitle;
-        
-        addToHistory(text, title);
-        setYoutubeUrl(text);
-        toast.success("Đã thêm video bằng phím tắt Paste!");
+        toast.promise(
+          (async () => {
+            const title = await fetchYouTubeTitle(text);
+            addToHistory(text, title || "YouTube Soundscape");
+            setYoutubeUrl(text);
+          })(),
+          {
+            loading: "Fetching YouTube link from paste...",
+            success: "Soundscape added!",
+            error: "Failed to add Soundscape"
+          }
+        );
       }
     };
 
@@ -188,115 +179,120 @@ export function FlowZenZone({ onExit, onCollapse }: FlowZenZoneProps) {
         onDrop={handleDrop}
       >
         <div className={cn(
-          "flex items-center justify-between shrink-0",
+          "flex flex-col shrink-0 gap-1.5",
           isZenFull ? "px-6 py-3 border-b border-border/50" : "p-5 pb-3"
         )}>
-          <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-            {t.flow.soundscapeTitle}
-          </h3>
-          <div className="flex items-center gap-3">
-            {/* COMPACT INLINE POMODORO WIDGET — only in Zen Full */}
-            {isZenFull && activeTaskId && !isPomodoroFloating && (
-              <div className="flex items-center bg-card border border-border rounded-xl pl-4 pr-1.5 py-1.5 shadow-sm h-11 gap-3.5">
-                <div className="flex flex-col justify-center min-w-[40px]">
-                  <span className={cn("text-[9px] font-bold uppercase leading-none tracking-wider", pomodoroState === "focusing" ? "text-primary" : "text-emerald-400")}>
-                    {pomodoroState === "focusing" ? "Focus" : "Break"}
+          <div className="flex items-center justify-between w-full">
+            <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+              {t.flow.soundscapeTitle}
+            </h3>
+            <div className="flex items-center gap-3">
+              {/* COMPACT INLINE POMODORO WIDGET — only in Zen Full */}
+              {isZenFull && activeTaskId && !isPomodoroFloating && (
+                <div className="flex items-center bg-card border border-border rounded-xl pl-4 pr-1.5 py-1.5 shadow-sm h-11 gap-3.5">
+                  <div className="flex flex-col justify-center min-w-[40px]">
+                    <span className={cn("text-[9px] font-bold uppercase leading-none tracking-wider", pomodoroState === "focusing" ? "text-primary" : "text-emerald-400")}>
+                      {pomodoroState === "focusing" ? "Focus" : "Break"}
+                    </span>
+                    <span className="text-base font-black text-foreground tabular-nums leading-none mt-[3px]">
+                      {formatTime(timeLeft)}
+                    </span>
+                  </div>
+
+                  <div className="h-6 w-px bg-border" />
+
+                  <span className="text-xs font-semibold text-muted-foreground truncate max-w-[150px]" title={activeTask?.title}>
+                    {activeTask?.title || "Focus Session"}
                   </span>
-                  <span className="text-base font-black text-foreground tabular-nums leading-none mt-[3px]">
-                    {formatTime(timeLeft)}
-                  </span>
-                </div>
- 
-                <div className="h-6 w-px bg-border" />
- 
-                <span className="text-xs font-semibold text-muted-foreground truncate max-w-[150px]" title={activeTask?.title}>
-                  {activeTask?.title || "Focus Session"}
-                </span>
- 
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={pomodoroState === "focusing" || pomodoroState === "breaking" ? pauseTimer : startTimer}
-                    className="h-8 w-8 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center transition-colors cursor-pointer"
-                  >
-                    {pomodoroState === "focusing" || pomodoroState === "breaking" ? (
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-                    ) : (
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                    )}
-                  </button>
-                  <button
-                    onClick={() => setPomodoroFloating(true)}
-                    className="h-8 w-8 rounded-lg hover:bg-muted text-muted-foreground transition-colors flex items-center justify-center cursor-pointer"
-                    title="Float widget"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 3l-6 6"/><path d="M21 3v6"/><path d="M21 3h-6"/><path d="M14 9L9 14"/><path d="M9 21v-6"/><path d="M9 21h6"/><path d="M9 21l6-6"/></svg>
-                  </button>
-                </div>
-              </div>
-            )}
- 
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={handlePasteFromClipboard}
-                className="text-muted-foreground hover:text-primary bg-card hover:bg-primary/10 border border-border p-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-center"
-                title="Thêm từ Clipboard"
-              >
-                <CopyPlus size={14} />
-              </button>
-              <button
-                onClick={() => setIsAdding(!isAdding)}
-                className="text-muted-foreground hover:text-foreground bg-card hover:bg-muted border border-border p-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-center"
-                title="Thêm thủ công"
-              >
-                <HugeiconsIcon icon={PlusSignIcon} size={14} />
-              </button>
-              <button
-                onClick={() => setLayoutMode(prev => prev === "list" ? "grid" : "list")}
-                className="text-muted-foreground hover:text-foreground bg-card hover:bg-muted border border-border p-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-center"
-                title={layoutMode === "list" ? "Chuyển sang dạng lưới (Grid)" : "Chuyển sang dạng danh sách (List)"}
-              >
-                {layoutMode === "list" ? <LayoutGrid size={14} /> : <List size={14} />}
-              </button>
- 
-              {!isZenFull && onCollapse && (
-                <button
-                  onClick={onCollapse}
-                  className="text-muted-foreground hover:text-rose-400 bg-card hover:bg-rose-500/10 border border-border p-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-center"
-                  title="Ẩn nhanh Zen Zone"
-                >
-                  <PanelRightClose size={14} />
-                </button>
-              )}
- 
-              {/* Dropdown Menu — only in Zen Full */}
-              {isZenFull && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+
+                  <div className="flex items-center gap-1.5">
                     <button
-                      className="text-muted-foreground hover:text-foreground bg-card hover:bg-muted border border-border p-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-center"
-                      title="Cài đặt & Tuỳ chọn"
+                      onClick={pomodoroState === "focusing" || pomodoroState === "breaking" ? pauseTimer : startTimer}
+                      className="h-8 w-8 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center transition-colors cursor-pointer"
                     >
-                      <Settings2 size={14} />
+                      {pomodoroState === "focusing" || pomodoroState === "breaking" ? (
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                      ) : (
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                      )}
                     </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-card border-border text-foreground shadow-xl min-w-48 z-[200]">
-                    <DropdownMenuItem
-                      onClick={() => setIsSettingsOpen(true)}
-                      className="hover:bg-muted focus:bg-muted cursor-pointer flex items-center gap-2 text-xs font-semibold py-2 px-3 text-muted-foreground hover:text-foreground"
+                    <button
+                      onClick={() => setPomodoroFloating(true)}
+                      className="h-8 w-8 rounded-lg hover:bg-muted text-muted-foreground transition-colors flex items-center justify-center cursor-pointer"
+                      title="Float widget"
                     >
-                      <Settings2 className="w-4 h-4 text-muted-foreground" /> {t.flow.pomodoroConfig}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={handleExit}
-                      className="hover:bg-muted focus:bg-muted cursor-pointer flex items-center gap-2 text-xs font-semibold py-2 px-3 text-rose-400 hover:text-rose-300"
-                    >
-                      <LogOut className="w-4 h-4 text-rose-400" /> Thoát Zen Full Mode
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 3l-6 6"/><path d="M21 3v6"/><path d="M21 3h-6"/><path d="M14 9L9 14"/><path d="M9 21v-6"/><path d="M9 21h6"/><path d="M9 21l6-6"/></svg>
+                    </button>
+                  </div>
+                </div>
               )}
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={handlePasteFromClipboard}
+                  className="text-muted-foreground hover:text-primary bg-card hover:bg-primary/10 border border-border p-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-center"
+                  title="Thêm từ Clipboard"
+                >
+                  <CopyPlus size={14} />
+                </button>
+                <button
+                  onClick={() => setIsAdding(!isAdding)}
+                  className="text-muted-foreground hover:text-foreground bg-card hover:bg-muted border border-border p-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-center"
+                  title="Thêm thủ công"
+                >
+                  <HugeiconsIcon icon={PlusSignIcon} size={14} />
+                </button>
+                <button
+                  onClick={() => setLayoutMode(prev => prev === "list" ? "grid" : "list")}
+                  className="text-muted-foreground hover:text-foreground bg-card hover:bg-muted border border-border p-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-center"
+                  title={layoutMode === "list" ? "Chuyển sang dạng lưới (Grid)" : "Chuyển sang dạng danh sách (List)"}
+                >
+                  {layoutMode === "list" ? <LayoutGrid size={14} /> : <List size={14} />}
+                </button>
+
+                {!isZenFull && onCollapse && (
+                  <button
+                    onClick={onCollapse}
+                    className="text-muted-foreground hover:text-rose-400 bg-card hover:bg-rose-500/10 border border-border p-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-center"
+                    title="Ẩn nhanh Zen Zone"
+                  >
+                    <PanelRightClose size={14} />
+                  </button>
+                )}
+
+                {/* Dropdown Menu — only in Zen Full */}
+                {isZenFull && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        className="text-muted-foreground hover:text-foreground bg-card hover:bg-muted border border-border p-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-center"
+                        title="Cài đặt & Tuỳ chọn"
+                      >
+                        <Settings2 size={14} />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-card border-border text-foreground shadow-xl min-w-48 z-[200]">
+                      <DropdownMenuItem
+                        onClick={() => setIsSettingsOpen(true)}
+                        className="hover:bg-muted focus:bg-muted cursor-pointer flex items-center gap-2 text-xs font-semibold py-2 px-3 text-muted-foreground hover:text-foreground"
+                      >
+                        <Settings2 className="w-4 h-4 text-muted-foreground" /> {t.flow.pomodoroConfig}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={handleExit}
+                        className="hover:bg-muted focus:bg-muted cursor-pointer flex items-center gap-2 text-xs font-semibold py-2 px-3 text-rose-400 hover:text-rose-300"
+                      >
+                        <LogOut className="w-4 h-4 text-rose-400" /> Thoát Zen Full Mode
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
             </div>
           </div>
+          <span className="text-[10px] text-muted-foreground/50 leading-normal">
+            {t.flow.pasteHint}
+          </span>
         </div>
  
         {isAdding && (

@@ -556,6 +556,7 @@ export const vi: Translations = {
     readyToFocus: "Sẵn sàng tập trung?",
     selectLeftTask: "Chọn một công việc ở cột bên trái để bắt đầu phiên làm việc sâu.",
     soundscapeTitle: "Âm thanh nền",
+    pasteHint: "Mẹo: Bạn có thể dán (Ctrl+V) trực tiếp link YouTube vào màn hình để phát.",
     pasteYoutubePlaceholder: "Dán liên kết YouTube...",
     titlePlaceholder: "Tiêu đề (Ví dụ: Lofi Coding)...",
     settingsTooltip: "Cài đặt & Giao diện",

@@ -7,7 +7,7 @@ import {
   Play, Pause, SkipForward, SkipBack, ChevronsRight, ChevronsLeft,
   Volume2, Volume1, VolumeX, Repeat, Shuffle, PanelRightOpen, Music
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 interface SoundscapeControllerBarProps {
   onExpandZenZone: () => void;
@@ -22,15 +22,8 @@ export function SoundscapeControllerBar({ onExpandZenZone }: SoundscapeControlle
   } = useFocusStore();
 
   const [prevVolume, setPrevVolume] = useState(volume);
-  const [sliderValue, setSliderValue] = useState(currentTime);
+  const [sliderValue, setSliderValue] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-
-  // Sync timeline slider value with actual playback time (unless user is dragging it)
-  useEffect(() => {
-    if (!isDragging) {
-      setSliderValue(currentTime);
-    }
-  }, [currentTime, isDragging]);
 
   const handlePlayPause = () => {
     if (!playerControls) return;
@@ -55,6 +48,11 @@ export function SoundscapeControllerBar({ onExpandZenZone }: SoundscapeControlle
     setSliderValue(val);
   };
 
+  const handleTimelineStartDrag = () => {
+    setIsDragging(true);
+    setSliderValue(currentTime);
+  };
+
   const handleTimelineChangeEnd = (e: React.MouseEvent<HTMLInputElement> | React.TouchEvent<HTMLInputElement>) => {
     setIsDragging(false);
     if (!playerControls) return;
@@ -72,6 +70,9 @@ export function SoundscapeControllerBar({ onExpandZenZone }: SoundscapeControlle
   const thumbnailSrc = activeVideoId 
     ? `https://img.youtube.com/vi/${activeVideoId}/mqdefault.jpg`
     : null;
+
+  const currentDisplayTime = isDragging ? sliderValue : currentTime;
+  const progressPercent = duration ? (currentDisplayTime / duration) * 100 : 0;
 
   return (
     <div className="h-20 bg-card/95 backdrop-blur-md border-t border-border shadow-[0_-8px_30px_rgba(0,0,0,0.15)] dark:shadow-[0_-8px_30px_rgba(0,0,0,0.5)] px-4 flex items-center justify-between gap-4 select-none shrink-0 transition-all duration-300 relative z-[40]">
@@ -184,21 +185,21 @@ export function SoundscapeControllerBar({ onExpandZenZone }: SoundscapeControlle
 
         {/* Hàng Timeline */}
         <div className="w-full flex items-center gap-2.5 text-[10.5px] text-muted-foreground">
-          <span className="w-8 text-right tabular-nums">{formatTime(sliderValue)}</span>
+          <span className="w-8 text-right tabular-nums">{formatTime(currentDisplayTime)}</span>
           <div className="flex-1 relative flex items-center group/slider">
             <input 
               type="range"
               min="0"
               max={duration || 100}
-              value={sliderValue}
+              value={currentDisplayTime}
               onChange={handleTimelineChange}
-              onMouseDown={() => setIsDragging(true)}
+              onMouseDown={handleTimelineStartDrag}
               onMouseUp={handleTimelineChangeEnd}
-              onTouchStart={() => setIsDragging(true)}
+              onTouchStart={handleTimelineStartDrag}
               onTouchEnd={handleTimelineChangeEnd}
               className="w-full h-1 bg-muted rounded-lg appearance-none cursor-pointer accent-primary hover:accent-primary/80"
               style={{
-                background: `linear-gradient(to right, var(--primary) 0%, var(--primary) ${duration ? (sliderValue / duration) * 100 : 0}%, var(--border) ${duration ? (sliderValue / duration) * 100 : 0}%, var(--border) 100%)`
+                background: `linear-gradient(to right, var(--primary) 0%, var(--primary) ${progressPercent}%, var(--border) ${progressPercent}%, var(--border) 100%)`
               }}
             />
           </div>
