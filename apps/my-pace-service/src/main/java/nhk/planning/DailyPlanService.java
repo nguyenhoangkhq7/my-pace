@@ -11,4 +11,5 @@ public interface DailyPlanService {
     void cancelPlan(LocalDate planDate, UUID userId);
     void toggleTaskDone(UUID dailyPlanTaskId, UUID userId);
     DailyPlanDto reviewPlan(LocalDate planDate, UUID userId);
+    DailyPlanDto getUnreviewedPlan(LocalDate today, UUID userId);
 }

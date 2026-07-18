@@ -1,18 +1,22 @@
 import { useState, useEffect } from "react";
 import { useFocusStore } from "@/features/focus/store/focus.store";
-import type { Task, DailyPlanTask } from "@/features/board/types";
+import type { Task, DailyPlan, DailyPlanTask } from "@/features/board/types";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getTasksAction, updateTaskAction } from "@/features/board/actions/task.action";
 import { getDailyPlanAction, toggleTaskDoneAction } from "@/features/board/actions/plan.action";
 import { getGoalsAction } from "@/features/goal/actions/goal.action";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, Square, Check, ListTodo } from "lucide-react";
+import { saveTimeBlocksAction } from "@/features/board/actions/timeblock.action";
+import { shiftTimeBlocks } from "@/features/board/utils/timeShift";
+import type { TaskTimeBlock } from "@/features/board/types";
 
 import { useAuthStore } from "@/features/auth";
 import { getTodayStr } from "@/lib/date";
 import { FlowEmptyState } from "@/features/focus/components/FlowEmptyState";
 import { PomodoroTimerDisplay } from "@/features/focus/components/PomodoroTimerDisplay";
 import { ChecklistModal } from "@/features/focus/components/ChecklistModal";
+import { TaskNotesPanel } from "@/features/focus/components/TaskNotesPanel";
 
 export function FlowPomodoro() {
   const { 
@@ -38,7 +42,21 @@ export function FlowPomodoro() {
 
   const updateTaskMutation = useMutation({
     mutationFn: ({ id, data }: { id: string, data: Partial<Task> }) => updateTaskAction(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+    onSuccess: (updatedTask) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      // Patch dailyPlan cache immediately so re-opening this task has fresh actualMinutes
+      queryClient.setQueryData(['dailyPlan', todayStr], (old: DailyPlan | undefined) => {
+        if (!old) return old;
+        return {
+          ...old,
+          tasks: old.tasks.map((pt) =>
+            pt.task.id === updatedTask.id
+              ? { ...pt, task: { ...pt.task, actualMinutes: updatedTask.actualMinutes } }
+              : pt
+          ),
+        };
+      });
+    },
   });
   const toggleTaskDoneMutation = useMutation({
     mutationFn: ({ taskId }: { taskId: string }) => toggleTaskDoneAction(taskId),
@@ -46,6 +64,14 @@ export function FlowPomodoro() {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['dailyPlan'] });
     },
+  });
+  const saveTimeBlocksMutation = useMutation({
+    mutationFn: (blocks: Omit<TaskTimeBlock, 'id'>[]) => saveTimeBlocksAction({ dailyPlanId: dailyPlanToday!.id, blocks }),
+    onSuccess: (data) => {
+      if (dailyPlanToday) {
+        queryClient.setQueryData(['dailyPlan', todayStr], { ...dailyPlanToday, timeBlocks: data });
+      }
+    }
   });
   const { refetch: fetchGoals } = useQuery({ queryKey: ['goals'], queryFn: getGoalsAction, enabled: false });
 
@@ -75,6 +101,11 @@ export function FlowPomodoro() {
       const actualMinutes = Math.floor(accumulatedFocusTime / 60);
       if (actualMinutes > 0) {
         await updateTaskMutation.mutateAsync({ id: activeTaskId, data: { actualMinutes } });
+        if (dailyPlanToday?.timeBlocks && dailyPlanToday.timeBlocks.length > 0) {
+          const estimated = activeTask.estimatedMinutes || 0;
+          const shifted = shiftTimeBlocks(dailyPlanToday.timeBlocks, activeTaskId, actualMinutes, estimated);
+          await saveTimeBlocksMutation.mutateAsync(shifted);
+        }
       } else {
         useFocusStore.getState().setPromptTask({
           id: activeTaskId,
@@ -198,6 +229,8 @@ export function FlowPomodoro() {
             </div>
           )}
         </div>
+
+        <TaskNotesPanel task={activeTask} />
 
         <ChecklistModal
           isOpen={isChecklistModalOpen}

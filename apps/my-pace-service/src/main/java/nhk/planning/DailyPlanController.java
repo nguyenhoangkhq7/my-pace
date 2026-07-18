@@ -22,6 +22,12 @@ public class DailyPlanController {
         return dailyPlanService.getDailyPlan(date, userDetails.user().getId());
     }
 
+    @GetMapping("/unreviewed")
+    public DailyPlanDto getUnreviewedPlan(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate today,
+                                          @AuthenticationPrincipal UserDetailsCustom userDetails) {
+        return dailyPlanService.getUnreviewedPlan(today, userDetails.user().getId());
+    }
+
     @PostMapping("/plan-my-day")
     public DailyPlanDto planMyDay(@RequestBody PlanMyDayRequest request,
                                   @AuthenticationPrincipal UserDetailsCustom userDetails) {

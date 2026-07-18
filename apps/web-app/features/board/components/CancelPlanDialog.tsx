@@ -16,13 +16,39 @@ export function CancelPlanDialog({
   onCancelConfirm,
 }: CancelPlanDialogProps) {
   const { t } = useTranslation();
+  const isEn = t.board.today.toLowerCase() === "today";
+  
+  const getTabLabel = () => {
+    if (activeTab === 'today') return isEn ? "today" : "hôm nay";
+    if (activeTab === 'tomorrow') return isEn ? "tomorrow" : "ngày mai";
+    if (activeTab === 'day2') return isEn ? "the day after tomorrow" : "ngày kia";
+    if (activeTab === 'day3') return isEn ? "3 days from now" : "ngày kìa";
+    return activeTab;
+  };
+
+  const getTitle = () => {
+    if (activeTab === 'today') return t.board.cancelPlanTitle(activeTab);
+    if (activeTab === 'tomorrow') return t.board.cancelPlanTitle(activeTab);
+    return isEn 
+      ? `Cancel Plan for ${getTabLabel()}?`
+      : `Hủy kế hoạch ${getTabLabel()}?`;
+  };
+
+  const getDescription = () => {
+    if (activeTab === 'today') return t.board.cancelPlanDesc(activeTab);
+    if (activeTab === 'tomorrow') return t.board.cancelPlanDesc(activeTab);
+    return isEn 
+      ? `Are you sure you want to cancel your plan for ${getTabLabel()}? Incomplete tasks will be returned to the Backlog.`
+      : `Bạn có chắc chắn muốn hủy kế hoạch ${getTabLabel()}? Các công việc chưa hoàn thành sẽ được trả về hàng chờ.`;
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px] bg-card text-foreground border-border">
         <DialogHeader>
-          <DialogTitle>{t.board.cancelPlanTitle(activeTab)}</DialogTitle>
+          <DialogTitle>{getTitle()}</DialogTitle>
           <DialogDescription className="text-muted-foreground pt-2">
-            {t.board.cancelPlanDesc(activeTab)}
+            {getDescription()}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="mt-4 flex gap-2 sm:justify-end">

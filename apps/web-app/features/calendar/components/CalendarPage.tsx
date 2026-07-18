@@ -62,7 +62,10 @@ export function CalendarPage() {
     // Store data
     dailyPlanToday,
     timeBlocks,
+    plannable,
   } = useCalendarPage();
+
+  const isConfirmed = !plannable || !!dailyPlanToday?.isConfirmed;
 
   return (
     <div className="flex flex-col gap-4 h-full">
@@ -95,10 +98,10 @@ export function CalendarPage() {
               slotMaxTime={slotMax}
               allDaySlot={false}
               nowIndicator
-              selectable
-              selectMirror
-              editable
-              droppable
+              selectable={plannable}
+              selectMirror={plannable}
+              editable={plannable}
+              droppable={plannable && !dailyPlanToday?.isConfirmed}
               eventResizableFromStart={false}
               events={fcEvents}
               datesSet={handleDatesSet}
@@ -114,7 +117,7 @@ export function CalendarPage() {
         </div>
 
         {/* ── Todo Today Sidebar ── */}
-        {((hasUnscheduled || !dailyPlanToday?.isConfirmed) && isSidebarOpen) && (
+        {(plannable && (hasUnscheduled || !dailyPlanToday?.isConfirmed) && isSidebarOpen) && (
           <CalendarSidebar
             ref={sidebarRef}
             unscheduledTasks={unscheduledTasks}
@@ -150,6 +153,7 @@ export function CalendarPage() {
         block={selectedBlock}
         task={selectedTask}
         isMit={isBlockMit}
+        isConfirmed={isConfirmed}
         onClose={() => setBlockModalOpen(false)}
         onUnschedule={handleUnscheduleTask}
         isSubmitting={isUnscheduling}

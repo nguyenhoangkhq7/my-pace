@@ -59,7 +59,7 @@ export const vi: Translations = {
     cancelPlan: "Hủy kế hoạch",
     editMyDay: "Chỉnh sửa ngày",
     editTomorrow: "Chỉnh sửa ngày mai",
-    planConfirmed: "✓ Kế hoạch hôm nay đang thực thi",
+    planConfirmed: "Kế hoạch hôm nay đang thực thi",
     allDoneToday: "Bạn đã hoàn thành tất cả công việc cho hôm nay. Tuyệt vời!",
   },
   planning: {
@@ -316,6 +316,8 @@ export const vi: Translations = {
     logoutConfirmDesc: "Bạn có chắc chắn muốn đăng xuất khỏi hệ thống MyPACE?",
     logoutConfirmCancel: "Hủy",
     logoutConfirmOk: "Đồng ý",
+    timezone: "Múi giờ",
+    timezonePlaceholder: "Chọn múi giờ...",
   },
   onboarding: {
     back: "Quay lại",

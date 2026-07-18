@@ -27,6 +27,14 @@ export default async function Page() {
   tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
   const tomorrowDate = formatter.format(tomorrow);
 
+  const day2 = new Date(now);
+  day2.setUTCDate(day2.getUTCDate() + 2);
+  const day2Date = formatter.format(day2);
+
+  const day3 = new Date(now);
+  day3.setUTCDate(day3.getUTCDate() + 3);
+  const day3Date = formatter.format(day3);
+
   const [tasks, categories, dailyPlanToday, dailyPlanTomorrow] = await Promise.all([
     getTasksAction().catch((err) => { console.error(err); return []; }),
     getCategoriesAction().catch((err) => { console.error(err); return []; }),
@@ -36,7 +44,16 @@ export default async function Page() {
 
   return (
     <DashboardPage 
-      initialData={{ tasks, categories, dailyPlanToday, dailyPlanTomorrow, currentDate, tomorrowDate }} 
+      initialData={{ 
+        tasks, 
+        categories, 
+        dailyPlanToday, 
+        dailyPlanTomorrow, 
+        currentDate, 
+        tomorrowDate,
+        day2Date,
+        day3Date
+      }} 
     />
   );
 }
