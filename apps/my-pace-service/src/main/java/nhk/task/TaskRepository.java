@@ -16,10 +16,11 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     @EntityGraph(value = "Task.withChecklists", type = EntityGraph.EntityGraphType.LOAD)
     List<Task> findByUserIdAndStatus(UUID userId, String status);
     boolean existsByGoalId(UUID goalId);
-    boolean existsByGoalIdAndDueDate(UUID goalId, java.time.LocalDate dueDate);
+    @Query("SELECT COUNT(t) > 0 FROM Task t WHERE t.goalId = :goalId AND t.dueDate >= :start AND t.dueDate < :end")
+    boolean existsByGoalIdAndDueDate(@Param("goalId") UUID goalId, @Param("start") java.time.LocalDateTime start, @Param("end") java.time.LocalDateTime end);
 
-    @Query("SELECT COALESCE(SUM(t.actualMinutes), 0) FROM Task t WHERE t.goalId = :goalId AND t.status = 'Done' AND t.dueDate BETWEEN :startDate AND :endDate")
-    Integer sumActualMinutesByGoalIdAndDueDateBetween(@Param("goalId") UUID goalId, @Param("startDate") java.time.LocalDate startDate, @Param("endDate") java.time.LocalDate endDate);
+    @Query("SELECT COALESCE(SUM(t.actualMinutes), 0) FROM Task t WHERE t.goalId = :goalId AND t.status = 'Done' AND t.dueDate >= :start AND t.dueDate < :end")
+    Integer sumActualMinutesByGoalIdAndDueDateBetween(@Param("goalId") UUID goalId, @Param("start") java.time.LocalDateTime start, @Param("end") java.time.LocalDateTime end);
 
     @Query("SELECT COALESCE(SUM(t.actualMinutes), 0) FROM Task t WHERE t.goalId = :goalId AND t.status = 'Done'")
     Integer sumActualMinutesByGoalId(@Param("goalId") UUID goalId);

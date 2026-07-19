@@ -135,12 +135,16 @@ export const en: Translations = {
     manageCategory: "Manage Category",
   },
   outstanding: {
-    title: "Outstanding tasks from yesterday",
-    description:
-      "The system detected tasks that were selected yesterday but not completed. Move them to the Backlog or delete them to keep your board clean.",
-    moveToBacklog: "To Backlog",
-    delete: "Delete",
-    close: "Close",
+    title: "Start a New Day!",
+    description: (date: string) =>
+      `You have incomplete tasks from your previous plan (${date}). Choose what to do with each one:`,
+    moveToToday: "Move to Today",
+    moveToBacklog: "Return to Backlog",
+    delete: "Delete Task",
+    confirmBtn: "Confirm & Start",
+    processing: "Processing...",
+    successMessage: "Done! Your previous plan has been reviewed.",
+    errorMessage: "An error occurred while saving your review.",
   },
   categories: {
     manageTitle: "Manage Categories",

@@ -16,8 +16,6 @@ import java.util.UUID;
 @Setter
 @Entity
 @EntityListeners(org.springframework.data.jpa.domain.support.AuditingEntityListener.class)
-@org.hibernate.annotations.SQLDelete(sql = "UPDATE tasks SET is_deleted = true WHERE id = ?")
-@org.hibernate.annotations.SQLRestriction("is_deleted = false")
 @Table(name = "tasks")
 @NamedEntityGraph(name = "Task.withChecklists", attributeNodes = @NamedAttributeNode("checklists"))
 public class Task {
@@ -81,9 +79,6 @@ public class Task {
     @Column(name = "updated_at", nullable = false)
     @org.springframework.data.annotation.LastModifiedDate
     private OffsetDateTime updatedAt;
-
-    @Column(name = "is_deleted", nullable = false)
-    private Boolean isDeleted = false;
 
     @Size(max = 20)
     @NotNull
