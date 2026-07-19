@@ -130,10 +130,14 @@ export interface Translations {
   };
   outstanding: {
     title: string;
-    description: string;
+    description: (date: string) => string;
+    moveToToday: string;
     moveToBacklog: string;
     delete: string;
-    close: string;
+    confirmBtn: string;
+    processing: string;
+    successMessage: string;
+    errorMessage: string;
   };
   categories: {
     manageTitle: string;

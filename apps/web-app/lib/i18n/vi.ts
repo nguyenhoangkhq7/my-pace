@@ -135,12 +135,16 @@ export const vi: Translations = {
     manageCategory: "Quản lý danh mục",
   },
   outstanding: {
-    title: "Công việc tồn đọng từ hôm qua",
-    description:
-      "Hệ thống phát hiện bạn có một số công việc đã chọn hôm qua nhưng chưa hoàn thành. Hãy chọn đưa về hàng chờ hoặc xóa bỏ chúng để giữ bảng làm việc sạch sẽ.",
-    moveToBacklog: "Về hàng chờ",
-    delete: "Xóa",
-    close: "Đóng",
+    title: "Bắt đầu ngày mới!",
+    description: (date: string) =>
+      `Bạn có công việc chưa hoàn thành từ kế hoạch ngày cũ (${date}). Hãy chọn phương án xử lý cho từng công việc:`,
+    moveToToday: "Chuyển sang Hôm nay",
+    moveToBacklog: "Trả về Backlog",
+    delete: "Xóa công việc",
+    confirmBtn: "Xác nhận & Bắt đầu",
+    processing: "Đang xử lý...",
+    successMessage: "Hoàn tất! Kế hoạch cũ đã được xem xét.",
+    errorMessage: "Đã xảy ra lỗi khi lưu đánh giá.",
   },
   categories: {
     manageTitle: "Quản lý danh mục",

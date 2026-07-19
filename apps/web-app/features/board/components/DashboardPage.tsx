@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useAuthStore, InitialSetupForm } from "@/features/auth";
 import { BacklogMatrix } from "@/features/board/components/BacklogMatrix";
 import { ExecutionBoard } from "@/features/board/components/ExecutionBoard";
@@ -26,6 +25,20 @@ export interface DashboardPageProps {
   };
 }
 
+/**
+ * Returns true if the current local time is past the user's sleepTime,
+ * meaning we should NOT show the "unreviewed plan" modal yet —
+ * the user is still in their current day and the "new day" hasn't started.
+ */
+function isPastSleepTime(sleepTime?: string | null): boolean {
+  if (!sleepTime) return false;
+  const [sh, sm] = sleepTime.split(":").map(Number);
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const sleepMinutes = sh * 60 + sm;
+  return currentMinutes >= sleepMinutes;
+}
+
 export function DashboardPage({ 
   initialData: { currentDate, tomorrowDate, day2Date, day3Date, tasks: initialTasks, dailyPlanToday: initialDailyPlanToday, dailyPlanTomorrow: initialDailyPlanTomorrow } 
 }: DashboardPageProps) {
@@ -36,11 +49,16 @@ export function DashboardPage({
   useDailyPlan(currentDate, initialDailyPlanToday);
   useDailyPlan(tomorrowDate, initialDailyPlanTomorrow);
 
-  const [hasDismissed, setHasDismissed] = useState(false);
+  // Don't query for an unreviewed plan if the user hasn't gone to sleep yet.
+  // e.g. user sleeps at 22:00 and it's currently 23:00 → they're still in today,
+  // so the "old unreviewed plan from yesterday" dialog should not appear.
+  const isStillInCurrentDay = isPastSleepTime(user?.sleepTime);
 
   const { data: unreviewedPlan = null } = useQuery({
     queryKey: ['unreviewedPlan', currentDate],
     queryFn: () => getUnreviewedPlanAction(currentDate),
+    // Disable the query entirely while the user is still in their current day.
+    enabled: !isStillInCurrentDay,
   });
 
   const showSetup = user && (!user.wakeTime || !user.sleepTime);
@@ -49,8 +67,10 @@ export function DashboardPage({
     return <InitialSetupForm />;
   }
 
+  // The modal is shown only when there is a plan with uncompleted tasks.
+  // Once the user clicks "Confirm & Start", reviewPlanAction marks it reviewed
+  // and the query returns null → modal disappears permanently (no local state needed).
   const hasUncompleted = !!unreviewedPlan && unreviewedPlan.tasks?.some(pt => pt.task?.status !== "Done");
-  const showOutstandingModal = !!hasUncompleted && !hasDismissed;
 
   return (
     <div className="flex-1 flex flex-col w-full h-[calc(100vh-4rem)] p-4 sm:p-6 overflow-hidden">
@@ -73,10 +93,9 @@ export function DashboardPage({
         </div>
       </div>
 
-      {unreviewedPlan && (
+      {unreviewedPlan && hasUncompleted && (
         <OutstandingTasksModal
-          isOpen={showOutstandingModal}
-          onClose={() => setHasDismissed(true)}
+          isOpen={true}
           unreviewedPlan={unreviewedPlan}
         />
       )}
