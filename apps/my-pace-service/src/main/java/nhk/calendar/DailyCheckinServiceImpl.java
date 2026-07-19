@@ -80,7 +80,9 @@ public class DailyCheckinServiceImpl implements DailyCheckinService {
                 boolean isTimeBoxed = "Time-boxed".equals(goal.getGoalType());
                 if (!isTimeBoxed) continue;
 
-                if (taskRepo.existsByGoalIdAndDueDate(goal.getId(), date)) {
+                java.time.LocalDateTime startOfDay = date.atStartOfDay();
+                java.time.LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
+                if (taskRepo.existsByGoalIdAndDueDate(goal.getId(), startOfDay, endOfDay)) {
                     continue;
                 }
                 

@@ -83,7 +83,7 @@ public class FixedEventServiceImpl implements FixedEventService {
         eventRepo.save(fe);
 
         LocalDate occurrenceDate = request.eventDate() != null
-                ? request.eventDate() : LocalDate.now();
+                ? request.eventDate() : LocalDate.now(java.time.ZoneId.of(user.getTimezone()));
         return buildResponse(fe, occurrenceDate, null, parseDaysOfWeek(fe.getRecurrenceRule()));
     }
 
@@ -109,7 +109,7 @@ public class FixedEventServiceImpl implements FixedEventService {
         eventRepo.save(fe);
 
         LocalDate occurrenceDate = request.eventDate() != null
-                ? request.eventDate() : LocalDate.now();
+                ? request.eventDate() : LocalDate.now(java.time.ZoneId.of(fe.getUser().getTimezone()));
         return buildResponse(fe, occurrenceDate, null, parseDaysOfWeek(fe.getRecurrenceRule()));
     }
 
