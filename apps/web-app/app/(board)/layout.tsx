@@ -16,9 +16,10 @@ export default function AppLayout({
   const user = useAuthStore((s) => s.user);
   const pathname = usePathname();
   const isFlowFullscreen = useFocusStore((s) => s.isFlowFullscreen);
+  const isZenFull = useFocusStore((s) => s.isZenFull);
 
   const isFlowPage = pathname === "/flow";
-  const isFullscreenMode = isFlowPage && isFlowFullscreen;
+  const isFullscreenMode = isFlowPage && (isFlowFullscreen || isZenFull);
   const showSetup = user && (!user.wakeTime || !user.sleepTime);
 
   // Sync state if user exits browser fullscreen using Esc or browser controls

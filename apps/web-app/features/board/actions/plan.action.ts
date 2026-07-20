@@ -30,9 +30,10 @@ export async function unconfirmPlanAction(date: string) {
   });
 }
 
-export async function reviewPlanAction(date: string) {
+export async function reviewPlanAction(date: string, data?: { today: string; taskReviews: any[] }) {
   return await serverFetch<DailyPlan>(`daily-plans/${date}/review`, {
     method: 'POST',
+    body: data ? JSON.stringify(data) : undefined,
   });
 }
 

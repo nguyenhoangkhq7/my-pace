@@ -59,7 +59,7 @@ export function FlowEmptyState() {
     },
   });
   const reviewDailyPlanMutation = useMutation({
-    mutationFn: reviewPlanAction,
+    mutationFn: (date: string) => reviewPlanAction(date),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['dailyPlan'] }),
   });
   const { data: dataToday } = useAvailableTimeQuery(todayStr);

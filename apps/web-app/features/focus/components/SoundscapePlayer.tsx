@@ -51,7 +51,12 @@ function parseYouTubeUrl(url: string): { videoId: string | null; listId: string 
 
   const listRegExp = /[?&]list=([^#&?]+)/;
   const listMatch = url.match(listRegExp);
-  const listId = listMatch ? listMatch[1] : null;
+  let listId = listMatch ? listMatch[1] : null;
+
+  // Filter out private system playlists (LL = Liked Videos, WL = Watch Later)
+  if (listId === "LL" || listId === "WL") {
+    listId = null;
+  }
 
   return { videoId, listId };
 }
@@ -155,8 +160,30 @@ export function SoundscapePlayer() {
         pause: () => { try { player.pauseVideo(); } catch {} },
         setVolume: (v: number) => { try { player.setVolume(v); } catch {} },
         seek: (t: number) => { try { player.seekTo(t, true); } catch {} },
-        nextTrack: () => { try { player.nextVideo(); } catch {} },
-        prevTrack: () => { try { player.previousVideo(); } catch {} },
+        nextTrack: () => {
+          try {
+            const playlist = player.getPlaylist();
+            if (playlist && playlist.length > 1) {
+              player.nextVideo();
+            } else {
+              useFocusStore.getState().playNextSoundscape();
+            }
+          } catch {
+            useFocusStore.getState().playNextSoundscape();
+          }
+        },
+        prevTrack: () => {
+          try {
+            const playlist = player.getPlaylist();
+            if (playlist && playlist.length > 1) {
+              player.previousVideo();
+            } else {
+              useFocusStore.getState().playPrevSoundscape();
+            }
+          } catch {
+            useFocusStore.getState().playPrevSoundscape();
+          }
+        },
       });
     };
 
@@ -187,7 +214,7 @@ export function SoundscapePlayer() {
       // the YT Player constructor uses videoId as the starting point
       // while list/listType provide the playlist navigation context.
       const playerVars: Record<string, unknown> = {
-        autoplay: 1,
+        autoplay: 0,
         enablejsapi: 1,
         origin,
         rel: 0,
@@ -219,6 +246,28 @@ export function SoundscapePlayer() {
 
             // Register controls immediately so ControllerBar works right away
             registerControls(event.target);
+
+            // Sync video metadata if available
+            if (event.target.getVideoData) {
+              const data = event.target.getVideoData();
+              if (data && data.video_id) {
+                useFocusStore.getState().setActiveVideoInfo(
+                  data.title || "Unknown Title",
+                  data.author || "Unknown Channel",
+                  data.video_id || ""
+                );
+              }
+            }
+
+            // Restore playback progress if stored
+            const savedTime = useFocusStore.getState().currentTime;
+            if (savedTime > 0) {
+              try {
+                event.target.seekTo(savedTime, true);
+              } catch (e) {
+                console.error("Failed to seek to saved time:", e);
+              }
+            }
 
             // Auto-play if store says so
             if (useFocusStore.getState().isPlaying) {
@@ -281,6 +330,23 @@ export function SoundscapePlayer() {
                   data.author || "Unknown Channel",
                   data.video_id || ""
                 );
+
+                // Sync youtubeUrl back to store to preserve playlist track index on F5
+                if (data.video_id) {
+                  const currentStoreUrl = useFocusStore.getState().youtubeUrl;
+                  const { listId: currentListId } = parseYouTubeUrl(currentStoreUrl);
+                  
+                  let newUrl = `https://www.youtube.com/watch?v=${data.video_id}`;
+                  if (currentListId) {
+                    newUrl += `&list=${currentListId}`;
+                  }
+
+                  if (currentStoreUrl !== newUrl) {
+                    // Update lastUrlRef first so the URL-loading useEffect skips redundant loading
+                    lastUrlRef.current = newUrl;
+                    useFocusStore.setState({ youtubeUrl: newUrl });
+                  }
+                }
               }
             }
 
@@ -396,17 +462,21 @@ export function SoundscapePlayer() {
         )}
 
         {hasValidUrl ? (
-          /* This div is replaced in-place by new YT.Player() — DO NOT give it an id that
-             conflicts with other elements. The YT API will insert an <iframe> here. */
+          /* This div is a stable wrapper managed by React to avoid DOM reconciliation issues
+             when the inner div is replaced by YouTube's IFrame API. */
           <div
-            ref={containerRef}
             className={cn(
               "absolute inset-0 w-full h-full transition-all duration-700",
               (!isZenFull && pomodoroState === "focusing")
                 ? "grayscale-[60%] group-hover:grayscale-0"
                 : "grayscale-0"
             )}
-          />
+          >
+            <div
+              ref={containerRef}
+              className="w-full h-full"
+            />
+          </div>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm font-medium">
             Invalid YouTube URL
