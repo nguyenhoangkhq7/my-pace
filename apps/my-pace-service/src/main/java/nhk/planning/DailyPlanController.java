@@ -55,8 +55,9 @@ public class DailyPlanController {
 
     @PostMapping("/{date}/review")
     public DailyPlanDto reviewPlan(@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+                                   @RequestBody(required = false) ReviewPlanRequest request,
                                    @AuthenticationPrincipal UserDetailsCustom userDetails) {
-        return dailyPlanService.reviewPlan(date, userDetails.user().getId());
+        return dailyPlanService.reviewPlan(date, request, userDetails.user().getId());
     }
 
     @PutMapping("/tasks/{planTaskId}/toggle-done")

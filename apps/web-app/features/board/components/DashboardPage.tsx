@@ -97,6 +97,7 @@ export function DashboardPage({
         <OutstandingTasksModal
           isOpen={true}
           unreviewedPlan={unreviewedPlan}
+          currentDate={currentDate}
         />
       )}
 

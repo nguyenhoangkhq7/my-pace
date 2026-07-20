@@ -62,25 +62,45 @@ export function useFlowLayoutState() {
         try {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length === expectedLen) {
-            if (expectedLen === 3 && (parsed[0] < 15 || parsed[2] < 15)) {
+            // Only reset if size is invalid (greater than 0 but less than minSize 15)
+            if (expectedLen === 3 && ((parsed[0] > 0 && parsed[0] < 15) || (parsed[2] > 0 && parsed[2] < 15))) {
               setSizes([20, 60, 20]);
+              setIsLeftCollapsed(false);
+              setIsRightCollapsed(false);
               localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify([20, 60, 20]));
               return;
             }
-            if (expectedLen === 2 && parsed[0] < 15) {
+            if (expectedLen === 2 && parsed[0] > 0 && parsed[0] < 15) {
               setSizes([25, 75]);
+              setIsLeftCollapsed(false);
               localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify([25, 75]));
               return;
             }
+
+            // Sync collapse state with restored sizes
+            if (expectedLen === 3) {
+              setIsLeftCollapsed(parsed[0] === 0);
+              setIsRightCollapsed(parsed[2] === 0);
+            } else if (expectedLen === 2) {
+              setIsLeftCollapsed(parsed[0] === 0);
+            }
+
             setSizes(parsed);
             return;
           }
           localStorage.removeItem(`myPaceFlowSizes_${layoutKey}`);
         } catch {}
       }
-      if (isXl) setSizes([20, 60, 20]);
-      else if (isLg) setSizes([25, 75]);
-      else setSizes([100]);
+      if (isXl) {
+        setSizes([20, 60, 20]);
+        setIsLeftCollapsed(false);
+        setIsRightCollapsed(false);
+      } else if (isLg) {
+        setSizes([25, 75]);
+        setIsLeftCollapsed(false);
+      } else {
+        setSizes([100]);
+      }
     });
   }, [layoutKey, resetKey, isXl, isLg]);
 
@@ -101,14 +121,32 @@ export function useFlowLayoutState() {
     store.setZenFull(false);
     exitFullscreen();
     const restored = lastGoodSizesRef.current;
-    groupRef.current?.setLayout({
-      "todo-panel": restored[0],
-      "pomodoro-panel": restored[1],
-      "zenzone-panel": restored[2],
-    });
     setSizes([...restored]);
     try { localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify(restored)); } catch {}
+
+    // Defer setLayout to the next tick to avoid editing DOM during unmount/remount process
+    setTimeout(() => {
+      groupRef.current?.setLayout({
+        "todo-panel": restored[0],
+        "pomodoro-panel": restored[1],
+        "zenzone-panel": restored[2],
+      });
+    }, 50);
   }, [layoutKey]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const isBrowserFullscreen = !!document.fullscreenElement;
+      if (!isBrowserFullscreen && useFocusStore.getState().isZenFull) {
+        handleExitZenFull();
+      }
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, [handleExitZenFull]);
 
   const handleLayoutChanged = useCallback((layout: Record<string, number>) => {
     const store = useFocusStore.getState();

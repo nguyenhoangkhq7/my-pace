@@ -209,11 +209,76 @@ public class DailyPlanServiceImpl implements DailyPlanService {
 
     @Override
     @Transactional
-    public DailyPlanDto reviewPlan(LocalDate planDate, UUID userId) {
+    public DailyPlanDto reviewPlan(LocalDate planDate, ReviewPlanRequest request, UUID userId) {
         DailyPlan plan = dailyPlanRepository.findByUserIdAndPlanDate(userId, planDate)
                 .orElseThrow(() -> new EntityNotFoundException("Daily plan not found"));
         plan.setIsReviewed(true);
         dailyPlanRepository.save(plan);
+
+        if (request != null && request.taskReviews() != null && !request.taskReviews().isEmpty()) {
+            LocalDate today = request.today();
+            if (today == null) {
+                User user = userRepo.findById(userId)
+                        .orElseThrow(() -> new UserNotFoundException("User not found"));
+                java.time.ZoneId zoneId = java.time.ZoneId.of(
+                        user.getTimezone() != null && !user.getTimezone().isBlank() ? user.getTimezone() : "UTC"
+                );
+                today = LocalDate.now(zoneId);
+            }
+
+            final LocalDate finalToday = today;
+            DailyPlan todayPlan = dailyPlanRepository.findByUserIdAndPlanDate(userId, finalToday)
+                    .orElseGet(() -> {
+                        DailyPlan newPlan = new DailyPlan();
+                        newPlan.setUserId(userId);
+                        newPlan.setPlanDate(finalToday);
+                        newPlan.setAvailableMinutes(0);
+                        newPlan.setIsConfirmed(false);
+                        return dailyPlanRepository.save(newPlan);
+                    });
+
+            for (ReviewPlanRequest.TaskReviewItem review : request.taskReviews()) {
+                UUID taskId = review.taskId();
+                String action = review.action();
+                if (taskId == null || action == null) continue;
+
+                Task task = taskRepository.findById(taskId)
+                        .filter(t -> t.getUserId().equals(userId))
+                        .orElse(null);
+                if (task == null) continue;
+
+                if ("DELETE".equalsIgnoreCase(action)) {
+                    taskRepository.delete(task);
+                } else if ("BACKLOG".equalsIgnoreCase(action)) {
+                    task.setStatus("Backlog");
+                    taskRepository.save(task);
+                } else if ("TODAY".equalsIgnoreCase(action)) {
+                    task.setStatus("Picked for Today");
+                    taskRepository.save(task);
+
+                    // Add to todayPlan if not exists
+                    boolean exists = dailyPlanTaskRepository.findByDailyPlanIdOrderBySortOrderAsc(todayPlan.getId())
+                            .stream().anyMatch(pt -> pt.getTask().getId().equals(taskId));
+                    if (!exists) {
+                        DailyPlanTask planTask = new DailyPlanTask();
+                        planTask.setDailyPlanId(todayPlan.getId());
+                        planTask.setTask(task);
+
+                        boolean oldIsMit = dailyPlanTaskRepository.findByDailyPlanIdOrderBySortOrderAsc(plan.getId())
+                                .stream()
+                                .filter(pt -> pt.getTask().getId().equals(taskId))
+                                .map(DailyPlanTask::getIsMit)
+                                .findFirst()
+                                .orElse(task.getIsImportant() != null ? task.getIsImportant() : false);
+
+                        planTask.setIsMit(oldIsMit);
+                        planTask.setSortOrder(0);
+                        dailyPlanTaskRepository.save(planTask);
+                    }
+                }
+            }
+        }
+
         return getDailyPlan(planDate, userId);
     }
 
