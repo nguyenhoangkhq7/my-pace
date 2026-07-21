@@ -80,6 +80,10 @@ export function useCheckinMutation() {
     onSuccess: (data, { date }) => {
       // Update cache
       queryClient.setQueryData(["availableTime", date], data);
+
+      // Invalidate queries to trigger immediate UI update for auto-created tasks/plans
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["dailyPlan", date] });
       
       // Trigger celebration if streak > 0
       if (data && data.streak > 0) {

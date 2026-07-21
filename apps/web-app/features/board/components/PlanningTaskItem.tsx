@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateTaskAction } from "@/features/board/actions/task.action";
 import { InlineTitleEditor } from "./InlineTitleEditor";
+import { useBoardStore } from "../store/board.store";
 
 interface PlanningTaskItemProps {
   task: Task;
@@ -18,8 +19,26 @@ export function PlanningTaskItem({ task, onRemove }: PlanningTaskItemProps) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
   });
 
+  const openTaskModal = useBoardStore(s => s.openTaskModal);
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (
+      target.closest('button') || 
+      target.closest('input') || 
+      target.closest('textarea') ||
+      target.closest('[role="button"]')
+    ) {
+      return;
+    }
+    openTaskModal(task);
+  };
+
   return (
-    <div className="p-3 bg-card border border-border rounded-lg flex justify-between items-center group">
+    <div 
+      onClick={handleCardClick}
+      className="p-3 bg-card border border-border rounded-lg flex justify-between items-center group cursor-pointer hover:border-primary/45 transition-colors"
+    >
       <div className="flex-1">
         <InlineTitleEditor
           initialTitle={task.title}

@@ -16,6 +16,12 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string, day2
     planningTarget,
     selectedFilterId,
     setFilter,
+    editingTask,
+    isTaskModalOpen,
+    prefilledGoalId,
+    requireDuration,
+    openTaskModal,
+    closeTaskModal,
   } = useBoardStore();
 
   const { tasks, createTask, updateTask } = useTasks();
@@ -55,10 +61,7 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string, day2
 
   const availableMinutes = availableTimeData?.availableMinutes || 0;
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
   const [requireDurationForTask, setRequireDurationForTask] = useState<Task | undefined>(undefined);
-  const [prefilledGoalForTask, setPrefilledGoalForTask] = useState<string | undefined>(undefined);
 
   const checkTimeLimit = (newEstimatedMinutes: number) => {
     const plannedTasks = tasks.filter(t => plannedTaskIds.includes(t.id));
@@ -82,9 +85,7 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string, day2
         }
       }
     }
-    setIsModalOpen(false);
-    setEditingTask(undefined);
-    setPrefilledGoalForTask(undefined);
+    closeTaskModal();
   };
 
   const handleTaskClick = (task: Task) => {
@@ -105,8 +106,7 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string, day2
         }
       }
     } else {
-      setEditingTask(task);
-      setIsModalOpen(true);
+      openTaskModal(task);
     }
   };
 
@@ -129,14 +129,12 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string, day2
     tasks,
     isPlanningMode,
     plannedTaskIds,
-    isModalOpen,
-    setIsModalOpen,
+    isTaskModalOpen,
     editingTask,
-    setEditingTask,
+    prefilledGoalId,
+    requireDuration,
     requireDurationForTask,
     setRequireDurationForTask,
-    prefilledGoalForTask,
-    setPrefilledGoalForTask,
     selectedFilterId,
     setFilter,
     categories,
