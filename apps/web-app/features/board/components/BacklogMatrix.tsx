@@ -4,6 +4,7 @@ import { BacklogMatrixHeader } from "./BacklogMatrixHeader";
 
 import { useBacklogMatrix } from "../hooks/useBacklogMatrix";
 import { useTranslation } from "@/hooks/use-translation";
+import { useBoardStore } from "../store/board.store";
 
 
 export function BacklogMatrix({ 
@@ -23,14 +24,12 @@ export function BacklogMatrix({
     tasks,
     isPlanningMode,
     plannedTaskIds,
-    isModalOpen,
-    setIsModalOpen,
+    isTaskModalOpen,
     editingTask,
-    setEditingTask,
+    prefilledGoalId,
+    requireDuration,
     requireDurationForTask,
     setRequireDurationForTask,
-    prefilledGoalForTask,
-    setPrefilledGoalForTask,
     selectedFilterId,
     setFilter,
     categories,
@@ -42,6 +41,9 @@ export function BacklogMatrix({
     handleMissingDurationSubmit,
   } = useBacklogMatrix(currentDate, tomorrowDate, day2Date, day3Date);
 
+  const openTaskModal = useBoardStore(s => s.openTaskModal);
+  const closeTaskModal = useBoardStore(s => s.closeTaskModal);
+
   return (
     <div className="h-full flex flex-col space-y-4">
       <BacklogMatrixHeader 
@@ -49,8 +51,7 @@ export function BacklogMatrix({
         selectedFilterId={selectedFilterId}
         setFilter={setFilter}
         onNewTask={() => {
-          setEditingTask(undefined);
-          setIsModalOpen(true);
+          openTaskModal(null);
         }}
       />
 
@@ -106,18 +107,14 @@ export function BacklogMatrix({
       </div>
 
       <TaskFormModal 
-        isOpen={isModalOpen} 
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditingTask(undefined);
-          setPrefilledGoalForTask(undefined);
-        }} 
+        isOpen={isTaskModalOpen} 
+        onClose={closeTaskModal} 
         onSubmit={handleCreateTask}
-        initialData={editingTask}
-        prefilledGoalId={prefilledGoalForTask}
-        requireDuration={!!prefilledGoalForTask}
-        isUrgent={!!prefilledGoalForTask ? false : undefined}
-        isImportant={!!prefilledGoalForTask ? true : undefined}
+        initialData={editingTask || undefined}
+        prefilledGoalId={prefilledGoalId || undefined}
+        requireDuration={requireDuration}
+        isUrgent={!!prefilledGoalId ? false : undefined}
+        isImportant={!!prefilledGoalId ? true : undefined}
       />
 
       <TaskFormModal 

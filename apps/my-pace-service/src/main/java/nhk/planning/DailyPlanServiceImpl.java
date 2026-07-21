@@ -3,9 +3,14 @@ package nhk.planning;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import nhk.common.UserNotFoundException;
+import nhk.goal.Goal;
+import nhk.goal.GoalRepository;
 import nhk.goal.GoalService;
+import nhk.calendar.FixedEventService;
+import nhk.calendar.FixedEventResponse;
 import nhk.task.Task;
 import nhk.task.TaskRepository;
+import nhk.timeblock.TaskTimeBlock;
 import nhk.timeblock.TaskTimeBlockDto;
 import nhk.timeblock.TaskTimeBlockRepository;
 import nhk.user.User;
@@ -30,6 +35,8 @@ public class DailyPlanServiceImpl implements DailyPlanService {
     private final TaskTimeBlockRepository timeBlockRepository;
     private final GoalService goalService;
     private final UserRepository userRepo;
+    private final GoalRepository goalRepository;
+    private final FixedEventService eventService;
 
     @Override
     @Transactional(readOnly = true)
@@ -116,6 +123,23 @@ public class DailyPlanServiceImpl implements DailyPlanService {
                 if (!"Done".equals(task.getStatus())) {
                     task.setStatus("Picked for Today");
                     taskRepository.save(task);
+
+                    // Check if this task has a goal and that goal has a preferTime
+                    if (task.getGoalId() != null) {
+                        Goal goal = goalRepository.findById(task.getGoalId()).orElse(null);
+                        if (goal != null && goal.getPreferTime() != null) {
+                            // Check if a timeblock already exists for this task on this day
+                            boolean blockExists = !timeBlockRepository.findByTaskIdAndDailyPlanId(task.getId(), plan.getId()).isEmpty();
+                            if (!blockExists) {
+                                User user = userRepo.findById(userId)
+                                        .orElseThrow(() -> new UserNotFoundException("User not found"));
+                                String tz = user.getTimezone();
+                                ZoneId zoneId = ZoneId.of(tz != null && !tz.isBlank() ? tz : "UTC");
+                                int estimatedMinutes = task.getEstimatedMinutes() != null ? task.getEstimatedMinutes() : 60;
+                                scheduleTaskTimeBlock(plan, task, goal.getPreferTime(), estimatedMinutes, zoneId);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -288,5 +312,64 @@ public class DailyPlanServiceImpl implements DailyPlanService {
         return dailyPlanRepository.findFirstByUserIdAndPlanDateBeforeAndIsConfirmedTrueAndIsReviewedFalseOrderByPlanDateDesc(userId, today)
                 .map(plan -> getDailyPlan(plan.getPlanDate(), userId))
                 .orElse(null);
+    }
+
+    private void scheduleTaskTimeBlock(DailyPlan plan, Task task, java.time.LocalTime preferTime, int estimatedMinutes, java.time.ZoneId zoneId) {
+        LocalDate date = plan.getPlanDate();
+        java.time.LocalDateTime candidateStart = java.time.LocalDateTime.of(date, preferTime);
+        java.time.LocalDateTime candidateEnd = candidateStart.plusMinutes(estimatedMinutes);
+
+        List<FixedEventResponse> fixedEvents = eventService.getEventsInRange(plan.getUserId(), date, date);
+        List<TaskTimeBlock> existingBlocks = new java.util.ArrayList<>(timeBlockRepository.findByDailyPlanIdOrderByStartTimeAsc(plan.getId()));
+
+        java.time.LocalDateTime dayEnd = java.time.LocalDateTime.of(date, java.time.LocalTime.MAX);
+        
+        while (candidateEnd.isBefore(dayEnd) || candidateEnd.equals(dayEnd)) {
+            boolean overlap = false;
+            
+            // Check fixed events
+            for (FixedEventResponse ev : fixedEvents) {
+                java.time.LocalTime evStartLt = ev.startTime();
+                java.time.LocalTime evEndLt = ev.endTime();
+                java.time.LocalDateTime evStart = java.time.LocalDateTime.of(date, evStartLt);
+                java.time.LocalDateTime evEnd = java.time.LocalDateTime.of(date, evEndLt);
+                
+                if (candidateStart.isBefore(evEnd) && candidateEnd.isAfter(evStart)) {
+                    overlap = true;
+                    if (evEnd.isAfter(candidateStart)) {
+                        candidateStart = evEnd;
+                        candidateEnd = candidateStart.plusMinutes(estimatedMinutes);
+                    }
+                    break;
+                }
+            }
+            
+            if (overlap) continue;
+            
+            // Check existing time blocks
+            for (TaskTimeBlock tb : existingBlocks) {
+                if (candidateStart.isBefore(tb.getEndTime()) && candidateEnd.isAfter(tb.getStartTime())) {
+                    overlap = true;
+                    if (tb.getEndTime().isAfter(candidateStart)) {
+                        candidateStart = tb.getEndTime();
+                        candidateEnd = candidateStart.plusMinutes(estimatedMinutes);
+                    }
+                    break;
+                }
+            }
+            
+            if (!overlap) {
+                TaskTimeBlock tb = new TaskTimeBlock();
+                tb.setTaskId(task.getId());
+                tb.setDailyPlanId(plan.getId());
+                tb.setStartTime(candidateStart);
+                tb.setEndTime(candidateEnd);
+                tb.setPartIndex(1);
+                tb.setTotalParts(1);
+                timeBlockRepository.save(tb);
+                existingBlocks.add(tb);
+                break;
+            }
+        }
     }
 }

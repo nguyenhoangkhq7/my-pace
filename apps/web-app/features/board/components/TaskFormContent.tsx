@@ -81,6 +81,10 @@ export function TaskFormContent({
     setDueTime(nextDueTime);
   }
 
+  const [isDraftLoaded, setIsDraftLoaded] = useState(false);
+  const baseValuesRef = useRef<TaskFormValues | null>(null);
+  const baseChecklistsRef = useRef<Partial<TaskChecklistItem>[]>([]);
+
   const currentTask = initialData?.id ? tasks.find(t => t.id === initialData.id) : null;
   const checklists = currentTask?.checklists || [];
 
@@ -129,13 +133,18 @@ export function TaskFormContent({
   const resetToInitial = () => {
     const initialVals = getInitialValues();
     reset(initialVals);
+    baseValuesRef.current = initialVals;
+
     const checklistsToUse = initialData?.id ? currentTask?.checklists : initialData?.checklists;
-    setLocalChecklists(checklistsToUse
+    const mappedChecklists = checklistsToUse
       ? checklistsToUse.map(c => ({ id: c.id, title: c.title, isCompleted: c.isCompleted, orderIndex: c.orderIndex }))
-      : []
-    );
+      : [];
+    setLocalChecklists(mappedChecklists);
+    baseChecklistsRef.current = mappedChecklists;
+
     setError("");
     localStorage.removeItem('my_pace_task_draft_new');
+    setIsDraftLoaded(false);
   };
 
   useEffect(() => {
@@ -149,10 +158,9 @@ export function TaskFormContent({
 
       const initialVals = getInitialValues();
       const checklistsToUse = initialData?.id ? currentTask?.checklists : initialData?.checklists;
-      setLocalChecklists(checklistsToUse
+      const mappedChecklists = checklistsToUse
         ? checklistsToUse.map(c => ({ id: c.id, title: c.title, isCompleted: c.isCompleted, orderIndex: c.orderIndex }))
-        : []
-      );
+        : [];
 
       if (!initialData?.id) {
         const savedDraft = localStorage.getItem('my_pace_task_draft_new');
@@ -161,6 +169,13 @@ export function TaskFormContent({
             const draft = JSON.parse(savedDraft);
             if (draft.dueDate) draft.dueDate = new Date(draft.dueDate);
             reset(draft);
+            baseValuesRef.current = draft;
+
+            const draftChecklists = draft.localChecklists || [];
+            setLocalChecklists(draftChecklists);
+            baseChecklistsRef.current = draftChecklists;
+
+            setIsDraftLoaded(true);
             return;
           } catch (e) {
             console.error("Failed to parse draft", e);
@@ -168,7 +183,11 @@ export function TaskFormContent({
         }
       }
 
+      setLocalChecklists(mappedChecklists);
+      baseChecklistsRef.current = mappedChecklists;
       reset(initialVals);
+      baseValuesRef.current = initialVals;
+      setIsDraftLoaded(false);
     });
   }, [isOpen, initialData, fetchGoals, getInitialValues, reset, currentTask]);
 
@@ -178,13 +197,56 @@ export function TaskFormContent({
 
   const isDirty = formState.isDirty || isChecklistsDirty;
 
-  const hasDraft = !initialData?.id && isDirty;
+  const hasDraft = !initialData?.id && (isDirty || isDraftLoaded);
 
   useEffect(() => {
     if (!isOpen || !!initialData?.id) return;
 
+    const isFormDirty = (currentVal: Partial<TaskFormValues>) => {
+      if (!baseValuesRef.current) return false;
+      
+      const normalizeString = (val: string | null | undefined) => val ?? "";
+      const normalizeNumber = (val: number | null | undefined) => val || undefined;
+      const normalizeBoolean = (val: boolean | null | undefined) => !!val;
+
+      const valTitle = normalizeString(currentVal.title);
+      const baseTitle = normalizeString(baseValuesRef.current.title);
+      const valNotes = normalizeString(currentVal.notes);
+      const baseNotes = normalizeString(baseValuesRef.current.notes);
+      
+      const valEstimatedMinutes = normalizeNumber(currentVal.estimatedMinutes);
+      const baseEstimatedMinutes = normalizeNumber(baseValuesRef.current.estimatedMinutes);
+      
+      const valIsUrgent = normalizeBoolean(currentVal.isUrgent);
+      const baseIsUrgent = normalizeBoolean(baseValuesRef.current.isUrgent);
+      const valIsImportant = normalizeBoolean(currentVal.isImportant);
+      const baseIsImportant = normalizeBoolean(baseValuesRef.current.isImportant);
+      
+      const valCategoryId = currentVal.categoryId || undefined;
+      const baseCategoryId = baseValuesRef.current.categoryId || undefined;
+      const valGoalId = currentVal.goalId || undefined;
+      const baseGoalId = baseValuesRef.current.goalId || undefined;
+      
+      const valDueDateMs = currentVal.dueDate ? new Date(currentVal.dueDate).getTime() : undefined;
+      const baseDueDateMs = baseValuesRef.current.dueDate ? new Date(baseValuesRef.current.dueDate).getTime() : undefined;
+      
+      return (
+        valTitle !== baseTitle ||
+        valNotes !== baseNotes ||
+        valEstimatedMinutes !== baseEstimatedMinutes ||
+        valIsUrgent !== baseIsUrgent ||
+        valIsImportant !== baseIsImportant ||
+        valCategoryId !== baseCategoryId ||
+        valGoalId !== baseGoalId ||
+        valDueDateMs !== baseDueDateMs
+      );
+    };
+
     const subscription = watchRef.current((value) => {
-      if (isDirty) {
+      const currentChecklistsDirty = JSON.stringify(localChecklists) !== JSON.stringify(baseChecklistsRef.current);
+      const isDirtyVal = isFormDirty(value) || currentChecklistsDirty;
+      
+      if (isDirtyVal || isDraftLoaded) {
         localStorage.setItem('my_pace_task_draft_new', JSON.stringify({
           ...value,
           localChecklists
@@ -194,13 +256,8 @@ export function TaskFormContent({
       }
     });
 
-    // Handle initial state or clean up
-    if (!isDirty) {
-      localStorage.removeItem('my_pace_task_draft_new');
-    }
-
     return () => subscription.unsubscribe();
-  }, [isDirty, localChecklists, isOpen, initialData]);
+  }, [isOpen, initialData, localChecklists, isDraftLoaded]);
 
   const handleClose = () => {
     if (onOpenChange) onOpenChange(false);
@@ -263,6 +320,7 @@ export function TaskFormContent({
       }
       if (!initialData?.id) {
         localStorage.removeItem('my_pace_task_draft_new');
+        setIsDraftLoaded(false);
       }
     } catch (err) {
       setError(getApiErrorMessage(err));
@@ -274,6 +332,7 @@ export function TaskFormContent({
     try {
       await deleteTask(initialData.id);
       localStorage.removeItem('my_pace_task_draft_new');
+      setIsDraftLoaded(false);
       setIsConfirmDeleteOpen(false);
       handleClose();
     } catch (err) {

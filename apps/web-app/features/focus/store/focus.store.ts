@@ -45,6 +45,7 @@ interface FocusState {
   // Current active task
   activeTaskId: string | null;
   activePlanTaskId: string | null;
+  activeTaskEstimatedMinutes: number;
   
   // Pomodoro runtime state
   pomodoroState: PomodoroState;
@@ -143,6 +144,7 @@ export const useFocusStore = create<FocusState>()(
       
       activeTaskId: null,
       activePlanTaskId: null,
+      activeTaskEstimatedMinutes: 25,
       pomodoroState: "idle",
       timeLeft: 0,
       currentSession: 1,
@@ -252,15 +254,16 @@ export const useFocusStore = create<FocusState>()(
       
       openFocusMode: (taskId, planTaskId, estimatedMinutes, alreadyWorkedMinutes = 0) => {
         const { focusMinutes } = get();
-        // Calculate remaining sessions considering already-worked time
-        const remainingMinutes = Math.max(0, estimatedMinutes - alreadyWorkedMinutes);
-        const totalSessions = Math.max(1, Math.ceil(remainingMinutes / focusMinutes));
+        // Calculate total sessions and current session index based on total estimated time
+        const totalSessions = Math.max(1, Math.ceil(estimatedMinutes / focusMinutes));
+        const currentSession = Math.min(totalSessions, Math.floor(alreadyWorkedMinutes / focusMinutes) + 1);
         
         set({
           activeTaskId: taskId,
           activePlanTaskId: planTaskId,
+          activeTaskEstimatedMinutes: estimatedMinutes,
           pomodoroState: "idle",
-          currentSession: 1,
+          currentSession,
           totalSessions,
           timeLeft: focusMinutes * 60,
           accumulatedFocusTime: alreadyWorkedMinutes * 60,
@@ -341,10 +344,37 @@ export const useFocusStore = create<FocusState>()(
       },
 
       updateConfig: (focusMin, breakMin, sound) => {
+        const { activeTaskId, activeTaskEstimatedMinutes, accumulatedFocusTime, pomodoroState } = get();
+        
+        let newTotalSessions = get().totalSessions;
+        let newCurrentSession = get().currentSession;
+        let newTimeLeft = get().timeLeft;
+        
+        if (activeTaskId) {
+          newTotalSessions = Math.max(1, Math.ceil(activeTaskEstimatedMinutes / focusMin));
+          const alreadyWorkedMinutes = Math.floor(accumulatedFocusTime / 60);
+          newCurrentSession = Math.min(newTotalSessions, Math.floor(alreadyWorkedMinutes / focusMin) + 1);
+          
+          if (pomodoroState === "idle") {
+            newTimeLeft = focusMin * 60;
+          } else if (pomodoroState === "paused" || pomodoroState === "focusing") {
+            const diffSec = (focusMin - get().focusMinutes) * 60;
+            newTimeLeft = Math.max(0, newTimeLeft + diffSec);
+          } else if (pomodoroState === "breaking") {
+            const diffSec = (breakMin - get().breakMinutes) * 60;
+            newTimeLeft = Math.max(0, newTimeLeft + diffSec);
+          }
+        } else {
+          newTimeLeft = focusMin * 60;
+        }
+
         set({
           focusMinutes: focusMin,
           breakMinutes: breakMin,
           soundEnabled: sound,
+          totalSessions: newTotalSessions,
+          currentSession: newCurrentSession,
+          timeLeft: newTimeLeft,
         });
       },
 
@@ -404,6 +434,7 @@ export const useFocusStore = create<FocusState>()(
         soundEnabled: state.soundEnabled,
         activeTaskId: state.activeTaskId,
         activePlanTaskId: state.activePlanTaskId,
+        activeTaskEstimatedMinutes: state.activeTaskEstimatedMinutes,
         pomodoroState: state.pomodoroState,
         timeLeft: state.timeLeft,
         currentSession: state.currentSession,

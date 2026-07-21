@@ -30,19 +30,19 @@ export function useAppVisibility() {
     refetchDailyPlan();
   }, [refetchAvailableTime, refetchDailyPlan]);
 
-  // 1. Auto Check-in when user opens app on a new day and no plan has been created yet
+  // 1. Auto Check-in when user opens app on a new day
   useEffect(() => {
     const today = getTodayStr();
 
     // Wait until dataToday has been fetched from the server and is not null
-    if (dataToday !== null && dataToday !== undefined && !dataToday.checkedIn && dailyPlanToday === null) {
+    if (dataToday !== null && dataToday !== undefined && !dataToday.checkedIn) {
       if (lastCheckedDate.current !== today) {
         lastCheckedDate.current = today;
         // Auto checkin in background
         checkinMutation.mutate({ date: today });
       }
     }
-  }, [dailyPlanToday, dataToday, checkinMutation]);
+  }, [dataToday, checkinMutation]);
 
   // 2. Realtime Recalculation on window focus or visibility change
   useEffect(() => {

@@ -8,10 +8,18 @@ interface BoardClientState {
   planningTarget: string | null;
   plannedTaskIds: string[];
 
+  editingTask: Task | null;
+  isTaskModalOpen: boolean;
+  prefilledGoalId: string | null;
+  requireDuration: boolean;
+
   setFilter: (categoryId: string | null) => void;
   setPlanningMode: (isPlanning: boolean, target?: string, initialTaskIds?: string[]) => void;
   addPlannedTaskLocally: (task: Task) => void;
   removePlannedTaskLocally: (taskId: string) => void;
+
+  openTaskModal: (task?: Task | null, prefilledGoalId?: string | null, requireDuration?: boolean) => void;
+  closeTaskModal: () => void;
 }
 
 export const useBoardStore = create<BoardClientState>((set) => ({
@@ -20,6 +28,11 @@ export const useBoardStore = create<BoardClientState>((set) => ({
   isPlanningMode: false,
   planningTarget: null,
   plannedTaskIds: [],
+
+  editingTask: null,
+  isTaskModalOpen: false,
+  prefilledGoalId: null,
+  requireDuration: false,
 
   setFilter: (categoryId) => set({ selectedFilterId: categoryId }),
 
@@ -45,4 +58,22 @@ export const useBoardStore = create<BoardClientState>((set) => ({
       plannedTaskIds: state.plannedTaskIds.filter(id => id !== taskId)
     }));
   },
+
+  openTaskModal: (task = null, prefilledGoalId = null, requireDuration = false) => {
+    set({
+      editingTask: task,
+      isTaskModalOpen: true,
+      prefilledGoalId,
+      requireDuration
+    });
+  },
+
+  closeTaskModal: () => {
+    set({
+      editingTask: null,
+      isTaskModalOpen: false,
+      prefilledGoalId: null,
+      requireDuration: false
+    });
+  }
 }));
