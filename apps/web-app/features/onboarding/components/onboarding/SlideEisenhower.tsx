@@ -6,7 +6,7 @@ import { useTranslation } from "@/hooks/use-translation";
 export function SlideEisenhower() {
   const { t } = useTranslation();
   const [selectedQ, setSelectedQ] = useState<"Q1" | "Q2" | "Q3" | "Q4" | null>(null);
-  
+
   const handleQClick = (q: "Q1" | "Q2" | "Q3" | "Q4") => setSelectedQ((p) => p === q ? null : q);
 
   return (

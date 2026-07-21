@@ -14,12 +14,6 @@ export interface AuthUser {
 export interface AuthSession {
   user: AuthUser;
 }
-
-export type AuthSessionPayload = AuthSession | {
-  user?: unknown;
-  data?: unknown;
-};
-
 function isAuthUser(value: unknown): value is AuthUser {
   if (typeof value !== "object" || value === null) {
     return false;

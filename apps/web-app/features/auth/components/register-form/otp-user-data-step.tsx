@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,7 +13,6 @@ import {
 import { useForm } from "react-hook-form";
 
 import { AppAlert } from "@/components/feedback/app-alert";
-import { appToast } from "@/components/feedback/app-toast";
 import { Button } from "@/components/ui/button";
 import {
     CardContent,
@@ -30,11 +28,7 @@ import {
     FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import {
-    normalizeAuthSession,
-    useAuthStore,
-} from "../../store/auth.store";
-import { registerAction } from "../../actions/auth.action";
+import { useAuth } from "../../hooks/useAuth";
 import {
     userDataStepSchema,
     type UserDataStepValues,
@@ -45,8 +39,7 @@ import { useTranslation } from "@/hooks/use-translation";
 
 export function OtpUserDataStep() {
     const { t } = useTranslation();
-    const router = useRouter();
-    const setSession = useAuthStore((state) => state.setSession);
+    const { register, isLoading } = useAuth();
     const {
         registerFormData,
         setRegisterData,
@@ -80,36 +73,19 @@ export function OtpUserDataStep() {
             confirmPassword: data.confirmPassword,
         });
 
-        try {
-            const result = await registerAction({
-                email: registerFormData.email,
-                password: data.password,
-                fullName: data.fullName,
-                otp: registerFormData.otp || "",
-            });
+        const result = await register({
+            email: registerFormData.email,
+            password: data.password,
+            fullName: data.fullName,
+            otp: registerFormData.otp || "",
+        });
 
-            if (!result.success || !result.user) {
-                form.setError("root", {
-                    message: result.error || "Invalid auth response from server",
-                });
-                return;
-            }
-
-            const session = normalizeAuthSession({ user: result.user });
-            if (session) {
-                setSession(session);
-            }
-
-            appToast.success(t.auth.registerSuccess, {
-                description: t.auth.registerSuccessDesc,
-            });
-
-            resetRegisterData();
-            router.replace("/");
-        } catch (error) {
+        if (!result.success) {
             form.setError("root", {
-                message: error instanceof Error ? error.message : "Cannot connect to server",
+                message: result.error || "Registration failed",
             });
+        } else {
+            resetRegisterData();
         }
     };
 
@@ -211,10 +187,10 @@ export function OtpUserDataStep() {
             <CardFooter className="flex flex-col gap-5 px-0 pt-8">
                 <Button
                     type="submit"
-                    disabled={form.formState.isSubmitting || !form.formState.isValid}
+                    disabled={form.formState.isSubmitting || !form.formState.isValid || isLoading}
                     className="h-12 w-full rounded-xl text-base font-medium"
                 >
-                    {form.formState.isSubmitting ? t.auth.creatingAccount : t.auth.createAccountBtn}
+                    {form.formState.isSubmitting || isLoading ? t.auth.creatingAccount : t.auth.createAccountBtn}
                 </Button>
 
                 {form.formState.errors.root && (

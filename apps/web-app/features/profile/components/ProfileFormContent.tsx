@@ -8,14 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuthStore } from "@/features/auth/store/auth.store";
-import { updateProfileAction, logoutAction } from "@/features/auth/actions/auth.action";
+import { updateProfileAction } from "../actions/profile.action";
 import { AppAlert } from "@/components/feedback/app-alert";
 import { cn } from "@/lib/utils";
 import { TimeSelect } from "@/components/ui/time-select";
 import { useTranslation } from "@/hooks/use-translation";
 import { DialogFooter } from "@/components/ui/dialog";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { profileSchema, ProfileFormValues } from "../schema/auth.schema";
+import { profileSchema, ProfileFormValues } from "../schema/profile.schema";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Select,
@@ -273,10 +273,7 @@ export function ProfileFormContent({ onSuccess, onCancel, onLogoutClick, isOpen 
         <Button
           type="button"
           variant="ghost"
-          onClick={async () => {
-              await logoutAction();
-              onLogoutClick();
-          }}
+          onClick={onLogoutClick}
           className="h-10 px-3 rounded-xl font-medium text-rose-500 hover:bg-rose-500/10 hover:text-rose-500 transition-colors flex items-center gap-2 shrink-0 cursor-pointer"
         >
           <HugeiconsIcon icon={Logout03Icon} size={18} className="shrink-0" />

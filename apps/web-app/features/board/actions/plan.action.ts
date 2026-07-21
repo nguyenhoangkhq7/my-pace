@@ -30,7 +30,17 @@ export async function unconfirmPlanAction(date: string) {
   });
 }
 
-export async function reviewPlanAction(date: string, data?: { today: string; taskReviews: any[] }) {
+export interface TaskReviewItem {
+  taskId: string;
+  action: string;
+}
+
+export interface ReviewPlanPayload {
+  today: string;
+  taskReviews: TaskReviewItem[];
+}
+
+export async function reviewPlanAction(date: string, data?: ReviewPlanPayload) {
   return await serverFetch<DailyPlan>(`daily-plans/${date}/review`, {
     method: 'POST',
     body: data ? JSON.stringify(data) : undefined,

@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useOnboardingStore, ProfileDialog } from "@/features/auth";
+import { useOnboardingStore } from "@/features/onboarding";
+import { ProfileDialog } from "@/features/profile";
 import {
   Calendar03Icon,
   Grid02Icon,

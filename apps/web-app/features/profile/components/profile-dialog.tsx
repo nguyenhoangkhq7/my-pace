@@ -4,9 +4,8 @@ import { useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { UserCircleIcon } from "@hugeicons/core-free-icons";
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader } from "@/components/ui/dialog";
-import { useAuthStore } from "@/features/auth/store/auth.store";
 import { useTranslation } from "@/hooks/use-translation";
-import { logoutAction } from "@/features/auth/actions/auth.action";
+import { useAuth } from "@/features/auth";
 import { ConfirmLogoutDialog } from "./ConfirmLogoutDialog";
 import { ProfileFormContent } from "./ProfileFormContent";
 
@@ -17,18 +16,11 @@ interface ProfileDialogProps {
 
 export function ProfileDialog({ isOpen, onOpenChange }: ProfileDialogProps) {
   const { t } = useTranslation();
-  const clearSession = useAuthStore((s) => s.clearSession);
+  const { logout } = useAuth();
   const [isConfirmLogoutOpen, setIsConfirmLogoutOpen] = useState(false);
 
   const handleLogout = async () => {
-    try {
-      await logoutAction();
-    } catch (err) {
-      console.error("Logout failed at backend", err);
-    } finally {
-      clearSession();
-      window.location.href = "/login";
-    }
+    await logout();
   };
 
   return (

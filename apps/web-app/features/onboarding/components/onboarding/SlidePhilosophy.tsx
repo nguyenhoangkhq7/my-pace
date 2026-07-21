@@ -12,11 +12,11 @@ export function SlidePhilosophy({ onOpenDetail }: SlidePhilosophyProps) {
     if (!text || !keyword) return text;
     const parts = text.split(keyword);
     if (parts.length < 2) return text;
-    
+
     return (
       <>
         {parts[0]}
-        <span 
+        <span
           className="font-bold text-primary cursor-pointer hover:underline transition-all"
           onClick={() => onOpenDetail(title, detail)}
         >
@@ -35,9 +35,9 @@ export function SlidePhilosophy({ onOpenDetail }: SlidePhilosophyProps) {
         </div>
         <p className="text-sm leading-relaxed text-muted-foreground pt-0.5">
           {renderWithKeyword(
-            t.onboarding.eisenhower, 
-            t.onboarding.eisenhowerKeyword, 
-            t.onboarding.eisenhowerKeyword, 
+            t.onboarding.eisenhower,
+            t.onboarding.eisenhowerKeyword,
+            t.onboarding.eisenhowerKeyword,
             t.onboarding.eisenhowerDetail
           )}
         </p>
@@ -49,9 +49,9 @@ export function SlidePhilosophy({ onOpenDetail }: SlidePhilosophyProps) {
         </div>
         <p className="text-sm leading-relaxed text-muted-foreground pt-0.5">
           {renderWithKeyword(
-            t.onboarding.fixedEvents, 
-            t.onboarding.fixedEventsKeyword, 
-            t.onboarding.fixedEventsKeyword, 
+            t.onboarding.fixedEvents,
+            t.onboarding.fixedEventsKeyword,
+            t.onboarding.fixedEventsKeyword,
             t.onboarding.fixedEventsDetail
           )}
         </p>
@@ -63,9 +63,9 @@ export function SlidePhilosophy({ onOpenDetail }: SlidePhilosophyProps) {
         </div>
         <p className="text-sm leading-relaxed text-muted-foreground pt-0.5">
           {renderWithKeyword(
-            t.onboarding.mits, 
-            t.onboarding.mitsKeyword, 
-            t.onboarding.mitsKeyword, 
+            t.onboarding.mits,
+            t.onboarding.mitsKeyword,
+            t.onboarding.mitsKeyword,
             t.onboarding.mitsDetail
           )}
         </p>
@@ -77,9 +77,9 @@ export function SlidePhilosophy({ onOpenDetail }: SlidePhilosophyProps) {
         </div>
         <p className="text-sm leading-relaxed text-muted-foreground pt-0.5">
           {renderWithKeyword(
-            t.onboarding.flow, 
-            t.onboarding.flowKeyword, 
-            t.onboarding.flowKeyword, 
+            t.onboarding.flow,
+            t.onboarding.flowKeyword,
+            t.onboarding.flowKeyword,
             t.onboarding.flowDetail
           )}
         </p>

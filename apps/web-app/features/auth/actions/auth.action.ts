@@ -7,6 +7,63 @@ import { AuthUser } from '@/features/auth/store/auth.store';
 
 const BASE_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
+interface AuthResponse {
+  data?: {
+    accessToken?: string;
+    refreshToken?: string;
+    token?: string;
+    user?: AuthUser;
+  };
+  accessToken?: string;
+  refreshToken?: string;
+  token?: string;
+  user?: AuthUser;
+}
+
+// Helper function to extract tokens and user from raw response JSON
+function extractAuthData(json: AuthResponse | null | undefined) {
+  const accessToken = json?.data?.accessToken || json?.accessToken || json?.data?.token || json?.token;
+  const refreshToken = json?.data?.refreshToken || json?.refreshToken;
+  const user = json?.data?.user || json?.user;
+  return { accessToken, refreshToken, user };
+}
+
+// Helper function to set cookie store variables for tokens and settings
+export async function setAuthCookies(tokens: { accessToken?: string; refreshToken?: string; timezone?: string }) {
+  const cookieStore = await cookies();
+  const isProd = process.env.NODE_ENV === 'production';
+
+  if (tokens.accessToken) {
+    cookieStore.set('accessToken', tokens.accessToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7, // 1 week
+    });
+  }
+
+  if (tokens.refreshToken) {
+    cookieStore.set('refreshToken', tokens.refreshToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+    });
+  }
+
+  if (tokens.timezone) {
+    cookieStore.set('timezone', tokens.timezone, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7, // 1 week
+    });
+  }
+}
+
 export async function loginAction(data: LoginValues) {
   try {
     const response = await fetch(`${BASE_URL}/auth/login`, {
@@ -23,43 +80,16 @@ export async function loginAction(data: LoginValues) {
     }
 
     const json = await response.json();
-    
-    // Extract access token based on the backend response structure
-    const accessToken = json?.data?.accessToken || json?.accessToken || json?.data?.token || json?.token; 
-    const refreshToken = json?.data?.refreshToken || json?.refreshToken;
+    const { accessToken, refreshToken, user } = extractAuthData(json);
     
     if (!accessToken) {
       return { success: false, error: 'Invalid token received from server' };
     }
 
-    const user = json?.data?.user || json?.user;
-
-    // Await cookies() for Next.js 15+ compatibility
-    const cookieStore = await cookies();
-    cookieStore.set('accessToken', accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7, // 1 week
-    });
-
-    if (refreshToken) {
-      cookieStore.set('refreshToken', refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 24 * 30, // 30 days
-      });
-    }
-
-    cookieStore.set('timezone', user?.timezone || 'Asia/Ho_Chi_Minh', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7, // 1 week
+    await setAuthCookies({
+      accessToken,
+      refreshToken,
+      timezone: user?.timezone || 'Asia/Ho_Chi_Minh',
     });
 
     return { success: true, user };
@@ -140,42 +170,16 @@ export async function registerAction(data: Omit<RegisterValues, 'confirmPassword
     }
 
     const json = await response.json();
-    
-    // Extract access token based on the backend response structure
-    const accessToken = json?.data?.accessToken || json?.accessToken || json?.data?.token || json?.token; 
-    const refreshToken = json?.data?.refreshToken || json?.refreshToken;
+    const { accessToken, refreshToken, user } = extractAuthData(json);
 
     if (!accessToken) {
       return { success: false, error: 'Invalid token received from server' };
     }
 
-    const user = json?.data?.user || json?.user;
-
-    const cookieStore = await cookies();
-    cookieStore.set('accessToken', accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7, // 1 week
-    });
-
-    if (refreshToken) {
-      cookieStore.set('refreshToken', refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 24 * 30, // 30 days
-      });
-    }
-
-    cookieStore.set('timezone', user?.timezone || 'Asia/Ho_Chi_Minh', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7, // 1 week
+    await setAuthCookies({
+      accessToken,
+      refreshToken,
+      timezone: user?.timezone || 'Asia/Ho_Chi_Minh',
     });
 
     return { success: true, user };
@@ -185,36 +189,6 @@ export async function registerAction(data: Omit<RegisterValues, 'confirmPassword
   }
 }
 
-interface UpdateProfileResponse {
-  timezone?: string;
-  [key: string]: unknown;
-}
-
-export async function updateProfileAction(payload: Partial<AuthUser>) {
-  try {
-    const data = await serverFetch<UpdateProfileResponse>('users/profile', {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    });
-
-    // Sync timezone cookie so Next.js Server Components render the correct date after page refresh
-    if (data?.timezone) {
-      const cookieStore = await cookies();
-      cookieStore.set('timezone', data.timezone, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 24 * 7, // 1 week
-      });
-    }
-
-    return { success: true, data };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Update failed';
-    return { success: false, error: message };
-  }
-}
 
 export async function getSessionAction() {
   const cookieStore = await cookies();
@@ -244,31 +218,16 @@ export async function getSessionAction() {
     }
 
     const json = await response.json();
-    const accessToken = json?.data?.accessToken || json?.accessToken || json?.data?.token || json?.token;
-    const newRefreshToken = json?.data?.refreshToken || json?.refreshToken;
-    const user = json?.data?.user || json?.user;
+    const { accessToken, refreshToken: newRefreshToken, user } = extractAuthData(json);
 
     if (!accessToken) {
       return { success: false, error: 'No access token in response' };
     }
 
-    cookieStore.set('accessToken', accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7, // 1 week
+    await setAuthCookies({
+      accessToken,
+      refreshToken: newRefreshToken,
     });
-
-    if (newRefreshToken) {
-      cookieStore.set('refreshToken', newRefreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 24 * 30, // 30 days
-      });
-    }
 
     return { success: true, user };
   } catch (err) {

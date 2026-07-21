@@ -21,10 +21,10 @@ export const useOnboardingStore = create<OnboardingState>()(
       closeOnboardingModal: () => set({ isOpen: false }),
 
       hasCompletedOnboarding: false,
-      
-      completeOnboarding: () => set({ 
-        isOpen: false, 
-        hasCompletedOnboarding: true 
+
+      completeOnboarding: () => set({
+        isOpen: false,
+        hasCompletedOnboarding: true
       }),
     }),
     {

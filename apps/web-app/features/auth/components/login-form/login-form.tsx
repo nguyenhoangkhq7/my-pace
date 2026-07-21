@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { useForm } from "react-hook-form";
 import { Input } from "@/components/ui/input";
@@ -16,20 +15,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { appToast } from "@/components/feedback/app-toast";
 import { AppAlert } from "@/components/feedback/app-alert";
-import {
-  normalizeAuthSession,
-  useAuthStore,
-} from "../../store/auth.store";
-import { loginAction } from "../../actions/auth.action";
+import { useAuth } from "../../hooks/useAuth";
 import { useTranslation } from "@/hooks/use-translation";
 
 
 export function LoginForm() {
   const { t } = useTranslation();
-  const router = useRouter();
-  const setSession = useAuthStore((state) => state.setSession);
+  const { login, isLoading } = useAuth();
   const loginForm = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -39,30 +32,10 @@ export function LoginForm() {
   });
 
   const onSubmit = async (data: LoginValues) => {
-    try {
-      const result = await loginAction(data);
-
-      if (!result.success || !result.user) {
-        loginForm.setError("root", {
-          message: result.error || "Invalid auth response from server",
-        });
-        return;
-      }
-
-      const session = normalizeAuthSession({ user: result.user });
-
-      if (session) {
-        setSession(session);
-      }
-
-      appToast.success(t.auth.loginSuccess, {
-        description: t.auth.loginSuccessDesc,
-      });
-
-      router.replace("/");
-    } catch (error) {
+    const result = await login(data);
+    if (!result.success) {
       loginForm.setError("root", {
-        message: error instanceof Error ? error.message : "Cannot connect to server",
+        message: result.error || "Login failed",
       });
     }
   };
@@ -120,9 +93,9 @@ export function LoginForm() {
             <Button
               type="submit"
               className="h-11 w-full text-base"
-              disabled={loginForm.formState.isSubmitting}
+              disabled={loginForm.formState.isSubmitting || isLoading}
             >
-              {loginForm.formState.isSubmitting ? t.auth.signingIn : t.auth.loginBtn}
+              {loginForm.formState.isSubmitting || isLoading ? t.auth.signingIn : t.auth.loginBtn}
             </Button>
 
             {loginForm.formState.errors.root && (
