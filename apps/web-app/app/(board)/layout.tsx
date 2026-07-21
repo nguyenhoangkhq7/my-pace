@@ -3,7 +3,7 @@
 import React, { useEffect } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { useAuthStore } from "@/features/auth";
-import { OnboardingModal } from "@/features/auth";
+import { OnboardingModal } from "@/features/onboarding";
 import { usePathname } from "next/navigation";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import { cn } from "@/lib/utils";
