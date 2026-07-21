@@ -3,6 +3,39 @@ import { persist } from "zustand/middleware";
 
 export type PomodoroState = "idle" | "focusing" | "breaking" | "finished" | "paused";
 
+function isSameYouTubeSource(url1: string | null, url2: string | null): boolean {
+  if (!url1 || !url2) return false;
+
+  const parse = (url: string) => {
+    const vidRegExp = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|live\/|watch\?v=|&v=)([^#&?]*).*/;
+    const vidMatch = url.match(vidRegExp);
+    const videoId = vidMatch && vidMatch[2].length === 11 ? vidMatch[2] : null;
+
+    const listRegExp = /[?&]list=([^#&?]+)/;
+    const listMatch = url.match(listRegExp);
+    let listId = listMatch ? listMatch[1] : null;
+
+    if (listId === "LL" || listId === "WL") {
+      listId = null;
+    }
+
+    return { videoId, listId };
+  };
+
+  const p1 = parse(url1);
+  const p2 = parse(url2);
+
+  if (p1.listId && p2.listId && p1.listId === p2.listId) {
+    return true;
+  }
+
+  if (p1.videoId && p2.videoId && p1.videoId === p2.videoId) {
+    return true;
+  }
+
+  return false;
+}
+
 interface FocusState {
   // Session config
   focusMinutes: number;
@@ -12,6 +45,7 @@ interface FocusState {
   // Current active task
   activeTaskId: string | null;
   activePlanTaskId: string | null;
+  activeTaskEstimatedMinutes: number;
   
   // Pomodoro runtime state
   pomodoroState: PomodoroState;
@@ -110,6 +144,7 @@ export const useFocusStore = create<FocusState>()(
       
       activeTaskId: null,
       activePlanTaskId: null,
+      activeTaskEstimatedMinutes: 25,
       pomodoroState: "idle",
       timeLeft: 0,
       currentSession: 1,
@@ -156,7 +191,7 @@ export const useFocusStore = create<FocusState>()(
       playNextSoundscape: () => {
         const { youtubeUrl, youtubeHistory, setYoutubeUrl } = get();
         if (youtubeHistory.length === 0) return;
-        const index = youtubeHistory.findIndex(item => item.url === youtubeUrl);
+        const index = youtubeHistory.findIndex(item => isSameYouTubeSource(item.url, youtubeUrl));
         let nextIndex = 0;
         if (index !== -1) {
           nextIndex = (index + 1) % youtubeHistory.length;
@@ -167,7 +202,7 @@ export const useFocusStore = create<FocusState>()(
       playPrevSoundscape: () => {
         const { youtubeUrl, youtubeHistory, setYoutubeUrl } = get();
         if (youtubeHistory.length === 0) return;
-        const index = youtubeHistory.findIndex(item => item.url === youtubeUrl);
+        const index = youtubeHistory.findIndex(item => isSameYouTubeSource(item.url, youtubeUrl));
         let prevIndex = youtubeHistory.length - 1;
         if (index !== -1) {
           prevIndex = (index - 1 + youtubeHistory.length) % youtubeHistory.length;
@@ -219,15 +254,16 @@ export const useFocusStore = create<FocusState>()(
       
       openFocusMode: (taskId, planTaskId, estimatedMinutes, alreadyWorkedMinutes = 0) => {
         const { focusMinutes } = get();
-        // Calculate remaining sessions considering already-worked time
-        const remainingMinutes = Math.max(0, estimatedMinutes - alreadyWorkedMinutes);
-        const totalSessions = Math.max(1, Math.ceil(remainingMinutes / focusMinutes));
+        // Calculate total sessions and current session index based on total estimated time
+        const totalSessions = Math.max(1, Math.ceil(estimatedMinutes / focusMinutes));
+        const currentSession = Math.min(totalSessions, Math.floor(alreadyWorkedMinutes / focusMinutes) + 1);
         
         set({
           activeTaskId: taskId,
           activePlanTaskId: planTaskId,
+          activeTaskEstimatedMinutes: estimatedMinutes,
           pomodoroState: "idle",
-          currentSession: 1,
+          currentSession,
           totalSessions,
           timeLeft: focusMinutes * 60,
           accumulatedFocusTime: alreadyWorkedMinutes * 60,
@@ -308,10 +344,37 @@ export const useFocusStore = create<FocusState>()(
       },
 
       updateConfig: (focusMin, breakMin, sound) => {
+        const { activeTaskId, activeTaskEstimatedMinutes, accumulatedFocusTime, pomodoroState } = get();
+        
+        let newTotalSessions = get().totalSessions;
+        let newCurrentSession = get().currentSession;
+        let newTimeLeft = get().timeLeft;
+        
+        if (activeTaskId) {
+          newTotalSessions = Math.max(1, Math.ceil(activeTaskEstimatedMinutes / focusMin));
+          const alreadyWorkedMinutes = Math.floor(accumulatedFocusTime / 60);
+          newCurrentSession = Math.min(newTotalSessions, Math.floor(alreadyWorkedMinutes / focusMin) + 1);
+          
+          if (pomodoroState === "idle") {
+            newTimeLeft = focusMin * 60;
+          } else if (pomodoroState === "paused" || pomodoroState === "focusing") {
+            const diffSec = (focusMin - get().focusMinutes) * 60;
+            newTimeLeft = Math.max(0, newTimeLeft + diffSec);
+          } else if (pomodoroState === "breaking") {
+            const diffSec = (breakMin - get().breakMinutes) * 60;
+            newTimeLeft = Math.max(0, newTimeLeft + diffSec);
+          }
+        } else {
+          newTimeLeft = focusMin * 60;
+        }
+
         set({
           focusMinutes: focusMin,
           breakMinutes: breakMin,
           soundEnabled: sound,
+          totalSessions: newTotalSessions,
+          currentSession: newCurrentSession,
+          timeLeft: newTimeLeft,
         });
       },
 
@@ -371,6 +434,7 @@ export const useFocusStore = create<FocusState>()(
         soundEnabled: state.soundEnabled,
         activeTaskId: state.activeTaskId,
         activePlanTaskId: state.activePlanTaskId,
+        activeTaskEstimatedMinutes: state.activeTaskEstimatedMinutes,
         pomodoroState: state.pomodoroState,
         timeLeft: state.timeLeft,
         currentSession: state.currentSession,
@@ -379,6 +443,10 @@ export const useFocusStore = create<FocusState>()(
         lastActiveTimestamp: state.lastActiveTimestamp,
         volume: state.volume,
         isLooping: state.isLooping,
+        activeVideoTitle: state.activeVideoTitle,
+        activeVideoAuthor: state.activeVideoAuthor,
+        activeVideoId: state.activeVideoId,
+        currentTime: state.currentTime,
       }), 
     }
   )

@@ -76,6 +76,7 @@ export function FlowPomodoro() {
   const { refetch: fetchGoals } = useQuery({ queryKey: ['goals'], queryFn: getGoalsAction, enabled: false });
 
   const [isFinishing, setIsFinishing] = useState(false);
+  const [isStopping, setIsStopping] = useState(false);
   const [isChecklistModalOpen, setIsChecklistModalOpen] = useState(false);
 
   useEffect(() => {
@@ -83,6 +84,26 @@ export function FlowPomodoro() {
   }, [fetchGoals]);
 
   const activeTask = tasks.find((t: Task) => t.id === activeTaskId);
+
+  // Sync activeTaskEstimatedMinutes whenever the real task data loads.
+  // Fixes the case where localStorage rehydrates with the old/default
+  // activeTaskEstimatedMinutes (25) instead of the true task value.
+  const activeTaskEstimatedMinutes = useFocusStore((s) => s.activeTaskEstimatedMinutes);
+  useEffect(() => {
+    if (!activeTask || !activeTaskId) return;
+    const realEstimated = activeTask.estimatedMinutes ?? 25;
+    if (realEstimated !== activeTaskEstimatedMinutes) {
+      const { focusMinutes: fm, accumulatedFocusTime: aft } = useFocusStore.getState();
+      const alreadyWorked = Math.floor(aft / 60);
+      const newTotal = Math.max(1, Math.ceil(realEstimated / fm));
+      const newCurrent = Math.min(newTotal, Math.floor(alreadyWorked / fm) + 1);
+      useFocusStore.setState({
+        activeTaskEstimatedMinutes: realEstimated,
+        totalSessions: newTotal,
+        currentSession: newCurrent,
+      });
+    }
+  }, [activeTask?.estimatedMinutes, activeTaskId, activeTaskEstimatedMinutes]);
 
   if (!activeTaskId || !activeTask) {
     return <FlowEmptyState />;
@@ -125,7 +146,7 @@ export function FlowPomodoro() {
         const nextTask = remainingTasks.find((t: DailyPlanTask) => t.task.status !== "Done" && t.id !== activePlanTaskId);
         
         if (nextTask) {
-          useFocusStore.getState().openFocusMode(nextTask.task.id, nextTask.id, nextTask.task.estimatedMinutes || 25);
+          useFocusStore.getState().openFocusMode(nextTask.task.id, nextTask.id, nextTask.task.estimatedMinutes || 25, nextTask.task.actualMinutes || 0);
         } else {
           closeFocusMode();
         }
@@ -140,13 +161,20 @@ export function FlowPomodoro() {
     }
   };
 
-  const handleStop = () => {
-    if (activeTaskId && accumulatedFocusTime > 60) {
-      const actualMinutes = Math.round(accumulatedFocusTime / 60);
-      updateTaskMutation.mutateAsync({ id: activeTaskId, data: { actualMinutes } }).catch(console.error);
+  const handleStop = async () => {
+    setIsStopping(true);
+    try {
+      if (activeTaskId && accumulatedFocusTime > 0) {
+        const actualMinutes = Math.round(accumulatedFocusTime / 60);
+        await updateTaskMutation.mutateAsync({ id: activeTaskId, data: { actualMinutes } });
+      }
+    } catch (err) {
+      console.error("Failed to save progress on stop:", err);
+    } finally {
+      setIsStopping(false);
+      pauseTimer();
+      closeFocusMode();
     }
-    pauseTimer();
-    closeFocusMode();
   };
 
   return (
@@ -169,10 +197,13 @@ export function FlowPomodoro() {
           <Button 
             variant="outline" 
             size="icon" 
-            className="w-12 h-12 rounded-xl border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-all shadow-inner group"
+            disabled={isStopping}
+            className="w-12 h-12 rounded-xl border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-all shadow-inner group disabled:opacity-60"
             onClick={handleStop}
           >
-            <Square fill="currentColor" strokeWidth={2.5} className="w-4 h-4 group-hover:scale-95 transition-transform" />
+            {isStopping
+              ? <span className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
+              : <Square fill="currentColor" strokeWidth={2.5} className="w-4 h-4 group-hover:scale-95 transition-transform" />}
           </Button>
 
           {pomodoroState === "idle" || pomodoroState === "finished" || pomodoroState === "paused" ? (

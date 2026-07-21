@@ -133,15 +133,18 @@ export function autoSchedule(
   const gaps = computeGaps(occupiedSlots, todayStr, windowStart, dayEnd);
   const sorted = prioritySort(planTasks);
 
-  // Build queue with remaining minutes tracked per task
+  // Build queue with remaining minutes tracked per task.
+  // Subtract already-worked actualMinutes so the schedule only fills
+  // the time the user still needs to spend on each task.
   const queue: QueueItem[] = sorted
     .filter((pt) => pt.task.estimatedMinutes && pt.task.estimatedMinutes > 0)
     .map((pt) => ({
       planTask: pt,
-      remainingMinutes: pt.task.estimatedMinutes || 0,
+      remainingMinutes: Math.max(0, (pt.task.estimatedMinutes || 0) - (pt.task.actualMinutes || 0)),
       partsFilled: 0,
       totalParts: 1,
-    }));
+    }))
+    .filter((item) => item.remainingMinutes > 0); // Skip tasks that are already time-complete
 
   const blocks: Omit<TaskTimeBlock, "id">[] = [];
 

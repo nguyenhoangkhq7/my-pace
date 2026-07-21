@@ -8,7 +8,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useTasks } from "../hooks/useTasks";
 import { DailyPlan } from "../types";
 import { reviewPlanAction } from "../actions/plan.action";
 import { useQueryClient } from "@tanstack/react-query";
@@ -18,10 +17,10 @@ import { useTranslation } from "@/hooks/use-translation";
 interface OutstandingTasksModalProps {
   isOpen: boolean;
   unreviewedPlan: DailyPlan;
+  currentDate: string;
 }
 
-export function OutstandingTasksModal({ isOpen, unreviewedPlan }: OutstandingTasksModalProps) {
-  const { updateTask, deleteTask } = useTasks();
+export function OutstandingTasksModal({ isOpen, unreviewedPlan, currentDate }: OutstandingTasksModalProps) {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,26 +44,23 @@ export function OutstandingTasksModal({ isOpen, unreviewedPlan }: OutstandingTas
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      await Promise.all(
-        uncompletedPlanTasks.map(async pt => {
+      const taskReviews = uncompletedPlanTasks
+        .map(pt => {
           const taskId = pt.task?.id;
-          if (!taskId) return;
+          if (!taskId) return null;
           const choice = choices[taskId];
-
-          if (choice === "today") {
-            // Mark as picked for today so it appears in the Backlog Matrix → Hôm nay column
-            await updateTask({ id: taskId, data: { status: "Picked for Today" } });
-          } else if (choice === "backlog") {
-            await updateTask({ id: taskId, data: { status: "Backlog" } });
-          } else if (choice === "delete") {
-            await deleteTask(taskId);
-          }
+          return {
+            taskId,
+            action: choice.toUpperCase(), // "TODAY" | "BACKLOG" | "DELETE"
+          };
         })
-      );
+        .filter((item): item is { taskId: string; action: string } => item !== null);
 
-      // Mark the old plan as reviewed — this causes the query to return null
-      // and the modal unmounts automatically without needing local state.
-      await reviewPlanAction(unreviewedPlan.planDate);
+      // Submit all choices at once
+      await reviewPlanAction(unreviewedPlan.planDate, {
+        today: currentDate,
+        taskReviews,
+      });
 
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       queryClient.invalidateQueries({ queryKey: ["dailyPlan"] });

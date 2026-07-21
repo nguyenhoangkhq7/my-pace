@@ -27,12 +27,17 @@ export function EisenhowerQuadrant({
   onTaskDrop,
 }: EisenhowerQuadrantProps) {
   
-  let qTasks = tasks.filter(t => 
-    t.status === "Backlog" && 
-    t.isUrgent === isUrgent && 
-    t.isImportant === isImportant &&
-    !(isPlanningMode && plannedTaskIds.includes(t.id))
-  );
+  let qTasks = tasks.filter(t => {
+    if (t.isUrgent !== isUrgent || t.isImportant !== isImportant) return false;
+    if (t.status === "Done" || t.status === "Icebox") return false;
+
+    if (isPlanningMode) {
+      if (plannedTaskIds.includes(t.id)) return false;
+      return t.status === "Backlog" || t.status === "Picked for Today";
+    } else {
+      return t.status === "Backlog";
+    }
+  });
   
   if (selectedFilterId === "goal") {
     qTasks = qTasks.filter(t => !!t.goalId);

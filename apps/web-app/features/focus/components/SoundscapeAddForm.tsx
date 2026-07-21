@@ -32,6 +32,11 @@ export function SoundscapeAddForm({ onCancel }: SoundscapeAddFormProps) {
       listId = listMatch[1];
     }
 
+    // Filter out private system playlists (LL = Liked Videos, WL = Watch Later)
+    if (listId === "LL" || listId === "WL") {
+      listId = null;
+    }
+
     return { videoId, listId };
   };
 

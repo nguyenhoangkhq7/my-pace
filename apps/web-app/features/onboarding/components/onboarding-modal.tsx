@@ -24,7 +24,7 @@ export function OnboardingModal() {
 
   const [detailModalTitle, setDetailModalTitle] = useState("");
   const [detailModalContent, setDetailModalContent] = useState("");
-  
+
   const [step, setStep] = useState(1);
 
   useEffect(() => {
@@ -41,11 +41,9 @@ export function OnboardingModal() {
     setDetailModalOpen(true);
   };
 
-
-
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={(open) => { 
+      <Dialog open={isOpen} onOpenChange={(open) => {
         if (!open) {
           closeOnboardingModal();
           setTimeout(() => setStep(1), 300);
@@ -61,7 +59,7 @@ export function OnboardingModal() {
               {step === 1 ? t.onboarding.title : t.onboarding.workflowTitle}
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             {step === 1 ? (
               <SlidePhilosophy onOpenDetail={openDetail} />
@@ -72,16 +70,16 @@ export function OnboardingModal() {
 
           <DialogFooter className="mt-6 sm:justify-center w-full">
             {step === 1 ? (
-              <Button 
-                type="button" 
+              <Button
+                type="button"
                 onClick={() => setStep(2)}
                 className="h-11 w-full sm:w-3/4 rounded-xl font-bold text-sm bg-primary text-primary-foreground hover:brightness-110 transition-all active:scale-[0.98]"
               >
                 {t.onboarding.tryNow}
               </Button>
             ) : (
-              <Button 
-                type="button" 
+              <Button
+                type="button"
                 onClick={() => {
                   closeOnboardingModal();
                   if (!hasCompletedOnboarding) {
@@ -98,7 +96,7 @@ export function OnboardingModal() {
         </DialogContent>
       </Dialog>
 
-      <PhilosophyDetailModal 
+      <PhilosophyDetailModal
         isOpen={detailModalOpen}
         onClose={() => setDetailModalOpen(false)}
         title={detailModalTitle}

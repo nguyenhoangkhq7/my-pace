@@ -8,7 +8,7 @@ import { Clock01Icon, InformationCircleIcon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { updateProfileAction } from "../actions/auth.action";
+import { updateProfileAction } from "@/features/profile";
 import { useAuthStore } from "../store/auth.store";
 import { appToast } from "@/components/feedback/app-toast";
 import { AppAlert } from "@/components/feedback/app-alert";

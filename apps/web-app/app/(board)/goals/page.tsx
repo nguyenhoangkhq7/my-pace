@@ -1,7 +1,7 @@
-import { GoalDashboard } from "@/features/goal/components/GoalDashboard";
-import { getGoalsAction } from "@/features/goal/actions/goal.action";
-import { Metadata } from "next";
-import { Goal } from "@/features/goal/types";
+import {GoalDashboard} from "@/features/goal/components/GoalDashboard";
+import {getGoalsAction} from "@/features/goal/actions/goal.action";
+import {Metadata} from "next";
+import {Goal} from "@/features/goal/types";
 
 export const metadata: Metadata = {
   title: "Goals | MyPACE",

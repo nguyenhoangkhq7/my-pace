@@ -10,6 +10,6 @@ public interface DailyPlanService {
     DailyPlanDto unconfirmPlan(LocalDate planDate, UUID userId);
     void cancelPlan(LocalDate planDate, UUID userId);
     void toggleTaskDone(UUID dailyPlanTaskId, UUID userId);
-    DailyPlanDto reviewPlan(LocalDate planDate, UUID userId);
+    DailyPlanDto reviewPlan(LocalDate planDate, ReviewPlanRequest request, UUID userId);
     DailyPlanDto getUnreviewedPlan(LocalDate today, UUID userId);
 }
