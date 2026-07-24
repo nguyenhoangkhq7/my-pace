@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useFocusStore } from "@/features/focus/store/focus.store";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PlayIcon, Delete02Icon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ export function SoundscapeHistoryItem({
   onRename,
   layout = "list",
 }: SoundscapeHistoryItemProps) {
+  const isVideoBackground = useFocusStore((s) => s.isVideoBackground);
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(title);
 
@@ -110,7 +112,9 @@ export function SoundscapeHistoryItem({
       className={cn(
         "flex items-center justify-between p-3 rounded-xl border group transition-all",
         isPlaying
-          ? "bg-card border-indigo-500/55 shadow-[0_0_15px_rgba(99,102,241,0.1)]"
+          ? "bg-card/90 border-indigo-500/55 shadow-[0_0_15px_rgba(99,102,241,0.1)]"
+          : isVideoBackground
+          ? "bg-card/60 backdrop-blur-xs border-border/60 hover:border-border/80 hover:bg-card/80"
           : "bg-card border-border hover:border-border/80 hover:bg-muted"
       )}
     >

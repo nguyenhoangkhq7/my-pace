@@ -7,18 +7,16 @@ import { getTodayStr } from "@/lib/date";
 import type { DailyPlan } from "@/features/board/types";
 
 export function usePomodoro() {
-  const {
-    pomodoroState,
-    timeLeft,
-    currentSession,
-    totalSessions,
-    tick,
-    transitionToBreak,
-    transitionToFocus,
-    completeAllSessions,
-    soundEnabled,
-    adjustForElapsedTime
-  } = useFocusStore();
+  const pomodoroState = useFocusStore((s) => s.pomodoroState);
+  const timeLeft = useFocusStore((s) => s.timeLeft);
+  const currentSession = useFocusStore((s) => s.currentSession);
+  const totalSessions = useFocusStore((s) => s.totalSessions);
+  const tick = useFocusStore((s) => s.tick);
+  const transitionToBreak = useFocusStore((s) => s.transitionToBreak);
+  const transitionToFocus = useFocusStore((s) => s.transitionToFocus);
+  const completeAllSessions = useFocusStore((s) => s.completeAllSessions);
+  const soundEnabled = useFocusStore((s) => s.soundEnabled);
+  const adjustForElapsedTime = useFocusStore((s) => s.adjustForElapsedTime);
 
   const activeTaskId = useFocusStore((s) => s.activeTaskId);
   const accumulatedFocusTime = useFocusStore((s) => s.accumulatedFocusTime);

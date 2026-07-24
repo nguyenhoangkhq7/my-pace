@@ -8,12 +8,15 @@ import { cn } from "@/lib/utils";
 import { NotebookPen, ChevronDown, Maximize2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
+import { useFocusStore } from "@/features/focus/store/focus.store";
+
 interface TaskNotesPanelProps {
   task: Task;
 }
 
 export function TaskNotesPanel({ task }: TaskNotesPanelProps) {
   const queryClient = useQueryClient();
+  const isVideoBackground = useFocusStore((s) => s.isVideoBackground);
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [draft, setDraft] = useState(task.notes ?? "");
@@ -62,16 +65,18 @@ export function TaskNotesPanel({ task }: TaskNotesPanelProps) {
       <button
         onClick={() => setIsOpen((v) => !v)}
         className={cn(
-          "flex items-center gap-2 mx-auto px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200",
-          "text-muted-foreground hover:text-foreground hover:bg-muted/60 group",
-          isOpen && "text-foreground bg-muted/40"
+          "flex items-center gap-2 mx-auto px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all duration-200 cursor-pointer shadow-sm",
+          isVideoBackground
+            ? "bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20"
+            : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
+          isOpen && (isVideoBackground ? "bg-white/20 border-white/30 text-white" : "text-foreground bg-muted/40")
         )}
       >
         <NotebookPen className="w-3.5 h-3.5 shrink-0" />
         <span>
           {hasNotes ? "Notes" : "Thêm note"}
           {hasNotes && (
-            <span className="ml-1.5 w-1.5 h-1.5 inline-block rounded-full bg-indigo-400 align-middle" />
+            <span className="ml-1.5 w-1.5 h-1.5 inline-block rounded-full bg-indigo-400 align-middle shadow-[0_0_6px_rgba(129,140,248,0.9)]" />
           )}
         </span>
         <ChevronDown
@@ -89,7 +94,12 @@ export function TaskNotesPanel({ task }: TaskNotesPanelProps) {
           isOpen ? "max-h-52 opacity-100 mt-2" : "max-h-0 opacity-0"
         )}
       >
-        <div className="relative rounded-xl border border-border bg-card/60 backdrop-blur-sm overflow-hidden">
+        <div className={cn(
+          "relative rounded-xl border overflow-hidden transition-all duration-300",
+          isVideoBackground
+            ? "bg-black/35 backdrop-blur-md border-white/20 shadow-xl"
+            : "border-border bg-card/60 backdrop-blur-sm"
+        )}>
           <textarea
             ref={textareaRef}
             value={draft}
@@ -97,9 +107,9 @@ export function TaskNotesPanel({ task }: TaskNotesPanelProps) {
             placeholder="Ghi chú nhanh cho task này... (tự động lưu)"
             rows={4}
             className={cn(
-              "w-full resize-none bg-transparent pl-4 pr-10 pt-3 pb-8 text-sm text-foreground",
-              "placeholder:text-muted-foreground/50 focus:outline-none",
-              "scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
+              "w-full resize-none bg-transparent pl-4 pr-10 pt-3 pb-8 text-sm",
+              isVideoBackground ? "text-white placeholder:text-white/40" : "text-foreground placeholder:text-muted-foreground/50",
+              "focus:outline-none scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
             )}
           />
           {/* Maximize button */}

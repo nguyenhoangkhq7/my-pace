@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import { cn } from "@/lib/utils";
 
@@ -64,9 +65,23 @@ function parseYouTubeUrl(url: string): { videoId: string | null; listId: string 
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function SoundscapePlayer() {
-  const { youtubeUrl, isZenFull, pomodoroState } = useFocusStore();
+  const youtubeUrl = useFocusStore((s) => s.youtubeUrl);
+  const isZenFull = useFocusStore((s) => s.isZenFull);
+  const pomodoroState = useFocusStore((s) => s.pomodoroState);
+  const isVideoBackground = useFocusStore((s) => s.isVideoBackground);
+  const videoBgOpacity = useFocusStore((s) => s.videoBgOpacity ?? 75);
+  const videoBgBlur = useFocusStore((s) => s.videoBgBlur ?? 2);
+  const activeVideoTitle = useFocusStore((s) => s.activeVideoTitle);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const playerRef = useRef<YTPlayer | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [cardRect, setCardRect] = useState<DOMRect | null>(null);
   // Track the last loaded URL to avoid reloading the same content
   const lastUrlRef = useRef<string>("");
   const timeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -187,8 +202,15 @@ export function SoundscapePlayer() {
       });
     };
 
+    const stopPolling = () => {
+      if (timeIntervalRef.current) {
+        clearInterval(timeIntervalRef.current);
+        timeIntervalRef.current = null;
+      }
+    };
+
     const startPolling = (player: YTPlayer) => {
-      if (timeIntervalRef.current) clearInterval(timeIntervalRef.current);
+      stopPolling();
       timeIntervalRef.current = setInterval(() => {
         if (!player || typeof player.getCurrentTime !== "function") return;
         try {
@@ -311,6 +333,7 @@ export function SoundscapePlayer() {
             }
 
             if (state === 1) {
+              startPolling(event.target);
               // NOTE: Do NOT clear isLoadingNewUrlRef here.
               // state=1 fires almost immediately when a new playlist starts loading
               // (before the first track actually renders). Clearing the flag here
@@ -348,6 +371,8 @@ export function SoundscapePlayer() {
                   }
                 }
               }
+            } else if (state === 2 || state === 0) {
+              stopPolling();
             }
 
             // When a video inside a playlist ends, update duration for next track
@@ -411,7 +436,7 @@ export function SoundscapePlayer() {
       useFocusStore.getState().registerPlayerControls(null);
       playerRef.current = null;
     };
-  }, []); // ← intentionally run only ONCE
+  }, [mounted]);
 
   // ── Step 3: When youtubeUrl changes, load the new content into the SAME player
   useEffect(() => {
@@ -424,65 +449,178 @@ export function SoundscapePlayer() {
   }, [youtubeUrl]);
 
   // ── Step 4: Sync volume changes from store to the player ──────────────────
+  const volume = useFocusStore((s) => s.volume);
   useEffect(() => {
     if (!playerRef.current || !isPlayerReadyRef.current) return;
-    try { playerRef.current.setVolume(useFocusStore.getState().volume); } catch {}
-  }, []);
+    try { playerRef.current.setVolume(volume); } catch {}
+  }, [volume]);
 
   // ─── Render ────────────────────────────────────────────────────────────────
 
   const hasValidUrl = !!(videoId || listId);
+  const isBgModeActive = isVideoBackground && hasValidUrl;
+
+  useEffect(() => {
+    if (isBgModeActive || typeof window === "undefined") return;
+
+    const updateRect = () => {
+      if (cardRef.current) {
+        setCardRect(cardRef.current.getBoundingClientRect());
+      }
+    };
+
+    updateRect();
+
+    window.addEventListener("resize", updateRect);
+    window.addEventListener("scroll", updateRect, true);
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (cardRef.current && typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(() => updateRect());
+      resizeObserver.observe(cardRef.current);
+    }
+
+    return () => {
+      window.removeEventListener("resize", updateRect);
+      window.removeEventListener("scroll", updateRect, true);
+      if (resizeObserver) resizeObserver.disconnect();
+    };
+  }, [isBgModeActive, isZenFull]);
+
+  const portalContent = mounted && typeof document !== "undefined"
+    ? createPortal(
+        <div
+          className={cn(
+            "fixed select-none overflow-hidden transition-opacity duration-500 ease-in-out",
+            isBgModeActive
+              ? "inset-0 z-0 w-screen h-screen rounded-none pointer-events-none opacity-100"
+              : "z-[20] pointer-events-auto bg-black",
+            !isBgModeActive && isZenFull && "rounded-2xl border border-border/30 shadow-[0_8px_40px_rgba(0,0,0,0.35)]",
+            !isBgModeActive && !isZenFull && "rounded-xl border border-border shadow-[0_4px_20px_rgba(0,0,0,0.15)] group"
+          )}
+          style={
+            isBgModeActive
+              ? undefined
+              : cardRect && cardRect.width > 0 && cardRect.top < window.innerHeight && cardRect.bottom > 0
+              ? {
+                  top: `${cardRect.top}px`,
+                  left: `${cardRect.left}px`,
+                  width: `${cardRect.width}px`,
+                  height: `${cardRect.height}px`,
+                  opacity: 1,
+                }
+              : {
+                  top: 0,
+                  left: 0,
+                  width: 0,
+                  height: 0,
+                  opacity: 0,
+                  pointerEvents: "none",
+                }
+          }
+        >
+          {/* Inner Video Container holding containerRef - NEVER UNMOUNTS */}
+          <div
+            className={cn(
+              "w-full h-full bg-black transition-opacity duration-700 ease-in-out",
+              isBgModeActive && "absolute top-1/2 left-1/2 min-w-[177.78vh] w-full min-h-[56.25vw] h-full pointer-events-none scale-110",
+              !isBgModeActive && !isZenFull && pomodoroState === "focusing" && "grayscale-[60%] group-hover:grayscale-0"
+            )}
+            style={
+              isBgModeActive
+                ? {
+                    filter: videoBgBlur > 0 ? `blur(${videoBgBlur}px)` : "none",
+                    transform: "translate3d(-50%, -50%, 0)",
+                  }
+                : undefined
+            }
+          >
+            <div className="absolute inset-0 w-full h-full grayscale-0">
+              <div ref={containerRef} className="w-full h-full" />
+            </div>
+          </div>
+
+          {/* Focus-mode overlay for card mode */}
+          {!isBgModeActive && !isZenFull && (
+            <div
+              className={cn(
+                "absolute inset-0 transition-colors duration-500 pointer-events-none z-10",
+                pomodoroState === "focusing"
+                  ? "bg-black/40 group-hover:bg-transparent"
+                  : "bg-transparent"
+              )}
+            />
+          )}
+
+          {/* Dark Overlay for Video Background mode */}
+          {isBgModeActive && (
+            <div
+              className="absolute inset-0 bg-background pointer-events-none z-[1] transition-all duration-150"
+              style={{
+                opacity: (videoBgOpacity ?? 75) / 100,
+              }}
+            />
+          )}
+        </div>,
+        document.body
+      )
+    : null;
+
+  if (isBgModeActive) {
+    return (
+      <>
+        {portalContent}
+        {!isZenFull && (
+          <div className="p-4 border-b border-border/50 shrink-0 relative z-10">
+            <div className="w-full py-2.5 px-3.5 rounded-xl bg-card/80 backdrop-blur-md border border-border flex items-center justify-between shadow-xs">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                <span className="text-xs font-semibold text-foreground truncate">
+                  {activeVideoTitle || "Video Nền đang phát"}
+                </span>
+              </div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 shrink-0">
+                Video Nền
+              </span>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
 
   return (
-    <div className={cn(
-      "shrink-0 transition-all duration-300",
-      isZenFull ? "px-5 pt-5 pb-3" : "p-4 border-b border-border"
-    )}>
+    <>
+      {portalContent}
       <div
         className={cn(
-          "relative w-full overflow-hidden bg-black transition-all duration-300",
+          "transition-all duration-300",
           isZenFull
-            ? "rounded-2xl border border-border/30 shadow-[0_8px_40px_rgba(0,0,0,0.35)]"
-            : "rounded-xl border border-border shadow-[0_4px_20px_rgba(0,0,0,0.15)] group cursor-pointer"
+            ? "shrink-0 p-5 pb-3"
+            : "shrink-0 p-4 border-b border-border"
         )}
-        style={{
-          paddingBottom: isZenFull ? "min(56.25%, 62vh)" : "min(56.25%, 220px)"
-        }}
       >
-        {/* Focus-mode overlay */}
-        {!isZenFull && (
-          <div
-            className={cn(
-              "absolute inset-0 transition-colors duration-500 pointer-events-none z-10",
-              pomodoroState === "focusing"
-                ? "bg-black/40 group-hover:bg-transparent"
-                : "bg-transparent"
-            )}
-          />
-        )}
-
-        {hasValidUrl ? (
-          /* This div is a stable wrapper managed by React to avoid DOM reconciliation issues
-             when the inner div is replaced by YouTube's IFrame API. */
-          <div
-            className={cn(
-              "absolute inset-0 w-full h-full transition-all duration-700",
-              (!isZenFull && pomodoroState === "focusing")
-                ? "grayscale-[60%] group-hover:grayscale-0"
-                : "grayscale-0"
-            )}
-          >
-            <div
-              ref={containerRef}
-              className="w-full h-full"
-            />
-          </div>
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm font-medium">
-            Invalid YouTube URL
-          </div>
-        )}
+        <div
+          ref={cardRef}
+          className={cn(
+            "relative w-full overflow-hidden transition-all duration-300 bg-black/40",
+            isZenFull
+              ? "rounded-2xl border border-border/30 shadow-[0_8px_40px_rgba(0,0,0,0.35)]"
+              : "rounded-xl border border-border shadow-[0_4px_20px_rgba(0,0,0,0.15)] group cursor-pointer"
+          )}
+          style={{
+            paddingBottom: isZenFull
+              ? "min(56.25%, 62vh)"
+              : "min(56.25%, 220px)",
+          }}
+        >
+          {!hasValidUrl && (
+            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm font-medium">
+              Invalid YouTube URL
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

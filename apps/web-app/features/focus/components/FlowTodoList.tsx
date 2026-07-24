@@ -20,13 +20,16 @@ export function FlowTodoList({ onTaskSelect }: FlowTodoListProps) {
   const todayStr = getTodayStr(user?.timezone);
   const { data: dailyPlanToday } = useQuery({ queryKey: ['dailyPlan', todayStr], queryFn: () => getDailyPlanAction(todayStr) });
   const timeBlocks = dailyPlanToday?.timeBlocks || [];
-  const { pomodoroState } = useFocusStore();
+  const { pomodoroState, isVideoBackground } = useFocusStore();
 
   const isFocusing = pomodoroState === "focusing";
 
   if (!dailyPlanToday || !dailyPlanToday.tasks || dailyPlanToday.tasks.length === 0) {
     return (
-      <div className="h-full flex flex-col items-center justify-center p-6 text-center text-muted-foreground border-r border-border bg-background">
+      <div className={cn(
+        "h-full flex flex-col items-center justify-center p-6 text-center text-muted-foreground border-r border-border transition-colors duration-300",
+        isVideoBackground ? "bg-background/40 backdrop-blur-md" : "bg-background"
+      )}>
         <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-3 shadow-inner">
           <span className="text-xl">📝</span>
         </div>
@@ -96,7 +99,8 @@ export function FlowTodoList({ onTaskSelect }: FlowTodoListProps) {
   return (
     <div
       className={cn(
-        "h-full flex flex-col border-r border-border bg-background transition-opacity duration-700 min-w-[220px]",
+        "h-full flex flex-col border-r border-border/40 transition-all duration-300 min-w-[220px]",
+        isVideoBackground ? "bg-background/40 backdrop-blur-md" : "bg-background",
         isFocusing ? "opacity-30 hover:opacity-100" : "opacity-100"
       )}
     >

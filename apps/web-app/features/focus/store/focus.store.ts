@@ -84,6 +84,14 @@ interface FocusState {
   isFlowFullscreen: boolean;
   toggleFlowFullscreen: () => void;
 
+  // Video Background mode (plays YouTube soundscape video as full viewport background)
+  isVideoBackground: boolean;
+  videoBgOpacity: number; // 10 to 95
+  videoBgBlur: number; // 0 to 10
+  toggleVideoBackground: () => void;
+  setVideoBgOpacity: (opacity: number) => void;
+  setVideoBgBlur: (blur: number) => void;
+
   // Completion prompt state (micro-modal)
   promptTask: { id: string; title: string; estimatedMinutes: number } | null;
   setPromptTask: (task: { id: string; title: string; estimatedMinutes: number } | null) => void;
@@ -179,7 +187,11 @@ export const useFocusStore = create<FocusState>()(
         const { playerControls } = get();
         if (playerControls) playerControls.setVolume(volume);
       },
-      setCurrentTime: (currentTime) => set({ currentTime }),
+      setCurrentTime: (currentTime) => {
+        if (Math.abs(get().currentTime - currentTime) >= 0.4) {
+          set({ currentTime });
+        }
+      },
       setDuration: (duration) => set({ duration }),
       setIsLooping: (isLooping) => set({ isLooping }),
       setIsShuffle: (isShuffle) => set({ isShuffle }),
@@ -234,6 +246,12 @@ export const useFocusStore = create<FocusState>()(
       setIsSettingsOpen: (open) => set({ isSettingsOpen: open }),
       setZenFull: (value) => set({ isZenFull: value }),
       toggleFlowFullscreen: () => set((state) => ({ isFlowFullscreen: !state.isFlowFullscreen })),
+      isVideoBackground: false,
+      videoBgOpacity: 75,
+      videoBgBlur: 2,
+      toggleVideoBackground: () => set((state) => ({ isVideoBackground: !state.isVideoBackground })),
+      setVideoBgOpacity: (opacity) => set({ videoBgOpacity: opacity }),
+      setVideoBgBlur: (blur) => set({ videoBgBlur: blur }),
       
       addToHistory: (url, title) => set((state) => {
         // Prevent duplicates
@@ -447,6 +465,9 @@ export const useFocusStore = create<FocusState>()(
         activeVideoAuthor: state.activeVideoAuthor,
         activeVideoId: state.activeVideoId,
         currentTime: state.currentTime,
+        isVideoBackground: state.isVideoBackground,
+        videoBgOpacity: state.videoBgOpacity,
+        videoBgBlur: state.videoBgBlur,
       }), 
     }
   )

@@ -21,8 +21,10 @@ export default function AppLayout({
   const isFlowFullscreen = useFocusStore((s) => s.isFlowFullscreen);
   const isZenFull = useFocusStore((s) => s.isZenFull);
 
+  const isVideoBackground = useFocusStore((s) => s.isVideoBackground);
   const isFlowPage = pathname === "/flow";
   const isFullscreenMode = isFlowPage && (isFlowFullscreen || isZenFull);
+  const isBgActive = isFlowPage && isVideoBackground;
   const showSetup = user && (!user.wakeTime || !user.sleepTime);
 
   // Sync state if user exits browser fullscreen using Esc or browser controls
@@ -49,12 +51,15 @@ export default function AppLayout({
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background text-foreground">
+    <div className={cn(
+      "flex h-screen overflow-hidden text-foreground transition-colors duration-300",
+      isBgActive ? "bg-transparent" : "bg-background"
+    )}>
       {!isFullscreenMode && <Sidebar />}
       <main 
         className={cn(
-          "flex min-w-0 flex-1 flex-col overflow-y-auto scrollbar-thin transition-all duration-300",
-          isFullscreenMode ? "p-0" : "px-8 py-6"
+          "flex min-w-0 flex-1 flex-col overflow-y-auto scrollbar-thin transition-all duration-300 relative",
+          (isFullscreenMode || isFlowPage) ? "p-0 overflow-hidden" : "px-8 py-6"
         )}
       >
         {children}

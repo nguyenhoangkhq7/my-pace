@@ -6,35 +6,34 @@ import { getTasksAction, updateTaskAction } from "@/features/board/actions/task.
 import { getDailyPlanAction, toggleTaskDoneAction } from "@/features/board/actions/plan.action";
 import { getGoalsAction } from "@/features/goal/actions/goal.action";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, Square, Check, ListTodo } from "lucide-react";
+import { Play, Pause, Square, Check, ListTodo, Eye, EyeOff } from "lucide-react";
 import { saveTimeBlocksAction } from "@/features/board/actions/timeblock.action";
 import { shiftTimeBlocks } from "@/features/board/utils/timeShift";
 import type { TaskTimeBlock } from "@/features/board/types";
 
 import { useAuthStore } from "@/features/auth";
 import { getTodayStr } from "@/lib/date";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import { FlowEmptyState } from "@/features/focus/components/FlowEmptyState";
 import { PomodoroTimerDisplay } from "@/features/focus/components/PomodoroTimerDisplay";
-import { ChecklistModal } from "@/features/focus/components/ChecklistModal";
 import { TaskNotesPanel } from "@/features/focus/components/TaskNotesPanel";
-
-import { FlowChecklistPanel } from "@/features/focus/components/FlowChecklistPanel";
+import { ChecklistModal } from "@/features/focus/components/ChecklistModal";
 
 export function FlowPomodoro() {
-  const { 
-    activeTaskId, 
-    activePlanTaskId,
-    closeFocusMode,
-    startTimer,
-    pauseTimer,
-    pomodoroState,
-    accumulatedFocusTime,
-    focusMinutes,
-    breakMinutes,
-    timeLeft,
-    currentSession,
-    totalSessions,
-  } = useFocusStore();
+  const activeTaskId = useFocusStore((s) => s.activeTaskId);
+  const activePlanTaskId = useFocusStore((s) => s.activePlanTaskId);
+  const closeFocusMode = useFocusStore((s) => s.closeFocusMode);
+  const startTimer = useFocusStore((s) => s.startTimer);
+  const pauseTimer = useFocusStore((s) => s.pauseTimer);
+  const pomodoroState = useFocusStore((s) => s.pomodoroState);
+  const accumulatedFocusTime = useFocusStore((s) => s.accumulatedFocusTime);
+  const focusMinutes = useFocusStore((s) => s.focusMinutes);
+  const breakMinutes = useFocusStore((s) => s.breakMinutes);
+  const timeLeft = useFocusStore((s) => s.timeLeft);
+  const currentSession = useFocusStore((s) => s.currentSession);
+  const totalSessions = useFocusStore((s) => s.totalSessions);
+  const isVideoBackground = useFocusStore((s) => s.isVideoBackground);
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
   const todayStr = getTodayStr(user?.timezone);
@@ -79,6 +78,7 @@ export function FlowPomodoro() {
   const [isFinishing, setIsFinishing] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
   const [isChecklistModalOpen, setIsChecklistModalOpen] = useState(false);
+  const [isUiHidden, setIsUiHidden] = useState(false);
 
   useEffect(() => {
     fetchGoals().catch(console.error);
@@ -107,8 +107,18 @@ export function FlowPomodoro() {
     return <FlowEmptyState />;
   }
 
+  const checklists = activeTask.checklists ?? [];
+  const completedChecklistsCount = checklists.filter((c) => c.isCompleted).length;
+  const uncompletedCount = checklists.length - completedChecklistsCount;
+
   const handleCompleteClick = () => {
     if (!activeTaskId || !activePlanTaskId || isFinishing) return;
+
+    if (uncompletedCount > 0) {
+      toast.warning(`Còn ${uncompletedCount} subtask chưa hoàn thành. Vui lòng tích hoàn thành toàn bộ subtask trước!`);
+      setIsChecklistModalOpen(true);
+      return;
+    }
 
     handleComplete();
   };
@@ -176,14 +186,39 @@ export function FlowPomodoro() {
     }
   };
 
-  const checklists = activeTask.checklists ?? [];
-  const completedChecklistsCount = checklists.filter((c) => c.isCompleted).length;
-
   return (
-    <div className="h-full w-full bg-background flex flex-col relative overflow-hidden items-center justify-center p-4">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-900/10 via-background to-background pointer-events-none"></div>
+    <div className={cn(
+      "h-full w-full flex flex-col relative overflow-hidden items-center justify-center p-4 transition-colors duration-300",
+      isVideoBackground ? "bg-transparent" : "bg-background"
+    )}>
+      {/* Studio Atmosphere Glows (only when Video Background is off) */}
+      {!isVideoBackground && (
+        <>
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-500/10 via-background to-background pointer-events-none" />
+          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[350px] bg-indigo-500/5 blur-[130px] rounded-full pointer-events-none" />
+        </>
+      )}
 
-      <div className="w-full max-w-lg flex flex-col items-center relative z-10 px-4 h-full max-h-[95vh] py-4 overflow-y-auto scrollbar-none">
+      {/* 1-Click UI Show/Hide Toggle Button for Video Background */}
+      {isVideoBackground && (
+        <button
+          onClick={() => setIsUiHidden((prev) => !prev)}
+          className={cn(
+            "absolute top-4 right-4 z-30 p-2 rounded-xl border transition-all duration-300 cursor-pointer shadow-md",
+            isUiHidden
+              ? "bg-primary/20 text-primary border-primary/40 hover:bg-primary/30 animate-pulse"
+              : "bg-black/40 backdrop-blur-md border-white/15 text-white/70 hover:text-white hover:bg-black/60"
+          )}
+          title={isUiHidden ? "Hiện giao diện Pomodoro" : "Ẩn bớt giao diện để thưởng thức Video Nền"}
+        >
+          {isUiHidden ? <Eye size={16} /> : <EyeOff size={16} />}
+        </button>
+      )}
+
+      <div className={cn(
+        "w-full max-w-xl flex flex-col items-center relative z-10 px-4 h-full py-2 sm:py-4 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden justify-between transition-all duration-500",
+        isUiHidden ? "opacity-0 pointer-events-none scale-95" : "opacity-100 scale-100"
+      )}>
         <PomodoroTimerDisplay
           activeTask={activeTask}
           pomodoroState={pomodoroState}
@@ -194,85 +229,113 @@ export function FlowPomodoro() {
           breakMinutes={breakMinutes}
         />
 
-        {/* Controls */}
-        <div className="mt-6 flex items-center justify-center gap-6 shrink-0">
+        {/* Action Controls Bar */}
+        <div className="mt-8 lg:mt-10 xl:mt-12 flex items-center justify-center gap-5 lg:gap-7 xl:gap-8 shrink-0">
+          {/* Stop Button */}
           <Button 
             variant="outline" 
             size="icon" 
             disabled={isStopping}
-            className="w-12 h-12 rounded-xl border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-all shadow-inner group disabled:opacity-60 cursor-pointer"
+            className={cn(
+              "w-14 h-14 lg:w-16 lg:h-16 xl:w-20 xl:h-20 rounded-2xl transition-all shadow-lg group disabled:opacity-60 cursor-pointer",
+              isVideoBackground
+                ? "bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-white/20 shadow-[0_8px_25px_rgba(0,0,0,0.3)]"
+                : "border-border bg-card text-muted-foreground hover:text-foreground hover:bg-accent"
+            )}
             onClick={handleStop}
             title="Dừng task"
           >
             {isStopping
-              ? <span className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
-              : <Square fill="currentColor" strokeWidth={2.5} className="w-4 h-4 group-hover:scale-95 transition-transform" />}
+              ? <span className="w-5 h-5 lg:w-6 lg:h-6 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              : <Square fill="currentColor" strokeWidth={2.5} className="w-5 h-5 lg:w-6 lg:h-6 xl:w-7 xl:h-7 group-hover:scale-95 transition-transform" />}
           </Button>
 
-          {pomodoroState === "idle" || pomodoroState === "finished" || pomodoroState === "paused" ? (
-             <Button 
-               size="icon" 
-               className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-violet-700 hover:from-indigo-400 hover:to-violet-600 text-white shadow-[0_0_30px_rgba(99,102,241,0.4)] transition-transform hover:scale-105 active:scale-95 border-none cursor-pointer"
-               onClick={startTimer}
-               title="Bắt đầu"
-             >
-               <Play fill="currentColor" strokeWidth={2.5} className="w-8 h-8 ml-1" />
-             </Button>
-          ) : (
-            <Button 
-               size="icon" 
-               className="w-20 h-20 rounded-full bg-card hover:bg-muted text-white shadow-xl transition-transform hover:scale-105 active:scale-95 border border-border cursor-pointer"
-               onClick={pauseTimer}
-               title="Tạm dừng"
-             >
-               <Pause fill="currentColor" strokeWidth={2.5} className="w-8 h-8 text-foreground" />
-             </Button>
-          )}
-
-          {/* Subtasks modal button */}
+          {/* Subtasks Modal Button */}
           <Button 
             variant="outline" 
             size="icon" 
-            className="w-12 h-12 rounded-xl border-indigo-500/20 bg-indigo-500/5 text-indigo-400 hover:bg-indigo-500/20 hover:border-indigo-500/50 transition-all shadow-inner group relative cursor-pointer"
+            className={cn(
+              "w-14 h-14 lg:w-16 lg:h-16 xl:w-20 xl:h-20 rounded-2xl transition-all shadow-lg group relative cursor-pointer",
+              isVideoBackground
+                ? "bg-indigo-500/20 backdrop-blur-md border-indigo-300/30 text-indigo-200 hover:bg-indigo-500/35 hover:border-indigo-300/50 shadow-[0_8px_25px_rgba(99,102,241,0.25)]"
+                : "border-indigo-500/30 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 hover:border-indigo-500/50"
+            )}
             onClick={() => setIsChecklistModalOpen(true)}
-            title="Quản lý Subtask"
+            title="Danh sách Subtask"
           >
-            <ListTodo strokeWidth={2.5} className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            <ListTodo strokeWidth={2.5} className="w-6 h-6 lg:w-7 lg:h-7 xl:w-8 xl:h-8 group-hover:scale-110 transition-transform" />
             {checklists.length > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 bg-indigo-500 text-white text-[10px] font-bold rounded-full h-4.5 min-w-[18px] px-1 flex items-center justify-center border border-background">
+              <span className="absolute -top-1.5 -right-1.5 bg-indigo-500 text-white text-[10px] sm:text-xs font-bold rounded-full h-5 sm:h-6 min-w-[20px] sm:min-w-[24px] px-1 flex items-center justify-center border-2 border-background shadow-xs">
                 {completedChecklistsCount}/{checklists.length}
               </span>
             )}
           </Button>
 
-          {/* Complete task button */}
+          {/* Start / Pause Main Button */}
+          {pomodoroState === "idle" || pomodoroState === "finished" || pomodoroState === "paused" ? (
+             <Button 
+               size="icon" 
+               className={cn(
+                 "w-20 h-20 lg:w-24 lg:h-24 xl:w-28 xl:h-28 rounded-full text-white transition-all hover:scale-105 active:scale-95 cursor-pointer",
+                 isVideoBackground
+                   ? "bg-gradient-to-tr from-indigo-500/40 via-indigo-600/40 to-cyan-400/40 backdrop-blur-xl border border-white/35 shadow-[0_0_35px_rgba(99,102,241,0.4)]"
+                   : "bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-700 hover:from-indigo-400 hover:to-violet-600 shadow-[0_0_35px_rgba(99,102,241,0.4)] border-none"
+               )}
+               onClick={startTimer}
+               title="Bắt đầu"
+             >
+               <Play fill="currentColor" strokeWidth={2.5} className="w-8 h-8 lg:w-10 lg:h-10 xl:w-12 xl:h-12 ml-1" />
+             </Button>
+          ) : (
+            <Button 
+               size="icon" 
+               className={cn(
+                 "w-20 h-20 lg:w-24 lg:h-24 xl:w-28 xl:h-28 rounded-full transition-all hover:scale-105 active:scale-95 cursor-pointer",
+                 isVideoBackground
+                   ? "bg-white/20 backdrop-blur-xl border border-white/30 text-white shadow-[0_0_35px_rgba(255,255,255,0.2)] hover:bg-white/30"
+                   : "bg-card hover:bg-accent text-foreground shadow-xl border border-border"
+               )}
+               onClick={pauseTimer}
+               title="Tạm dừng"
+             >
+               <Pause fill="currentColor" strokeWidth={2.5} className="w-8 h-8 lg:w-10 lg:h-10 xl:w-12 xl:h-12 text-current" />
+             </Button>
+          )}
+
+          {/* Complete Task Button */}
           <Button 
             variant="outline" 
             size="icon" 
-            className="w-12 h-12 rounded-xl border-emerald-500/20 bg-emerald-500/5 text-emerald-500 hover:bg-emerald-500/20 hover:border-emerald-500/50 transition-all shadow-inner group cursor-pointer"
+            className={cn(
+              "w-14 h-14 lg:w-16 lg:h-16 xl:w-20 xl:h-20 rounded-2xl transition-all shadow-lg group cursor-pointer",
+              isVideoBackground
+                ? "bg-emerald-500/20 backdrop-blur-md border border-emerald-300/30 text-emerald-300 hover:bg-emerald-500/35 hover:border-emerald-300/50 shadow-[0_8px_25px_rgba(16,185,129,0.25)]"
+                : "border-emerald-500/30 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 hover:border-emerald-500/50"
+            )}
             onClick={handleCompleteClick}
             disabled={isFinishing}
             title="Hoàn thành task"
           >
-            <Check strokeWidth={3} className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            <Check strokeWidth={3} className="w-6 h-6 lg:w-7 lg:h-7 xl:w-8 xl:h-8 group-hover:scale-110 transition-transform" />
           </Button>
         </div>
         
-        <div className="mt-4 text-sm text-muted-foreground flex flex-col items-center gap-2 shrink-0">
-          <div className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-            Focused: <span className="text-foreground ml-1">{Math.floor(accumulatedFocusTime / 60)} min</span>
+        {/* Focused stats & alert */}
+        <div className="mt-6 text-sm flex flex-col items-center gap-2 shrink-0">
+          <div className={cn(
+            "text-[11px] lg:text-xs font-bold uppercase tracking-[0.2em]",
+            isVideoBackground ? "text-white/80 drop-shadow-xs" : "text-muted-foreground"
+          )}>
+            FOCUSED: <span className={cn("ml-1 font-mono", isVideoBackground ? "text-white font-bold" : "text-foreground")}>{Math.floor(accumulatedFocusTime / 60)} MIN</span>
           </div>
           {pomodoroState === "finished" && (
-            <div className="text-amber-500 mt-2 text-center max-w-sm bg-amber-500/10 px-4 py-2 rounded-xl border border-amber-500/20 font-medium text-xs md:text-sm">
+            <div className="text-amber-300 mt-2 text-center max-w-sm bg-amber-500/20 backdrop-blur-md px-4 py-2 rounded-xl border border-amber-400/30 font-medium text-xs md:text-sm">
               Time is up! Keep working or mark as complete.
             </div>
           )}
         </div>
 
-        {/* Inline Subtasks Panel */}
-        <FlowChecklistPanel task={activeTask} />
-
-        {/* Inline Task Notes Panel */}
+        {/* Task Notes Panel */}
         <TaskNotesPanel task={activeTask} />
 
         <ChecklistModal
@@ -285,4 +348,3 @@ export function FlowPomodoro() {
     </div>
   );
 }
-

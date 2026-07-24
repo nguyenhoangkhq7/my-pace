@@ -26,11 +26,23 @@ interface FlowZenZoneProps {
 
 export function FlowZenZone({ onExit, onCollapse }: FlowZenZoneProps) {
   const { t } = useTranslation();
-  const { 
-    youtubeUrl, setYoutubeUrl, youtubeHistory, removeFromHistory, updateHistoryTitle, isZenFull, setZenFull,
-    activeTaskId, pomodoroState, timeLeft, startTimer, pauseTimer, isPomodoroFloating, setPomodoroFloating,
-    addToHistory, setIsSettingsOpen
-  } = useFocusStore();
+  const youtubeUrl = useFocusStore((s) => s.youtubeUrl);
+  const setYoutubeUrl = useFocusStore((s) => s.setYoutubeUrl);
+  const youtubeHistory = useFocusStore((s) => s.youtubeHistory);
+  const removeFromHistory = useFocusStore((s) => s.removeFromHistory);
+  const updateHistoryTitle = useFocusStore((s) => s.updateHistoryTitle);
+  const isZenFull = useFocusStore((s) => s.isZenFull);
+  const setZenFull = useFocusStore((s) => s.setZenFull);
+  const activeTaskId = useFocusStore((s) => s.activeTaskId);
+  const pomodoroState = useFocusStore((s) => s.pomodoroState);
+  const timeLeft = useFocusStore((s) => s.timeLeft);
+  const startTimer = useFocusStore((s) => s.startTimer);
+  const pauseTimer = useFocusStore((s) => s.pauseTimer);
+  const isPomodoroFloating = useFocusStore((s) => s.isPomodoroFloating);
+  const setPomodoroFloating = useFocusStore((s) => s.setPomodoroFloating);
+  const addToHistory = useFocusStore((s) => s.addToHistory);
+  const setIsSettingsOpen = useFocusStore((s) => s.setIsSettingsOpen);
+  const isVideoBackground = useFocusStore((s) => s.isVideoBackground);
   const { data: tasks = [] } = useQuery({ queryKey: ['tasks'], queryFn: getTasksAction });
   const [isAdding, setIsAdding] = useState(false);
   const [layoutMode, setLayoutMode] = useState<"list" | "grid">("list");
@@ -146,7 +158,8 @@ export function FlowZenZone({ onExit, onCollapse }: FlowZenZoneProps) {
   // ─── Zen Full Mode ────────────────────────────────────────────────────────────
   return (
     <div className={cn(
-      "flex flex-col bg-background min-h-0",
+      "flex flex-col min-h-0 transition-colors duration-300",
+      isVideoBackground ? "bg-background/40 backdrop-blur-md" : "bg-background",
       isZenFull 
         ? "fixed inset-0 z-[100] h-full w-full overflow-hidden" 
         : "h-full border-l border-border min-w-[220px]"
