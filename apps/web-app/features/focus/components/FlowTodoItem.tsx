@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PlayIcon, Tick01Icon } from "@hugeicons/core-free-icons";
@@ -12,7 +13,7 @@ interface FlowTodoItemProps {
   onTaskSelect?: (task: DailyPlanTask) => void;
 }
 
-export function FlowTodoItem({ task, scheduleLabel, onTaskSelect }: FlowTodoItemProps) {
+export const FlowTodoItem = memo(function FlowTodoItem({ task, scheduleLabel, onTaskSelect }: FlowTodoItemProps) {
   const activeTaskId = useFocusStore((s) => s.activeTaskId);
   const openFocusMode = useFocusStore((s) => s.openFocusMode);
   const isVideoBackground = useFocusStore((s) => s.isVideoBackground);
@@ -89,4 +90,4 @@ export function FlowTodoItem({ task, scheduleLabel, onTaskSelect }: FlowTodoItem
       </div>
     </div>
   );
-}
+});

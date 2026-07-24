@@ -20,6 +20,28 @@ import { PomodoroTimerDisplay } from "@/features/focus/components/PomodoroTimerD
 import { TaskNotesPanel } from "@/features/focus/components/TaskNotesPanel";
 import { ChecklistModal } from "@/features/focus/components/ChecklistModal";
 
+function FocusedStatsDisplay() {
+  const accumulatedFocusTime = useFocusStore((s) => s.accumulatedFocusTime);
+  const isVideoBackground = useFocusStore((s) => s.isVideoBackground);
+  const pomodoroState = useFocusStore((s) => s.pomodoroState);
+
+  return (
+    <div className="mt-6 text-sm flex flex-col items-center gap-2 shrink-0">
+      <div className={cn(
+        "text-[11px] lg:text-xs font-bold uppercase tracking-[0.2em]",
+        isVideoBackground ? "text-white/80 drop-shadow-xs" : "text-muted-foreground"
+      )}>
+        FOCUSED: <span className={cn("ml-1 font-mono", isVideoBackground ? "text-white font-bold" : "text-foreground")}>{Math.floor(accumulatedFocusTime / 60)} MIN</span>
+      </div>
+      {pomodoroState === "finished" && (
+        <div className="text-amber-300 mt-2 text-center max-w-sm bg-amber-500/20 backdrop-blur-md px-4 py-2 rounded-xl border border-amber-400/30 font-medium text-xs md:text-sm">
+          Time is up! Keep working or mark as complete.
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function FlowPomodoro() {
   const activeTaskId = useFocusStore((s) => s.activeTaskId);
   const activePlanTaskId = useFocusStore((s) => s.activePlanTaskId);
@@ -27,12 +49,6 @@ export function FlowPomodoro() {
   const startTimer = useFocusStore((s) => s.startTimer);
   const pauseTimer = useFocusStore((s) => s.pauseTimer);
   const pomodoroState = useFocusStore((s) => s.pomodoroState);
-  const accumulatedFocusTime = useFocusStore((s) => s.accumulatedFocusTime);
-  const focusMinutes = useFocusStore((s) => s.focusMinutes);
-  const breakMinutes = useFocusStore((s) => s.breakMinutes);
-  const timeLeft = useFocusStore((s) => s.timeLeft);
-  const currentSession = useFocusStore((s) => s.currentSession);
-  const totalSessions = useFocusStore((s) => s.totalSessions);
   const isVideoBackground = useFocusStore((s) => s.isVideoBackground);
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
@@ -127,6 +143,7 @@ export function FlowPomodoro() {
     if (!activeTaskId || !activePlanTaskId || isFinishing) return;
     setIsFinishing(true);
     try {
+      const { accumulatedFocusTime } = useFocusStore.getState();
       const actualMinutes = Math.floor(accumulatedFocusTime / 60);
       if (actualMinutes > 0) {
         await updateTaskMutation.mutateAsync({ id: activeTaskId, data: { actualMinutes } });
@@ -173,6 +190,7 @@ export function FlowPomodoro() {
   const handleStop = async () => {
     setIsStopping(true);
     try {
+      const { accumulatedFocusTime } = useFocusStore.getState();
       if (activeTaskId && accumulatedFocusTime > 0) {
         const actualMinutes = Math.round(accumulatedFocusTime / 60);
         await updateTaskMutation.mutateAsync({ id: activeTaskId, data: { actualMinutes } });
@@ -219,15 +237,7 @@ export function FlowPomodoro() {
         "w-full max-w-xl flex flex-col items-center relative z-10 px-4 h-full py-2 sm:py-4 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden justify-between transition-all duration-500",
         isUiHidden ? "opacity-0 pointer-events-none scale-95" : "opacity-100 scale-100"
       )}>
-        <PomodoroTimerDisplay
-          activeTask={activeTask}
-          pomodoroState={pomodoroState}
-          currentSession={currentSession}
-          totalSessions={totalSessions}
-          timeLeft={timeLeft}
-          focusMinutes={focusMinutes}
-          breakMinutes={breakMinutes}
-        />
+        <PomodoroTimerDisplay activeTask={activeTask} />
 
         {/* Action Controls Bar */}
         <div className="mt-8 lg:mt-10 xl:mt-12 flex items-center justify-center gap-5 lg:gap-7 xl:gap-8 shrink-0">
@@ -323,19 +333,7 @@ export function FlowPomodoro() {
         </div>
         
         {/* Focused stats & alert */}
-        <div className="mt-6 text-sm flex flex-col items-center gap-2 shrink-0">
-          <div className={cn(
-            "text-[11px] lg:text-xs font-bold uppercase tracking-[0.2em]",
-            isVideoBackground ? "text-white/80 drop-shadow-xs" : "text-muted-foreground"
-          )}>
-            FOCUSED: <span className={cn("ml-1 font-mono", isVideoBackground ? "text-white font-bold" : "text-foreground")}>{Math.floor(accumulatedFocusTime / 60)} MIN</span>
-          </div>
-          {pomodoroState === "finished" && (
-            <div className="text-amber-300 mt-2 text-center max-w-sm bg-amber-500/20 backdrop-blur-md px-4 py-2 rounded-xl border border-amber-400/30 font-medium text-xs md:text-sm">
-              Time is up! Keep working or mark as complete.
-            </div>
-          )}
-        </div>
+        <FocusedStatsDisplay />
 
         {/* Task Notes Panel */}
         <TaskNotesPanel task={activeTask} />

@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAvailableTimeAction, checkinAction } from "../actions/available-time.action";
 import { useGamificationStore } from "@/features/gamification";
-import { AvailableTimeData } from "../types";
 import { useAuthStore } from "@/features/auth";
 import { getNowInTimezone } from "@/lib/date";
 
@@ -16,23 +15,25 @@ export function useAvailableTimeQuery(date: string) {
   const user = useAuthStore((s) => s.user);
   const timezone = user?.timezone || "Asia/Ho_Chi_Minh";
 
-  const [prevQueryData, setPrevQueryData] = useState<AvailableTimeData | null | undefined>(null);
-  const [localAvailableMinutes, setLocalAvailableMinutes] = useState<number | null>(null);
+  const [decrementedMinutes, setDecrementedMinutes] = useState(0);
+  const [prevServerMinutes, setPrevServerMinutes] = useState<number | undefined>(undefined);
 
-  if (query.data !== prevQueryData) {
-    setPrevQueryData(query.data);
-    setLocalAvailableMinutes(query.data ? query.data.availableMinutes : null);
+  const serverMinutes = query.data?.availableMinutes;
+  if (serverMinutes !== prevServerMinutes) {
+    setPrevServerMinutes(serverMinutes);
+    setDecrementedMinutes(0);
   }
 
   const queryClient = useQueryClient();
+  const queryData = query.data;
 
   // Smart local available time countdown ticking every 60 seconds
   useEffect(() => {
-    if (!query.data || localAvailableMinutes === null || localAvailableMinutes <= 0) return;
+    if (!queryData || queryData.availableMinutes <= 0) return;
 
-    // Do NOT run countdown if the daily plan is already confirmed (time budget is frozen at confirmation time)
+    // Do NOT run countdown if the daily plan is already confirmed
     const dailyPlan = queryClient.getQueryData<{ isConfirmed?: boolean }>(["dailyPlan", date]);
-    if (query.data.isPlanConfirmed || dailyPlan?.isConfirmed) return;
+    if (queryData.isPlanConfirmed || dailyPlan?.isConfirmed) return;
 
     // Only run countdown for "today" in the user's timezone
     const formatter = new Intl.DateTimeFormat("en-CA", {
@@ -45,32 +46,34 @@ export function useAvailableTimeQuery(date: string) {
     if (date !== todayStr) return;
 
     const interval = setInterval(() => {
-      // Get current local time in user's timezone
       const now = getNowInTimezone(timezone);
       const currentHour = now.getHours();
       const currentMin = now.getMinutes();
       const currentTimeStr = `${String(currentHour).padStart(2, "0")}:${String(currentMin).padStart(2, "0")}`;
 
-      // Check if current time falls within any blocked intervals (non-overlapping fixed events)
-      const blockedIntervals = query.data.blockedIntervals || [];
-      const isBlocked = blockedIntervals.some((interval: { startTime: string; endTime: string }) => {
-        return currentTimeStr >= interval.startTime && currentTimeStr < interval.endTime;
+      const blockedIntervals = queryData.blockedIntervals || [];
+      const isBlocked = blockedIntervals.some((inv: { startTime: string; endTime: string }) => {
+        return currentTimeStr >= inv.startTime && currentTimeStr < inv.endTime;
       });
 
       if (!isBlocked) {
-        setLocalAvailableMinutes((prev) => (prev !== null && prev > 0 ? prev - 1 : 0));
+        setDecrementedMinutes((prev) => prev + 1);
       }
     }, 60000);
 
     return () => clearInterval(interval);
-  }, [query.data, date, timezone, localAvailableMinutes, queryClient]);
+  }, [queryData, date, timezone, queryClient]);
+
+  const calculatedAvailableMinutes = queryData
+    ? Math.max(0, queryData.availableMinutes - decrementedMinutes)
+    : undefined;
 
   return {
     ...query,
-    data: query.data
+    data: queryData
       ? {
-          ...query.data,
-          availableMinutes: localAvailableMinutes !== null ? localAvailableMinutes : query.data.availableMinutes,
+          ...queryData,
+          availableMinutes: calculatedAvailableMinutes ?? queryData.availableMinutes,
         }
       : undefined,
   };

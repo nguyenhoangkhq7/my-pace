@@ -8,18 +8,9 @@ import type { DailyPlan } from "@/features/board/types";
 
 export function usePomodoro() {
   const pomodoroState = useFocusStore((s) => s.pomodoroState);
-  const timeLeft = useFocusStore((s) => s.timeLeft);
-  const currentSession = useFocusStore((s) => s.currentSession);
-  const totalSessions = useFocusStore((s) => s.totalSessions);
-  const tick = useFocusStore((s) => s.tick);
-  const transitionToBreak = useFocusStore((s) => s.transitionToBreak);
-  const transitionToFocus = useFocusStore((s) => s.transitionToFocus);
-  const completeAllSessions = useFocusStore((s) => s.completeAllSessions);
   const soundEnabled = useFocusStore((s) => s.soundEnabled);
-  const adjustForElapsedTime = useFocusStore((s) => s.adjustForElapsedTime);
-
   const activeTaskId = useFocusStore((s) => s.activeTaskId);
-  const accumulatedFocusTime = useFocusStore((s) => s.accumulatedFocusTime);
+  const adjustForElapsedTime = useFocusStore((s) => s.adjustForElapsedTime);
 
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
@@ -72,6 +63,10 @@ export function usePomodoro() {
 
       oscillator.start();
       oscillator.stop(audioCtx.currentTime + playDurationSec);
+
+      setTimeout(() => {
+        audioCtx.close().catch(() => {});
+      }, duration + 100);
     } catch (e) {
       console.error("Audio beep failed", e);
     }
@@ -172,22 +167,23 @@ export function usePomodoro() {
       
       if (deltaSeconds >= 1) {
         lastTickRef.current = now;
+        const state = useFocusStore.getState();
         
-        if (timeLeft - deltaSeconds <= 0) {
+        if (state.timeLeft - deltaSeconds <= 0) {
           // Timer reached 0
-          if (pomodoroState === "focusing") {
+          if (state.pomodoroState === "focusing") {
             playFocusEnd();
-            if (currentSession >= totalSessions) {
-              completeAllSessions();
+            if (state.currentSession >= state.totalSessions) {
+              state.completeAllSessions();
             } else {
-              transitionToBreak();
+              state.transitionToBreak();
             }
-          } else if (pomodoroState === "breaking") {
+          } else if (state.pomodoroState === "breaking") {
             playBreakEnd();
-            transitionToFocus();
+            state.transitionToFocus();
           }
         } else {
-          tick(deltaSeconds);
+          state.tick(deltaSeconds);
         }
       }
     }, 200); // Check frequently to ensure responsiveness
@@ -195,13 +191,6 @@ export function usePomodoro() {
     return () => clearInterval(intervalId);
   }, [
     pomodoroState,
-    timeLeft,
-    currentSession,
-    totalSessions,
-    tick,
-    transitionToBreak,
-    transitionToFocus,
-    completeAllSessions,
     playFocusEnd,
     playBreakEnd
   ]);
@@ -216,22 +205,28 @@ export function usePomodoro() {
   }, [activeTaskId]);
 
   // Auto-save actualMinutes every 5 minutes (checkpoint-based)
-  // This limits server requests to ~10 per session instead of ~50,
-  // while still protecting against tab crashes.
+  // Check every 5 seconds to avoid subscribing React component to per-second timer ticks
   const AUTOSAVE_INTERVAL_MIN = 5;
-  const currentMinutes = Math.floor(accumulatedFocusTime / 60);
-  const currentCheckpoint = Math.floor(currentMinutes / AUTOSAVE_INTERVAL_MIN) * AUTOSAVE_INTERVAL_MIN;
   useEffect(() => {
-    if (!activeTaskId || currentMinutes < AUTOSAVE_INTERVAL_MIN) return;
-    // Only save when we cross a new 5-minute checkpoint
-    if (lastSavedMinutesRef.current !== -1 && currentCheckpoint > lastSavedMinutesRef.current) {
-      lastSavedMinutesRef.current = currentCheckpoint;
-      updateTaskMutation.mutate({
-        id: activeTaskId,
-        data: { actualMinutes: currentMinutes }
-      });
-    }
-  }, [currentCheckpoint, activeTaskId, currentMinutes, updateTaskMutation]);
+    if (!activeTaskId || pomodoroState === "idle" || pomodoroState === "finished" || pomodoroState === "paused") return;
+
+    const checkAutosave = () => {
+      const { accumulatedFocusTime } = useFocusStore.getState();
+      const currentMinutes = Math.floor(accumulatedFocusTime / 60);
+      if (currentMinutes < AUTOSAVE_INTERVAL_MIN) return;
+      const currentCheckpoint = Math.floor(currentMinutes / AUTOSAVE_INTERVAL_MIN) * AUTOSAVE_INTERVAL_MIN;
+      if (lastSavedMinutesRef.current !== -1 && currentCheckpoint > lastSavedMinutesRef.current) {
+        lastSavedMinutesRef.current = currentCheckpoint;
+        updateTaskMutation.mutate({
+          id: activeTaskId,
+          data: { actualMinutes: currentMinutes }
+        });
+      }
+    };
+
+    const timerId = setInterval(checkAutosave, 5000);
+    return () => clearInterval(timerId);
+  }, [activeTaskId, pomodoroState, updateTaskMutation]);
 
   // State transitions sound manager + opportunistic save on pause/break
   const prevStateRef = useRef<string>("idle");
@@ -282,6 +277,4 @@ export function usePomodoro() {
       }
     };
   }, []);
-
-  return { pomodoroState, timeLeft, currentSession, totalSessions };
 }

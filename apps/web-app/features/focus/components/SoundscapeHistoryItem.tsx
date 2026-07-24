@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo } from "react";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PlayIcon, Delete02Icon } from "@hugeicons/core-free-icons";
@@ -17,7 +17,7 @@ interface SoundscapeHistoryItemProps {
   layout?: "list" | "grid";
 }
 
-export function SoundscapeHistoryItem({
+export const SoundscapeHistoryItem = memo(function SoundscapeHistoryItem({
   title,
   url,
   isPlaying,
@@ -173,4 +173,4 @@ export function SoundscapeHistoryItem({
       )}
     </div>
   );
-}
+});

@@ -466,8 +466,12 @@ export function SoundscapePlayer() {
 
   // ── Step 5: Sync video quality changes from store to the player ────────────
   const videoQuality = useFocusStore((s) => s.videoQuality);
+  const prevQualityRef = useRef(videoQuality);
   useEffect(() => {
     if (!playerRef.current || !isPlayerReadyRef.current) return;
+    if (prevQualityRef.current === videoQuality) return;
+    prevQualityRef.current = videoQuality;
+
     const targetQuality = videoQuality === "auto" ? "default" : videoQuality;
 
     try {
@@ -504,7 +508,8 @@ export function SoundscapePlayer() {
     } catch (err) {
       console.warn("Could not apply video quality:", err);
     }
-  }, [videoQuality, videoId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [videoQuality]);
 
   // ─── Render ────────────────────────────────────────────────────────────────
 
@@ -516,7 +521,19 @@ export function SoundscapePlayer() {
 
     const updateRect = () => {
       if (cardRef.current) {
-        setCardRect(cardRef.current.getBoundingClientRect());
+        const newRect = cardRef.current.getBoundingClientRect();
+        setCardRect((prev) => {
+          if (
+            prev &&
+            prev.top === newRect.top &&
+            prev.left === newRect.left &&
+            prev.width === newRect.width &&
+            prev.height === newRect.height
+          ) {
+            return prev;
+          }
+          return newRect;
+        });
       }
     };
 

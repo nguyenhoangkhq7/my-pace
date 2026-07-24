@@ -469,7 +469,6 @@ export const useFocusStore = create<FocusState>()(
         activeVideoTitle: state.activeVideoTitle,
         activeVideoAuthor: state.activeVideoAuthor,
         activeVideoId: state.activeVideoId,
-        currentTime: state.currentTime,
         isVideoBackground: state.isVideoBackground,
         videoBgOpacity: state.videoBgOpacity,
         videoBgBlur: state.videoBgBlur,

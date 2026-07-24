@@ -17,7 +17,8 @@ interface StickyNotesTriggerBtnProps {
 
 export function StickyNotesTriggerBtn({ isCollapsed = false }: StickyNotesTriggerBtnProps) {
   const { t } = useTranslation();
-  const { incrementMaxZIndex, toggleManagerOpen } = useStickyNotesStore();
+  const incrementMaxZIndex = useStickyNotesStore((s) => s.incrementMaxZIndex);
+  const toggleManagerOpen = useStickyNotesStore((s) => s.toggleManagerOpen);
 
   const { data: notes = [] } = useStickyNotesQuery();
   const createMutation = useCreateStickyNoteMutation();

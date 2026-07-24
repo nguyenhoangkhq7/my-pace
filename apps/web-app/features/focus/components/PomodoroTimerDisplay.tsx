@@ -1,28 +1,22 @@
-import React from "react";
+import React, { memo } from "react";
 import { cn } from "@/lib/utils";
 import type { Task } from "@/features/board/types";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 
 interface PomodoroTimerDisplayProps {
   activeTask: Task;
-  pomodoroState: "idle" | "focusing" | "breaking" | "finished" | "paused";
-  currentSession: number;
-  totalSessions: number;
-  timeLeft: number;
-  focusMinutes: number;
-  breakMinutes: number;
 }
 
-export function PomodoroTimerDisplay({
+export const PomodoroTimerDisplay = memo(function PomodoroTimerDisplay({
   activeTask,
-  pomodoroState,
-  currentSession,
-  totalSessions,
-  timeLeft,
-  focusMinutes,
-  breakMinutes,
 }: PomodoroTimerDisplayProps) {
   const isVideoBackground = useFocusStore((s) => s.isVideoBackground);
+  const pomodoroState = useFocusStore((s) => s.pomodoroState);
+  const timeLeft = useFocusStore((s) => s.timeLeft);
+  const currentSession = useFocusStore((s) => s.currentSession);
+  const totalSessions = useFocusStore((s) => s.totalSessions);
+  const focusMinutes = useFocusStore((s) => s.focusMinutes);
+  const breakMinutes = useFocusStore((s) => s.breakMinutes);
   const maxTime = pomodoroState === "breaking" ? breakMinutes * 60 : focusMinutes * 60;
   const progressPct = maxTime > 0 ? Math.min(100, Math.max(0, ((maxTime - timeLeft) / maxTime) * 100)) : 0;
 
@@ -221,4 +215,4 @@ export function PomodoroTimerDisplay({
       </div>
     </div>
   );
-}
+});
