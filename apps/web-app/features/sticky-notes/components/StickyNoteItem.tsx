@@ -53,7 +53,7 @@ function StickyNoteItemComponent({ note }: StickyNoteItemProps) {
     { name: "Cam neon", color: "#fed7aa", bg: "bg-orange-300" },
   ];
 
-  const getClampedPos = (x: number, y: number) => {
+  const getClampedPos = useCallback((x: number, y: number) => {
     if (typeof window === "undefined") return { x, y };
     const maxX = Math.max(10, window.innerWidth - (note.width || MIN_WIDTH) - 20);
     const maxY = Math.max(10, window.innerHeight - (note.height || MIN_HEIGHT) - 20);
@@ -61,7 +61,7 @@ function StickyNoteItemComponent({ note }: StickyNoteItemProps) {
       x: Math.min(Math.max(10, x), maxX),
       y: Math.min(Math.max(10, y), maxY),
     };
-  };
+  }, [note.width, note.height]);
 
   const initialClamped = getClampedPos(note.positionX, note.positionY);
   const [position, setPosition] = useState(initialClamped);
@@ -80,7 +80,7 @@ function StickyNoteItemComponent({ note }: StickyNoteItemProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const historyRef = useRef<EditorHistory | null>(null);
 
-  if (!historyRef.current) {
+  if (historyRef.current == null) {
     historyRef.current = new EditorHistory(note.content || "");
   }
 
@@ -90,9 +90,27 @@ function StickyNoteItemComponent({ note }: StickyNoteItemProps) {
   const dragStartRef = useRef({ x: 0, y: 0, posX: 0, posY: 0, width: 0, height: 0 });
 
   const bringToFront = useCallback(() => {
-    const nextZ = incrementMaxZIndex();
+    const store = useStickyNotesStore.getState();
+    const nextZ = store.incrementMaxZIndex();
     setZIndex(nextZ);
-  }, [incrementMaxZIndex]);
+    updateMutation.mutate({ id: note.id, data: { zIndex: nextZ } });
+    return nextZ;
+  }, [note.id, updateMutation]);
+
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (!isDraggingRef.current && !isResizingRef.current) {
+      setZIndex(note.zIndex || 1);
+      const clamped = getClampedPos(note.positionX, note.positionY);
+      setPosition(clamped);
+      posRef.current = clamped;
+      if (note.width && note.height) {
+        setSize({ w: note.width, h: note.height });
+        sizeRef.current = { w: note.width, h: note.height };
+      }
+    }
+  }, [note.zIndex, note.positionX, note.positionY, note.width, note.height, getClampedPos]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     const handleGlobalPointerDown = (e: PointerEvent) => {
@@ -223,14 +241,14 @@ function StickyNoteItemComponent({ note }: StickyNoteItemProps) {
 
   // Ultra 120FPS GPU-Accelerated Drag Handler
   const handlePointerDownDrag = (e: React.PointerEvent) => {
-    bringToFront();
+    const currentZ = bringToFront();
     isDraggingRef.current = true;
     setIsDraggingState(true);
 
     const targetEl = e.currentTarget as HTMLElement;
     try {
       targetEl.setPointerCapture(e.pointerId);
-    } catch (_err) { /* ignore */ }
+    } catch { /* ignore */ }
 
     dragStartRef.current = {
       x: e.clientX,
@@ -295,7 +313,7 @@ function StickyNoteItemComponent({ note }: StickyNoteItemProps) {
 
       try {
         targetEl.releasePointerCapture(upEv.pointerId);
-      } catch (_err) { /* ignore */ }
+      } catch { /* ignore */ }
 
       document.body.style.userSelect = "";
       document.body.style.cursor = "";
@@ -314,7 +332,7 @@ function StickyNoteItemComponent({ note }: StickyNoteItemProps) {
       setPosition(posRef.current);
       updateMutation.mutate({
         id: note.id,
-        data: { positionX: posRef.current.x, positionY: posRef.current.y, zIndex },
+        data: { positionX: posRef.current.x, positionY: posRef.current.y, zIndex: currentZ },
       });
     };
 
@@ -335,7 +353,7 @@ function StickyNoteItemComponent({ note }: StickyNoteItemProps) {
     const targetEl = e.currentTarget as HTMLElement;
     try {
       targetEl.setPointerCapture(e.pointerId);
-    } catch (_err) { /* ignore */ }
+    } catch { /* ignore */ }
 
     dragStartRef.current = {
       x: e.clientX,
@@ -423,7 +441,7 @@ function StickyNoteItemComponent({ note }: StickyNoteItemProps) {
 
       try {
         targetEl.releasePointerCapture(upEv.pointerId);
-      } catch (_err) { /* ignore */ }
+      } catch { /* ignore */ }
 
       document.body.style.userSelect = "";
 

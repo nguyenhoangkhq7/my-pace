@@ -82,14 +82,14 @@ export function TaskCompletionDurationModal() {
 
   return (
     <Dialog open={true} onOpenChange={(open) => !open && setPromptTask(null)}>
-      <DialogContent className="bg-slate-950 text-slate-50 border-slate-800 sm:max-w-[420px] p-6 rounded-2xl shadow-2xl flex flex-col gap-5">
+      <DialogContent className="bg-card text-card-foreground border-border sm:max-w-[420px] p-6 rounded-2xl shadow-2xl flex flex-col gap-5">
         <DialogHeader className="space-y-1">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-xl text-emerald-400">🎉</div>
             <DialogTitle className="text-lg font-bold">Hoàn thành xuất sắc!</DialogTitle>
           </div>
-          <DialogDescription className="text-slate-400 text-sm pt-2 leading-relaxed">
-            Bạn mất khoảng <strong className="text-slate-250 font-bold">{baseVal} phút</strong> như dự kiến chứ? Chọn khoảng thời gian thực tế để lưu thống kê chính xác:
+          <DialogDescription className="text-muted-foreground text-sm pt-2 leading-relaxed">
+            Bạn mất khoảng <strong className="text-foreground font-bold">{baseVal} phút</strong> như dự kiến chứ? Chọn khoảng thời gian thực tế để lưu thống kê chính xác:
           </DialogDescription>
         </DialogHeader>
 
@@ -106,7 +106,7 @@ export function TaskCompletionDurationModal() {
               <Button
                 variant="outline"
                 disabled={isSaving}
-                className="border-slate-800 bg-slate-900/60 hover:bg-slate-800 text-slate-300 hover:text-white h-9 rounded-xl text-xs cursor-pointer"
+                className="border-border bg-muted/60 hover:bg-muted text-foreground h-9 rounded-xl text-xs cursor-pointer"
                 onClick={() => handleSaveDuration(fastVal)}
               >
                 Nhanh hơn ({fastVal} phút)
@@ -114,7 +114,7 @@ export function TaskCompletionDurationModal() {
               <Button
                 variant="outline"
                 disabled={isSaving}
-                className="border-slate-800 bg-slate-900/60 hover:bg-slate-800 text-slate-300 hover:text-white h-9 rounded-xl text-xs cursor-pointer"
+                className="border-border bg-muted/60 hover:bg-muted text-foreground h-9 rounded-xl text-xs cursor-pointer"
                 onClick={() => handleSaveDuration(slowVal)}
               >
                 Chậm hơn ({slowVal} phút)
@@ -123,7 +123,7 @@ export function TaskCompletionDurationModal() {
             <Button
               variant="ghost"
               disabled={isSaving}
-              className="text-slate-400 hover:text-white hover:bg-slate-900 text-xs h-9 rounded-xl cursor-pointer"
+              className="text-muted-foreground hover:text-foreground hover:bg-muted text-xs h-9 rounded-xl cursor-pointer"
               onClick={() => setIsCustom(true)}
             >
               Tùy chỉnh thời gian...
@@ -132,7 +132,7 @@ export function TaskCompletionDurationModal() {
         ) : (
           <form onSubmit={handleCustomSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="custom-minutes" className="text-xs text-slate-400">Nhập thời gian thực tế (phút):</Label>
+              <Label htmlFor="custom-minutes" className="text-xs text-muted-foreground">Nhập thời gian thực tế (phút):</Label>
               <Input
                 id="custom-minutes"
                 type="number"
@@ -140,7 +140,7 @@ export function TaskCompletionDurationModal() {
                 placeholder="Ví dụ: 30"
                 value={customValue}
                 onChange={(e) => setCustomValue(e.target.value)}
-                className="bg-slate-900 border-slate-800 text-white h-10 rounded-xl"
+                className="bg-muted/60 border-border text-foreground h-10 rounded-xl"
                 autoFocus
                 required
               />
@@ -149,7 +149,7 @@ export function TaskCompletionDurationModal() {
               <Button
                 type="button"
                 variant="ghost"
-                className="text-slate-400 hover:text-white hover:bg-slate-900 h-9 rounded-xl text-xs cursor-pointer"
+                className="text-muted-foreground hover:text-foreground hover:bg-muted h-9 rounded-xl text-xs cursor-pointer"
                 onClick={() => setIsCustom(false)}
               >
                 Quay lại

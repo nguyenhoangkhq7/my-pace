@@ -1,11 +1,17 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useStickyNotesQuery } from "../hooks/useStickyNotes";
 import { StickyNoteItem } from "./StickyNoteItem";
+import { useStickyNotesStore } from "../store/sticky-notes.store";
 
 export function StickyNotesOverlay() {
   const { data: notes = [] } = useStickyNotesQuery();
+  const syncMaxZIndex = useStickyNotesStore((s) => s.syncMaxZIndex);
+
+  useEffect(() => {
+    syncMaxZIndex(notes);
+  }, [notes, syncMaxZIndex]);
 
   const visibleNotes = notes.filter((n) => n.isVisible !== false);
 

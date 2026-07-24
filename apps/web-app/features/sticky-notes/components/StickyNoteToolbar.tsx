@@ -207,7 +207,7 @@ export function StickyNoteToolbar({ editorRef, onContentChange }: StickyNoteTool
       if (colorVal) {
         setActiveColor(colorVal);
       }
-    } catch (_e) { /* ignore */ }
+    } catch { /* ignore */ }
   }, [editorRef]);
 
   const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -232,7 +232,7 @@ export function StickyNoteToolbar({ editorRef, onContentChange }: StickyNoteTool
     if (!editorRef.current) return;
     editorRef.current.focus();
     restoreSelection();
-    try { document.execCommand("styleWithCSS", false, "true"); } catch (_e) { /* ignore */ }
+    try { document.execCommand("styleWithCSS", false, "true"); } catch { /* ignore */ }
     document.execCommand(command, false, value);
     saveSelection();
     onContentChange();

@@ -12,7 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getTasksAction } from "@/features/board/actions/task.action";
 import type { Task } from "@/features/board/types";
 import { cn, fetchYouTubeTitle } from "@/lib/utils";
-import { CopyPlus, Settings2, LayoutGrid, List, LogOut, PanelRightClose } from "lucide-react";
+import { Settings2, LayoutGrid, List, LogOut, PanelRightClose } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ZenMediaDropzone } from "./ZenMediaDropzone";
 import { SoundscapeHistoryList } from "./SoundscapeHistoryList";
@@ -65,7 +65,6 @@ export function FlowZenZone({ onExit, onCollapse }: FlowZenZoneProps) {
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    // Only set false if leaving the main container
     if (e.currentTarget.contains(e.relatedTarget as Node)) return;
     setIsDragOver(false);
   };
@@ -89,30 +88,6 @@ export function FlowZenZone({ onExit, onCollapse }: FlowZenZoneProps) {
           error: "Failed to add Soundscape"
         }
       );
-    }
-  };
-
-  const handlePasteFromClipboard = async () => {
-    try {
-      const text = await navigator.clipboard.readText();
-      if (text && (text.includes("youtube.com") || text.includes("youtu.be"))) {
-        toast.promise(
-          (async () => {
-            const title = await fetchYouTubeTitle(text);
-            addToHistory(text, title || "YouTube Soundscape");
-            setYoutubeUrl(text);
-          })(),
-          {
-            loading: "Fetching YouTube link from clipboard...",
-            success: "Soundscape added!",
-            error: "Failed to add Soundscape"
-          }
-        );
-      } else {
-        toast.error("Clipboard does not contain a valid YouTube link.");
-      }
-    } catch {
-      toast.error("Could not read from clipboard. Please paste (Ctrl+V) directly or add manually.");
     }
   };
 
@@ -150,12 +125,10 @@ export function FlowZenZone({ onExit, onCollapse }: FlowZenZoneProps) {
     if (onExit) {
       onExit();
     } else {
-      // Fallback: direct store call (shouldn't normally happen with current FlowPage setup)
       setZenFull(false);
     }
   };
 
-  // ─── Zen Full Mode ────────────────────────────────────────────────────────────
   return (
     <div className={cn(
       "flex flex-col min-h-0 transition-colors duration-300",
@@ -174,10 +147,10 @@ export function FlowZenZone({ onExit, onCollapse }: FlowZenZoneProps) {
           <HugeiconsIcon icon={Cancel01Icon} size={16} />
         </button>
       )}
- 
+
       {/* Video player — using key to guarantee DOM identity */}
       <SoundscapePlayer key="soundscape-player" />
- 
+
       {/* Soundscape content area — using key to guarantee DOM identity */}
       <ZenMediaDropzone
         key="zen-media-dropzone"
@@ -242,13 +215,6 @@ export function FlowZenZone({ onExit, onCollapse }: FlowZenZoneProps) {
 
               <div className="flex items-center gap-1.5">
                 <button
-                  onClick={handlePasteFromClipboard}
-                  className="text-muted-foreground hover:text-primary bg-card hover:bg-primary/10 border border-border p-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-center"
-                  title="Thêm từ Clipboard"
-                >
-                  <CopyPlus size={14} />
-                </button>
-                <button
                   onClick={() => setIsAdding(!isAdding)}
                   className="text-muted-foreground hover:text-foreground bg-card hover:bg-muted border border-border p-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-center"
                   title="Thêm thủ công"
@@ -307,13 +273,13 @@ export function FlowZenZone({ onExit, onCollapse }: FlowZenZoneProps) {
             {t.flow.pasteHint}
           </span>
         </div>
- 
+
         {isAdding && (
           <div className={cn("pt-3 pb-1 shrink-0", isZenFull ? "px-6" : "px-5")}>
             <SoundscapeAddForm onCancel={() => setIsAdding(false)} />
           </div>
         )}
- 
+
         <SoundscapeHistoryList
           history={youtubeHistory}
           isAdding={isAdding}

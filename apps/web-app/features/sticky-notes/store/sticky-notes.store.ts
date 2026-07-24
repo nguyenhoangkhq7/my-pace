@@ -9,6 +9,7 @@ interface StickyNotesState {
   
   maxZIndex: number;
   incrementMaxZIndex: () => number;
+  syncMaxZIndex: (notes: { zIndex?: number }[]) => void;
 
   searchQuery: string;
   setSearchQuery: (query: string) => void;
@@ -29,6 +30,13 @@ export const useStickyNotesStore = create<StickyNotesState>()(
         const next = get().maxZIndex + 1;
         set({ maxZIndex: next });
         return next;
+      },
+      syncMaxZIndex: (notes) => {
+        if (!notes || notes.length === 0) return;
+        const highest = Math.max(...notes.map((n) => n.zIndex || 0));
+        if (highest >= get().maxZIndex) {
+          set({ maxZIndex: highest + 1 });
+        }
       },
 
       searchQuery: "",

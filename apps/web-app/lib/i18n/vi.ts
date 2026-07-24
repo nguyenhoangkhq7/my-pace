@@ -574,6 +574,18 @@ export const vi: Translations = {
     todayTasksCount: (count) => `Hôm nay: ${count} công việc`,
     enterFullscreen: "Toàn màn hình",
     exitFullscreen: "Thoát toàn màn hình",
+    taskNotes: {
+      hasNotes: "Ghi chú",
+      addNotes: "Thêm ghi chú",
+      quickPlaceholder: "Ghi chú nhanh cho task này... (tự động lưu)",
+      detailPlaceholder: "Ghi chú chi tiết cho task này... (tự động lưu)",
+      expandTitle: "Phóng to ghi chú",
+      title: (title: string) => `Ghi chú: ${title}`,
+      saving: "Đang lưu...",
+      saved: "✓ Đã lưu",
+      savedChanges: "✓ Đã lưu thay đổi",
+      close: "Đóng",
+    },
     player: {
       noTrack: "Chưa phát bài nào",
       myPacePlayer: "Trình phát My Pace",

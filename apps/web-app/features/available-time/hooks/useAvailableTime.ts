@@ -63,7 +63,7 @@ export function useAvailableTimeQuery(date: string) {
     }, 60000);
 
     return () => clearInterval(interval);
-  }, [query.data, date, timezone, localAvailableMinutes]);
+  }, [query.data, date, timezone, localAvailableMinutes, queryClient]);
 
   return {
     ...query,

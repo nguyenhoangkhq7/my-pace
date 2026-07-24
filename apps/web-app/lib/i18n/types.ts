@@ -561,6 +561,18 @@ export interface Translations {
     todayTasksCount: (count: number) => string;
     enterFullscreen: string;
     exitFullscreen: string;
+    taskNotes: {
+      hasNotes: string;
+      addNotes: string;
+      quickPlaceholder: string;
+      detailPlaceholder: string;
+      expandTitle: string;
+      title: (title: string) => string;
+      saving: string;
+      saved: string;
+      savedChanges: string;
+      close: string;
+    };
     player: {
       noTrack: string;
       myPacePlayer: string;

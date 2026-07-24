@@ -19,12 +19,6 @@ interface ChecklistModalProps {
 
 export function ChecklistModal({ isOpen, onOpenChange, activeTask, onAllCompleted }: ChecklistModalProps) {
   const queryClient = useQueryClient();
-  if (!activeTask) return null;
-
-  const checklists = activeTask.checklists ?? [];
-  const completedCount = checklists.filter((c) => c.isCompleted).length;
-  const totalCount = checklists.length;
-  const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["tasks"] });
@@ -32,20 +26,27 @@ export function ChecklistModal({ isOpen, onOpenChange, activeTask, onAllComplete
   };
 
   const addMutation = useMutation({
-    mutationFn: (title: string) => addChecklistItemAction(activeTask.id, { title }),
+    mutationFn: (title: string) => addChecklistItemAction(activeTask?.id ?? "", { title }),
     onSuccess: invalidate,
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ checklistId, data }: { checklistId: string; data: { title?: string; isCompleted?: boolean } }) =>
-      updateChecklistItemAction(activeTask.id, checklistId, data),
+      updateChecklistItemAction(activeTask?.id ?? "", checklistId, data),
     onSuccess: invalidate,
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (checklistId: string) => deleteChecklistItemAction(activeTask.id, checklistId),
+    mutationFn: (checklistId: string) => deleteChecklistItemAction(activeTask?.id ?? "", checklistId),
     onSuccess: invalidate,
   });
+
+  if (!activeTask) return null;
+
+  const checklists = activeTask.checklists ?? [];
+  const completedCount = checklists.filter((c) => c.isCompleted).length;
+  const totalCount = checklists.length;
+  const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   const handleAdd = async (title: string) => {
     try {

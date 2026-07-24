@@ -13,7 +13,7 @@ export async function serverFetch<T>(endpoint: string, options: ServerFetchOptio
   
   // Await cookies() for Next.js 15+ compatibility
   const cookieStore = await cookies();
-  let token = cookieStore.get('accessToken')?.value;
+  const token = cookieStore.get('accessToken')?.value;
 
   const headers = new Headers(fetchOptions.headers);
   if (!(fetchOptions.body instanceof FormData)) {

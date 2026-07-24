@@ -7,14 +7,15 @@ import type { Task } from "@/features/board/types";
 import { cn } from "@/lib/utils";
 import { NotebookPen, ChevronDown, Maximize2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-
 import { useFocusStore } from "@/features/focus/store/focus.store";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface TaskNotesPanelProps {
   task: Task;
 }
 
 export function TaskNotesPanel({ task }: TaskNotesPanelProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const isVideoBackground = useFocusStore((s) => s.isVideoBackground);
   const [isOpen, setIsOpen] = useState(false);
@@ -74,7 +75,7 @@ export function TaskNotesPanel({ task }: TaskNotesPanelProps) {
       >
         <NotebookPen className="w-3.5 h-3.5 shrink-0" />
         <span>
-          {hasNotes ? "Notes" : "Thêm note"}
+          {hasNotes ? t.flow.taskNotes.hasNotes : t.flow.taskNotes.addNotes}
           {hasNotes && (
             <span className="ml-1.5 w-1.5 h-1.5 inline-block rounded-full bg-indigo-400 align-middle shadow-[0_0_6px_rgba(129,140,248,0.9)]" />
           )}
@@ -104,10 +105,10 @@ export function TaskNotesPanel({ task }: TaskNotesPanelProps) {
             ref={textareaRef}
             value={draft}
             onChange={(e) => handleChange(e.target.value)}
-            placeholder="Ghi chú nhanh cho task này... (tự động lưu)"
+            placeholder={t.flow.taskNotes.quickPlaceholder}
             rows={4}
             className={cn(
-              "w-full resize-none bg-transparent pl-4 pr-10 pt-3 pb-8 text-sm",
+              "w-full resize-none bg-transparent pl-4 pr-10 pt-3 pb-8 text-sm font-medium",
               isVideoBackground ? "text-white placeholder:text-white/40" : "text-foreground placeholder:text-muted-foreground/50",
               "focus:outline-none scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
             )}
@@ -116,49 +117,67 @@ export function TaskNotesPanel({ task }: TaskNotesPanelProps) {
           <button
             type="button"
             onClick={() => setIsExpanded(true)}
-            className="absolute top-2.5 right-2.5 p-1.5 rounded-lg text-muted-foreground/60 hover:text-foreground hover:bg-muted/80 transition-colors"
-            title="Phóng to ghi chú"
+            className="absolute top-2.5 right-2.5 p-1.5 rounded-lg text-muted-foreground/60 hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
+            title={t.flow.taskNotes.expandTitle}
           >
             <Maximize2 className="w-3.5 h-3.5" />
           </button>
           {/* Auto-save indicator */}
           <div className="absolute bottom-2 right-3 text-[10px] font-medium text-muted-foreground/60 select-none">
-            {isSaving ? "Đang lưu..." : draft !== (task.notes ?? "") ? "" : draft ? "✓ Đã lưu" : ""}
+            {isSaving ? t.flow.taskNotes.saving : draft !== (task.notes ?? "") ? "" : draft ? t.flow.taskNotes.saved : ""}
           </div>
         </div>
       </div>
 
-      {/* Expanded Notes Modal */}
+      {/* Expanded Notes Modal — Liquid Glassmorphism */}
       <Dialog open={isExpanded} onOpenChange={setIsExpanded}>
-        <DialogContent aria-describedby={undefined} className="max-w-2xl h-[70vh] flex flex-col p-6 rounded-2xl bg-card border border-border z-[200]">
-          <DialogHeader className="border-b border-border/50 pb-3 flex flex-row items-center gap-2 select-none">
-            <NotebookPen className="w-4 h-4 text-indigo-400" />
-            <DialogTitle className="text-sm font-semibold text-foreground">
-              Ghi chú: {task.title}
+        <DialogContent
+          aria-describedby={undefined}
+          className={cn(
+            "max-w-2xl h-[70vh] flex flex-col p-6 rounded-3xl z-[200] transition-all duration-300 shadow-2xl border backdrop-blur-2xl overflow-hidden",
+            isVideoBackground
+              ? "bg-black/55 border-white/20 text-white shadow-[0_16px_50px_rgba(0,0,0,0.6)] ring-1 ring-white/15"
+              : "bg-card/85 dark:bg-card/85 border-border/80 text-card-foreground shadow-[0_16px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_16px_50px_rgba(0,0,0,0.7)] ring-1 ring-white/10"
+          )}
+        >
+          <DialogHeader className="border-b border-border/50 pb-3 flex flex-row items-center gap-2.5 select-none">
+            <div className="w-8 h-8 rounded-xl bg-indigo-500/15 border border-indigo-500/25 text-indigo-400 flex items-center justify-center shrink-0 shadow-xs">
+              <NotebookPen className="w-4 h-4 text-indigo-400" />
+            </div>
+            <DialogTitle className="text-sm font-bold tracking-tight text-foreground">
+              {t.flow.taskNotes.title(task.title)}
             </DialogTitle>
           </DialogHeader>
           <div className="flex-1 min-h-0 relative mt-4">
             <textarea
               value={draft}
               onChange={(e) => handleChange(e.target.value)}
-              placeholder="Ghi chú chi tiết cho task này... (tự động lưu)"
+              placeholder={t.flow.taskNotes.detailPlaceholder}
               className={cn(
-                "w-full h-full resize-none bg-transparent text-sm text-foreground",
-                "placeholder:text-muted-foreground/50 focus:outline-none",
-                "scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
+                "w-full h-full resize-none bg-transparent text-sm leading-relaxed font-medium",
+                isVideoBackground ? "text-white placeholder:text-white/40" : "text-foreground placeholder:text-muted-foreground/50",
+                "focus:outline-none scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
               )}
             />
           </div>
           <div className="flex items-center justify-between border-t border-border/50 pt-3 text-xs text-muted-foreground select-none">
-            <div>
-              {isSaving ? "Đang lưu..." : draft !== (task.notes ?? "") ? "" : draft ? "✓ Đã lưu thay đổi" : ""}
+            <div className="font-medium text-emerald-500 dark:text-emerald-400 flex items-center gap-1.5">
+              {isSaving ? (
+                <span className="animate-pulse">{t.flow.taskNotes.saving}</span>
+              ) : draft !== (task.notes ?? "") ? (
+                ""
+              ) : draft ? (
+                <span>{t.flow.taskNotes.savedChanges}</span>
+              ) : (
+                ""
+              )}
             </div>
             <button
               type="button"
               onClick={() => setIsExpanded(false)}
-              className="px-4 py-1.5 rounded-xl font-medium bg-primary text-primary-foreground hover:bg-primary/95 transition-colors cursor-pointer"
+              className="px-5 py-2 rounded-xl font-bold text-xs bg-primary hover:bg-primary/90 text-primary-foreground shadow-md shadow-primary/20 transition-all active:scale-95 cursor-pointer"
             >
-              Đóng
+              {t.flow.taskNotes.close}
             </button>
           </div>
         </DialogContent>

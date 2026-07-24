@@ -39,17 +39,22 @@ export function StickyNotesTriggerBtn({ isCollapsed = false }: StickyNotesTrigge
       return;
     }
 
-    const hiddenNotes = notes.filter((n) => n.isVisible === false);
-    if (hiddenNotes.length > 0) {
-      // Unhide all hidden notes
-      hiddenNotes.forEach((n) => {
-        updateMutation.mutate({
-          id: n.id,
-          data: { isVisible: true, isMinimized: false, zIndex: incrementMaxZIndex() },
-        });
+    // Sort notes by updatedAt/createdAt descending to find the most recent note
+    const sortedNotes = [...notes].sort((a, b) => {
+      const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      return (timeB - timeA) || (b.zIndex - a.zIndex);
+    });
+    const latestNote = sortedNotes[0];
+
+    if (!latestNote.isVisible || latestNote.isMinimized) {
+      // Unhide/restore only the most recent note
+      updateMutation.mutate({
+        id: latestNote.id,
+        data: { isVisible: true, isMinimized: false, zIndex: incrementMaxZIndex() },
       });
     } else {
-      // If all notes are already visible, toggle open the manager drawer
+      // If the most recent note is already visible, toggle open the manager drawer
       toggleManagerOpen();
     }
   };

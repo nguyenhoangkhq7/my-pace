@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import { cn } from "@/lib/utils";
+
+const emptySubscribe = () => () => {};
 
 // ─── YouTube IFrame API Types ────────────────────────────────────────────────
 
@@ -19,11 +21,13 @@ interface YTPlayer {
   getPlayerState: () => number;
   getVideoData: () => { title: string; author: string; video_id: string };
   getPlaylist: () => string[] | null;
-  loadVideoById: (videoId: string) => void;
+  loadVideoById: (opts: string | { videoId: string; startSeconds?: number; suggestedQuality?: string }) => void;
   loadPlaylist: (opts: { list: string; listType: string }) => void;
   cuePlaylist: (opts: { list: string; listType: string }) => void;
-  cueVideoById: (videoId: string) => void;
+  cueVideoById: (opts: string | { videoId: string; startSeconds?: number; suggestedQuality?: string }) => void;
   playVideoAt: (index: number) => void;
+  setPlaybackQuality?: (suggestedQuality: string) => void;
+  setSuggestedVideoQuality?: (suggestedQuality: string) => void;
 }
 
 interface YTReadyEvent {
@@ -72,11 +76,7 @@ export function SoundscapePlayer() {
   const videoBgOpacity = useFocusStore((s) => s.videoBgOpacity ?? 75);
   const videoBgBlur = useFocusStore((s) => s.videoBgBlur ?? 2);
   const activeVideoTitle = useFocusStore((s) => s.activeVideoTitle);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
   const playerRef = useRef<YTPlayer | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -235,12 +235,16 @@ export function SoundscapePlayer() {
       // When both videoId and listId are present (e.g. Radio playlists),
       // the YT Player constructor uses videoId as the starting point
       // while list/listType provide the playlist navigation context.
+      const currentQuality = useFocusStore.getState().videoQuality;
       const playerVars: Record<string, unknown> = {
         autoplay: 0,
         enablejsapi: 1,
         origin,
         rel: 0,
       };
+      if (currentQuality && currentQuality !== "auto") {
+        playerVars.vq = currentQuality;
+      }
       if (initList) {
         playerVars.listType = "playlist";
         playerVars.list = initList;
@@ -257,6 +261,11 @@ export function SoundscapePlayer() {
             playerRef.current = event.target;
             isPlayerReadyRef.current = true;
             lastUrlRef.current = useFocusStore.getState().youtubeUrl;
+
+            // Apply selected quality if not auto
+            if (currentQuality && currentQuality !== "auto") {
+              try { event.target.setPlaybackQuality?.(currentQuality); } catch {}
+            }
 
             // Apply stored volume
             const vol = useFocusStore.getState().volume;
@@ -454,6 +463,48 @@ export function SoundscapePlayer() {
     if (!playerRef.current || !isPlayerReadyRef.current) return;
     try { playerRef.current.setVolume(volume); } catch {}
   }, [volume]);
+
+  // ── Step 5: Sync video quality changes from store to the player ────────────
+  const videoQuality = useFocusStore((s) => s.videoQuality);
+  useEffect(() => {
+    if (!playerRef.current || !isPlayerReadyRef.current) return;
+    const targetQuality = videoQuality === "auto" ? "default" : videoQuality;
+
+    try {
+      if (typeof playerRef.current.setPlaybackQuality === "function") {
+        playerRef.current.setPlaybackQuality(targetQuality);
+      }
+      if (typeof playerRef.current.setSuggestedVideoQuality === "function") {
+        playerRef.current.setSuggestedVideoQuality(targetQuality);
+      }
+
+      // YouTube API ignores standalone setPlaybackQuality unless stream is re-bound with suggestedQuality
+      const videoData = typeof playerRef.current.getVideoData === "function" ? playerRef.current.getVideoData() : null;
+      const currentVid = videoData?.video_id || videoId;
+      const currentTime = typeof playerRef.current.getCurrentTime === "function" ? playerRef.current.getCurrentTime() : 0;
+      const playerState = typeof playerRef.current.getPlayerState === "function" ? playerRef.current.getPlayerState() : -1;
+
+      if (currentVid) {
+        if (playerState === 1) {
+          // Playing — reload stream at current timestamp with forced quality
+          playerRef.current.loadVideoById({
+            videoId: currentVid,
+            startSeconds: Math.floor(currentTime),
+            suggestedQuality: targetQuality,
+          });
+        } else if (playerState === 2 || playerState === 5) {
+          // Paused or cued — cue stream at current timestamp with forced quality
+          playerRef.current.cueVideoById({
+            videoId: currentVid,
+            startSeconds: Math.floor(currentTime),
+            suggestedQuality: targetQuality,
+          });
+        }
+      }
+    } catch (err) {
+      console.warn("Could not apply video quality:", err);
+    }
+  }, [videoQuality, videoId]);
 
   // ─── Render ────────────────────────────────────────────────────────────────
 

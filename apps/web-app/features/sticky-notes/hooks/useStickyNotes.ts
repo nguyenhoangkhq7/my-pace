@@ -26,8 +26,9 @@ export function useCreateStickyNoteMutation() {
       queryClient.setQueryData<StickyNote[]>(["stickyNotes"], (old = []) => [newNote, ...old]);
       queryClient.invalidateQueries({ queryKey: ["stickyNotes"] });
     },
-    onError: (err: any) => {
-      toast.error(err?.message || "Không thể tạo ghi chú mới");
+    onError: (err: unknown) => {
+      const message = err instanceof Error ? err.message : (err as { message?: string })?.message;
+      toast.error(message || "Không thể tạo ghi chú mới");
     },
   });
 }
@@ -54,8 +55,9 @@ export function useUpdateStickyNoteMutation() {
         );
       }
     },
-    onError: (err: any, _variables, context) => {
-      toast.error(err?.message || "Không thể cập nhật ghi chú");
+    onError: (err: unknown, _variables, context) => {
+      const message = err instanceof Error ? err.message : (err as { message?: string })?.message;
+      toast.error(message || "Không thể cập nhật ghi chú");
       if (context?.previousNotes) {
         queryClient.setQueryData(["stickyNotes"], context.previousNotes);
       }
@@ -77,8 +79,9 @@ export function useDeleteStickyNoteMutation() {
 
       return { previousNotes };
     },
-    onError: (err: any, _id, context) => {
-      toast.error(err?.message || "Không thể xóa ghi chú");
+    onError: (err: unknown, _id, context) => {
+      const message = err instanceof Error ? err.message : (err as { message?: string })?.message;
+      toast.error(message || "Không thể xóa ghi chú");
       if (context?.previousNotes) {
         queryClient.setQueryData(["stickyNotes"], context.previousNotes);
       }

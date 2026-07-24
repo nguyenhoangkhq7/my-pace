@@ -239,7 +239,7 @@ export function FlowPomodoro() {
             className={cn(
               "w-14 h-14 lg:w-16 lg:h-16 xl:w-20 xl:h-20 rounded-2xl transition-all shadow-lg group disabled:opacity-60 cursor-pointer",
               isVideoBackground
-                ? "bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-white/20 shadow-[0_8px_25px_rgba(0,0,0,0.3)]"
+                ? "bg-black/45 backdrop-blur-md border-white/20 text-white hover:bg-black/65 shadow-[0_8px_25px_rgba(0,0,0,0.4)]"
                 : "border-border bg-card text-muted-foreground hover:text-foreground hover:bg-accent"
             )}
             onClick={handleStop}
@@ -257,7 +257,7 @@ export function FlowPomodoro() {
             className={cn(
               "w-14 h-14 lg:w-16 lg:h-16 xl:w-20 xl:h-20 rounded-2xl transition-all shadow-lg group relative cursor-pointer",
               isVideoBackground
-                ? "bg-indigo-500/20 backdrop-blur-md border-indigo-300/30 text-indigo-200 hover:bg-indigo-500/35 hover:border-indigo-300/50 shadow-[0_8px_25px_rgba(99,102,241,0.25)]"
+                ? "bg-black/45 backdrop-blur-md border-indigo-300/40 text-indigo-300 hover:bg-black/65 shadow-[0_8px_25px_rgba(0,0,0,0.4)]"
                 : "border-indigo-500/30 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 hover:border-indigo-500/50"
             )}
             onClick={() => setIsChecklistModalOpen(true)}
@@ -276,29 +276,31 @@ export function FlowPomodoro() {
              <Button 
                size="icon" 
                className={cn(
-                 "w-20 h-20 lg:w-24 lg:h-24 xl:w-28 xl:h-28 rounded-full text-white transition-all hover:scale-105 active:scale-95 cursor-pointer",
+                 "w-14 h-14 lg:w-16 lg:h-16 xl:w-20 xl:h-20 rounded-2xl text-white transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer shadow-xl relative overflow-hidden group/btn shrink-0",
                  isVideoBackground
-                   ? "bg-gradient-to-tr from-indigo-500/40 via-indigo-600/40 to-cyan-400/40 backdrop-blur-xl border border-white/35 shadow-[0_0_35px_rgba(99,102,241,0.4)]"
-                   : "bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-700 hover:from-indigo-400 hover:to-violet-600 shadow-[0_0_35px_rgba(99,102,241,0.4)] border-none"
+                   ? "bg-gradient-to-tr from-indigo-500 via-indigo-600 to-cyan-500 backdrop-blur-xl border-2 border-white/40 shadow-[0_0_35px_rgba(99,102,241,0.6)]"
+                   : "bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-700 hover:from-indigo-400 hover:to-violet-600 shadow-[0_0_35px_rgba(99,102,241,0.5)] border-2 border-indigo-400/40"
                )}
                onClick={startTimer}
                title="Bắt đầu"
              >
-               <Play fill="currentColor" strokeWidth={2.5} className="w-8 h-8 lg:w-10 lg:h-10 xl:w-12 xl:h-12 ml-1" />
+               <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/btn:opacity-100 transition-opacity rounded-2xl" />
+               <Play fill="currentColor" strokeWidth={2.5} className="w-6 h-6 lg:w-7 lg:h-7 xl:w-8 xl:h-8 ml-0.5 group-hover/btn:scale-110 transition-transform" />
              </Button>
           ) : (
             <Button 
                size="icon" 
                className={cn(
-                 "w-20 h-20 lg:w-24 lg:h-24 xl:w-28 xl:h-28 rounded-full transition-all hover:scale-105 active:scale-95 cursor-pointer",
+                 "w-14 h-14 lg:w-16 lg:h-16 xl:w-20 xl:h-20 rounded-2xl text-white transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer shadow-xl relative overflow-hidden group/btn shrink-0",
                  isVideoBackground
-                   ? "bg-white/20 backdrop-blur-xl border border-white/30 text-white shadow-[0_0_35px_rgba(255,255,255,0.2)] hover:bg-white/30"
-                   : "bg-card hover:bg-accent text-foreground shadow-xl border border-border"
+                   ? "bg-gradient-to-br from-amber-500 via-orange-600 to-amber-600 backdrop-blur-xl border-2 border-amber-300/60 shadow-[0_0_35px_rgba(245,158,11,0.6)]"
+                   : "bg-gradient-to-br from-amber-500 via-amber-600 to-orange-600 hover:from-amber-400 hover:to-orange-500 shadow-[0_0_35px_rgba(245,158,11,0.5)] border-2 border-amber-300/40"
                )}
                onClick={pauseTimer}
                title="Tạm dừng"
              >
-               <Pause fill="currentColor" strokeWidth={2.5} className="w-8 h-8 lg:w-10 lg:h-10 xl:w-12 xl:h-12 text-current" />
+               <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/btn:opacity-100 transition-opacity rounded-2xl" />
+               <Pause fill="currentColor" strokeWidth={2.5} className="w-6 h-6 lg:w-7 lg:h-7 xl:w-8 xl:h-8 text-white group-hover/btn:scale-110 transition-transform" />
              </Button>
           )}
 
@@ -309,7 +311,7 @@ export function FlowPomodoro() {
             className={cn(
               "w-14 h-14 lg:w-16 lg:h-16 xl:w-20 xl:h-20 rounded-2xl transition-all shadow-lg group cursor-pointer",
               isVideoBackground
-                ? "bg-emerald-500/20 backdrop-blur-md border border-emerald-300/30 text-emerald-300 hover:bg-emerald-500/35 hover:border-emerald-300/50 shadow-[0_8px_25px_rgba(16,185,129,0.25)]"
+                ? "bg-black/45 backdrop-blur-md border-emerald-300/40 text-emerald-300 hover:bg-black/65 shadow-[0_8px_25px_rgba(0,0,0,0.4)]"
                 : "border-emerald-500/30 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 hover:border-emerald-500/50"
             )}
             onClick={handleCompleteClick}

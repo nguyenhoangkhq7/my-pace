@@ -32,7 +32,7 @@ function highlightRangeWithTreeWalker(range: Range, color: string): void {
         if (range.intersectsNode(node)) {
           return NodeFilter.FILTER_ACCEPT;
         }
-      } catch (_e) {
+      } catch {
         return NodeFilter.FILTER_REJECT;
       }
       return NodeFilter.FILTER_REJECT;
@@ -334,7 +334,7 @@ export function applyVanishingHighlightToSelection(editor: HTMLElement): boolean
         if (range.intersectsNode(node)) {
           return NodeFilter.FILTER_ACCEPT;
         }
-      } catch (_e) {
+      } catch {
         return NodeFilter.FILTER_REJECT;
       }
       return NodeFilter.FILTER_REJECT;

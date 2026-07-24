@@ -30,7 +30,6 @@ import {
   AlertTriangle,
   Eye,
   EyeOff,
-  Check,
   X,
   Sparkles,
   LayoutGrid,

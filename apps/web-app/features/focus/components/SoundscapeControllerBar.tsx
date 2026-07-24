@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 import { 
   Play, Pause, SkipForward, SkipBack, ChevronsRight, ChevronsLeft,
-  Volume2, Volume1, VolumeX, Repeat, Shuffle, PanelRightOpen, Music, Tv, SlidersHorizontal
+  Volume2, Volume1, VolumeX, Repeat, Shuffle, PanelRightOpen, Music, Tv
 } from "lucide-react";
 import { useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -37,6 +37,8 @@ export function SoundscapeControllerBar({ onExpandZenZone }: SoundscapeControlle
   const videoBgBlur = useFocusStore((s) => s.videoBgBlur ?? 2);
   const setVideoBgOpacity = useFocusStore((s) => s.setVideoBgOpacity);
   const setVideoBgBlur = useFocusStore((s) => s.setVideoBgBlur);
+  const videoQuality = useFocusStore((s) => s.videoQuality ?? "auto");
+  const setVideoQuality = useFocusStore((s) => s.setVideoQuality);
 
   const [prevVolume, setPrevVolume] = useState(volume);
   const [sliderValue, setSliderValue] = useState(0);
@@ -293,6 +295,23 @@ export function SoundscapeControllerBar({ onExpandZenZone }: SoundscapeControlle
                     onChange={(e) => setVideoBgBlur(Number(e.target.value))}
                     className="w-full h-1 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
                   />
+                </div>
+
+                <div className="space-y-1.5 pt-1 border-t border-border/50">
+                  <div className="flex items-center justify-between text-[11px] font-medium text-muted-foreground">
+                    <span>Chất lượng Video</span>
+                  </div>
+                  <select
+                    value={videoQuality}
+                    onChange={(e) => setVideoQuality(e.target.value as "auto" | "hd1080" | "hd720" | "large" | "medium")}
+                    className="w-full text-xs bg-muted/60 border border-border rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer font-medium"
+                  >
+                    <option value="auto">Tự động (Mặc định YouTube)</option>
+                    <option value="hd1080">1080p (Full HD - Sắc nét)</option>
+                    <option value="hd720">720p (Cân bằng - Khuyên dùng)</option>
+                    <option value="large">480p (Tiết kiệm RAM)</option>
+                    <option value="medium">360p (Siêu tiết kiệm)</option>
+                  </select>
                 </div>
               </div>
             ) : (
