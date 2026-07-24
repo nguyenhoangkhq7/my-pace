@@ -204,6 +204,8 @@ export function usePomodoro() {
     }
   }, [activeTaskId]);
 
+  const updateTaskMutate = updateTaskMutation.mutate;
+
   // Auto-save actualMinutes every 5 minutes (checkpoint-based)
   // Check every 5 seconds to avoid subscribing React component to per-second timer ticks
   const AUTOSAVE_INTERVAL_MIN = 5;
@@ -217,7 +219,7 @@ export function usePomodoro() {
       const currentCheckpoint = Math.floor(currentMinutes / AUTOSAVE_INTERVAL_MIN) * AUTOSAVE_INTERVAL_MIN;
       if (lastSavedMinutesRef.current !== -1 && currentCheckpoint > lastSavedMinutesRef.current) {
         lastSavedMinutesRef.current = currentCheckpoint;
-        updateTaskMutation.mutate({
+        updateTaskMutate({
           id: activeTaskId,
           data: { actualMinutes: currentMinutes }
         });
@@ -226,7 +228,8 @@ export function usePomodoro() {
 
     const timerId = setInterval(checkAutosave, 5000);
     return () => clearInterval(timerId);
-  }, [activeTaskId, pomodoroState, updateTaskMutation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTaskId, pomodoroState]);
 
   // State transitions sound manager + opportunistic save on pause/break
   const prevStateRef = useRef<string>("idle");
@@ -234,16 +237,16 @@ export function usePomodoro() {
     const prev = prevStateRef.current;
     prevStateRef.current = pomodoroState;
 
-    // Save actual minutes whenever user pauses or a session ends (low-cost precise save)
+    // Save actual minutes ONLY on state transitions (not repeatedly while in breaking/finished state)
     const shouldSave = (
       (pomodoroState === "paused" && (prev === "focusing" || prev === "breaking")) ||
-      pomodoroState === "breaking" ||
-      pomodoroState === "finished"
+      (pomodoroState === "breaking" && prev === "focusing") ||
+      (pomodoroState === "finished" && prev !== "finished")
     );
     if (shouldSave && activeTaskId) {
       const mins = Math.round(useFocusStore.getState().accumulatedFocusTime / 60);
       if (mins > 0) {
-        updateTaskMutation.mutate({ id: activeTaskId, data: { actualMinutes: mins } });
+        updateTaskMutate({ id: activeTaskId, data: { actualMinutes: mins } });
         lastSavedMinutesRef.current = mins;
       }
     }
@@ -263,7 +266,8 @@ export function usePomodoro() {
         playCelebration();
       }
     }
-  }, [pomodoroState, activeTaskId, updateTaskMutation, playFocusStart, playTimerPause, playCelebration]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pomodoroState, activeTaskId, playFocusStart, playTimerPause, playCelebration]);
 
   // Cleanup: Save progress when navigating away (unmounting)
   useEffect(() => {

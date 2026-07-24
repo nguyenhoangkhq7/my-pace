@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAvailableTimeAction, checkinAction } from "../actions/available-time.action";
 import { useGamificationStore } from "@/features/gamification";
@@ -64,18 +64,19 @@ export function useAvailableTimeQuery(date: string) {
     return () => clearInterval(interval);
   }, [queryData, date, timezone, queryClient]);
 
-  const calculatedAvailableMinutes = queryData
-    ? Math.max(0, queryData.availableMinutes - decrementedMinutes)
-    : undefined;
+  const data = useMemo(() => {
+    if (!queryData) return undefined;
+    const mins = Math.max(0, queryData.availableMinutes - decrementedMinutes);
+    if (mins === queryData.availableMinutes) return queryData;
+    return {
+      ...queryData,
+      availableMinutes: mins,
+    };
+  }, [queryData, decrementedMinutes]);
 
   return {
     ...query,
-    data: queryData
-      ? {
-          ...queryData,
-          availableMinutes: calculatedAvailableMinutes ?? queryData.availableMinutes,
-        }
-      : undefined,
+    data,
   };
 }
 

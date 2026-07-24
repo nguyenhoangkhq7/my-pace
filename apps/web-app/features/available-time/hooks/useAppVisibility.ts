@@ -1,54 +1,41 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAvailableTimeQuery, useCheckinMutation } from "./useAvailableTime";
-import { getDailyPlanAction } from "@/features/board/actions/plan.action";
-
 import { useAuthStore } from "@/features/auth";
 import { getTodayStr as getTodayStrHelper } from "@/lib/date";
 
-function getTodayStr() {
-  const { user } = useAuthStore.getState();
-  return getTodayStrHelper(user?.timezone);
-}
-
 export function useAppVisibility() {
-  const todayStr = getTodayStr();
-  
-  const { data: dataToday, refetch: refetchAvailableTime } = useAvailableTimeQuery(todayStr);
+  const user = useAuthStore((s) => s.user);
+  const todayStr = getTodayStrHelper(user?.timezone);
+
+  const queryClient = useQueryClient();
+  const { data: dataToday } = useAvailableTimeQuery(todayStr);
   const checkinMutation = useCheckinMutation();
-  const { refetch: refetchDailyPlan } = useQuery({ 
-    queryKey: ['dailyPlan', todayStr], 
-    queryFn: () => getDailyPlanAction(todayStr) 
-  });
 
   const lastCheckedDate = useRef<string>("");
-
-  const refreshAll = useCallback(() => {
-    refetchAvailableTime();
-    refetchDailyPlan();
-  }, [refetchAvailableTime, refetchDailyPlan]);
+  const checkinMutate = checkinMutation.mutate;
 
   // 1. Auto Check-in when user opens app on a new day
   useEffect(() => {
-    const today = getTodayStr();
+    const today = getTodayStrHelper(user?.timezone);
 
-    // Wait until dataToday has been fetched from the server and is not null
     if (dataToday !== null && dataToday !== undefined && !dataToday.checkedIn) {
       if (lastCheckedDate.current !== today) {
         lastCheckedDate.current = today;
-        // Auto checkin in background
-        checkinMutation.mutate({ date: today });
+        checkinMutate({ date: today });
       }
     }
-  }, [dataToday, checkinMutation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataToday?.checkedIn, dataToday?.checkinTime, user?.timezone]);
 
   // 2. Realtime Recalculation on window focus or visibility change
   useEffect(() => {
     const handleFocusOrVisible = () => {
       if (document.visibilityState === "visible") {
-        refreshAll();
+        queryClient.invalidateQueries({ queryKey: ["availableTime", todayStr] });
+        queryClient.invalidateQueries({ queryKey: ["dailyPlan", todayStr] });
       }
     };
 
@@ -59,5 +46,5 @@ export function useAppVisibility() {
       window.removeEventListener("focus", handleFocusOrVisible);
       document.removeEventListener("visibilitychange", handleFocusOrVisible);
     };
-  }, [refreshAll]);
+  }, [queryClient, todayStr]);
 }
