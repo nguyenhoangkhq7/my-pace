@@ -44,11 +44,11 @@ export function FlowPage() {
   const pomodoroState = useFocusStore((s) => s.pomodoroState);
   const openFocusMode = useFocusStore((s) => s.openFocusMode);
   const activeTaskId = useFocusStore((s) => s.activeTaskId);
-  const accumulatedFocusTime = useFocusStore((s) => s.accumulatedFocusTime);
   const pauseTimer = useFocusStore((s) => s.pauseTimer);
   const resumeTimer = useFocusStore((s) => s.resumeTimer);
   const closeFocusMode = useFocusStore((s) => s.closeFocusMode);
   const isZenFull = useFocusStore((s) => s.isZenFull);
+  const isVideoBackground = useFocusStore((s) => s.isVideoBackground);
   const queryClient = useQueryClient();
   const currentDate = getTodayStr(user?.timezone);
   
@@ -185,20 +185,21 @@ export function FlowPage() {
     if (!pendingSwitchTask || !activeTaskId || isSavingSwitch) return;
     setIsSavingSwitch(true);
     try {
+      const accumulatedFocusTime = useFocusStore.getState().accumulatedFocusTime;
       const actualMinutes = Math.floor(accumulatedFocusTime / 60);
       if (actualMinutes > 0) {
         await updateTaskMutation.mutateAsync({ id: activeTaskId, data: { actualMinutes } });
       }
-    } catch (err) {
-      console.error(err);
-      toast.error("Không thể lưu tiến trình.");
-    } finally {
-      setIsSavingSwitch(false);
       setIsSwitchDialogOpen(false);
       const next = pendingSwitchTask;
       setPendingSwitchTask(null);
       closeFocusMode();
       doSwitch(next);
+    } catch (err) {
+      console.error(err);
+      toast.error("Không thể lưu tiến trình.");
+    } finally {
+      setIsSavingSwitch(false);
     }
   };
 
@@ -255,7 +256,10 @@ export function FlowPage() {
   const zenzoneSize  = isXl ? (sizes[2] ?? 20) : 0;
 
   return (
-    <div className="h-full w-full bg-background text-foreground overflow-hidden flex flex-col relative">
+    <div className={cn(
+      "h-full w-full text-foreground overflow-hidden flex flex-col relative transition-colors duration-300",
+      isVideoBackground ? "bg-transparent" : "bg-background"
+    )}>
       <div className="flex-1 min-h-0 relative">
         {/* Fix iframe stealing mouse events during resize, and prevent collapsed panel display:none */}
         <style dangerouslySetInnerHTML={{__html: `
@@ -301,8 +305,8 @@ export function FlowPage() {
               {...({ onCollapse: () => setIsLeftCollapsed(true), onExpand: () => setIsLeftCollapsed(false) } as Record<string, unknown>)}
             >
               <div className={cn(
-                "h-full w-full overflow-y-auto transition-opacity duration-700",
-                pomodoroState === "focusing" && !isZenFull ? "opacity-20 hover:opacity-100" : ""
+                "relative z-10 h-full w-full overflow-y-auto transition-opacity duration-700",
+                pomodoroState === "focusing" && !isZenFull ? "opacity-40 hover:opacity-100" : ""
               )}>
                 <FlowTodoList onTaskSelect={handleTaskSelect} />
               </div>
@@ -335,7 +339,7 @@ export function FlowPage() {
           collapsible={true}
           collapsedSize={0}
         >
-          <div className="h-full w-full relative">
+          <div className="h-full w-full relative z-10">
             <div className="h-full w-full flex items-center justify-center overflow-y-auto">
               <FlowPomodoro />
             </div>
@@ -343,42 +347,40 @@ export function FlowPage() {
         </ResizablePanel>
 
         {/* ── Cột Phải: Zen Zone ───────────────────────────────────── */}
+        {/* Right handle: shown even in Zen Full mode so user can squeeze to exit */}
         {isXl && (
-          <>
-            {/* Right handle: shown even in Zen Full mode so user can squeeze to exit */}
-            <ResizableHandle
-              withHandle
-              className={cn(
-                "transition-all duration-200",
-                isRightCollapsed
-                  ? "opacity-0 pointer-events-none !w-0 !min-w-0 !max-w-0 overflow-hidden"
-                  : ""
-              )}
-            />
-
-            <ResizablePanel
-              id="zenzone-panel"
-              {...({ order: 3 } as Record<string, unknown>)}
-              defaultSize={zenzoneSize}
-              minSize={15}
-              collapsible={true}
-              collapsedSize={0}
-              {...({ onCollapse: () => setIsRightCollapsed(true), onExpand: () => setIsRightCollapsed(false) } as Record<string, unknown>)}
-            >
-              {/*
-                FlowZenZone is ALWAYS mounted here — the iframe never reloads.
-                In Zen Full mode: panel is expanded to 100% via setLayout().
-                In normal mode: panel is at its saved size.
-              */}
-              <div className={cn(
-                "h-full w-full overflow-y-auto transition-opacity duration-700",
-                pomodoroState === "focusing" && !isZenFull ? "opacity-20 hover:opacity-100" : ""
-              )}>
-                <FlowZenZone onExit={handleExitZenFull} onCollapse={handleCollapseZenZone} />
-              </div>
-            </ResizablePanel>
-          </>
+          <ResizableHandle
+            withHandle
+            className={cn(
+              "transition-all duration-200",
+              isRightCollapsed
+                ? "opacity-0 pointer-events-none !w-0 !min-w-0 !max-w-0 overflow-hidden"
+                : ""
+            )}
+          />
         )}
+
+        <ResizablePanel
+          id="zenzone-panel"
+          {...({ order: 3 } as Record<string, unknown>)}
+          defaultSize={zenzoneSize}
+          minSize={15}
+          collapsible={true}
+          collapsedSize={0}
+          {...({ onCollapse: () => setIsRightCollapsed(true), onExpand: () => setIsRightCollapsed(false) } as Record<string, unknown>)}
+        >
+          {/*
+            FlowZenZone is ALWAYS mounted here — the iframe never reloads.
+            In Zen Full mode: panel is expanded to 100% via setLayout().
+            In normal mode: panel is at its saved size.
+          */}
+          <div className={cn(
+            "relative z-10 h-full w-full overflow-y-auto transition-opacity duration-700",
+            pomodoroState === "focusing" && !isZenFull && !isVideoBackground ? "opacity-40 hover:opacity-100" : ""
+          )}>
+            <FlowZenZone onExit={handleExitZenFull} onCollapse={handleCollapseZenZone} />
+          </div>
+        </ResizablePanel>
       </ResizablePanelGroup>
       </div>
 
@@ -399,7 +401,6 @@ export function FlowPage() {
         isOpen={isSwitchDialogOpen}
         currentTaskTitle={tasks.find((t) => t.id === activeTaskId)?.title ?? ""}
         pendingTask={pendingSwitchTask}
-        accumulatedFocusTime={accumulatedFocusTime}
         isSaving={isSavingSwitch}
         onCancel={handleSwitchCancel}
         onDiscard={handleSwitchDiscard}

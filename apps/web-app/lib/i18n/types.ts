@@ -561,6 +561,18 @@ export interface Translations {
     todayTasksCount: (count: number) => string;
     enterFullscreen: string;
     exitFullscreen: string;
+    taskNotes: {
+      hasNotes: string;
+      addNotes: string;
+      quickPlaceholder: string;
+      detailPlaceholder: string;
+      expandTitle: string;
+      title: (title: string) => string;
+      saving: string;
+      saved: string;
+      savedChanges: string;
+      close: string;
+    };
     player: {
       noTrack: string;
       myPacePlayer: string;
@@ -591,4 +603,49 @@ export interface Translations {
     submitting: string;
     submit: string;
   };
+  stickyNotes: {
+    title: string;
+    description: string;
+    newNote: string;
+    searchPlaceholder: string;
+    allColors: string;
+    noNotesFound: string;
+    createFirstNote: string;
+    triggerBtn: string;
+    untitled: string;
+    writePlaceholder: string;
+    pin: string;
+    unpin: string;
+    hide: string;
+    show: string;
+    delete: string;
+    colorAmber: string;
+    colorEmerald: string;
+    colorIndigo: string;
+    colorRose: string;
+    colorViolet: string;
+    colorDark: string;
+    confirmDeleteTitle: string;
+    confirmDeleteDesc: string;
+    presentationMode: string;
+    turnOffPresentation: string;
+    changeColor: string;
+    penTool: string;
+    vanishingPen: string;
+    eraser: string;
+    pointer: string;
+    clearAllHighlights: string;
+    exitPresentation: string;
+    textColor: string;
+    fontSize: string;
+    list: string;
+    bold: string;
+    italic: string;
+    underline: string;
+    strikethrough: string;
+    doubleClickToRename: string;
+    doubleClickToMaximize: string;
+    options: string;
+  };
 }
+

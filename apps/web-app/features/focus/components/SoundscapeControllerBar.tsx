@@ -5,9 +5,10 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 import { 
   Play, Pause, SkipForward, SkipBack, ChevronsRight, ChevronsLeft,
-  Volume2, Volume1, VolumeX, Repeat, Shuffle, PanelRightOpen, Music
+  Volume2, Volume1, VolumeX, Repeat, Shuffle, PanelRightOpen, Music, Tv
 } from "lucide-react";
 import { useState } from "react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface SoundscapeControllerBarProps {
   onExpandZenZone: () => void;
@@ -15,11 +16,29 @@ interface SoundscapeControllerBarProps {
 
 export function SoundscapeControllerBar({ onExpandZenZone }: SoundscapeControllerBarProps) {
   const { t } = useTranslation();
-  const {
-    isPlaying, volume, currentTime, duration, isLooping, isShuffle,
-    activeVideoTitle, activeVideoAuthor, activeVideoId, playerControls,
-    setVolume, setIsLooping, setIsShuffle, playNextSoundscape, playPrevSoundscape
-  } = useFocusStore();
+  const isPlaying = useFocusStore((s) => s.isPlaying);
+  const volume = useFocusStore((s) => s.volume);
+  const currentTime = useFocusStore((s) => s.currentTime);
+  const duration = useFocusStore((s) => s.duration);
+  const isLooping = useFocusStore((s) => s.isLooping);
+  const isShuffle = useFocusStore((s) => s.isShuffle);
+  const activeVideoTitle = useFocusStore((s) => s.activeVideoTitle);
+  const activeVideoAuthor = useFocusStore((s) => s.activeVideoAuthor);
+  const activeVideoId = useFocusStore((s) => s.activeVideoId);
+  const playerControls = useFocusStore((s) => s.playerControls);
+  const setVolume = useFocusStore((s) => s.setVolume);
+  const setIsLooping = useFocusStore((s) => s.setIsLooping);
+  const setIsShuffle = useFocusStore((s) => s.setIsShuffle);
+  const playNextSoundscape = useFocusStore((s) => s.playNextSoundscape);
+  const playPrevSoundscape = useFocusStore((s) => s.playPrevSoundscape);
+  const isVideoBackground = useFocusStore((s) => s.isVideoBackground);
+  const toggleVideoBackground = useFocusStore((s) => s.toggleVideoBackground);
+  const videoBgOpacity = useFocusStore((s) => s.videoBgOpacity ?? 75);
+  const videoBgBlur = useFocusStore((s) => s.videoBgBlur ?? 2);
+  const setVideoBgOpacity = useFocusStore((s) => s.setVideoBgOpacity);
+  const setVideoBgBlur = useFocusStore((s) => s.setVideoBgBlur);
+  const videoQuality = useFocusStore((s) => s.videoQuality ?? "auto");
+  const setVideoQuality = useFocusStore((s) => s.setVideoQuality);
 
   const [prevVolume, setPrevVolume] = useState(volume);
   const [sliderValue, setSliderValue] = useState(0);
@@ -75,10 +94,15 @@ export function SoundscapeControllerBar({ onExpandZenZone }: SoundscapeControlle
   const progressPercent = duration ? (currentDisplayTime / duration) * 100 : 0;
 
   return (
-    <div className="h-20 bg-card/95 backdrop-blur-md border-t border-border shadow-[0_-8px_30px_rgba(0,0,0,0.15)] dark:shadow-[0_-8px_30px_rgba(0,0,0,0.5)] px-4 flex items-center justify-between gap-4 select-none shrink-0 transition-all duration-300 relative z-[40]">
+    <div className={cn(
+      "h-20 border-t px-4 flex items-center justify-between gap-4 select-none shrink-0 transition-all duration-300 relative z-[40]",
+      isVideoBackground 
+        ? "bg-sidebar/40 backdrop-blur-md border-sidebar-border/40 shadow-[0_-8px_30px_rgba(0,0,0,0.3)]" 
+        : "bg-card/95 border-border shadow-[0_-8px_30px_rgba(0,0,0,0.15)] dark:shadow-[0_-8px_30px_rgba(0,0,0,0.5)]"
+    )}>
       {/* ── TRÁI: Info bài hát ── */}
       <div className="flex items-center gap-3 w-1/4 min-w-[180px]">
-        <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted border border-border flex items-center justify-center shrink-0 shadow-inner group relative">
+        <div className="w-12 h-12 rounded-xl overflow-hidden bg-muted/80 border border-border/80 flex items-center justify-center shrink-0 shadow-md group relative">
           {thumbnailSrc ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img 
@@ -94,7 +118,7 @@ export function SoundscapeControllerBar({ onExpandZenZone }: SoundscapeControlle
           )}
         </div>
         <div className="flex flex-col min-w-0">
-          <span className="text-sm font-semibold text-foreground truncate hover:text-primary transition-colors cursor-default" title={activeVideoTitle}>
+          <span className="text-sm font-semibold text-foreground truncate hover:text-primary transition-colors cursor-default drop-shadow-xs" title={activeVideoTitle}>
             {activeVideoTitle || t.flow.player.noTrack}
           </span>
           <span className="text-xs text-muted-foreground truncate cursor-default mt-0.5" title={activeVideoAuthor}>
@@ -141,13 +165,13 @@ export function SoundscapeControllerBar({ onExpandZenZone }: SoundscapeControlle
           {/* Play/Pause */}
           <button
             onClick={handlePlayPause}
-            className="w-8 h-8 rounded-full bg-foreground hover:scale-105 transition-transform flex items-center justify-center text-background cursor-pointer shadow-md"
+            className="w-9 h-9 rounded-full bg-gradient-to-tr from-cyan-500 to-indigo-500 hover:scale-105 transition-all flex items-center justify-center text-white cursor-pointer shadow-[0_0_15px_rgba(34,211,238,0.4)]"
             title={isPlaying ? t.flow.player.pause : t.flow.player.play}
           >
             {isPlaying ? (
-              <Pause className="w-4.5 h-4.5 fill-background text-background ml-[0.5px]" />
+              <Pause className="w-4.5 h-4.5 fill-white text-white ml-[0.5px]" />
             ) : (
-              <Play className="w-4.5 h-4.5 fill-background text-background ml-[2px]" />
+              <Play className="w-4.5 h-4.5 fill-white text-white ml-[2px]" />
             )}
           </button>
 
@@ -208,18 +232,107 @@ export function SoundscapeControllerBar({ onExpandZenZone }: SoundscapeControlle
       </div>
 
       {/* ── PHẢI: Âm lượng & Thao tác ── */}
-      <div className="flex items-center justify-end gap-3 w-1/4 min-w-[180px]">
+      <div className="flex items-center justify-end gap-2.5 w-1/4 min-w-[200px]">
+        {/* Popover Nút bật/tắt & chỉnh Video Nền */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              className={cn(
+                "p-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 text-xs font-semibold shrink-0",
+                isVideoBackground 
+                  ? "bg-primary/20 text-primary border border-primary/30 shadow-xs" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
+              )}
+              title="Tùy chỉnh Video Nền toàn trang (Độ mờ & Độ phủ)"
+            >
+              <Tv className="w-4 h-4 text-primary" />
+              <span className="hidden md:inline text-[11px]">{isVideoBackground ? "Nền: Bật" : "Nền: Tắt"}</span>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-64 p-3 bg-card border border-border text-foreground shadow-2xl rounded-xl space-y-3 z-[100]" side="top" align="end">
+            <div className="flex items-center justify-between pb-2 border-b border-border">
+              <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <Tv className="w-3.5 h-3.5 text-primary" /> Video Nền Toàn App
+              </span>
+              <button
+                onClick={toggleVideoBackground}
+                className={cn(
+                  "text-[10px] font-bold px-2 py-0.5 rounded-full border transition-all cursor-pointer",
+                  isVideoBackground ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" : "bg-muted text-muted-foreground border-border"
+                )}
+              >
+                {isVideoBackground ? "BẬT" : "TẮT"}
+              </button>
+            </div>
+
+            {isVideoBackground ? (
+              <div className="space-y-3 pt-1">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px] font-medium text-muted-foreground">
+                    <span>Độ phủ tối (Opacity)</span>
+                    <span className="font-mono text-foreground font-bold">{videoBgOpacity}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="10"
+                    max="95"
+                    value={videoBgOpacity}
+                    onChange={(e) => setVideoBgOpacity(Number(e.target.value))}
+                    className="w-full h-1 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px] font-medium text-muted-foreground">
+                    <span>Độ mờ kính (Blur)</span>
+                    <span className="font-mono text-foreground font-bold">{videoBgBlur}px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="10"
+                    value={videoBgBlur}
+                    onChange={(e) => setVideoBgBlur(Number(e.target.value))}
+                    className="w-full h-1 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                  />
+                </div>
+
+                <div className="space-y-1.5 pt-1 border-t border-border/50">
+                  <div className="flex items-center justify-between text-[11px] font-medium text-muted-foreground">
+                    <span>Chất lượng Video</span>
+                  </div>
+                  <select
+                    value={videoQuality}
+                    onChange={(e) => setVideoQuality(e.target.value as "auto" | "hd1080" | "hd720" | "large" | "medium")}
+                    className="w-full text-xs bg-muted/60 border border-border rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer font-medium"
+                  >
+                    <option value="auto">Tự động (Mặc định YouTube)</option>
+                    <option value="hd1080">1080p (Full HD - Sắc nét)</option>
+                    <option value="hd720">720p (Cân bằng - Khuyên dùng)</option>
+                    <option value="large">480p (Tiết kiệm RAM)</option>
+                    <option value="medium">360p (Siêu tiết kiệm)</option>
+                  </select>
+                </div>
+              </div>
+            ) : (
+              <p className="text-[11px] text-muted-foreground text-center py-1">
+                Nhấp nút công tắc phía trên để bật Video Nền chìm toàn màn hình.
+              </p>
+            )}
+          </PopoverContent>
+        </Popover>
+
         {/* Nút bật/tắt ZenZone */}
         <button
           onClick={onExpandZenZone}
-          className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
+          className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-semibold shrink-0"
           title={t.flow.player.expandZen}
         >
           <PanelRightOpen className="w-4 h-4 text-primary" />
-          <span className="hidden sm:inline">{t.nav.flow}</span>
+          <span className="hidden sm:inline text-[11px]">{t.nav.flow}</span>
         </button>
 
-        <div className="w-px h-6 bg-border" />
+        <div className="w-px h-6 bg-border shrink-0" />
 
         {/* Cụm điều khiển Volume */}
         <div className="flex items-center gap-2 max-w-[120px] w-full">

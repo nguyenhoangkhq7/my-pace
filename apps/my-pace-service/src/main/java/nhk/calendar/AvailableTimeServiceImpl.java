@@ -42,6 +42,7 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
                     .bufferPct(user.getBufferPct()).workingWindowMinutes(0)
                     .checkedIn(false).checkinTime(null)
                     .streak(getStreakForUser(userId, zoneId))
+                    .isPlanConfirmed(false)
                     .build();
         }
 
@@ -83,6 +84,7 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
                         .checkedIn(checkedIn)
                         .checkinTime(checkinTime != null ? checkinTime.toString().substring(0, 5) : null)
                         .streak(getStreakForUser(userId, zoneId))
+                        .isPlanConfirmed(isPlanConfirmed)
                         .build();
             }
             
@@ -119,6 +121,7 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
                     .checkedIn(checkedIn)
                     .checkinTime(checkinTime != null ? checkinTime.toString().substring(0, 5) : null)
                     .streak(getStreakForUser(userId, zoneId))
+                    .isPlanConfirmed(isPlanConfirmed)
                     .build();
         }
 
@@ -143,6 +146,7 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
                 .checkinTime(checkinTime != null ? checkinTime.toString().substring(0, 5) : null)
                 .streak(getStreakForUser(userId, zoneId))
                 .blockedIntervals(unionResult.blockedIntervals)
+                .isPlanConfirmed(isPlanConfirmed)
                 .build();
     }
 

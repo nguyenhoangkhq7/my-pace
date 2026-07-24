@@ -5,6 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateChecklistItemAction } from "@/features/board/actions/checklist.action";
+import { toast } from "sonner";
 
 interface ChecklistItemProps {
   taskId: string;
@@ -31,19 +32,24 @@ export function ChecklistItem({
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
   });
 
-  const handleCheckedChange = (checked: boolean | "indeterminate") => {
+  const handleCheckedChange = async (checked: boolean | "indeterminate") => {
     const isCompletedVal = checked === true;
-    updateChecklistItemMutation.mutate({ taskId, checklistId: itemId, data: { isCompleted: isCompletedVal } });
+    try {
+      await updateChecklistItemMutation.mutateAsync({ taskId, checklistId: itemId, data: { isCompleted: isCompletedVal } });
 
-    const allDone = (checklists || []).every((c) =>
-      c.id === itemId ? isCompletedVal : c.isCompleted
-    );
+      const allDone = (checklists || []).every((c) =>
+        c.id === itemId ? isCompletedVal : c.isCompleted
+      );
 
-    if (allDone) {
-      setTimeout(() => {
-        onOpenChange(false);
-        onAllCompleted();
-      }, 400);
+      if (allDone) {
+        setTimeout(() => {
+          onOpenChange(false);
+          onAllCompleted();
+        }, 400);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Không thể cập nhật danh sách kiểm tra.");
     }
   };
 
@@ -52,6 +58,7 @@ export function ChecklistItem({
       <Checkbox
         checked={isCompleted}
         onCheckedChange={handleCheckedChange}
+        disabled={updateChecklistItemMutation.isPending}
         className="mt-0.5 border-muted-foreground data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
       />
       <span

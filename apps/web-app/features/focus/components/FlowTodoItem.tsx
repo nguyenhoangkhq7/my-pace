@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PlayIcon, Tick01Icon } from "@hugeicons/core-free-icons";
@@ -12,9 +13,10 @@ interface FlowTodoItemProps {
   onTaskSelect?: (task: DailyPlanTask) => void;
 }
 
-export function FlowTodoItem({ task, scheduleLabel, onTaskSelect }: FlowTodoItemProps) {
+export const FlowTodoItem = memo(function FlowTodoItem({ task, scheduleLabel, onTaskSelect }: FlowTodoItemProps) {
   const activeTaskId = useFocusStore((s) => s.activeTaskId);
   const openFocusMode = useFocusStore((s) => s.openFocusMode);
+  const isVideoBackground = useFocusStore((s) => s.isVideoBackground);
 
   const isActive = task.task.id === activeTaskId;
   const isDone = task.task.status === "Done";
@@ -34,7 +36,9 @@ export function FlowTodoItem({ task, scheduleLabel, onTaskSelect }: FlowTodoItem
       className={cn(
         "p-3 rounded-xl border flex items-start space-x-3 transition-all cursor-pointer group",
         isActive
-          ? "bg-card border-indigo-500/55 shadow-[0_0_20px_rgba(99,102,241,0.15)]"
+          ? "bg-card/90 border-indigo-500/55 shadow-[0_0_20px_rgba(99,102,241,0.15)]"
+          : isVideoBackground
+          ? "bg-card/60 backdrop-blur-xs border-border/60 hover:border-indigo-500/30 hover:bg-card/80"
           : "bg-card border-border hover:border-indigo-500/30 hover:bg-muted",
         isDone ? "opacity-40 grayscale cursor-default hover:border-border hover:bg-card" : ""
       )}
@@ -86,4 +90,4 @@ export function FlowTodoItem({ task, scheduleLabel, onTaskSelect }: FlowTodoItem
       </div>
     </div>
   );
-}
+});

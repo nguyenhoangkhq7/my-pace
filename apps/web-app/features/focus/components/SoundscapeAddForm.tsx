@@ -12,7 +12,8 @@ interface SoundscapeAddFormProps {
 
 export function SoundscapeAddForm({ onCancel }: SoundscapeAddFormProps) {
   const { t } = useTranslation();
-  const { setYoutubeUrl, addToHistory } = useFocusStore();
+  const setYoutubeUrl = useFocusStore((s) => s.setYoutubeUrl);
+  const addToHistory = useFocusStore((s) => s.addToHistory);
   const [inputUrl, setInputUrl] = useState("");
   const [inputTitle, setInputTitle] = useState("");
 
