@@ -5,14 +5,15 @@ const BASE_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http
 
 interface ServerFetchOptions extends RequestInit {
   skipAuthHeader?: boolean;
+  isRetry?: boolean;
 }
 
 export async function serverFetch<T>(endpoint: string, options: ServerFetchOptions = {}): Promise<T> {
-  const { skipAuthHeader, ...fetchOptions } = options;
+  const { skipAuthHeader, isRetry, ...fetchOptions } = options;
   
   // Await cookies() for Next.js 15+ compatibility
   const cookieStore = await cookies();
-  const token = cookieStore.get('accessToken')?.value;
+  let token = cookieStore.get('accessToken')?.value;
 
   const headers = new Headers(fetchOptions.headers);
   if (!(fetchOptions.body instanceof FormData)) {
@@ -25,11 +26,65 @@ export async function serverFetch<T>(endpoint: string, options: ServerFetchOptio
 
   const url = `${BASE_URL}/${endpoint}`;
   
-  const response = await fetch(url, {
+  let response = await fetch(url, {
     cache: 'no-store',
     ...fetchOptions,
     headers,
   });
+
+  // Transparent token refresh on 401
+  if (response.status === 401 && !skipAuthHeader && !isRetry && endpoint !== 'auth/refresh') {
+    const refreshToken = cookieStore.get('refreshToken')?.value;
+    if (refreshToken) {
+      try {
+        const refreshResponse = await fetch(`${BASE_URL}/auth/refresh`, {
+          method: 'GET',
+          cache: 'no-store',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': `refreshToken=${refreshToken}`
+          },
+        });
+
+        if (refreshResponse.ok) {
+          const json = await refreshResponse.json();
+          const data = json?.data || json;
+          const newAccessToken = data?.accessToken || data?.token;
+          const newRefreshToken = data?.refreshToken;
+
+          if (newAccessToken) {
+            const isProd = process.env.NODE_ENV === 'production';
+            cookieStore.set('accessToken', newAccessToken, {
+              httpOnly: true,
+              secure: isProd,
+              sameSite: 'lax',
+              path: '/',
+              maxAge: 60 * 60 * 24 * 7,
+            });
+            if (newRefreshToken) {
+              cookieStore.set('refreshToken', newRefreshToken, {
+                httpOnly: true,
+                secure: isProd,
+                sameSite: 'lax',
+                path: '/',
+                maxAge: 60 * 60 * 24 * 30,
+              });
+            }
+
+            // Retry request with new token
+            headers.set('Authorization', `Bearer ${newAccessToken}`);
+            response = await fetch(url, {
+              cache: 'no-store',
+              ...fetchOptions,
+              headers,
+            });
+          }
+        }
+      } catch {
+        // Refresh failed, fallback to throwing original 401 error
+      }
+    }
+  }
 
   if (!response.ok) {
     let errorMessage = `Request failed with status ${response.status}`;

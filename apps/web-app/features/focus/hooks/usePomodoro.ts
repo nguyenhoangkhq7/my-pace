@@ -139,19 +139,24 @@ export function usePomodoro() {
 
   // Adjust for background time when browser wakes up tab or gets focus
   useEffect(() => {
-    adjustForElapsedTime();
+    const handleWakeUp = () => {
+      lastTickRef.current = Date.now();
+      adjustForElapsedTime();
+    };
+
+    handleWakeUp();
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        adjustForElapsedTime();
+        handleWakeUp();
       }
     };
 
-    window.addEventListener("focus", adjustForElapsedTime);
+    window.addEventListener("focus", handleWakeUp);
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      window.removeEventListener("focus", adjustForElapsedTime);
+      window.removeEventListener("focus", handleWakeUp);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [adjustForElapsedTime]);
@@ -228,7 +233,7 @@ export function usePomodoro() {
         data: { actualMinutes: currentMinutes }
       });
     }
-  }, [currentCheckpoint, activeTaskId]);
+  }, [currentCheckpoint, activeTaskId, currentMinutes, updateTaskMutation]);
 
   // State transitions sound manager + opportunistic save on pause/break
   const prevStateRef = useRef<string>("idle");
@@ -265,7 +270,7 @@ export function usePomodoro() {
         playCelebration();
       }
     }
-  }, [pomodoroState, playFocusStart, playTimerPause, playCelebration]);
+  }, [pomodoroState, activeTaskId, updateTaskMutation, playFocusStart, playTimerPause, playCelebration]);
 
   // Cleanup: Save progress when navigating away (unmounting)
   useEffect(() => {

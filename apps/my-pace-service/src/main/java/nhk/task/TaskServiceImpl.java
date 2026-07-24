@@ -24,6 +24,8 @@ public class TaskServiceImpl implements TaskService {
     private final GoalRepository goalRepository;
     private final nhk.goal.GoalService goalService;
     private final UserRepository userRepository;
+    private final nhk.planning.DailyPlanTaskRepository dailyPlanTaskRepository;
+    private final nhk.timeblock.TaskTimeBlockRepository timeBlockRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -172,9 +174,12 @@ public class TaskServiceImpl implements TaskService {
         Task task = taskRepository.findById(taskId)
                 .filter(t -> t.getUserId().equals(userId))
                 .orElseThrow(() -> new EntityNotFoundException("Task not found"));
+        UUID goalId = task.getGoalId();
+        dailyPlanTaskRepository.deleteByTaskId(taskId);
+        timeBlockRepository.deleteByTaskId(taskId);
         taskRepository.delete(task);
-        if (task.getGoalId() != null) {
-            goalService.updateGoalProgress(task.getGoalId());
+        if (goalId != null) {
+            goalService.updateGoalProgress(goalId);
         }
     }
 

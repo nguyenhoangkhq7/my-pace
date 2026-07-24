@@ -24,9 +24,15 @@ export function useAvailableTimeQuery(date: string) {
     setLocalAvailableMinutes(query.data ? query.data.availableMinutes : null);
   }
 
+  const queryClient = useQueryClient();
+
   // Smart local available time countdown ticking every 60 seconds
   useEffect(() => {
     if (!query.data || localAvailableMinutes === null || localAvailableMinutes <= 0) return;
+
+    // Do NOT run countdown if the daily plan is already confirmed (time budget is frozen at confirmation time)
+    const dailyPlan = queryClient.getQueryData<{ isConfirmed?: boolean }>(["dailyPlan", date]);
+    if (query.data.isPlanConfirmed || dailyPlan?.isConfirmed) return;
 
     // Only run countdown for "today" in the user's timezone
     const formatter = new Intl.DateTimeFormat("en-CA", {

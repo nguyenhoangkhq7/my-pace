@@ -18,7 +18,7 @@ export function useAppVisibility() {
   
   const { data: dataToday, refetch: refetchAvailableTime } = useAvailableTimeQuery(todayStr);
   const checkinMutation = useCheckinMutation();
-  const { data: dailyPlanToday, refetch: refetchDailyPlan } = useQuery({ 
+  const { refetch: refetchDailyPlan } = useQuery({ 
     queryKey: ['dailyPlan', todayStr], 
     queryFn: () => getDailyPlanAction(todayStr) 
   });

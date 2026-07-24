@@ -8,6 +8,9 @@ import { usePathname } from "next/navigation";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import { cn } from "@/lib/utils";
 
+import { StickyNotesOverlay } from "@/features/sticky-notes/components/StickyNotesOverlay";
+import { StickyNotesManagerDrawer } from "@/features/sticky-notes/components/StickyNotesManagerDrawer";
+
 export default function AppLayout({
   children,
 }: {
@@ -57,6 +60,8 @@ export default function AppLayout({
         {children}
       </main>
       <OnboardingModal />
+      <StickyNotesOverlay />
+      <StickyNotesManagerDrawer />
     </div>
   );
 }

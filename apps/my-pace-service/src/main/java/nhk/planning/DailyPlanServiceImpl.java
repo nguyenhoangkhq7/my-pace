@@ -272,7 +272,13 @@ public class DailyPlanServiceImpl implements DailyPlanService {
                 if (task == null) continue;
 
                 if ("DELETE".equalsIgnoreCase(action)) {
+                    UUID goalId = task.getGoalId();
+                    dailyPlanTaskRepository.deleteByTaskId(taskId);
+                    timeBlockRepository.deleteByTaskId(taskId);
                     taskRepository.delete(task);
+                    if (goalId != null) {
+                        goalService.updateGoalProgress(goalId);
+                    }
                 } else if ("BACKLOG".equalsIgnoreCase(action)) {
                     task.setStatus("Backlog");
                     taskRepository.save(task);

@@ -18,6 +18,8 @@ import { PomodoroTimerDisplay } from "@/features/focus/components/PomodoroTimerD
 import { ChecklistModal } from "@/features/focus/components/ChecklistModal";
 import { TaskNotesPanel } from "@/features/focus/components/TaskNotesPanel";
 
+import { FlowChecklistPanel } from "@/features/focus/components/FlowChecklistPanel";
+
 export function FlowPomodoro() {
   const { 
     activeTaskId, 
@@ -44,7 +46,6 @@ export function FlowPomodoro() {
     mutationFn: ({ id, data }: { id: string, data: Partial<Task> }) => updateTaskAction(id, data),
     onSuccess: (updatedTask) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      // Patch dailyPlan cache immediately so re-opening this task has fresh actualMinutes
       queryClient.setQueryData(['dailyPlan', todayStr], (old: DailyPlan | undefined) => {
         if (!old) return old;
         return {
@@ -85,13 +86,10 @@ export function FlowPomodoro() {
 
   const activeTask = tasks.find((t: Task) => t.id === activeTaskId);
 
-  // Sync activeTaskEstimatedMinutes whenever the real task data loads.
-  // Fixes the case where localStorage rehydrates with the old/default
-  // activeTaskEstimatedMinutes (25) instead of the true task value.
+  const realEstimated = activeTask?.estimatedMinutes ?? 25;
   const activeTaskEstimatedMinutes = useFocusStore((s) => s.activeTaskEstimatedMinutes);
   useEffect(() => {
-    if (!activeTask || !activeTaskId) return;
-    const realEstimated = activeTask.estimatedMinutes ?? 25;
+    if (!activeTaskId) return;
     if (realEstimated !== activeTaskEstimatedMinutes) {
       const { focusMinutes: fm, accumulatedFocusTime: aft } = useFocusStore.getState();
       const alreadyWorked = Math.floor(aft / 60);
@@ -103,7 +101,7 @@ export function FlowPomodoro() {
         currentSession: newCurrent,
       });
     }
-  }, [activeTask?.estimatedMinutes, activeTaskId, activeTaskEstimatedMinutes]);
+  }, [realEstimated, activeTaskId, activeTaskEstimatedMinutes]);
 
   if (!activeTaskId || !activeTask) {
     return <FlowEmptyState />;
@@ -139,10 +137,11 @@ export function FlowPomodoro() {
       
       pauseTimer();
       
-      const currentTaskIndex = dailyPlanToday?.tasks.findIndex((t: DailyPlanTask) => t.id === activePlanTaskId) ?? -1;
+      const freshPlan = queryClient.getQueryData<DailyPlan>(['dailyPlan', todayStr]) || dailyPlanToday;
+      const currentTaskIndex = freshPlan?.tasks.findIndex((t: DailyPlanTask) => t.id === activePlanTaskId) ?? -1;
       
-      if (dailyPlanToday && currentTaskIndex !== -1) {
-        const remainingTasks = dailyPlanToday.tasks.slice(currentTaskIndex + 1).concat(dailyPlanToday.tasks.slice(0, currentTaskIndex));
+      if (freshPlan && currentTaskIndex !== -1) {
+        const remainingTasks = freshPlan.tasks.slice(currentTaskIndex + 1).concat(freshPlan.tasks.slice(0, currentTaskIndex));
         const nextTask = remainingTasks.find((t: DailyPlanTask) => t.task.status !== "Done" && t.id !== activePlanTaskId);
         
         if (nextTask) {
@@ -177,11 +176,14 @@ export function FlowPomodoro() {
     }
   };
 
+  const checklists = activeTask.checklists ?? [];
+  const completedChecklistsCount = checklists.filter((c) => c.isCompleted).length;
+
   return (
     <div className="h-full w-full bg-background flex flex-col relative overflow-hidden items-center justify-center p-4">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-900/10 via-background to-background pointer-events-none"></div>
 
-      <div className="w-full max-w-lg flex flex-col items-center relative z-10 px-4 h-full max-h-[95vh] py-4">
+      <div className="w-full max-w-lg flex flex-col items-center relative z-10 px-4 h-full max-h-[95vh] py-4 overflow-y-auto scrollbar-none">
         <PomodoroTimerDisplay
           activeTask={activeTask}
           pomodoroState={pomodoroState}
@@ -193,13 +195,14 @@ export function FlowPomodoro() {
         />
 
         {/* Controls */}
-        <div className="mt-6 flex items-center justify-center gap-8 shrink-0">
+        <div className="mt-6 flex items-center justify-center gap-6 shrink-0">
           <Button 
             variant="outline" 
             size="icon" 
             disabled={isStopping}
-            className="w-12 h-12 rounded-xl border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-all shadow-inner group disabled:opacity-60"
+            className="w-12 h-12 rounded-xl border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-all shadow-inner group disabled:opacity-60 cursor-pointer"
             onClick={handleStop}
+            title="Dừng task"
           >
             {isStopping
               ? <span className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
@@ -209,44 +212,49 @@ export function FlowPomodoro() {
           {pomodoroState === "idle" || pomodoroState === "finished" || pomodoroState === "paused" ? (
              <Button 
                size="icon" 
-               className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-violet-700 hover:from-indigo-400 hover:to-violet-600 text-white shadow-[0_0_30px_rgba(99,102,241,0.4)] transition-transform hover:scale-105 active:scale-95 border-none"
+               className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-violet-700 hover:from-indigo-400 hover:to-violet-600 text-white shadow-[0_0_30px_rgba(99,102,241,0.4)] transition-transform hover:scale-105 active:scale-95 border-none cursor-pointer"
                onClick={startTimer}
+               title="Bắt đầu"
              >
                <Play fill="currentColor" strokeWidth={2.5} className="w-8 h-8 ml-1" />
              </Button>
           ) : (
             <Button 
                size="icon" 
-               className="w-20 h-20 rounded-full bg-card hover:bg-muted text-white shadow-xl transition-transform hover:scale-105 active:scale-95 border border-border"
+               className="w-20 h-20 rounded-full bg-card hover:bg-muted text-white shadow-xl transition-transform hover:scale-105 active:scale-95 border border-border cursor-pointer"
                onClick={pauseTimer}
+               title="Tạm dừng"
              >
                <Pause fill="currentColor" strokeWidth={2.5} className="w-8 h-8 text-foreground" />
              </Button>
           )}
 
+          {/* Subtasks modal button */}
           <Button 
             variant="outline" 
             size="icon" 
-            className="w-12 h-12 rounded-full border-emerald-500/20 bg-emerald-500/5 text-emerald-500 hover:bg-emerald-500/20 hover:border-emerald-500/50 transition-all shadow-inner group"
-            onClick={() => {
-              if (activeTask?.checklists && activeTask.checklists.length > 0) {
-                const allDone = activeTask.checklists.every((c) => c.isCompleted);
-                if (allDone) {
-                  handleCompleteClick();
-                } else {
-                  setIsChecklistModalOpen(true);
-                }
-              } else {
-                handleCompleteClick();
-              }
-            }}
-            disabled={isFinishing}
+            className="w-12 h-12 rounded-xl border-indigo-500/20 bg-indigo-500/5 text-indigo-400 hover:bg-indigo-500/20 hover:border-indigo-500/50 transition-all shadow-inner group relative cursor-pointer"
+            onClick={() => setIsChecklistModalOpen(true)}
+            title="Quản lý Subtask"
           >
-            {activeTask?.checklists && activeTask.checklists.length > 0 ? (
-               <ListTodo strokeWidth={2.5} className="w-5 h-5 group-hover:scale-110 transition-transform" />
-            ) : (
-               <Check strokeWidth={3} className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            <ListTodo strokeWidth={2.5} className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            {checklists.length > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 bg-indigo-500 text-white text-[10px] font-bold rounded-full h-4.5 min-w-[18px] px-1 flex items-center justify-center border border-background">
+                {completedChecklistsCount}/{checklists.length}
+              </span>
             )}
+          </Button>
+
+          {/* Complete task button */}
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="w-12 h-12 rounded-xl border-emerald-500/20 bg-emerald-500/5 text-emerald-500 hover:bg-emerald-500/20 hover:border-emerald-500/50 transition-all shadow-inner group cursor-pointer"
+            onClick={handleCompleteClick}
+            disabled={isFinishing}
+            title="Hoàn thành task"
+          >
+            <Check strokeWidth={3} className="w-5 h-5 group-hover:scale-110 transition-transform" />
           </Button>
         </div>
         
@@ -261,6 +269,10 @@ export function FlowPomodoro() {
           )}
         </div>
 
+        {/* Inline Subtasks Panel */}
+        <FlowChecklistPanel task={activeTask} />
+
+        {/* Inline Task Notes Panel */}
         <TaskNotesPanel task={activeTask} />
 
         <ChecklistModal
@@ -269,9 +281,8 @@ export function FlowPomodoro() {
           activeTask={activeTask}
           onAllCompleted={handleCompleteClick}
         />
-
-
       </div>
     </div>
   );
 }
+

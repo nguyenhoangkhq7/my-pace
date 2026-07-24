@@ -12,7 +12,8 @@ public record AvailableTimeResponse(
     boolean checkedIn,
     String checkinTime,
     int streak,
-    List<TimeInterval> blockedIntervals
+    List<TimeInterval> blockedIntervals,
+    boolean isPlanConfirmed
 ) {
     @Builder
     public record TimeInterval(

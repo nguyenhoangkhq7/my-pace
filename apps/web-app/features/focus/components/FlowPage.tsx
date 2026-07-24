@@ -189,16 +189,16 @@ export function FlowPage() {
       if (actualMinutes > 0) {
         await updateTaskMutation.mutateAsync({ id: activeTaskId, data: { actualMinutes } });
       }
-    } catch (err) {
-      console.error(err);
-      toast.error("Không thể lưu tiến trình.");
-    } finally {
-      setIsSavingSwitch(false);
       setIsSwitchDialogOpen(false);
       const next = pendingSwitchTask;
       setPendingSwitchTask(null);
       closeFocusMode();
       doSwitch(next);
+    } catch (err) {
+      console.error(err);
+      toast.error("Không thể lưu tiến trình.");
+    } finally {
+      setIsSavingSwitch(false);
     }
   };
 

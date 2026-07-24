@@ -19,6 +19,7 @@ import { FeedbackModal } from "../feedback/FeedbackModal";
 import { useTranslation } from "@/hooks/use-translation";
 import { Settings } from "lucide-react";
 import { SettingsModal } from "@/features/settings/components/SettingsModal";
+import { StickyNotesTriggerBtn } from "@/features/sticky-notes/components/StickyNotesTriggerBtn";
 
 import { Time02Icon } from "@hugeicons/core-free-icons";
 
@@ -154,6 +155,7 @@ export function Sidebar() {
 
         {/* ── Bottom section ──────────────────────────────────────── */}
         <div className="flex flex-col gap-1 border-t border-border pt-4">
+          <StickyNotesTriggerBtn isCollapsed={isCollapsed} />
           <button
             onClick={() => setIsSettingsOpen(true)}
             title={isCollapsed ? t.sidebar.settings : undefined}

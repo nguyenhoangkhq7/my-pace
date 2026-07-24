@@ -65,6 +65,7 @@ export function OutstandingTasksModal({ isOpen, unreviewedPlan, currentDate }: O
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       queryClient.invalidateQueries({ queryKey: ["dailyPlan"] });
       queryClient.invalidateQueries({ queryKey: ["unreviewedPlan"] });
+      queryClient.invalidateQueries({ queryKey: ["goals"] });
 
       toast.success(t.outstanding.successMessage);
     } catch (err) {
