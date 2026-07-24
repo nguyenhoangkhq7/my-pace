@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getDailyPlanAction } from "@/features/board/actions/plan.action";
 import { useTranslation } from "@/hooks/use-translation";
@@ -19,14 +20,72 @@ export function FlowTodoList({ onTaskSelect }: FlowTodoListProps) {
   const user = useAuthStore((s) => s.user);
   const todayStr = getTodayStr(user?.timezone);
   const { data: dailyPlanToday } = useQuery({ queryKey: ['dailyPlan', todayStr], queryFn: () => getDailyPlanAction(todayStr) });
-  const timeBlocks = dailyPlanToday?.timeBlocks || [];
-  const { pomodoroState } = useFocusStore();
+  const pomodoroState = useFocusStore((s) => s.pomodoroState);
+  const isVideoBackground = useFocusStore((s) => s.isVideoBackground);
 
   const isFocusing = pomodoroState === "focusing";
 
+  const { orderedTasks, scheduleLabelsMap } = useMemo(() => {
+    const tasks = dailyPlanToday?.tasks;
+    const blocks = dailyPlanToday?.timeBlocks ?? [];
+    if (!tasks) return { orderedTasks: [], scheduleLabelsMap: new Map<string, string | null>() };
+
+    const formatTime = (iso: string) => {
+      const date = new Date(iso);
+      return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+    };
+
+    const taskBlocksMap = new Map<string, TaskTimeBlock[]>();
+    blocks.forEach((block: TaskTimeBlock) => {
+      const existing = taskBlocksMap.get(block.taskId) ?? [];
+      existing.push(block);
+      taskBlocksMap.set(block.taskId, existing);
+    });
+
+    taskBlocksMap.forEach((bList) => {
+      bList.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+    });
+
+    const labelsMap = new Map<string, string | null>();
+    tasks.forEach((pt) => {
+      const bList = taskBlocksMap.get(pt.task.id) ?? [];
+      if (bList.length === 0) {
+        labelsMap.set(pt.task.id, null);
+      } else if (bList.length === 1) {
+        labelsMap.set(pt.task.id, `${formatTime(bList[0].startTime)} - ${formatTime(bList[0].endTime)}`);
+      } else {
+        labelsMap.set(pt.task.id, `${formatTime(bList[0].startTime)} - ${formatTime(bList[bList.length - 1].endTime)} · ${bList.length} parts`);
+      }
+    });
+
+    const getOrderKey = (task: DailyPlanTask) => {
+      const bList = taskBlocksMap.get(task.task.id) ?? [];
+      return {
+        hasSchedule: bList.length > 0,
+        startTime: bList[0]?.startTime ? new Date(bList[0].startTime).getTime() : Number.POSITIVE_INFINITY,
+        sortOrder: task.sortOrder,
+        isMit: task.isMit,
+      };
+    };
+
+    const sorted = [...tasks].sort((a, b) => {
+      const aKey = getOrderKey(a);
+      const bKey = getOrderKey(b);
+      if (aKey.hasSchedule !== bKey.hasSchedule) return aKey.hasSchedule ? -1 : 1;
+      if (aKey.startTime !== bKey.startTime) return aKey.startTime - bKey.startTime;
+      if (aKey.isMit !== bKey.isMit) return aKey.isMit ? -1 : 1;
+      return aKey.sortOrder - bKey.sortOrder;
+    });
+
+    return { orderedTasks: sorted, scheduleLabelsMap: labelsMap };
+  }, [dailyPlanToday]);
+
   if (!dailyPlanToday || !dailyPlanToday.tasks || dailyPlanToday.tasks.length === 0) {
     return (
-      <div className="h-full flex flex-col items-center justify-center p-6 text-center text-muted-foreground border-r border-border bg-background">
+      <div className={cn(
+        "h-full flex flex-col items-center justify-center p-6 text-center text-muted-foreground border-r border-border transition-colors duration-300",
+        isVideoBackground ? "bg-background/40 backdrop-blur-md" : "bg-background"
+      )}>
         <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-3 shadow-inner">
           <span className="text-xl">📝</span>
         </div>
@@ -35,68 +94,11 @@ export function FlowTodoList({ onTaskSelect }: FlowTodoListProps) {
     );
   }
 
-  const formatTime = (iso: string) => {
-    const date = new Date(iso);
-    return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
-  };
-
-  const getTaskBlocks = (taskId: string) => {
-    return timeBlocks
-      .filter((block: TaskTimeBlock) => block.taskId === taskId)
-      .sort((a: TaskTimeBlock, b: TaskTimeBlock) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-  };
-
-  const getTaskScheduleLabel = (taskId: string) => {
-    const blocks = getTaskBlocks(taskId);
-
-    if (blocks.length === 0) {
-      return null;
-    }
-
-    if (blocks.length === 1) {
-      return `${formatTime(blocks[0].startTime)} - ${formatTime(blocks[0].endTime)}`;
-    }
-
-    const firstStart = formatTime(blocks[0].startTime);
-    const lastEnd = formatTime(blocks[blocks.length - 1].endTime);
-    return `${firstStart} - ${lastEnd} · ${blocks.length} parts`;
-  };
-
-  const getTaskOrderKey = (task: DailyPlanTask) => {
-    const blocks = getTaskBlocks(task.task.id);
-    const firstBlockStart = blocks[0]?.startTime;
-
-    return {
-      hasSchedule: blocks.length > 0,
-      startTime: firstBlockStart ? new Date(firstBlockStart).getTime() : Number.POSITIVE_INFINITY,
-      sortOrder: task.sortOrder,
-      isMit: task.isMit,
-    };
-  };
-
-  const orderedTasks = [...dailyPlanToday.tasks].sort((a, b) => {
-    const aKey = getTaskOrderKey(a);
-    const bKey = getTaskOrderKey(b);
-
-    if (aKey.hasSchedule !== bKey.hasSchedule) {
-      return aKey.hasSchedule ? -1 : 1;
-    }
-
-    if (aKey.startTime !== bKey.startTime) {
-      return aKey.startTime - bKey.startTime;
-    }
-
-    if (aKey.isMit !== bKey.isMit) {
-      return aKey.isMit ? -1 : 1;
-    }
-
-    return aKey.sortOrder - bKey.sortOrder;
-  });
-
   return (
     <div
       className={cn(
-        "h-full flex flex-col border-r border-border bg-background transition-opacity duration-700 min-w-[220px]",
+        "h-full flex flex-col border-r border-border/40 transition-all duration-300 min-w-[220px]",
+        isVideoBackground ? "bg-background/40 backdrop-blur-md" : "bg-background",
         isFocusing ? "opacity-30 hover:opacity-100" : "opacity-100"
       )}
     >
@@ -120,7 +122,7 @@ export function FlowTodoList({ onTaskSelect }: FlowTodoListProps) {
           <FlowTodoItem
             key={pt.id}
             task={pt}
-            scheduleLabel={getTaskScheduleLabel(pt.task.id)}
+            scheduleLabel={scheduleLabelsMap.get(pt.task.id) ?? null}
             onTaskSelect={onTaskSelect}
           />
         ))}

@@ -19,14 +19,19 @@ import { FeedbackModal } from "../feedback/FeedbackModal";
 import { useTranslation } from "@/hooks/use-translation";
 import { Settings } from "lucide-react";
 import { SettingsModal } from "@/features/settings/components/SettingsModal";
+import { StickyNotesTriggerBtn } from "@/features/sticky-notes/components/StickyNotesTriggerBtn";
 
 import { Time02Icon } from "@hugeicons/core-free-icons";
+import { useFocusStore } from "@/features/focus/store/focus.store";
 
 export function Sidebar() {
   const startOnboarding = useOnboardingStore((s) => s.startOnboarding);
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useTranslation();
+  const isVideoBackground = useFocusStore((s) => s.isVideoBackground);
+  const isFlowPage = pathname === "/flow";
+  const isBgActive = isFlowPage && isVideoBackground;
 
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -73,7 +78,8 @@ export function Sidebar() {
   return (
     <>
       <aside className={cn(
-        "flex h-screen shrink-0 flex-col border-r border-border bg-sidebar py-6 transition-all duration-300",
+        "relative z-20 flex h-screen shrink-0 flex-col border-r border-border py-6 transition-all duration-300",
+        isBgActive ? "bg-sidebar/40 backdrop-blur-md" : "bg-sidebar",
         isCollapsed ? "w-20 px-2" : "w-60 px-4"
       )}>
         {/* ── Logo ─────────────────────────────────────────────────────── */}
@@ -154,6 +160,7 @@ export function Sidebar() {
 
         {/* ── Bottom section ──────────────────────────────────────── */}
         <div className="flex flex-col gap-1 border-t border-border pt-4">
+          <StickyNotesTriggerBtn isCollapsed={isCollapsed} />
           <button
             onClick={() => setIsSettingsOpen(true)}
             title={isCollapsed ? t.sidebar.settings : undefined}

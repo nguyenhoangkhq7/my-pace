@@ -19,4 +19,8 @@ public interface TaskTimeBlockRepository extends JpaRepository<TaskTimeBlock, UU
     @Modifying
     @Query("DELETE FROM TaskTimeBlock t WHERE t.dailyPlanId = :planId")
     void deleteByDailyPlanId(@Param("planId") UUID planId);
+
+    @Modifying
+    @Query("DELETE FROM TaskTimeBlock t WHERE t.taskId = :taskId")
+    void deleteByTaskId(@Param("taskId") UUID taskId);
 }

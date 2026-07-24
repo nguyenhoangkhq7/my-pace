@@ -168,7 +168,9 @@ export function useFlowLayoutState() {
     }
 
     if (isXl && zenzonePercent >= ZEN_FULL_THRESHOLD) {
-      lastGoodSizesRef.current = [20, 60, 20]; // Return to default layout when exiting
+      if (sizes && sizes[2] > 0) {
+        lastGoodSizesRef.current = [sizes[0], sizes[1], sizes[2]];
+      }
       store.setZenFull(true);
       requestFullscreen();
       groupRef.current?.setLayout({
@@ -182,15 +184,18 @@ export function useFlowLayoutState() {
     if (!canSaveRef.current || document.visibilityState !== "visible") return;
 
     if (isXl && layout["todo-panel"] !== undefined && layout["zenzone-panel"] !== undefined) {
-      const arr = [layout["todo-panel"], layout["pomodoro-panel"] ?? 60, layout["zenzone-panel"]];
+      const arr: [number, number, number] = [layout["todo-panel"], layout["pomodoro-panel"] ?? 60, layout["zenzone-panel"]];
       if ((arr[0] > 0 && arr[0] < 14) || (arr[2] > 0 && arr[2] < 14)) return;
+      if (arr[2] > 0) {
+        lastGoodSizesRef.current = arr;
+      }
       try { localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify(arr)); } catch {}
     } else if (isLg && !isXl && layout["todo-panel"] !== undefined) {
       const arr = [layout["todo-panel"], layout["pomodoro-panel"] ?? 75];
       if (arr[0] > 0 && arr[0] < 14) return;
       try { localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify(arr)); } catch {}
     }
-  }, [isXl, isLg, layoutKey, handleExitZenFull, setIsRightCollapsed, setIsLeftCollapsed]);
+  }, [isXl, isLg, layoutKey, handleExitZenFull, setIsRightCollapsed, setIsLeftCollapsed, sizes]);
 
   const handleResetLayout = useCallback(() => {
     try {
@@ -229,7 +234,9 @@ export function useFlowLayoutState() {
     const restored = lastGoodSizesRef.current;
     const zenzoneSize = Math.max(20, restored[2]);
     const remaining = 100 - zenzoneSize;
-    const todo = Math.round(remaining * 0.25);
+
+    const isLeftCurrentlyCollapsed = isLeftCollapsed || (sizes?.[0] === 0);
+    const todo = isLeftCurrentlyCollapsed ? 0 : Math.min(sizes?.[0] || restored[0] || Math.round(remaining * 0.25), remaining - 25);
     const pomodoro = 100 - zenzoneSize - todo;
 
     groupRef.current?.setLayout({
@@ -241,12 +248,13 @@ export function useFlowLayoutState() {
     try {
       localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify([todo, pomodoro, zenzoneSize]));
     } catch {}
-  }, [layoutKey]);
+  }, [layoutKey, isLeftCollapsed, sizes]);
 
   const handleCollapseZenZone = useCallback(() => {
     setIsRightCollapsed(true);
-    const restored = sizes || [20, 60, 20];
-    const todo = restored[0] > 0 ? restored[0] : 20;
+    const currentSizes = sizes || [20, 60, 20];
+    const isLeftCurrentlyCollapsed = isLeftCollapsed || (currentSizes[0] === 0);
+    const todo = isLeftCurrentlyCollapsed ? 0 : currentSizes[0];
     const pomodoro = 100 - todo;
 
     groupRef.current?.setLayout({
@@ -258,7 +266,7 @@ export function useFlowLayoutState() {
     try {
       localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify([todo, pomodoro, 0]));
     } catch {}
-  }, [sizes, layoutKey]);
+  }, [sizes, isLeftCollapsed, layoutKey]);
 
   return {
     isLg,

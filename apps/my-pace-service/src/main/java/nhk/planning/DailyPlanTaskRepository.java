@@ -16,4 +16,8 @@ public interface DailyPlanTaskRepository extends JpaRepository<DailyPlanTask, UU
     @Modifying
     @Query("DELETE FROM DailyPlanTask d WHERE d.dailyPlanId = :dailyPlanId")
     void deleteByDailyPlanId(@Param("dailyPlanId") UUID dailyPlanId);
+
+    @Modifying
+    @Query("DELETE FROM DailyPlanTask d WHERE d.task.id = :taskId")
+    void deleteByTaskId(@Param("taskId") UUID taskId);
 }

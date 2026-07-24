@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { autoSchedule, type OccupiedSlot } from "@/features/board/utils/autoSchedule";
 import { useCalendarInteractions } from "./useCalendarInteractions";
 import { getTodayStr } from "@/lib/date";
+import { useRouter } from "next/navigation";
 
 // ─── Constants & Helpers ──────────────────────────────────────────────────────
 const EVENT_TEXT      = "#ffffff";
@@ -33,6 +34,7 @@ const toLocalTimeStr = (iso: string) => {
 };
 
 export function useCalendarPage() {
+  const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const calendarRef = useRef<FullCalendar>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -78,11 +80,12 @@ export function useCalendarPage() {
     if (!dailyPlanToday) return;
     try {
       await confirmPlanMutation.mutateAsync(dailyPlanToday.planDate);
+      router.push("/flow");
     } catch (err) {
       console.error(err);
       toast.error("Không thể xác nhận lịch trình.");
     }
-  }, [dailyPlanToday, confirmPlanMutation]);
+  }, [dailyPlanToday, confirmPlanMutation, router]);
 
   const [dateRange, setDateRange] = useState({ start: today, end: today });
 

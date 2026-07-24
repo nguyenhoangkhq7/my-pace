@@ -9,14 +9,12 @@ import { useTranslation } from "@/hooks/use-translation";
 
 export function PomodoroSettingsModal() {
   const { t } = useTranslation();
-  const { 
-    isSettingsOpen, 
-    setIsSettingsOpen, 
-    focusMinutes, 
-    breakMinutes, 
-    soundEnabled, 
-    updateConfig 
-  } = useFocusStore();
+  const isSettingsOpen = useFocusStore((s) => s.isSettingsOpen);
+  const setIsSettingsOpen = useFocusStore((s) => s.setIsSettingsOpen);
+  const focusMinutes = useFocusStore((s) => s.focusMinutes);
+  const breakMinutes = useFocusStore((s) => s.breakMinutes);
+  const soundEnabled = useFocusStore((s) => s.soundEnabled);
+  const updateConfig = useFocusStore((s) => s.updateConfig);
 
   const [tempFocus, setTempFocus] = useState(focusMinutes.toString());
   const [tempBreak, setTempBreak] = useState(breakMinutes.toString());

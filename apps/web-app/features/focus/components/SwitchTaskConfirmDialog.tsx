@@ -9,13 +9,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useFocusStore } from "@/features/focus/store/focus.store";
 import type { DailyPlanTask } from "@/features/board/types";
 
 interface SwitchTaskConfirmDialogProps {
   isOpen: boolean;
   currentTaskTitle: string;
   pendingTask: DailyPlanTask | null;
-  accumulatedFocusTime: number; // seconds
   isSaving?: boolean;
   onCancel: () => void;
   onDiscard: () => void;
@@ -26,12 +26,13 @@ export function SwitchTaskConfirmDialog({
   isOpen,
   currentTaskTitle,
   pendingTask,
-  accumulatedFocusTime,
   isSaving,
   onCancel,
   onDiscard,
   onSaveAndSwitch,
 }: SwitchTaskConfirmDialogProps) {
+  const storeAccumulatedTime = useFocusStore((s) => s.accumulatedFocusTime);
+  const accumulatedFocusTime = isOpen ? storeAccumulatedTime : 0;
   const focusedMinutes = Math.floor(accumulatedFocusTime / 60);
   const hasProgress = accumulatedFocusTime >= 60;
 
