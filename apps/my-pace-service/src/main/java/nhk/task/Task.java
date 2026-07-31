@@ -58,6 +58,16 @@ public class Task {
     @Column(name = "is_important", nullable = false)
     private Boolean isImportant = false;
 
+    @NotNull
+    @Column(name = "is_splittable", nullable = false)
+    private Boolean isSplittable = false;
+
+    @Column(name = "min_chunk_minutes")
+    private Integer minChunkMinutes;
+
+    @Column(name = "max_daily_duration")
+    private Integer maxDailyDuration;
+
     @Size(max = 50)
     @NotNull
     @Column(name = "status", nullable = false)

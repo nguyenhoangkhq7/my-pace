@@ -67,7 +67,8 @@ public class GlobalExceptionHandler {
             UserNotFoundException.class,
             EventNotFoundException.class,
             CategoryNotFoundException.class,
-            GoalNotFoundException.class
+            GoalNotFoundException.class,
+            TimeContextNotFoundException.class
     })
     public ResponseEntity<ErrorResponse> handleNotFound(Exception ex) {
        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());

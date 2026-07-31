@@ -1,3 +1,5 @@
+import type { Category } from "@/features/board/types";
+
 // ─── Recurrence ──────────────────────────────────────────────────────────────
 
 export type RecurrenceType = "NONE" | "DAILY" | "WEEKLY" | "CUSTOM";
@@ -32,22 +34,27 @@ export interface FixedEventOccurrence {
   occurrenceDate: string; // ISO date: "YYYY-MM-DD"
   startTime: string;      // "HH:mm:ss"
   endTime: string;        // "HH:mm:ss"
+  isAllDay?: boolean;
   recurrenceType: RecurrenceType;
   recurrenceDaysOfWeek?: number[];
   recurrenceEndDate?: string | null;
   isException: boolean;
+  categoryId?: string | null;
+  category?: Category | null;
 }
 
 /** Payload for creating a new event. */
 export interface CreateEventPayload {
   title: string;
   notes?: string;
-  startTime: string;  // "HH:mm"
-  endTime: string;    // "HH:mm"
+  startTime?: string;  // "HH:mm"
+  endTime?: string;    // "HH:mm"
+  isAllDay?: boolean;
   eventDate?: string; // "YYYY-MM-DD", required for NONE
   recurrenceType: RecurrenceType;
   recurrenceDaysOfWeek?: number[];
   recurrenceEndDate?: string;
+  categoryId?: string;
 }
 
 /** Payload for updating a single occurrence exception. */
@@ -56,8 +63,11 @@ export interface UpdateOccurrencePayload {
   overrideNotes?: string;
   overrideStartTime?: string;
   overrideEndTime?: string;
+  overrideIsAllDay?: boolean;
   isDeleted?: boolean;
+  overrideCategoryId?: string | null;
 }
+
 
 
 // ─── Modal State ─────────────────────────────────────────────────────────────

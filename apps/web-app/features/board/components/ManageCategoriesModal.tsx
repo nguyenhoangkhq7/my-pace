@@ -6,7 +6,9 @@ import { useCategories } from "../hooks/useCategories";
 import { ConfirmDeleteDialog } from "@/components/feedback/ConfirmDeleteDialog";
 import { CategoryEditForm } from "./CategoryEditForm";
 import { CategoryListItem } from "./CategoryListItem";
+import { TimeContextList } from "@/features/time-context";
 import { useTranslation } from "@/hooks/use-translation";
+import { cn } from "@/lib/utils";
 
 interface ManageCategoriesModalProps {
   isOpen: boolean;
@@ -16,7 +18,8 @@ interface ManageCategoriesModalProps {
 export function ManageCategoriesModal({ isOpen, onClose }: ManageCategoriesModalProps) {
   const { categories, updateCategory, deleteCategory } = useCategories();
   const { t } = useTranslation();
-  
+
+  const [activeTab, setActiveTab] = useState<"categories" | "timeContexts">("categories");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
@@ -32,13 +35,12 @@ export function ManageCategoriesModal({ isOpen, onClose }: ManageCategoriesModal
     setError("");
   };
 
-  const handleSaveEdit = async (id: string, name: string, color: string) => {
+  const handleSaveEdit = async (id: string, name: string, color: string, timeContextId?: string | null) => {
     if (!name.trim()) {
       setError(t.categories.nameEmpty);
       return;
     }
-    
-    // Check if name is unique among other categories
+
     const isDuplicate = categories.some(c => c.id !== id && c.name.toLowerCase() === name.trim().toLowerCase());
     if (isDuplicate) {
       setError(t.categories.nameExists);
@@ -46,7 +48,14 @@ export function ManageCategoriesModal({ isOpen, onClose }: ManageCategoriesModal
     }
 
     try {
-      await updateCategory({ id, data: { name: name.trim(), color: color } });
+      await updateCategory({
+        id,
+        data: {
+          name: name.trim(),
+          color: color,
+          timeContextId: timeContextId || undefined,
+        },
+      });
       setEditingId(null);
       setError("");
     } catch (err) {
@@ -75,48 +84,82 @@ export function ManageCategoriesModal({ isOpen, onClose }: ManageCategoriesModal
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="bg-background text-foreground border-border sm:max-w-[450px] max-h-[80vh] flex flex-col p-6 overflow-hidden">
+      <DialogContent className="bg-background text-foreground border-border sm:max-w-[500px] max-h-[85vh] flex flex-col p-6 overflow-hidden">
         <DialogHeader>
-          <DialogTitle>{t.categories.manageTitle}</DialogTitle>
+          <DialogTitle>{t.timeContext.manageTitle}</DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            {t.categories.manageDesc}
+            {t.timeContext.manageDesc}
           </DialogDescription>
         </DialogHeader>
 
+        {/* Tab switcher */}
+        <div className="flex border-b border-border mt-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab("categories")}
+            className={cn(
+              "px-4 py-2 text-xs font-semibold border-b-2 transition-all cursor-pointer",
+              activeTab === "categories"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {t.timeContext.tabCategories(categories.length)}
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("timeContexts")}
+            className={cn(
+              "px-4 py-2 text-xs font-semibold border-b-2 transition-all cursor-pointer",
+              activeTab === "timeContexts"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {t.timeContext.tabTimeContexts}
+          </button>
+        </div>
+
         {error && <p className="text-red-500 text-xs mt-1 shrink-0">{error}</p>}
 
-        <div className="flex-1 overflow-y-auto mt-4 pr-1 space-y-3 scrollbar-thin">
-          {categories.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">{t.categories.noneYet}</p>
-          ) : (
-            categories.map((c) => {
-              const isEditing = editingId === c.id;
-              
-              if (isEditing) {
-                return (
-                  <CategoryEditForm
-                    key={c.id}
-                    category={c}
-                    onSave={handleSaveEdit}
-                    onCancel={handleCancelEdit}
-                  />
-                );
-              }
+        <div className="flex-1 overflow-y-auto mt-4 pr-1 scrollbar-thin">
+          {activeTab === "categories" ? (
+            categories.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">{t.categories.noneYet}</p>
+            ) : (
+              <div className="space-y-3">
+                {categories.map((c) => {
+                  const isEditing = editingId === c.id;
 
-              return (
-                <CategoryListItem
-                  key={c.id}
-                  category={c}
-                  onStartEdit={() => handleStartEdit(c)}
-                  onDeleteClick={() => handleDeleteClick(c.id, c.name)}
-                />
-              );
-            })
+                  if (isEditing) {
+                    return (
+                      <CategoryEditForm
+                        key={c.id}
+                        category={c}
+                        onSave={handleSaveEdit}
+                        onCancel={handleCancelEdit}
+                      />
+                    );
+                  }
+
+                  return (
+                    <CategoryListItem
+                      key={c.id}
+                      category={c}
+                      onStartEdit={() => handleStartEdit(c)}
+                      onDeleteClick={() => handleDeleteClick(c.id, c.name)}
+                    />
+                  );
+                })}
+              </div>
+            )
+          ) : (
+            <TimeContextList />
           )}
         </div>
 
         <DialogFooter className="mt-4 border-t border-border pt-4 shrink-0">
-          <Button variant="outline" className="border-border bg-card hover:bg-muted text-foreground h-9" onClick={onClose}>
+          <Button variant="outline" className="border-border bg-card hover:bg-muted text-foreground h-9 cursor-pointer" onClick={onClose}>
             {t.categories.close}
           </Button>
         </DialogFooter>

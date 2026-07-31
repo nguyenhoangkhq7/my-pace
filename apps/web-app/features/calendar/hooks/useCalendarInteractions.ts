@@ -126,6 +126,7 @@ export function useCalendarInteractions({
         )}:00`;
 
         try {
+          const categoryId = occ.categoryId ?? occ.category?.id ?? undefined;
           if (occ.recurrenceType === "NONE") {
             // A single, non-recurring event: update the series eventDate and times directly
             await updateAllOccurrences(occ.seriesId, {
@@ -135,6 +136,7 @@ export function useCalendarInteractions({
               endTime: newEndTime.substring(0, 5),
               eventDate: newDate,
               recurrenceType: "NONE",
+              categoryId,
             });
             toast.success("Đã di chuyển sự kiện!");
           } else {
@@ -149,6 +151,7 @@ export function useCalendarInteractions({
                 endTime: newEndTime.substring(0, 5),
                 eventDate: newDate,
                 recurrenceType: "NONE",
+                categoryId,
               });
               toast.success("Đã dời lịch sự kiện sang ngày mới!");
             } else {
@@ -284,6 +287,7 @@ export function useCalendarInteractions({
         "0"
       )}:00`;
       try {
+        const categoryId = occ.categoryId ?? occ.category?.id ?? undefined;
         if (occ.recurrenceType === "NONE") {
           await updateAllOccurrences(occ.seriesId, {
             title: occ.title,
@@ -292,6 +296,7 @@ export function useCalendarInteractions({
             endTime: newEndTime.substring(0, 5),
             eventDate: occ.occurrenceDate,
             recurrenceType: "NONE",
+            categoryId,
           });
         } else {
           await updateSingleOccurrence(occ.seriesId, occ.occurrenceDate, { overrideEndTime: newEndTime });

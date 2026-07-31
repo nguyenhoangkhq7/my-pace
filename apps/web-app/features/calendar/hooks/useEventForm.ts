@@ -21,8 +21,10 @@ export interface UseEventFormProps {
   createEvent: (payload: CreateEventPayload) => Promise<FixedEventOccurrence>;
   updateAllOccurrences: (seriesId: string, payload: CreateEventPayload) => Promise<void>;
   updateSingleOccurrence: (seriesId: string, date: string, payload: UpdateOccurrencePayload) => Promise<void>;
+  updateFromDateOnwards: (seriesId: string, date: string, payload: CreateEventPayload) => Promise<void>;
   deleteAllOccurrences: (seriesId: string) => Promise<void>;
   deleteSingleOccurrence: (seriesId: string, date: string) => Promise<void>;
+  deleteFromDateOnwards: (seriesId: string, date: string) => Promise<void>;
 }
 
 export function useEventForm({
@@ -36,8 +38,10 @@ export function useEventForm({
   createEvent,
   updateAllOccurrences,
   updateSingleOccurrence,
+  updateFromDateOnwards,
   deleteAllOccurrences,
   deleteSingleOccurrence,
+  deleteFromDateOnwards,
 }: UseEventFormProps) {
   // ── Form State ─────────────────────────────────────────────────────────────
   const [title, setTitle] = useState("");
@@ -45,10 +49,11 @@ export function useEventForm({
   const [date, setDate] = useState(defaultDate ?? "");
   const [startTime, setStartTime] = useState(defaultStart ?? "");
   const [endTime, setEndTime] = useState(defaultEnd ?? "");
+  const [isAllDay, setIsAllDay] = useState(false);
   const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>("NONE");
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const [recurrenceEndDate, setRecurrenceEndDate] = useState("");
-
+  const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
 
   // ── UI State ───────────────────────────────────────────────────────────────
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -68,21 +73,25 @@ export function useEventForm({
         setTitle(occurrence.title);
         setNotes(occurrence.notes ?? "");
         setDate(occurrence.occurrenceDate);
-        setStartTime(occurrence.startTime.substring(0, 5));
-        setEndTime(occurrence.endTime.substring(0, 5));
+        setStartTime(occurrence.startTime ? occurrence.startTime.substring(0, 5) : "09:00");
+        setEndTime(occurrence.endTime ? occurrence.endTime.substring(0, 5) : "10:00");
+        setIsAllDay(!!occurrence.isAllDay);
         setRecurrenceType(occurrence.recurrenceType);
         setSelectedDays(occurrence.recurrenceDaysOfWeek ?? []);
         setRecurrenceEndDate(occurrence.recurrenceEndDate ?? "");
+        setCategoryId(occurrence.categoryId ?? occurrence.category?.id ?? undefined);
       } else {
         // Create mode — use drag-select defaults
         setTitle("");
         setNotes("");
         setDate(defaultDate ?? "");
-        setStartTime(defaultStart ?? "");
-        setEndTime(defaultEnd ?? "");
+        setStartTime(defaultStart ?? "09:00");
+        setEndTime(defaultEnd ?? "10:00");
+        setIsAllDay(false);
         setRecurrenceType("NONE");
         setSelectedDays([]);
         setRecurrenceEndDate("");
+        setCategoryId(undefined);
       }
       setError(null);
     });
@@ -105,8 +114,9 @@ export function useEventForm({
   const buildPayload = (): CreateEventPayload => ({
     title: title.trim(),
     notes: notes.trim() || undefined,
-    startTime: `${startTime}:00`,
-    endTime: `${endTime}:00`,
+    startTime: isAllDay ? undefined : `${startTime}:00`,
+    endTime: isAllDay ? undefined : `${endTime}:00`,
+    isAllDay,
     eventDate: date || undefined,
     recurrenceType,
     recurrenceDaysOfWeek:
@@ -114,12 +124,15 @@ export function useEventForm({
         ? selectedDays
         : undefined,
     recurrenceEndDate: recurrenceEndDate || undefined,
+    categoryId: categoryId || undefined,
   });
 
   const validate = (): boolean => {
     if (!title.trim()) { setError("Vui lòng nhập tiêu đề"); return false; }
-    if (!startTime || !endTime) { setError("Vui lòng chọn giờ bắt đầu và kết thúc"); return false; }
-    if (startTime >= endTime) { setError("Giờ kết thúc phải sau giờ bắt đầu"); return false; }
+    if (!isAllDay) {
+      if (!startTime || !endTime) { setError("Vui lòng chọn giờ bắt đầu và kết thúc"); return false; }
+      if (startTime >= endTime) { setError("Giờ kết thúc phải sau giờ bắt đầu"); return false; }
+    }
     if (recurrenceType === "NONE" && !date) { setError("Vui lòng chọn ngày"); return false; }
     if ((recurrenceType === "WEEKLY" || recurrenceType === "CUSTOM") && selectedDays.length === 0) {
       setError("Vui lòng chọn ít nhất một ngày trong tuần"); return false;
@@ -191,11 +204,27 @@ export function useEventForm({
     const payload: UpdateOccurrencePayload = {
       overrideTitle: title.trim(),
       overrideNotes: notes.trim() || undefined,
-      overrideStartTime: `${startTime}:00`,
-      overrideEndTime: `${endTime}:00`,
+      overrideStartTime: isAllDay ? undefined : `${startTime}:00`,
+      overrideEndTime: isAllDay ? undefined : `${endTime}:00`,
+      overrideIsAllDay: isAllDay,
+      overrideCategoryId: categoryId || null,
     };
     try {
       await updateSingleOccurrence(occurrence.seriesId, occurrence.occurrenceDate, payload);
+      onClose();
+    } catch {
+      setError("Không thể cập nhật sự kiện. Vui lòng thử lại.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const submitUpdateFollowing = async () => {
+    if (!occurrence) return;
+    setIsSubmitting(true);
+    setRecurringDialog({ open: false, action: "edit" });
+    try {
+      await updateFromDateOnwards(occurrence.seriesId, occurrence.occurrenceDate, buildPayload());
       onClose();
     } catch {
       setError("Không thể cập nhật sự kiện. Vui lòng thử lại.");
@@ -232,6 +261,20 @@ export function useEventForm({
     }
   };
 
+  const submitDeleteFollowing = async () => {
+    if (!occurrence) return;
+    setIsSubmitting(true);
+    setRecurringDialog({ open: false, action: "delete" });
+    try {
+      await deleteFromDateOnwards(occurrence.seriesId, occurrence.occurrenceDate);
+      onClose();
+    } catch {
+      setError("Không thể xóa sự kiện. Vui lòng thử lại.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleCancelRecurringDialog = () => {
     setRecurringDialog({ open: false, action: "edit" });
   };
@@ -249,12 +292,16 @@ export function useEventForm({
     setStartTime,
     endTime,
     setEndTime,
+    isAllDay,
+    setIsAllDay,
     recurrenceType,
     setRecurrenceType: handleRecurrenceTypeChange,
     selectedDays,
     setSelectedDays,
     recurrenceEndDate,
     setRecurrenceEndDate,
+    categoryId,
+    setCategoryId,
     isSubmitting,
     error,
     recurringDialog,
@@ -265,9 +312,13 @@ export function useEventForm({
     handleSaveClick,
     handleDeleteClick,
     submitUpdateSingle,
+    submitUpdateFollowing,
     submitUpdateAll,
     submitDeleteSingle,
+    submitDeleteFollowing,
     submitDeleteAll,
     handleCancelRecurringDialog,
   };
+
+
 }

@@ -63,8 +63,71 @@ export function CalendarStyles({ fixedEventColor }: CalendarStylesProps) {
       .calendar-wrapper td, .calendar-wrapper th { border-color: rgba(255, 255, 255, 0.04) !important; }
       .calendar-wrapper .fc-timegrid-slots td { border-color: rgba(255, 255, 255, 0.03) !important; }
       
+      /* ── Dynamic & Compact All-Day Bar (Google Calendar Style) ── */
+      .calendar-wrapper .fc-timegrid-allday {
+        background-color: rgba(255, 255, 255, 0.015) !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+        padding: 0 !important;
+      }
+      .calendar-wrapper .fc-timegrid-allday-frame {
+        min-height: 1.8rem !important;
+        padding: 2px 2px !important;
+      }
+      .calendar-wrapper .fc-timegrid-allday .fc-daygrid-body {
+        min-height: 0 !important;
+      }
+      .calendar-wrapper .fc-timegrid-allday .fc-daygrid-day-frame {
+        min-height: 1.8rem !important;
+        padding: 1px 2px !important;
+      }
+      .calendar-wrapper .fc-timegrid-allday .fc-timegrid-axis-cushion {
+        padding: 2px 6px !important;
+        font-size: 0.7rem !important;
+        font-weight: 500 !important;
+        text-transform: lowercase;
+        opacity: 0.65;
+        height: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+      }
+      .calendar-wrapper .fc-daygrid-event {
+        border-radius: 6px !important;
+        padding: 4px 10px !important;
+        margin: 1px 2px !important;
+        font-size: 0.76rem !important;
+        font-weight: 600 !important;
+        letter-spacing: -0.01em !important;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.12) !important;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease !important;
+        border: none !important;
+        min-height: 1.7rem !important;
+        height: calc(100% - 2px) !important;
+        display: flex !important;
+        align-items: center !important;
+      }
+      .calendar-wrapper .fc-daygrid-event:hover {
+        transform: translateY(-1px) scale(1.005) !important;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.18) !important;
+        filter: brightness(1.08) !important;
+      }
+      .calendar-wrapper .fc-daygrid-event-dot {
+        border-color: currentColor !important;
+        margin-right: 5px !important;
+      }
+      .calendar-wrapper .fc-daygrid-block-event .fc-event-main {
+        padding: 0 2px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        line-height: normal !important;
+        width: 100% !important;
+      }
+
+
+
       /* Dragging ghost style */
       .fc-event-dragging { opacity: 0.85 !important; }
     `}</style>
+
   );
 }

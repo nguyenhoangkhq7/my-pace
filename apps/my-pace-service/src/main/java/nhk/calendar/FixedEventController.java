@@ -76,6 +76,19 @@ public class FixedEventController {
     }
 
     /**
+     * PUT /api/calendar/events/{id}/from/{date}
+     * Updates this occurrence and all future occurrences (splits series).
+     */
+    @PutMapping("/events/{id}/from/{date}")
+    public ResponseEntity<FixedEventResponse> updateFromDateOnwards(
+            @AuthenticationPrincipal UserDetailsCustom principal,
+            @PathVariable UUID id,
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @Valid @RequestBody FixedEventRequest request) {
+        return ResponseEntity.ok(service.updateFromDateOnwards(principal.user().getId(), id, date, request));
+    }
+
+    /**
      * DELETE /api/calendar/events/{id}
      * Deletes the entire recurring series (and all its exceptions via CASCADE).
      */
@@ -99,6 +112,20 @@ public class FixedEventController {
         service.deleteSingleOccurrence(principal.user().getId(), id, date);
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * DELETE /api/calendar/events/{id}/from/{date}
+     * Deletes this occurrence and all future occurrences.
+     */
+    @DeleteMapping("/events/{id}/from/{date}")
+    public ResponseEntity<Void> deleteFromDateOnwards(
+            @AuthenticationPrincipal UserDetailsCustom principal,
+            @PathVariable UUID id,
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        service.deleteFromDateOnwards(principal.user().getId(), id, date);
+        return ResponseEntity.noContent().build();
+    }
+
 
     // ─── Available Time & Checkin ─────────────────────────────────────────────
 

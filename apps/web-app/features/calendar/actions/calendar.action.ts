@@ -34,6 +34,13 @@ export async function updateSingleOccurrenceAction(seriesId: string, date: strin
   });
 }
 
+export async function updateFromDateOnwardsAction(seriesId: string, date: string, payload: CreateEventPayload) {
+  return await serverFetch<FixedEventOccurrence>(`${BASE}/events/${seriesId}/from/${date}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function deleteAllOccurrencesAction(seriesId: string) {
   return await serverFetch<void>(`${BASE}/events/${seriesId}`, {
     method: 'DELETE',
@@ -45,3 +52,10 @@ export async function deleteSingleOccurrenceAction(seriesId: string, date: strin
     method: 'DELETE',
   });
 }
+
+export async function deleteFromDateOnwardsAction(seriesId: string, date: string) {
+  return await serverFetch<void>(`${BASE}/events/${seriesId}/from/${date}`, {
+    method: 'DELETE',
+  });
+}
+

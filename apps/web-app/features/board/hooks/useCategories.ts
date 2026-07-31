@@ -21,6 +21,8 @@ export function useCategories() {
     mutationFn: ({ id, data }: { id: string; data: Partial<Category> }) => updateCategoryAction(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
+      queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
     },
   });
 
@@ -29,6 +31,8 @@ export function useCategories() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
       queryClient.invalidateQueries({ queryKey: ["tasks"] }); // tasks reference categories
+      queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
     },
   });
 

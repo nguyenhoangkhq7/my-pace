@@ -4,21 +4,23 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Category } from "../types";
 import { CustomColorPicker } from "@/components/ui/custom-color-picker";
+import { TimeContextSelect } from "@/features/time-context";
 
 const CATEGORY_COLORS = ["#0ea5e9", "#10b981", "#8b5cf6", "#f59e0b", "#f43f5e", "#6366f1", "#14b8a6", "#ec4899", "#ef4444", "#475569"];
 
 interface CategoryEditFormProps {
   category: Category;
-  onSave: (id: string, name: string, color: string) => Promise<void>;
+  onSave: (id: string, name: string, color: string, timeContextId?: string | null) => Promise<void>;
   onCancel: () => void;
 }
 
 export function CategoryEditForm({ category, onSave, onCancel }: CategoryEditFormProps) {
   const [editName, setEditName] = useState(category.name);
   const [editColor, setEditColor] = useState(category.color || CATEGORY_COLORS[0]);
+  const [editTimeContextId, setEditTimeContextId] = useState<string | null>(category.timeContextId || null);
 
   const handleSave = () => {
-    onSave(category.id, editName, editColor);
+    onSave(category.id, editName, editColor, editTimeContextId);
   };
 
   return (
@@ -63,6 +65,9 @@ export function CategoryEditForm({ category, onSave, onCancel }: CategoryEditFor
           )}
         </CustomColorPicker>
       </div>
+
+      <TimeContextSelect value={editTimeContextId} onChange={setEditTimeContextId} />
+
       <div className="flex space-x-2 pt-1">
         <Button
           size="sm"

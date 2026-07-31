@@ -6,10 +6,12 @@ import org.mapstruct.MappingConstants;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface CategoryMapper {
+    @Mapping(target = "timeContextId", source = "timeContext.id")
     CategoryDto toDto(Category category);
     
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "userId", ignore = true)
+    @Mapping(target = "timeContext", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     Category toEntity(CategoryCreateRequest request);

@@ -2,6 +2,7 @@ export interface Category {
   id: string;
   name: string;
   color: string;
+  timeContextId?: string;
 }
 
 export interface TaskChecklistItem {
@@ -29,6 +30,9 @@ export interface Task {
   status: 'Icebox' | 'Backlog' | 'Picked for Today' | 'Done';
   dueDate?: string;
   notes?: string;
+  isSplittable?: boolean;
+  minChunkMinutes?: number;
+  maxDailyDuration?: number;
   checklists?: TaskChecklistItem[];
   createdAt?: string;
   updatedAt?: string;

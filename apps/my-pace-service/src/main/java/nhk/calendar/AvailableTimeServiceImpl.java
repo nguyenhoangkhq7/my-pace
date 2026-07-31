@@ -161,6 +161,18 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
 
         boolean crossesMidnight = windowEnd.isBefore(windowStart);
 
+        boolean hasAllDay = occurrences.stream().anyMatch(e -> Boolean.TRUE.equals(e.isAllDay()));
+        if (hasAllDay) {
+            int totalWindow = !crossesMidnight
+                    ? (windowEndMin - windowStartMin)
+                    : (1440 - windowStartMin + windowEndMin);
+            totalWindow = Math.max(0, totalWindow);
+            return new UnionResult(totalWindow, List.of(
+                    new AvailableTimeResponse.TimeInterval(minutesToHHMM(windowStartMin), minutesToHHMM(windowEndMin))
+            ));
+        }
+
+
         List<int[]> intervals;
         if (!crossesMidnight) {
             intervals = occurrences.stream()

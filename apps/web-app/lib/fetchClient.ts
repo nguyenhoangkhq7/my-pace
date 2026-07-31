@@ -137,12 +137,6 @@ const request = async <T>(endpoint: string, options: RequestOptions): Promise<Ap
             throw error;
         }
 
-        const hasToken = Boolean(getAccessToken());
-
-        if (!hasToken) {
-            throw error;
-        }
-
         const refreshedSession = await refreshAccessToken();
 
         if (!refreshedSession) {

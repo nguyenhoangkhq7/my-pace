@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RecurringActionDialog } from "./RecurringActionDialog";
 import { EventDateTimeRow } from "./EventDateTimeRow";
 import { RecurrenceSelector } from "./RecurrenceSelector";
+import { FixedEventCategorySelector } from "./FixedEventCategorySelector";
 import { useEventForm, UseEventFormProps } from "../hooks/useEventForm";
 import { useTranslation } from "@/hooks/use-translation";
 
@@ -36,11 +37,15 @@ export function EventModal(props: UseEventFormProps) {
     setStartTime,
     endTime,
     setEndTime,
+    isAllDay,
+    setIsAllDay,
     recurrenceType,
     setRecurrenceType,
     selectedDays,
     recurrenceEndDate,
     setRecurrenceEndDate,
+    categoryId,
+    setCategoryId,
     isSubmitting,
     error,
     recurringDialog,
@@ -51,8 +56,10 @@ export function EventModal(props: UseEventFormProps) {
     handleSaveClick,
     handleDeleteClick,
     submitUpdateSingle,
+    submitUpdateFollowing,
     submitUpdateAll,
     submitDeleteSingle,
+    submitDeleteFollowing,
     submitDeleteAll,
     handleCancelRecurringDialog,
   } = useEventForm(props);
@@ -79,6 +86,12 @@ export function EventModal(props: UseEventFormProps) {
               />
             </div>
 
+            {/* Category */}
+            <FixedEventCategorySelector
+              categoryId={categoryId}
+              onCategoryChange={setCategoryId}
+            />
+
             {/* Notes */}
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="evt-notes">{t.calendar.notesLabel}</Label>
@@ -99,6 +112,8 @@ export function EventModal(props: UseEventFormProps) {
               setStartTime={setStartTime}
               endTime={endTime}
               setEndTime={setEndTime}
+              isAllDay={isAllDay}
+              setIsAllDay={setIsAllDay}
               recurrenceType={recurrenceType}
               mode={mode}
             />
@@ -153,6 +168,9 @@ export function EventModal(props: UseEventFormProps) {
         onSelectSingle={
           recurringDialog.action === "delete" ? submitDeleteSingle : submitUpdateSingle
         }
+        onSelectFollowing={
+          recurringDialog.action === "delete" ? submitDeleteFollowing : submitUpdateFollowing
+        }
         onSelectAll={
           recurringDialog.action === "delete" ? submitDeleteAll : submitUpdateAll
         }
@@ -161,3 +179,4 @@ export function EventModal(props: UseEventFormProps) {
     </>
   );
 }
+

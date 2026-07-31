@@ -94,9 +94,12 @@ export function useCalendarPage() {
     createEvent,
     updateAllOccurrences,
     updateSingleOccurrence,
+    updateFromDateOnwards,
     deleteAllOccurrences,
     deleteSingleOccurrence,
+    deleteFromDateOnwards,
   } = useCalendarEvents(dateRange);
+
 
 
 
@@ -192,21 +195,31 @@ export function useCalendarPage() {
   // ── FullCalendar events ────────────────────────────────────────────────────
   const scheduledTaskIds = useMemo(() => new Set(timeBlocks.map((b) => b.taskId)), [timeBlocks]);
 
+  const hasAllDayEvents = useMemo(() => {
+    return events.some((e) => !!e.isAllDay);
+  }, [events]);
+
   const fcEvents = useMemo<EventInput[]>(() => {
+
     const list: EventInput[] = [
-      // Fixed events
-      ...events.map((occ) => ({
-        id: occ.id,
-        title: occ.title,
-        start: `${occ.occurrenceDate}T${occ.startTime}`,
-        end: `${occ.occurrenceDate}T${occ.endTime}`,
-        extendedProps: { occurrence: occ },
-        backgroundColor: fixedEventColor,
-        borderColor: fixedEventColor,
-        textColor: EVENT_TEXT,
-        ...(occ.recurrenceType !== "NONE" && { backgroundColor: fixedEventColor + "d9" }),
-      }))
+      ...events.map((occ) => {
+        const color = occ.category?.color || fixedEventColor;
+        const isAllDay = !!occ.isAllDay;
+        return {
+          id: occ.id,
+          title: occ.title,
+          start: isAllDay ? occ.occurrenceDate : `${occ.occurrenceDate}T${occ.startTime}`,
+          end: isAllDay ? occ.occurrenceDate : `${occ.occurrenceDate}T${occ.endTime}`,
+          allDay: isAllDay,
+          extendedProps: { occurrence: occ },
+          backgroundColor: color,
+          borderColor: color,
+          textColor: EVENT_TEXT,
+          ...(occ.recurrenceType !== "NONE" && { backgroundColor: color + "d9" }),
+        };
+      })
     ];
+
 
     // Render time blocks unconditionally (whether confirmed or not)
     list.push(
@@ -322,9 +335,10 @@ export function useCalendarPage() {
       const occupiedSlots: OccupiedSlot[] = [
         ...events.map((e) => ({
           date: e.occurrenceDate,
-          startTime: e.startTime.substring(0, 5),
-          endTime: e.endTime.substring(0, 5),
+          startTime: e.isAllDay ? "00:00" : e.startTime.substring(0, 5),
+          endTime: e.isAllDay ? "23:59" : e.endTime.substring(0, 5),
         })),
+
         ...timeBlocks.map((tb) => ({
           date: toLocalDateStr(tb.startTime),
           startTime: toLocalTimeStr(tb.startTime),
@@ -413,8 +427,11 @@ export function useCalendarPage() {
     createEvent,
     updateAllOccurrences,
     updateSingleOccurrence,
+    updateFromDateOnwards,
     deleteAllOccurrences,
     deleteSingleOccurrence,
+    deleteFromDateOnwards,
+
     blockModalOpen,
     setBlockModalOpen,
     selectedBlock,
@@ -435,8 +452,10 @@ export function useCalendarPage() {
     handleEventDragStop,
 
     // Store data
+    hasAllDayEvents,
     dailyPlanToday,
     timeBlocks,
+
     focusedDate,
     plannable,
   };

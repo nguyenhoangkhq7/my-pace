@@ -61,6 +61,9 @@ public class TaskServiceImpl implements TaskService {
         if (task.getIsImportant() == null) {
             task.setIsImportant(false);
         }
+        if (task.getIsSplittable() == null) {
+            task.setIsSplittable(false);
+        }
         if (request.status() != null && !request.status().trim().isEmpty()) {
             task.setStatus(request.status());
         } else {

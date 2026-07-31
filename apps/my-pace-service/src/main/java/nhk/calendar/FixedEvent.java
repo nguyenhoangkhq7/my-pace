@@ -2,6 +2,7 @@ package nhk.calendar;
 
 import jakarta.persistence.*;
 import lombok.*;
+import nhk.category.Category;
 import nhk.user.User;
 import org.hibernate.annotations.UuidGenerator;
 
@@ -29,6 +30,10 @@ public class FixedEvent {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private Category category;
+
     @Column(name = "title", nullable = false, length = 255)
     private String title;
 
@@ -43,6 +48,10 @@ public class FixedEvent {
 
     @Column(name = "end_time", nullable = false)
     private LocalTime endTime;
+
+    @Builder.Default
+    @Column(name = "is_all_day", nullable = false)
+    private Boolean isAllDay = false;
 
     /**
      * NONE | DAILY | WEEKLY | CUSTOM

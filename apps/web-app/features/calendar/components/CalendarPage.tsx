@@ -38,8 +38,11 @@ export function CalendarPage() {
     createEvent,
     updateAllOccurrences,
     updateSingleOccurrence,
+    updateFromDateOnwards,
     deleteAllOccurrences,
     deleteSingleOccurrence,
+    deleteFromDateOnwards,
+
     blockModalOpen,
     setBlockModalOpen,
     selectedBlock,
@@ -60,10 +63,12 @@ export function CalendarPage() {
     handleEventDragStop,
 
     // Store data
+    hasAllDayEvents,
     dailyPlanToday,
     timeBlocks,
     plannable,
   } = useCalendarPage();
+
 
   const isConfirmed = !plannable || !!dailyPlanToday?.isConfirmed;
 
@@ -97,8 +102,10 @@ export function CalendarPage() {
               slotMinTime={slotMin}
               slotMaxTime={slotMax}
               snapDuration="00:15:00"
-              allDaySlot={false}
+              allDaySlot={hasAllDayEvents}
               nowIndicator
+
+
               selectable={plannable}
               selectMirror={plannable}
               editable={plannable}
@@ -145,9 +152,14 @@ export function CalendarPage() {
         createEvent={createEvent}
         updateAllOccurrences={updateAllOccurrences}
         updateSingleOccurrence={updateSingleOccurrence}
+        updateFromDateOnwards={updateFromDateOnwards}
         deleteAllOccurrences={deleteAllOccurrences}
         deleteSingleOccurrence={deleteSingleOccurrence}
+        deleteFromDateOnwards={deleteFromDateOnwards}
       />
+
+
+
 
       <TaskTimeBlockModal
         open={blockModalOpen}

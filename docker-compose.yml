@@ -49,7 +49,7 @@ services:
       - ./apps/web-app/.env
     environment:
       NEXT_TELEMETRY_DISABLED: "1"
-      NEXT_PUBLIC_API_URL: "http://api:8080/api"
+      NEXT_PUBLIC_API_URL: "http://localhost:8080/api"
       API_URL: "http://api:8080/api"
     ports:
       - "3000:3000"

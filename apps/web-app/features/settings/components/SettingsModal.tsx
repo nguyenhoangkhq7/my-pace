@@ -9,6 +9,7 @@ import { useLanguageStore } from "@/features/settings/store/useLanguageStore";
 import type { Locale } from "@/lib/i18n/types";
 import { Settings } from "lucide-react";
 import { HelpIcon, FeedbackIcon } from "@/components/layout/SidebarIcons";
+import { TimeContextList } from "@/features/time-context";
 
 type ThemeId = "dark" | "light" | "graphite" | "nord" | "sage" | "rose";
 
@@ -137,6 +138,11 @@ export function SettingsModal({
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Time Contexts */}
+          <div className="space-y-3 pt-4 border-t border-border/50">
+            <TimeContextList />
           </div>
 
           {/* About & Support */}

@@ -127,6 +127,13 @@ export interface Translations {
     noCategory: string;
     addCategory: string;
     manageCategory: string;
+    splittableLabel: string;
+    splittableTooltip: string;
+    minChunkLabel: string;
+    minChunkPlaceholder: string;
+    maxDailyLabel: string;
+    maxDailyPlaceholder: string;
+    unlimited: string;
   };
   outstanding: {
     title: string;
@@ -150,6 +157,42 @@ export interface Translations {
     deleteFailed: string;
     deleteTitle: string;
     deleteDesc: (name: string) => string;
+  };
+  timeContext: {
+    title: string;
+    manageTitle: string;
+    manageDesc: string;
+    tabCategories: (count: number) => string;
+    tabTimeContexts: string;
+    nameLabel: string;
+    namePlaceholder: string;
+    slotsLabel: string;
+    addSlot: string;
+    noSlotsYet: string;
+    categoriesLabel: string;
+    createTitle: string;
+    editTitle: string;
+    saveContext: string;
+    savingContext: string;
+    createButton: string;
+    createFirstButton: string;
+    deleteTitle: string;
+    deleteDesc: (name: string) => string;
+    noContextsYet: string;
+    loading: string;
+    nameRequired: string;
+    preferredTimeContext: string;
+    noContextDefault: string;
+    createNewContextOption: string;
+    days: {
+      MONDAY: string;
+      TUESDAY: string;
+      WEDNESDAY: string;
+      THURSDAY: string;
+      FRIDAY: string;
+      SATURDAY: string;
+      SUNDAY: string;
+    };
   };
   timeblock: {
     detailDesc: string;
@@ -178,8 +221,11 @@ export interface Translations {
     recurringQuestion: (action: string) => string;
     onlyThis: string;
     onlyThisDesc: (action: string) => string;
+    thisAndFollowing: string;
+    thisAndFollowingDesc: (action: string) => string;
     allEvents: string;
     allEventsDesc: (action: string) => string;
+
     cancelBtn2: string;
     fcToday: string;
     fcMonth: string;

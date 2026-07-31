@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useCategories } from "../hooks/useCategories";
 import { cn } from "@/lib/utils";
 import { CustomColorPicker } from "@/components/ui/custom-color-picker";
+import { TimeContextSelect } from "@/features/time-context";
 
 interface CategoryCreateFormProps {
   onCancel: () => void;
@@ -28,13 +29,19 @@ export function CategoryCreateForm({ onCancel, onSuccess }: CategoryCreateFormPr
   const { createCategory } = useCategories();
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryColor, setNewCategoryColor] = useState(CATEGORY_COLORS[0]);
+  const [timeContextId, setTimeContextId] = useState<string | null>(null);
 
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) return;
     try {
-      const cat = await createCategory({ name: newCategoryName.trim(), color: newCategoryColor });
+      const cat = await createCategory({
+        name: newCategoryName.trim(),
+        color: newCategoryColor,
+        timeContextId: timeContextId || undefined,
+      });
       onSuccess(cat.id);
       setNewCategoryName("");
+      setTimeContextId(null);
     } catch (err) {
       console.error(err);
     }
@@ -54,9 +61,7 @@ export function CategoryCreateForm({ onCancel, onSuccess }: CategoryCreateFormPr
           <button
             type="button"
             key={c}
-            onClick={() => {
-              setNewCategoryColor(c);
-            }}
+            onClick={() => setNewCategoryColor(c)}
             className={cn(
               "w-5 h-5 rounded-full cursor-pointer ring-offset-background border border-black/15 transition-all hover:scale-110 duration-200",
               newCategoryColor === c ? "ring-2 ring-foreground scale-105 shadow-md" : "opacity-85 hover:opacity-100"
@@ -84,6 +89,9 @@ export function CategoryCreateForm({ onCancel, onSuccess }: CategoryCreateFormPr
           )}
         </CustomColorPicker>
       </div>
+
+      <TimeContextSelect value={timeContextId} onChange={setTimeContextId} />
+
       <div className="flex space-x-2 pt-1">
         <Button
           size="sm"
