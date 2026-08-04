@@ -53,6 +53,8 @@ public class FixedEventException {
     @Column(name = "override_is_all_day")
     private Boolean overrideIsAllDay;
 
+    @Column(name = "override_availability_status", length = 20)
+    private String overrideAvailabilityStatus;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "override_category_id")

@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, X } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
 import { CategoryMultiSelect } from "./CategoryMultiSelect";
 import { TimeSlotPickerModal } from "./TimeSlotPickerModal";
@@ -30,7 +30,12 @@ export function TimeContextFormModal({
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
+  const [prevContext, setPrevContext] = useState<TimeContext | null | undefined>(undefined);
+  const [prevIsOpen, setPrevIsOpen] = useState(false);
+
+  if (isOpen !== prevIsOpen || initialContext !== prevContext) {
+    setPrevIsOpen(isOpen);
+    setPrevContext(initialContext);
     if (isOpen) {
       if (initialContext) {
         setName(initialContext.name);
@@ -43,7 +48,7 @@ export function TimeContextFormModal({
       }
       setError("");
     }
-  }, [isOpen, initialContext]);
+  }
 
   const handleAddSlots = (newSlots: TimeContextSlot[]) => {
     setSlots((prev) => [...prev, ...newSlots]);
@@ -121,7 +126,7 @@ export function TimeContextFormModal({
               <div className="p-3 bg-muted/30 border border-border/60 rounded-xl min-h-[50px] flex flex-wrap gap-1.5 items-center">
                 {slotGroups.length === 0 ? (
                   <p className="text-xs text-muted-foreground italic">
-                    {t.timeContext.noSlotsYet}. Bấm "{t.timeContext.addSlot}" để chọn thứ & khung giờ.
+                    {t.timeContext.noSlotsYet}. Bấm &quot;{t.timeContext.addSlot}&quot; để chọn thứ & khung giờ.
                   </p>
                 ) : (
                   <>

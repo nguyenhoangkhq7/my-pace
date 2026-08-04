@@ -7,13 +7,13 @@ import nhk.mail.SendOtpMailService;
 import nhk.user.User;
 import nhk.user.UserMapper;
 import nhk.user.UserRepository;
-import org.springframework.data.redis.core.StringRedisTemplate;
+
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import java.time.LocalDateTime;
 import java.util.UUID;
-
 @Slf4j
 @Service
 @AllArgsConstructor
@@ -24,7 +24,7 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final SendOtpMailService sendOtpMailService;
-    private final StringRedisTemplate stringRedisTemplate;
+    private final OtpRepository otpRepository;
 
     @Override
     public SendOtpResponse sendOtpEmailRegister(SendOtpEmailRequest request) {
@@ -79,26 +79,55 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void verifyOtp(VerifyOtpRequest request) {
-       String otpRedis = stringRedisTemplate.opsForValue().get("otp:" + request.email());
-          if(otpRedis == null || !otpRedis.equals(request.otp())) {
-              throw new InvalidOtpException("Invalid OTP");
-          }
-          stringRedisTemplate.delete("otp:" + request.email());
-     }
+       var otpEntity = otpRepository.findByEmail(request.email())
+               .orElseThrow(() -> new InvalidOtpException("Invalid OTP"));
+
+       if(otpEntity.getExpiresAt().isBefore(LocalDateTime.now())) {
+           otpRepository.delete(otpEntity);
+           throw new InvalidOtpException("OTP is expired");
+       }
+
+       if(!otpEntity.getOtp().equals(request.otp())) {
+           throw new InvalidOtpException("Invalid OTP");
+       }
+
+       otpRepository.delete(otpEntity);
+    }
+
+    @Override
+    public SendOtpResponse sendOtpForgotPassword(SendOtpEmailRequest request) {
+        userRepository.findByEmail(request.email())
+                .orElseThrow(() -> new EntityNotFoundException("Email chưa được đăng ký trong hệ thống"));
+        String otp = sendOtpMailService.generateOtp();
+        sendOtpMailService.sendOtpMail(request.email(), otp);
+        return new SendOtpResponse(otp);
+    }
+
+    @Override
+    public void resetPassword(ResetPasswordRequest request) {
+        var user = userRepository.findByEmail(request.email())
+                .orElseThrow(() -> new EntityNotFoundException("Email chưa được đăng ký trong hệ thống"));
+
+        var otpEntity = otpRepository.findByEmail(request.email())
+                .orElseThrow(() -> new InvalidOtpException("Mã OTP không hợp lệ"));
+
+        if (otpEntity.getExpiresAt().isBefore(LocalDateTime.now())) {
+            otpRepository.delete(otpEntity);
+            throw new InvalidOtpException("Mã OTP đã hết hạn");
+        }
+
+        if (!otpEntity.getOtp().equals(request.otp())) {
+            throw new InvalidOtpException("Mã OTP không chính xác");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+        otpRepository.delete(otpEntity);
+    }
 
     @Override
     public void logout(String token) {
-        var jwt = jwtService.parseToken(token);
-        if (jwt != null && !jwt.isExpirated()) {
-            java.util.Date expiration = jwt.getExpiration();
-            long remainingMillis = expiration.getTime() - System.currentTimeMillis();
-            if (remainingMillis > 0) {
-                stringRedisTemplate.opsForValue().set(
-                    "blacklist:token:" + token,
-                    "true",
-                    java.time.Duration.ofMillis(remainingMillis)
-                );
-            }
-        }
+        // Stateless JWT logout - Client is responsible for deleting the token.
+        // No server-side blacklist is maintained.
     }
 }

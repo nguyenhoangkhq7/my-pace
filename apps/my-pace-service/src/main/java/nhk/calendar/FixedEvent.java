@@ -54,6 +54,14 @@ public class FixedEvent {
     private Boolean isAllDay = false;
 
     /**
+     * BUSY | FREE
+     * Stored as VARCHAR in DB.
+     */
+    @Builder.Default
+    @Column(name = "availability_status", nullable = false, length = 20)
+    private String availabilityStatus = "BUSY";
+
+    /**
      * NONE | DAILY | WEEKLY | CUSTOM
      * Stored as VARCHAR in DB.
      */

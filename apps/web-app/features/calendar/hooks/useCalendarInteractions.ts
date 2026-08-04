@@ -6,13 +6,15 @@ import type { FixedEventOccurrence, CreateEventPayload, UpdateOccurrencePayload 
 import type { DailyPlan, TaskTimeBlock } from "@/features/board/types";
 import { toLocalISOString } from "@/lib/date";
 import { useQueryClient } from "@tanstack/react-query";
-import { updateTaskAction } from "@/features/board/actions/task.action";
+import { fetchClient } from "@/lib/fetchClient";
+import { useAutoSchedule } from "@/features/board/hooks/useAutoSchedule";
 
 interface UseCalendarInteractionsProps {
   dailyPlanToday: DailyPlan | null;
   timeBlocks: TaskTimeBlock[];
   isConfirmed: boolean;
   saveTimeBlocks: (blocks: Omit<TaskTimeBlock, 'id'>[]) => Promise<unknown>;
+  updateTimeBlock: (blockId: string, data: { startTime?: string, endTime?: string, availabilityStatus?: string }) => Promise<unknown>;
   updateAllOccurrences: (seriesId: string, data: CreateEventPayload) => Promise<unknown>;
   updateSingleOccurrence: (seriesId: string, date: string, data: UpdateOccurrencePayload) => Promise<unknown>;
   createEvent: (data: CreateEventPayload) => Promise<unknown>;
@@ -26,6 +28,7 @@ export function useCalendarInteractions({
   timeBlocks,
   isConfirmed,
   saveTimeBlocks,
+  updateTimeBlock,
   updateAllOccurrences,
   updateSingleOccurrence,
   createEvent,
@@ -34,6 +37,7 @@ export function useCalendarInteractions({
   sidebarRef,
 }: UseCalendarInteractionsProps) {
   const queryClient = useQueryClient();
+  const { triggerAutoSchedule } = useAutoSchedule();
 
   // ── When task dropped from sidebar → save as new time block ──────────────
   const handleEventReceive = useCallback(
@@ -76,16 +80,17 @@ export function useCalendarInteractions({
 
       const newBlock = {
         taskId,
-        dailyPlanId: dailyPlanToday.id,
         startTime: toLocalISOString(startTime),
         endTime: toLocalISOString(endTime),
         partIndex: 1,
         totalParts: 1,
+        availabilityStatus: "BUSY" as const,
       };
 
       try {
         await saveTimeBlocks([...existingBlocks, newBlock]);
         toast.success(`Đã lên lịch: "${planTask.task.title}"`);
+        triggerAutoSchedule();
       } catch {
         info.revert();
         toast.error("Không thể lưu lịch.");
@@ -195,19 +200,14 @@ export function useCalendarInteractions({
         return;
       }
 
-      const updatedBlocks = timeBlocks
-        .map((b) =>
-          b.id === blockId ? { ...b, startTime: toLocalISOString(startTime), endTime: toLocalISOString(endTime) } : b
-        )
-        .map((b) => {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { id: _, ...rest } = b;
-          return rest;
-        });
-
       try {
-        await saveTimeBlocks(updatedBlocks);
+        await updateTimeBlock(blockId, {
+          startTime: toLocalISOString(startTime),
+          endTime: toLocalISOString(endTime),
+          availabilityStatus: "BUSY"
+        });
         toast.success("Đã cập nhật lịch!");
+        triggerAutoSchedule();
       } catch {
         info.revert();
       }
@@ -246,26 +246,21 @@ export function useCalendarInteractions({
           arg.revert();
           return;
         }
-
         const startTime = new Date(block.startTime);
         const endTime = new Date(toLocalISOString(newEnd));
         const durationMinutes = Math.round((endTime.getTime() - startTime.getTime()) / 60000);
 
-        const updatedBlocks = timeBlocks
-          .map((b) => (b.id === blockId ? { ...b, endTime: toLocalISOString(newEnd) } : b))
-          .map((b) => {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const { id: _, ...rest } = b;
-            return rest;
-          });
         try {
-          await saveTimeBlocks(updatedBlocks);
+          await updateTimeBlock(blockId, {
+            endTime: toLocalISOString(newEnd)
+          });
           if (durationMinutes > 0) {
-            await updateTaskAction(block.taskId, { estimatedMinutes: durationMinutes });
+            await fetchClient.put(`tasks/${block.taskId}`, { estimatedMinutes: durationMinutes });
             queryClient.invalidateQueries({ queryKey: ["tasks"] });
             queryClient.invalidateQueries({ queryKey: ["dailyPlan"] });
           }
           toast.success("Đã cập nhật lịch trình và thời lượng công việc!");
+          triggerAutoSchedule();
         } catch {
           arg.revert();
         }

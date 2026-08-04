@@ -31,5 +31,7 @@ public record FixedEventRequest(
 
     LocalDate recurrenceEndDate,
 
-    UUID categoryId
+    UUID categoryId,
+
+    String availabilityStatus
 ) {}

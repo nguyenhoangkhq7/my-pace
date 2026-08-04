@@ -3,7 +3,7 @@ import { UseFormReturn, Controller, useWatch } from "react-hook-form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { HelpSquareIcon } from "@hugeicons/core-free-icons";
 import { useTranslation } from "@/hooks/use-translation";

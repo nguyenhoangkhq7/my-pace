@@ -41,6 +41,7 @@ export function ExecutionBoard({
     isStartMyDayOpen,
     setIsStartMyDayOpen,
     currentPlan,
+    currentTimeBlocks,
     currentAvailable,
     totalAvailable,
     availableData,
@@ -71,6 +72,7 @@ export function ExecutionBoard({
       return (
         <ExecutionModeView
           currentPlan={currentPlan}
+          currentTimeBlocks={currentTimeBlocks || []}
           currentAvailable={currentAvailable}
           totalAvailable={totalAvailable}
           availableData={availableData ?? null}

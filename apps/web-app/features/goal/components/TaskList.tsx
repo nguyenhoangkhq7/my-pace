@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Task } from "@/features/board/types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createTaskAction, updateTaskAction } from "@/features/board/actions/task.action";
+import { fetchClient } from "@/lib/fetchClient";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PlusSignIcon, ArrowDown01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons";
@@ -21,11 +21,11 @@ export function TaskList({ taskList, gId, gStatus }: TaskListProps) {
   const isVi = locale === "vi";
   const queryClient = useQueryClient();
   const createTaskMutation = useMutation({
-    mutationFn: createTaskAction,
+    mutationFn: (data: Partial<Task>) => fetchClient.post('tasks', data).then(r => r.data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
   });
   const updateTaskMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string, data: Partial<Task> }) => updateTaskAction(id, data),
+    mutationFn: ({ id, data }: { id: string, data: Partial<Task> }) => fetchClient.put(`tasks/${id}`, data).then(r => r.data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
   });
   const [isCreating, setIsCreating] = useState(false);

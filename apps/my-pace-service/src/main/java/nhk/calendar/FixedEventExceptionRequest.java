@@ -11,5 +11,6 @@ public record FixedEventExceptionRequest(
     Boolean overrideIsAllDay,
     Boolean isDeleted,
 
-    UUID overrideCategoryId
+    UUID overrideCategoryId,
+    String overrideAvailabilityStatus
 ) {}

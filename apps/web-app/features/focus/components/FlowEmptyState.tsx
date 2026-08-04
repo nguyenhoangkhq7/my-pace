@@ -1,70 +1,25 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useBoardStore } from "@/features/board/store/board.store";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getTasksAction, updateTaskAction } from "@/features/board/actions/task.action";
-import { getDailyPlanAction, planMyDayAction, reviewPlanAction } from "@/features/board/actions/plan.action";
-import { saveTimeBlocksAction } from "@/features/board/actions/timeblock.action";
-import type { TaskTimeBlock } from "@/features/board/types";
-import { useAvailableTimeQuery } from "@/features/available-time/hooks/useAvailableTime";
 import { toast } from "sonner";
-import type { Task, DailyPlanTask } from "@/features/board/types";
+import type { Task } from "@/features/board/types";
 import { TaskFormModal } from "@/features/board/components/TaskFormModal";
 import { FlowReviewModal } from "./FlowReviewModal";
 import { FlowPickTaskModal } from "./FlowPickTaskModal";
 import { useTranslation } from "@/hooks/use-translation";
-import { useAuthStore } from "@/features/auth";
-import { getEventsAction } from "@/features/calendar/actions/calendar.action";
-import { autoSchedule, type OccupiedSlot } from "@/features/board/utils/autoSchedule";
-import { getTodayStr } from "@/lib/date";
-
-const toLocalDateStr = (iso: string) => {
-  const d = new Date(iso);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
-const toLocalTimeStr = (iso: string) => {
-  const d = new Date(iso);
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-};
+import { useFlowEmptyState } from "@/features/focus/hooks/useFlowEmptyState";
 
 export function FlowEmptyState() {
   const { t, locale } = useTranslation();
-  const queryClient = useQueryClient();
-  const user = useAuthStore((s) => s.user);
-  const todayStr = getTodayStr(user?.timezone);
-  
-  const { data: tasks = [] } = useQuery({ queryKey: ['tasks'], queryFn: getTasksAction });
-  const { data: dailyPlanToday } = useQuery({ queryKey: ['dailyPlan', todayStr], queryFn: () => getDailyPlanAction(todayStr) });
-  
-  const updateTaskMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string, data: Partial<Task> }) => updateTaskAction(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
-  });
-  const savePlanMutation = useMutation({
-    mutationFn: ({ planDate, availableMinutes, tasks }: { planDate: string; availableMinutes: number; tasks: Array<{ taskId: string; isMit: boolean; sortOrder: number }> }) =>
-      planMyDayAction({
-        planDate,
-        availableMinutes,
-        tasks,
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['dailyPlan'] });
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-    },
-  });
-  const saveTimeBlocksMutation = useMutation({
-    mutationFn: (blocks: Omit<TaskTimeBlock, 'id'>[]) => saveTimeBlocksAction({ dailyPlanId: dailyPlanToday!.id, blocks }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['dailyPlan'] });
-    },
-  });
-  const reviewDailyPlanMutation = useMutation({
-    mutationFn: (date: string) => reviewPlanAction(date),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['dailyPlan'] }),
-  });
-  const { data: dataToday } = useAvailableTimeQuery(todayStr);
+  const {
+    tasks,
+    dailyPlanToday,
+    dataToday,
+    addAndSaveTask,
+    handleDurationSubmit,
+    handleReviewConfirm,
+  } = useFlowEmptyState();
+
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-  const [isAddingTask, setIsAddingTask] = useState(false);
   const [isPickTaskModalOpen, setIsPickTaskModalOpen] = useState(false);
   const [requireDurationForTask, setRequireDurationForTask] = useState<Task | undefined>(undefined);
 
@@ -81,70 +36,14 @@ export function FlowEmptyState() {
       (t) => t.status !== "Done" && !dailyPlanToday.tasks.some((pt) => pt.task.id === t.id)
     );
 
-    const addAndSaveTask = async (task: Task) => {
-      if (isAddingTask) return;
-      setIsAddingTask(true);
-
-      const currentPlannedIds = dailyPlanToday.tasks.map((pt) => pt.task.id);
-      const updatedIds = [...currentPlannedIds, task.id];
-
-      useBoardStore.setState({ plannedTaskIds: updatedIds });
-
-      const tasksPayload = updatedIds.map((taskId, index) => {
-        const existingTask = dailyPlanToday.tasks.find(pt => pt.task.id === taskId);
-        return {
-          taskId,
-          isMit: existingTask ? existingTask.isMit : false,
-          sortOrder: index,
-        };
-      });
-
+    const handlePickTask = async (task: Task) => {
+      if (!task.estimatedMinutes) {
+        setRequireDurationForTask(task);
+        return;
+      }
       try {
-        await savePlanMutation.mutateAsync({
-          planDate: dailyPlanToday.planDate,
-          availableMinutes: dailyPlanToday.availableMinutes,
-          tasks: tasksPayload,
-        });
-
-        const { user } = useAuthStore.getState();
-
-        if (user?.wakeTime && user?.sleepTime) {
-          const fixedEvents = await getEventsAction(todayStr, todayStr);
-          const occupiedSlots: OccupiedSlot[] = fixedEvents.map((event) => ({
-            date: event.occurrenceDate,
-            startTime: event.startTime.substring(0, 5),
-            endTime: event.endTime.substring(0, 5),
-          }));
-          
-          const existingBlocks = dailyPlanToday.timeBlocks.map((block) => ({
-            date: toLocalDateStr(block.startTime),
-            startTime: toLocalTimeStr(block.startTime),
-            endTime: toLocalTimeStr(block.endTime),
-          }));
-
-          const newDailyPlanTask: DailyPlanTask = {
-            id: "",
-            task: task,
-            isMit: false,
-            sortOrder: dailyPlanToday.tasks.length,
-            dailyPlanId: dailyPlanToday.id
-          };
-          const blocks = autoSchedule(
-            [newDailyPlanTask],
-            [...occupiedSlots, ...existingBlocks],
-            dailyPlanToday.id,
-            todayStr,
-            user.wakeTime,
-            user.sleepTime,
-            user.timezone
-          );
-
-          if (blocks.length > 0) {
-            await saveTimeBlocksMutation.mutateAsync([...dailyPlanToday.timeBlocks, ...blocks] as Omit<TaskTimeBlock, 'id'>[]);
-          }
-        }
-
-        setIsReviewModalOpen(false); // Close review modal on successful add
+        await addAndSaveTask(task);
+        setIsReviewModalOpen(false);
         toast.success(
           locale === "vi"
             ? `Đã thêm công việc "${task.title}" vào kế hoạch hôm nay!`
@@ -157,30 +56,21 @@ export function FlowEmptyState() {
             ? "Không thể thêm công việc vào kế hoạch."
             : "Could not add task to today's plan."
         );
-      } finally {
-        setIsAddingTask(false);
       }
     };
 
-    const handlePickTask = async (task: Task) => {
-      if (!task.estimatedMinutes) {
-        setRequireDurationForTask(task);
-        return;
-      }
-      await addAndSaveTask(task);
-    };
-
-    const handleDurationSubmit = async (taskData: Partial<Task>) => {
+    const onSubmitDuration = async (taskData: Partial<Task>) => {
       if (!requireDurationForTask) return;
-      
       try {
-        const estimatedMinutes = taskData.estimatedMinutes ?? 0;
-        // Update task duration in DB
-        await updateTaskMutation.mutateAsync({ id: requireDurationForTask.id, data: { estimatedMinutes } });
-        const updatedTask = { ...requireDurationForTask, estimatedMinutes };
-        setRequireDurationForTask(undefined);
-        // Add updated task to daily plan
-        await addAndSaveTask(updatedTask);
+        await handleDurationSubmit(requireDurationForTask, taskData, () => {
+          setRequireDurationForTask(undefined);
+        });
+        setIsReviewModalOpen(false);
+        toast.success(
+          locale === "vi"
+            ? `Đã thêm công việc "${requireDurationForTask.title}" vào kế hoạch hôm nay!`
+            : `Added task "${requireDurationForTask.title}" to today's plan!`
+        );
       } catch (err) {
         console.error(err);
         toast.error(
@@ -230,11 +120,9 @@ export function FlowEmptyState() {
           totalEstimated={totalEstimated}
           remainingMinutes={remainingMinutes}
           backlogTasks={backlogTasks}
-          onReviewConfirm={() => {
+          onReviewConfirm={async () => {
             setIsReviewModalOpen(false);
-            if (dailyPlanToday) {
-              reviewDailyPlanMutation.mutateAsync(dailyPlanToday.planDate);
-            }
+            await handleReviewConfirm();
           }}
           onPickTaskClick={() => setIsPickTaskModalOpen(true)}
         />
@@ -246,11 +134,10 @@ export function FlowEmptyState() {
           onPickTask={handlePickTask}
         />
 
-        {/* Modal to prompt for estimated duration if missing */}
         <TaskFormModal 
           isOpen={!!requireDurationForTask} 
           onClose={() => setRequireDurationForTask(undefined)} 
-          onSubmit={handleDurationSubmit}
+          onSubmit={onSubmitDuration}
           initialData={requireDurationForTask}
           requireDuration={true}
         />

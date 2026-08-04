@@ -2,14 +2,12 @@ import { useState, useEffect } from "react";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import type { Task, DailyPlan, DailyPlanTask } from "@/features/board/types";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getTasksAction, updateTaskAction } from "@/features/board/actions/task.action";
-import { getDailyPlanAction, toggleTaskDoneAction } from "@/features/board/actions/plan.action";
-import { getGoalsAction } from "@/features/goal/actions/goal.action";
+import { fetchClient } from "@/lib/fetchClient";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, Square, Check, ListTodo, Eye, EyeOff } from "lucide-react";
-import { saveTimeBlocksAction } from "@/features/board/actions/timeblock.action";
 import { shiftTimeBlocks } from "@/features/board/utils/timeShift";
 import type { TaskTimeBlock } from "@/features/board/types";
+import { useTaskTimeBlocks } from "@/features/board/hooks/useTaskTimeBlocks";
 
 import { useAuthStore } from "@/features/auth";
 import { getTodayStr } from "@/lib/date";
@@ -54,12 +52,12 @@ export function FlowPomodoro() {
   const user = useAuthStore((s) => s.user);
   const todayStr = getTodayStr(user?.timezone);
 
-  const { data: tasks = [] } = useQuery({ queryKey: ['tasks'], queryFn: getTasksAction });
-  const { data: dailyPlanToday } = useQuery({ queryKey: ['dailyPlan', todayStr], queryFn: () => getDailyPlanAction(todayStr) });
+  const { data: tasks = [] } = useQuery({ queryKey: ['tasks'], queryFn: () => fetchClient.get<Task[]>('tasks').then(r => r.data) });
+  const { data: dailyPlanToday } = useQuery({ queryKey: ['dailyPlan', todayStr], queryFn: () => fetchClient.get<DailyPlan>(`daily-plans/${todayStr}`).then(r => r.data) });
 
   const updateTaskMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string, data: Partial<Task> }) => updateTaskAction(id, data),
-    onSuccess: (updatedTask) => {
+    mutationFn: ({ id, data }: { id: string, data: Partial<Task> }) => fetchClient.put(`tasks/${id}`, data).then(r => r.data as Task),
+    onSuccess: (updatedTask: Task) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.setQueryData(['dailyPlan', todayStr], (old: DailyPlan | undefined) => {
         if (!old) return old;
@@ -75,21 +73,21 @@ export function FlowPomodoro() {
     },
   });
   const toggleTaskDoneMutation = useMutation({
-    mutationFn: ({ taskId }: { taskId: string }) => toggleTaskDoneAction(taskId),
+    mutationFn: ({ taskId }: { taskId: string }) => fetchClient.post(`daily-plans/tasks/${taskId}/toggle`, {}).then(r => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['dailyPlan'] });
     },
   });
+  const { data: timeBlocks = [] } = useTaskTimeBlocks(todayStr, todayStr);
+
   const saveTimeBlocksMutation = useMutation({
-    mutationFn: (blocks: Omit<TaskTimeBlock, 'id'>[]) => saveTimeBlocksAction({ dailyPlanId: dailyPlanToday!.id, blocks }),
-    onSuccess: (data) => {
-      if (dailyPlanToday) {
-        queryClient.setQueryData(['dailyPlan', todayStr], { ...dailyPlanToday, timeBlocks: data });
-      }
+    mutationFn: (blocks: Omit<TaskTimeBlock, 'id'>[]) => fetchClient.post<TaskTimeBlock[]>('time-blocks/batch', { targetDate: todayStr, blocks }).then(r => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['timeBlocks'] });
     }
   });
-  const { refetch: fetchGoals } = useQuery({ queryKey: ['goals'], queryFn: getGoalsAction, enabled: false });
+  const { refetch: fetchGoals } = useQuery({ queryKey: ['goals'], queryFn: () => fetchClient.get('goals').then(r => r.data), enabled: false });
 
   const [isFinishing, setIsFinishing] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
@@ -147,9 +145,9 @@ export function FlowPomodoro() {
       const actualMinutes = Math.floor(accumulatedFocusTime / 60);
       if (actualMinutes > 0) {
         await updateTaskMutation.mutateAsync({ id: activeTaskId, data: { actualMinutes } });
-        if (dailyPlanToday?.timeBlocks && dailyPlanToday.timeBlocks.length > 0) {
+        if (timeBlocks && timeBlocks.length > 0) {
           const estimated = activeTask.estimatedMinutes || 0;
-          const shifted = shiftTimeBlocks(dailyPlanToday.timeBlocks, activeTaskId, actualMinutes, estimated);
+          const shifted = shiftTimeBlocks(timeBlocks, activeTaskId, actualMinutes, estimated);
           await saveTimeBlocksMutation.mutateAsync(shifted);
         }
       } else {

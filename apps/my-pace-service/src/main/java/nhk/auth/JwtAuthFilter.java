@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import nhk.user.UserDetailsCustom;
 import nhk.user.UserRepository;
-import org.springframework.data.redis.core.StringRedisTemplate;
+
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -23,7 +23,7 @@ import java.io.IOException;
 public class JwtAuthFilter extends OncePerRequestFilter {
    private final JwtService jwtService;
    private final UserRepository userRepository;
-   private final StringRedisTemplate stringRedisTemplate;
+
 
    @Override
    protected void doFilterInternal(HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
@@ -51,12 +51,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
          return;
       }
 
-      // Check if token is blacklisted in Redis
-      Boolean isBlacklisted = stringRedisTemplate.hasKey("blacklist:token:" + token);
-      if (Boolean.TRUE.equals(isBlacklisted)) {
-         filterChain.doFilter(request, response);
-         return;
-      }
+
 
       userRepository.findById(jwt.getUserIdFromToken()).ifPresent(user -> {
          var userDetails = new UserDetailsCustom(user);

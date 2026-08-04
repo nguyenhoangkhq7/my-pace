@@ -8,10 +8,9 @@ import { Task, TaskChecklistItem } from "../types";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
-import { useQuery } from "@tanstack/react-query";
 import { useTasks } from "../hooks/useTasks";
 import { useCategories } from "../hooks/useCategories";
-import { getGoalsAction } from "@/features/goal/actions/goal.action";
+import { useGoals } from "../hooks/useGoals";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Calendar01Icon, Delete01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
@@ -58,8 +57,7 @@ export function TaskFormContent({
 }: TaskFormContentProps) {
   const { tasks, createTask, updateTask, deleteTask } = useTasks();
   const { categories } = useCategories();
-
-  const { data: goals = [], refetch: fetchGoals } = useQuery({ queryKey: ['goals'], queryFn: getGoalsAction });
+  const { goals, fetchGoals } = useGoals();
   const { t } = useTranslation();
 
   const [localChecklists, setLocalChecklists] = useState<Partial<TaskChecklistItem>[]>([]);

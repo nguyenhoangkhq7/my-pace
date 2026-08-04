@@ -1,32 +1,39 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getDailyPlanAction, planMyDayAction, cancelPlanAction } from "../actions/plan.action";
+import { fetchClient } from "@/lib/fetchClient";
 import type { DailyPlan } from "../types";
+import { useAutoSchedule } from "./useAutoSchedule";
 
 export function useDailyPlan(date: string, initialData?: DailyPlan | null) {
   const queryClient = useQueryClient();
+  const { triggerAutoSchedule } = useAutoSchedule();
 
   const { data: dailyPlan = null, isLoading, error } = useQuery({
     queryKey: ["dailyPlan", date],
-    queryFn: () => getDailyPlanAction(date),
+    queryFn: () => fetchClient.get<DailyPlan>(`daily-plans/${date}`).then(res => res.data),
     initialData,
     enabled: !!date,
   });
 
   const savePlanMutation = useMutation({
     mutationFn: ({ availableMinutes, tasks }: { availableMinutes: number; tasks: Array<{ taskId: string; isMit: boolean; sortOrder: number }> }) =>
-      planMyDayAction({
+      fetchClient.post<DailyPlan>('daily-plans/plan-my-day', {
         planDate: date,
         availableMinutes,
         tasks,
-      }),
-    onSuccess: (data) => {
+      }).then(res => res.data),
+    onSuccess: async (data) => {
       queryClient.setQueryData(["dailyPlan", date], data);
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      try {
+        triggerAutoSchedule();
+      } catch (e) {
+        console.error("Auto-schedule after savePlan failed", e);
+      }
     },
   });
 
   const cancelPlanMutation = useMutation({
-    mutationFn: () => cancelPlanAction(date),
+    mutationFn: () => fetchClient.post<unknown, undefined>(`daily-plans/${date}/cancel`, undefined).then(res => res.data),
     onSuccess: () => {
       queryClient.setQueryData(["dailyPlan", date], null);
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
@@ -43,3 +50,5 @@ export function useDailyPlan(date: string, initialData?: DailyPlan | null) {
     isCancellingPlan: cancelPlanMutation.isPending,
   };
 }
+
+

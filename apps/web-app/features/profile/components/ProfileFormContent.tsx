@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuthStore } from "@/features/auth/store/auth.store";
-import { updateProfileAction } from "../actions/profile.action";
+import { syncTimezoneCookie } from "@/features/auth/actions/auth.action";
+import { fetchClient } from "@/lib/fetchClient";
 import { AppAlert } from "@/components/feedback/app-alert";
 import { cn } from "@/lib/utils";
 import { TimeSelect } from "@/components/ui/time-select";
@@ -107,29 +108,32 @@ export function ProfileFormContent({ onSuccess, onCancel, onLogoutClick, isOpen 
     };
 
     try {
-      const response = await updateProfileAction(payload);
-      if (response.success) {
-        if (user) {
-          setSession({
-            user: {
-              ...user,
-              name: data.fullName,
-              wakeTime: `${data.wakeTime}:00`,
-              sleepTime: `${data.sleepTime}:00`,
-              bufferPct: buffer,
-              timezone: data.timezone,
-            },
-          });
-        }
-        
-        // Invalidate queries to update UI in real-time
-        queryClient.invalidateQueries({ queryKey: ["availableTime"] });
-        queryClient.invalidateQueries({ queryKey: ["dailyPlan"] });
-
-        onSuccess();
-      } else {
-        setError(response.error || t.profile.updateError);
+      const response = await fetchClient.put("users/profile", payload);
+      const responseData = response.data as { timezone?: string; };
+      
+      // Sync timezone to Server Component's cookies
+      if (responseData.timezone) {
+        await syncTimezoneCookie(responseData.timezone);
       }
+      
+      if (user) {
+        setSession({
+          user: {
+            ...user,
+            name: payload.name,
+            wakeTime: payload.wakeTime,
+            sleepTime: payload.sleepTime,
+            bufferPct: payload.bufferPct,
+            timezone: payload.timezone,
+          },
+        });
+      }
+      
+      // Invalidate queries to update UI in real-time
+      queryClient.invalidateQueries({ queryKey: ["availableTime"] });
+      queryClient.invalidateQueries({ queryKey: ["dailyPlan"] });
+
+      onSuccess();
     } catch (err) {
       console.error("Profile update error:", err);
       const errorMessage = err instanceof Error ? err.message : t.profile.connectionError;

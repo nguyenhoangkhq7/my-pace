@@ -1,7 +1,4 @@
 import { DashboardPage } from "@/features/board/components/DashboardPage";
-import { getTasksAction } from "@/features/board/actions/task.action";
-import { getCategoriesAction } from "@/features/board/actions/category.action";
-import { getDailyPlanAction } from "@/features/board/actions/plan.action";
 import { cookies } from "next/headers";
 import { Metadata } from "next";
 
@@ -35,20 +32,9 @@ export default async function Page() {
   day3.setUTCDate(day3.getUTCDate() + 3);
   const day3Date = formatter.format(day3);
 
-  const [tasks, categories, dailyPlanToday, dailyPlanTomorrow] = await Promise.all([
-    getTasksAction().catch((err) => { console.error(err); return []; }),
-    getCategoriesAction().catch((err) => { console.error(err); return []; }),
-    getDailyPlanAction(currentDate).catch((err) => { console.error(err); return null; }),
-    getDailyPlanAction(tomorrowDate).catch((err) => { console.error(err); return null; }),
-  ]);
-
   return (
     <DashboardPage 
       initialData={{ 
-        tasks, 
-        categories, 
-        dailyPlanToday, 
-        dailyPlanTomorrow, 
         currentDate, 
         tomorrowDate,
         day2Date,

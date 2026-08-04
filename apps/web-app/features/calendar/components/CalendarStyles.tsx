@@ -114,20 +114,75 @@ export function CalendarStyles({ fixedEventColor }: CalendarStylesProps) {
         border-color: currentColor !important;
         margin-right: 5px !important;
       }
-      .calendar-wrapper .fc-daygrid-block-event .fc-event-main {
-        padding: 0 2px !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        line-height: normal !important;
+      .calendar-wrapper .fc-event-main {
+        padding: 0 !important;
+        height: 100% !important;
         width: 100% !important;
+        display: flex !important;
+        align-items: flex-start !important;
       }
-
-
+      .calendar-wrapper .fc-event-main-frame {
+        height: 100% !important;
+        width: 100% !important;
+        display: flex !important;
+        align-items: flex-start !important;
+      }
 
       /* Dragging ghost style */
       .fc-event-dragging { opacity: 0.85 !important; }
-    `}</style>
 
+      /* ── Reclaim.ai Inspired Visual Distinction ── */
+      
+      /* 1. Fixed Events (Sự kiện cố định) */
+      .fc-event-item {
+        border-radius: 6px !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
+        transition: transform 0.15s ease, filter 0.15s ease !important;
+      }
+      .fc-event-item:hover {
+        filter: brightness(1.08) !important;
+      }
+      .fc-event-busy {
+        border-left: 3.5px solid rgba(255, 255, 255, 0.85) !important;
+      }
+      .fc-event-free {
+        border: 1.5px dotted currentColor !important;
+        opacity: 0.75 !important;
+      }
+      .fc-event-free:hover {
+        opacity: 0.95 !important;
+      }
+      
+      /* 2. Task Time Blocks (Công việc xếp lịch) */
+      .fc-task-block {
+        border-radius: 8px !important;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.18) !important;
+        transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+      }
+      .fc-task-block:hover {
+        transform: translateY(-1px) scale(1.005) !important;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25) !important;
+      }
+      .fc-task-busy {
+        border-left: 4px solid rgba(255, 255, 255, 0.9) !important;
+      }
+      /* Reclaim.ai Adaptive Hatch Pattern for Free Tasks */
+      .fc-task-free {
+        border: 1.5px dashed rgba(255, 255, 255, 0.5) !important;
+        background-image: repeating-linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.15),
+          rgba(255, 255, 255, 0.15) 8px,
+          transparent 8px,
+          transparent 16px
+        ) !important;
+      }
+      .fc-block-not-in-plan {
+        opacity: 0.45 !important;
+      }
+      .fc-block-not-in-plan:hover {
+        opacity: 0.75 !important;
+      }
+    `}</style>
   );
 }

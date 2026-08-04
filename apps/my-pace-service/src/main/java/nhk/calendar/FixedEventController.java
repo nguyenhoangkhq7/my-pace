@@ -53,7 +53,7 @@ public class FixedEventController {
      * PUT /api/calendar/events/{id}
      * Updates the entire series and clears all exceptions.
      */
-    @PutMapping("/events/{id}")
+    @PutMapping({"/events/{id}", "/events/{id}/all"})
     public ResponseEntity<FixedEventResponse> updateAllOccurrences(
             @AuthenticationPrincipal UserDetailsCustom principal,
             @PathVariable UUID id,
@@ -65,7 +65,10 @@ public class FixedEventController {
      * PATCH /api/calendar/events/{id}/exceptions/{date}
      * Updates (or creates) an exception for one specific occurrence date.
      */
-    @PatchMapping("/events/{id}/exceptions/{date}")
+    @RequestMapping(
+            value = {"/events/{id}/exceptions/{date}", "/events/{id}/occurrences/{date}"},
+            method = {RequestMethod.PUT, RequestMethod.PATCH}
+    )
     public ResponseEntity<FixedEventResponse> updateSingleOccurrence(
             @AuthenticationPrincipal UserDetailsCustom principal,
             @PathVariable UUID id,
@@ -92,7 +95,7 @@ public class FixedEventController {
      * DELETE /api/calendar/events/{id}
      * Deletes the entire recurring series (and all its exceptions via CASCADE).
      */
-    @DeleteMapping("/events/{id}")
+    @DeleteMapping({"/events/{id}", "/events/{id}/all"})
     public ResponseEntity<Void> deleteAllOccurrences(
             @AuthenticationPrincipal UserDetailsCustom principal,
             @PathVariable UUID id) {
@@ -104,7 +107,7 @@ public class FixedEventController {
      * DELETE /api/calendar/events/{id}/exceptions/{date}
      * Soft-deletes one specific occurrence of a recurring series.
      */
-    @DeleteMapping("/events/{id}/exceptions/{date}")
+    @DeleteMapping({"/events/{id}/exceptions/{date}", "/events/{id}/occurrences/{date}"})
     public ResponseEntity<Void> deleteSingleOccurrence(
             @AuthenticationPrincipal UserDetailsCustom principal,
             @PathVariable UUID id,

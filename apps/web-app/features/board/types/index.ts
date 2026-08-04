@@ -41,11 +41,11 @@ export interface Task {
 export interface TaskTimeBlock {
   id: string;
   taskId: string;
-  dailyPlanId: string;
   startTime: string; // ISO datetime string
   endTime: string;
   partIndex: number;
   totalParts: number;
+  availabilityStatus?: 'BUSY' | 'FREE';
 }
 
 export interface DailyPlanTask {
@@ -64,6 +64,5 @@ export interface DailyPlan {
   isConfirmed: boolean;
   isReviewed: boolean;
   tasks: DailyPlanTask[];
-  timeBlocks: TaskTimeBlock[];
 }
 

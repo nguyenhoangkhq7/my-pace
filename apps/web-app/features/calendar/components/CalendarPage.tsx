@@ -9,6 +9,7 @@ import { CalendarSidebar } from "@/features/calendar/components/CalendarSidebar"
 import { CalendarStyles } from "@/features/calendar/components/CalendarStyles";
 import { EventModal } from "@/features/calendar/components/EventModal";
 import { TaskTimeBlockModal } from "@/features/board/components/TaskTimeBlockModal";
+import { CalendarEventItem } from "@/features/calendar/components/CalendarEventItem";
 import { useCalendarPage } from "../hooks/useCalendarPage";
 import { useTranslation } from "@/hooks/use-translation";
 
@@ -28,6 +29,8 @@ export function CalendarPage() {
     handleColorChange,
     unscheduledTasks,
     hasUnscheduled,
+    handleToggleBlockLock,
+    handleToggleEventLock,
     isAutoScheduling,
     handleAutoScheduleFromSidebar,
     modalOpen,
@@ -112,6 +115,7 @@ export function CalendarPage() {
               droppable={plannable && !dailyPlanToday?.isConfirmed}
               eventResizableFromStart={false}
               events={fcEvents}
+              eventContent={(eventInfo) => <CalendarEventItem eventInfo={eventInfo} />}
               datesSet={handleDatesSet}
               select={handleSelect}
               eventClick={handleEventClick}
@@ -148,6 +152,7 @@ export function CalendarPage() {
         defaultStart={modalDefaults.start}
         defaultEnd={modalDefaults.end}
         occurrence={editOccurrence}
+        onToggleLock={handleToggleEventLock}
         onClose={() => setModalOpen(false)}
         createEvent={createEvent}
         updateAllOccurrences={updateAllOccurrences}
@@ -169,6 +174,7 @@ export function CalendarPage() {
         isConfirmed={isConfirmed}
         onClose={() => setBlockModalOpen(false)}
         onUnschedule={handleUnscheduleTask}
+        onToggleLock={handleToggleBlockLock}
         isSubmitting={isUnscheduling}
       />
 

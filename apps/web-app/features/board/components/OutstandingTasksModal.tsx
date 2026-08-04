@@ -9,8 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { DailyPlan } from "../types";
-import { reviewPlanAction } from "../actions/plan.action";
-import { useQueryClient } from "@tanstack/react-query";
+import { useReviewPlan } from "../hooks/useReviewPlan";
 import { toast } from "sonner";
 import { useTranslation } from "@/hooks/use-translation";
 
@@ -21,9 +20,8 @@ interface OutstandingTasksModalProps {
 }
 
 export function OutstandingTasksModal({ isOpen, unreviewedPlan, currentDate }: OutstandingTasksModalProps) {
-  const queryClient = useQueryClient();
+  const { reviewPlan, isReviewing } = useReviewPlan();
   const { t } = useTranslation();
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Only show tasks that are not yet completed
   const uncompletedPlanTasks = unreviewedPlan.tasks?.filter(pt => pt.task?.status !== "Done") || [];
@@ -42,37 +40,21 @@ export function OutstandingTasksModal({ isOpen, unreviewedPlan, currentDate }: O
   };
 
   const handleSubmit = async () => {
-    setIsSubmitting(true);
     try {
       const taskReviews = uncompletedPlanTasks
         .map(pt => {
           const taskId = pt.task?.id;
           if (!taskId) return null;
           const choice = choices[taskId];
-          return {
-            taskId,
-            action: choice.toUpperCase(), // "TODAY" | "BACKLOG" | "DELETE"
-          };
+          return { taskId, action: choice.toUpperCase() };
         })
         .filter((item): item is { taskId: string; action: string } => item !== null);
 
-      // Submit all choices at once
-      await reviewPlanAction(unreviewedPlan.planDate, {
-        today: currentDate,
-        taskReviews,
-      });
-
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      queryClient.invalidateQueries({ queryKey: ["dailyPlan"] });
-      queryClient.invalidateQueries({ queryKey: ["unreviewedPlan"] });
-      queryClient.invalidateQueries({ queryKey: ["goals"] });
-
+      await reviewPlan({ planDate: unreviewedPlan.planDate, today: currentDate, taskReviews });
       toast.success(t.outstanding.successMessage);
     } catch (err) {
       console.error("[OutstandingTasksModal] submit error:", err);
       toast.error(t.outstanding.errorMessage);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -173,11 +155,11 @@ export function OutstandingTasksModal({ isOpen, unreviewedPlan, currentDate }: O
 
         <DialogFooter className="mt-5 border-t border-border pt-4 shrink-0 flex items-center justify-end gap-3">
           <Button
-            disabled={isSubmitting}
+            disabled={isReviewing}
             className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold h-9 px-5 rounded-xl text-xs cursor-pointer shadow-lg shadow-primary/10 transition-all"
             onClick={handleSubmit}
           >
-            {isSubmitting ? t.outstanding.processing : t.outstanding.confirmBtn}
+            {isReviewing ? t.outstanding.processing : t.outstanding.confirmBtn}
           </Button>
         </DialogFooter>
       </DialogContent>

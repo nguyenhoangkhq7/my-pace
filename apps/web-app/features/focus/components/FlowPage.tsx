@@ -4,13 +4,8 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import { useAuthStore } from "@/features/auth";
-import { useBoardStore } from "@/features/board/store/board.store";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getTasksAction, updateTaskAction } from "@/features/board/actions/task.action";
-import { getDailyPlanAction, confirmPlanAction } from "@/features/board/actions/plan.action";
-import { getCategoriesAction } from "@/features/board/actions/category.action";
+import { useFlowPageData } from "@/features/focus/hooks/useFlowPageData";
 import { useAppVisibility } from "@/features/available-time";
-import { getTodayStr } from "@/lib/date";
 import { FlowTodoList } from "@/features/focus/components/FlowTodoList";
 import { FlowPomodoro } from "@/features/focus/components/FlowPomodoro";
 import { FloatingPomodoroWidget } from "@/features/focus/components/FloatingPomodoroWidget";
@@ -29,12 +24,11 @@ import { FlowSettingsDropdown } from "@/features/focus/components/FlowSettingsDr
 import { ConfirmPlanDialog } from "@/features/focus/components/ConfirmPlanDialog";
 import { useFlowLayoutState } from "@/features/focus/hooks/useFlowLayoutState";
 import { cn } from "@/lib/utils";
-import type { DailyPlan, DailyPlanTask } from "@/features/board/types";
+import type { DailyPlanTask } from "@/features/board/types";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Clock01Icon } from "@hugeicons/core-free-icons";
 import { useTranslation } from "@/hooks/use-translation";
-
 
 export function FlowPage() {
   useAppVisibility();
@@ -49,41 +43,13 @@ export function FlowPage() {
   const closeFocusMode = useFocusStore((s) => s.closeFocusMode);
   const isZenFull = useFocusStore((s) => s.isZenFull);
   const isVideoBackground = useFocusStore((s) => s.isVideoBackground);
-  const queryClient = useQueryClient();
-  const currentDate = getTodayStr(user?.timezone);
-  
-  const { data: tasks = [] } = useQuery({ queryKey: ['tasks'], queryFn: getTasksAction, enabled: !!user });
-  useQuery({ queryKey: ['categories'], queryFn: getCategoriesAction, enabled: !!user });
-  const { data: dailyPlanToday } = useQuery({ queryKey: ['dailyPlan', currentDate], queryFn: () => getDailyPlanAction(currentDate), enabled: !!user });
-  
-  const confirmPlanMutation = useMutation({
-    mutationFn: confirmPlanAction,
-    onSuccess: (data, variables) => {
-      queryClient.setQueryData(['dailyPlan', variables], data);
-      useBoardStore.setState({ isStarted: true });
-    }
-  });
 
-  const updateTaskMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: { actualMinutes: number } }) =>
-      updateTaskAction(id, data),
-    onSuccess: (updatedTask) => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      // Also patch the dailyPlan cache immediately so pendingSwitchTask.task.actualMinutes
-      // is always fresh — prevents stale alreadyWorkedMinutes on re-open.
-      queryClient.setQueryData(['dailyPlan', currentDate], (old: DailyPlan | undefined) => {
-        if (!old) return old;
-        return {
-          ...old,
-          tasks: old.tasks.map((pt) =>
-            pt.task.id === updatedTask.id
-              ? { ...pt, task: { ...pt.task, actualMinutes: updatedTask.actualMinutes } }
-              : pt
-          ),
-        };
-      });
-    },
-  });
+  const {
+    tasks,
+    dailyPlanToday,
+    handleConfirmPlan,
+    saveActualMinutes,
+  } = useFlowPageData();
 
 
 
@@ -188,7 +154,7 @@ export function FlowPage() {
       const accumulatedFocusTime = useFocusStore.getState().accumulatedFocusTime;
       const actualMinutes = Math.floor(accumulatedFocusTime / 60);
       if (actualMinutes > 0) {
-        await updateTaskMutation.mutateAsync({ id: activeTaskId, data: { actualMinutes } });
+        await saveActualMinutes(activeTaskId, actualMinutes);
       }
       setIsSwitchDialogOpen(false);
       const next = pendingSwitchTask;
@@ -206,7 +172,7 @@ export function FlowPage() {
   const handleConfirmDailyPlan = async () => {
     if (!dailyPlanToday) { setIsConfirmPlanOpen(false); setPendingTask(null); return; }
     try {
-      if (!dailyPlanToday.isConfirmed) await confirmPlanMutation.mutateAsync(dailyPlanToday.planDate);
+      await handleConfirmPlan();
       setIsConfirmPlanOpen(false);
       if (pendingTask) {
         openFocusMode(pendingTask.task.id, pendingTask.id, pendingTask.task.estimatedMinutes || 25, pendingTask.task.actualMinutes || 0);

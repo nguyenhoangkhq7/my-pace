@@ -4,6 +4,6 @@ import java.util.List;
 import java.util.UUID;
 
 public record SaveTimeBlocksRequest(
-    UUID dailyPlanId,
+    java.time.LocalDate targetDate,
     List<TaskTimeBlockRequest> blocks
 ) {}

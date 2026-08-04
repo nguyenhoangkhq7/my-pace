@@ -52,8 +52,9 @@ public class GlobalExceptionHandler {
       return buildResponse(HttpStatus.BAD_REQUEST, "OTP not exist or not valid in system");
    }
 
-   @ExceptionHandler(BadCredentialsException.class)
-   public ResponseEntity<ErrorResponse> handleBadCredentialsException() {
+   @ExceptionHandler({BadCredentialsException.class, org.springframework.security.core.AuthenticationException.class})
+   public ResponseEntity<ErrorResponse> handleBadCredentialsException(Exception ex) {
+      log.warn("Authentication failed: {}", ex.getMessage());
       return buildResponse(HttpStatus.UNAUTHORIZED, "Sai tên đăng nhập hoặc mật khẩu");
    }
 

@@ -17,8 +17,9 @@ import { RecurrenceSelector } from "./RecurrenceSelector";
 import { FixedEventCategorySelector } from "./FixedEventCategorySelector";
 import { useEventForm, UseEventFormProps } from "../hooks/useEventForm";
 import { useTranslation } from "@/hooks/use-translation";
+import type { FixedEventOccurrence } from "../types";
 
-export function EventModal(props: UseEventFormProps) {
+export function EventModal(props: UseEventFormProps & { onToggleLock?: (occ: FixedEventOccurrence, status: string) => Promise<void> }) {
   const {
     open,
     mode,
@@ -140,13 +141,24 @@ export function EventModal(props: UseEventFormProps) {
           </div>
 
           <DialogFooter className="flex-col sm:flex-row gap-2 pt-2">
+            {mode === "edit" && props.onToggleLock && props.occurrence && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => props.onToggleLock!(props.occurrence!, props.occurrence!.availabilityStatus || 'BUSY')}
+                disabled={isSubmitting}
+                className="w-full sm:w-auto mr-auto"
+              >
+                {props.occurrence.availabilityStatus === 'BUSY' ? 'Mở khóa (Unlock)' : 'Khóa (Lock)'}
+              </Button>
+            )}
             {mode === "edit" && (
               <Button
                 variant="destructive"
                 size="sm"
                 onClick={handleDeleteClick}
                 disabled={isSubmitting}
-                className="sm:mr-auto"
+                className={props.onToggleLock && props.occurrence ? "sm:ml-2" : "sm:mr-auto"}
               >
                 {t.calendar.deleteBtn}
               </Button>

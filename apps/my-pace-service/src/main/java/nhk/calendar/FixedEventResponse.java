@@ -24,5 +24,6 @@ public record FixedEventResponse(
     LocalDate recurrenceEndDate,
     boolean isException,
     UUID categoryId,
-    CategoryDto category
+    CategoryDto category,
+    String availabilityStatus
 ) {}

@@ -6,9 +6,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Goal, GoalUpdateRequest } from "../types";
+import { Task } from "@/features/board/types";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getTasksAction } from "@/features/board/actions/task.action";
-import { updateGoalAction } from "../actions/goal.action";
+import { fetchClient } from "@/lib/fetchClient";
 import { useGoalStats } from "../hooks/useGoalStats";
 import { ProjectDetail } from "./ProjectDetail";
 import { HabitDetail } from "./HabitDetail";
@@ -23,10 +23,10 @@ interface GoalDetailModalProps {
 
 export function GoalDetailModal({ isOpen, onOpenChange, goal }: GoalDetailModalProps) {
   const { t } = useTranslation();
-  const { data: tasks = [] } = useQuery({ queryKey: ['tasks'], queryFn: getTasksAction });
+  const { data: tasks = [] } = useQuery({ queryKey: ['tasks'], queryFn: () => fetchClient.get<Task[]>('tasks').then(r => r.data) });
   const queryClient = useQueryClient();
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string, data: GoalUpdateRequest }) => updateGoalAction(id, data),
+    mutationFn: ({ id, data }: { id: string, data: GoalUpdateRequest }) => fetchClient.put(`goals/${id}`, data).then(r => r.data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['goals'] }),
   });
   const updateGoal = (id: string, data: GoalUpdateRequest) => updateMutation.mutateAsync({ id, data });

@@ -2,12 +2,14 @@ import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useBoardStore } from "../store/board.store";
+import { useShallow } from "zustand/react/shallow";
 import { useAvailableTimeQuery } from "@/features/available-time/hooks/useAvailableTime";
 import { useAuthStore } from "@/features/auth";
-import { saveTimeBlocksAction } from "../actions/timeblock.action";
+import { fetchClient } from "@/lib/fetchClient";
 
 import { useTasks } from "./useTasks";
 import { useDailyPlan } from "./useDailyPlan";
+import { useTaskTimeBlocks } from "./useTaskTimeBlocks";
 
 interface UseExecutionBoardProps {
   currentDate: string;
@@ -20,13 +22,19 @@ export function useExecutionBoard({ currentDate, tomorrowDate, day2Date, day3Dat
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
 
-  const { 
-    isPlanningMode, 
+  const {
+    isPlanningMode,
     planningTarget,
-    setPlanningMode, 
-    plannedTaskIds, 
+    setPlanningMode,
+    plannedTaskIds,
     removePlannedTaskLocally,
-  } = useBoardStore();
+  } = useBoardStore(useShallow((s) => ({
+    isPlanningMode: s.isPlanningMode,
+    planningTarget: s.planningTarget,
+    setPlanningMode: s.setPlanningMode,
+    plannedTaskIds: s.plannedTaskIds,
+    removePlannedTaskLocally: s.removePlannedTaskLocally,
+  })));
 
   const { tasks } = useTasks();
   const todayPlan = useDailyPlan(currentDate);
@@ -46,6 +54,11 @@ export function useExecutionBoard({ currentDate, tomorrowDate, day2Date, day3Dat
   const { data: dataDay2 } = useAvailableTimeQuery(day2Date);
   const { data: dataDay3 } = useAvailableTimeQuery(day3Date);
 
+  const { data: timeBlocksToday } = useTaskTimeBlocks(currentDate, currentDate);
+  const { data: timeBlocksTomorrow } = useTaskTimeBlocks(tomorrowDate, tomorrowDate);
+  const { data: timeBlocksDay2 } = useTaskTimeBlocks(day2Date, day2Date);
+  const { data: timeBlocksDay3 } = useTaskTimeBlocks(day3Date, day3Date);
+
   const [activeTab, setActiveTab] = useState("today");
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isStartMyDayOpen, setIsStartMyDayOpen] = useState(false);
@@ -63,6 +76,13 @@ export function useExecutionBoard({ currentDate, tomorrowDate, day2Date, day3Dat
     if (activeTab === "day2") return dailyPlanDay2;
     return dailyPlanDay3;
   }, [activeTab, dailyPlanToday, dailyPlanTomorrow, dailyPlanDay2, dailyPlanDay3]);
+
+  const currentTimeBlocks = useMemo(() => {
+    if (activeTab === "today") return timeBlocksToday;
+    if (activeTab === "tomorrow") return timeBlocksTomorrow;
+    if (activeTab === "day2") return timeBlocksDay2;
+    return timeBlocksDay3;
+  }, [activeTab, timeBlocksToday, timeBlocksTomorrow, timeBlocksDay2, timeBlocksDay3]);
 
   const targetDate = useMemo(() => {
     if (activeTab === "today") return currentDate;
@@ -132,7 +152,7 @@ export function useExecutionBoard({ currentDate, tomorrowDate, day2Date, day3Dat
   };
 
   const handleRemoveExcessTasks = async () => {
-    if (!currentPlan || !currentPlan.timeBlocks || !user?.sleepTime || !user?.wakeTime) return;
+    if (!currentPlan || !currentTimeBlocks || !user?.sleepTime || !user?.wakeTime) return;
 
     const planDate = new Date(currentPlan.planDate);
     const [sh, sm] = user.sleepTime.split(":").map(Number);
@@ -146,7 +166,7 @@ export function useExecutionBoard({ currentDate, tomorrowDate, day2Date, day3Dat
     }
 
     const excessTaskIds = new Set<string>();
-    currentPlan.timeBlocks.forEach(tb => {
+    currentTimeBlocks.forEach(tb => {
       const endTime = new Date(tb.endTime);
       if (endTime > sleepDate) {
         excessTaskIds.add(tb.taskId);
@@ -158,11 +178,10 @@ export function useExecutionBoard({ currentDate, tomorrowDate, day2Date, day3Dat
       return;
     }
 
-    const updatedBlocks = currentPlan.timeBlocks
+    const updatedBlocks = currentTimeBlocks
       .filter(tb => !excessTaskIds.has(tb.taskId))
       .map(tb => ({
         taskId: tb.taskId,
-        dailyPlanId: tb.dailyPlanId,
         startTime: tb.startTime,
         endTime: tb.endTime,
         partIndex: tb.partIndex,
@@ -178,7 +197,7 @@ export function useExecutionBoard({ currentDate, tomorrowDate, day2Date, day3Dat
       }));
 
     try {
-      await saveTimeBlocksAction({ dailyPlanId: currentPlan.id, blocks: updatedBlocks });
+      await fetchClient.post('time-blocks/batch', { targetDate, blocks: updatedBlocks });
 
       await activePlanHook.savePlan({
         availableMinutes: baseAvailable,
@@ -212,6 +231,7 @@ export function useExecutionBoard({ currentDate, tomorrowDate, day2Date, day3Dat
     isStartMyDayOpen,
     setIsStartMyDayOpen,
     currentPlan,
+    currentTimeBlocks,
     targetDate,
     currentAvailable,
     totalAvailable: baseAvailable,

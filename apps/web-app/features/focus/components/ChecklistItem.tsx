@@ -3,8 +3,7 @@
 import React from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { updateChecklistItemAction } from "@/features/board/actions/checklist.action";
+import { useChecklistMutations } from "@/features/board/hooks/useChecklistMutations";
 import { toast } from "sonner";
 
 interface ChecklistItemProps {
@@ -26,16 +25,12 @@ export function ChecklistItem({
   onOpenChange,
   onAllCompleted,
 }: ChecklistItemProps) {
-  const queryClient = useQueryClient();
-  const updateChecklistItemMutation = useMutation({
-    mutationFn: ({ taskId, checklistId, data }: { taskId: string, checklistId: string, data: { isCompleted: boolean } }) => updateChecklistItemAction(taskId, checklistId, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
-  });
+  const { updateChecklist } = useChecklistMutations(taskId);
 
   const handleCheckedChange = async (checked: boolean | "indeterminate") => {
     const isCompletedVal = checked === true;
     try {
-      await updateChecklistItemMutation.mutateAsync({ taskId, checklistId: itemId, data: { isCompleted: isCompletedVal } });
+      await updateChecklist({ checklistId: itemId, data: { isCompleted: isCompletedVal } });
 
       const allDone = (checklists || []).every((c) =>
         c.id === itemId ? isCompletedVal : c.isCompleted
@@ -58,7 +53,6 @@ export function ChecklistItem({
       <Checkbox
         checked={isCompleted}
         onCheckedChange={handleCheckedChange}
-        disabled={updateChecklistItemMutation.isPending}
         className="mt-0.5 border-muted-foreground data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
       />
       <span

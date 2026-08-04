@@ -1,10 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  getStickyNotesAction,
-  createStickyNoteAction,
-  updateStickyNoteAction,
-  deleteStickyNoteAction,
-} from "../actions/sticky-note.action";
+import { fetchClient } from "@/lib/fetchClient";
 import type { StickyNote, CreateStickyNotePayload, UpdateStickyNotePayload } from "../types";
 import { useAuthStore } from "@/features/auth";
 import { toast } from "sonner";
@@ -13,7 +8,7 @@ export function useStickyNotesQuery() {
   const user = useAuthStore((s) => s.user);
   return useQuery({
     queryKey: ["stickyNotes"],
-    queryFn: getStickyNotesAction,
+    queryFn: () => fetchClient.get<StickyNote[]>("sticky-notes").then(r => r.data),
     enabled: !!user,
   });
 }
@@ -21,7 +16,7 @@ export function useStickyNotesQuery() {
 export function useCreateStickyNoteMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: CreateStickyNotePayload) => createStickyNoteAction(data),
+    mutationFn: (data: CreateStickyNotePayload) => fetchClient.post<StickyNote>("sticky-notes", data).then(r => r.data),
     onSuccess: (newNote) => {
       queryClient.setQueryData<StickyNote[]>(["stickyNotes"], (old = []) => [newNote, ...old]);
       queryClient.invalidateQueries({ queryKey: ["stickyNotes"] });
@@ -37,7 +32,7 @@ export function useUpdateStickyNoteMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateStickyNotePayload }) =>
-      updateStickyNoteAction(id, data),
+      fetchClient.put<StickyNote>(`sticky-notes/${id}`, data).then(r => r.data),
     onMutate: async ({ id, data }) => {
       await queryClient.cancelQueries({ queryKey: ["stickyNotes"] });
       const previousNotes = queryClient.getQueryData<StickyNote[]>(["stickyNotes"]);
@@ -68,7 +63,7 @@ export function useUpdateStickyNoteMutation() {
 export function useDeleteStickyNoteMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => deleteStickyNoteAction(id),
+    mutationFn: (id: string) => fetchClient.del<void>(`sticky-notes/${id}`).then(r => r.data),
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ["stickyNotes"] });
       const previousNotes = queryClient.getQueryData<StickyNote[]>(["stickyNotes"]);

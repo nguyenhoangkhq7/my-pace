@@ -1,22 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  getTimeContextsAction,
-  createTimeContextAction,
-  updateTimeContextAction,
-  deleteTimeContextAction,
-} from "../actions/time-context.action";
-import type { TimeContextCreateRequest, TimeContextUpdateRequest } from "../types";
+import { fetchClient } from "@/lib/fetchClient";
+import type { TimeContext, TimeContextCreateRequest, TimeContextUpdateRequest } from "../types";
 
 export function useTimeContexts() {
   const queryClient = useQueryClient();
 
   const { data: timeContexts = [], isLoading, error } = useQuery({
     queryKey: ["time-contexts"],
-    queryFn: getTimeContextsAction,
+    queryFn: () => fetchClient.get<TimeContext[]>("time-contexts").then(r => r.data),
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: TimeContextCreateRequest) => createTimeContextAction(data),
+    mutationFn: (data: TimeContextCreateRequest) => fetchClient.post<TimeContext>("time-contexts", data).then(r => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["time-contexts"] });
       queryClient.invalidateQueries({ queryKey: ["categories"] });
@@ -25,7 +20,7 @@ export function useTimeContexts() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: TimeContextUpdateRequest }) =>
-      updateTimeContextAction(id, data),
+      fetchClient.put<TimeContext>(`time-contexts/${id}`, data).then(r => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["time-contexts"] });
       queryClient.invalidateQueries({ queryKey: ["categories"] });
@@ -33,7 +28,7 @@ export function useTimeContexts() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => deleteTimeContextAction(id),
+    mutationFn: (id: string) => fetchClient.del<void>(`time-contexts/${id}`).then(r => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["time-contexts"] });
       queryClient.invalidateQueries({ queryKey: ["categories"] });

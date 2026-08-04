@@ -41,6 +41,7 @@ export interface FixedEventOccurrence {
   isException: boolean;
   categoryId?: string | null;
   category?: Category | null;
+  availabilityStatus?: 'BUSY' | 'FREE';
 }
 
 /** Payload for creating a new event. */
@@ -55,6 +56,7 @@ export interface CreateEventPayload {
   recurrenceDaysOfWeek?: number[];
   recurrenceEndDate?: string;
   categoryId?: string;
+  availabilityStatus?: string;
 }
 
 /** Payload for updating a single occurrence exception. */
@@ -66,6 +68,7 @@ export interface UpdateOccurrencePayload {
   overrideIsAllDay?: boolean;
   isDeleted?: boolean;
   overrideCategoryId?: string | null;
+  overrideAvailabilityStatus?: string;
 }
 
 

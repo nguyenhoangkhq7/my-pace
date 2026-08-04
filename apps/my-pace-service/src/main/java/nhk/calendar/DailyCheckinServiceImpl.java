@@ -160,8 +160,9 @@ public class DailyCheckinServiceImpl implements DailyCheckinService {
         java.time.LocalDateTime candidateEnd = candidateStart.plusMinutes(estimatedMinutes);
 
         List<FixedEventResponse> fixedEvents = eventService.getEventsInRange(plan.getUserId(), date, date);
-        // Create mutable list from repo
-        List<TaskTimeBlock> existingBlocks = new ArrayList<>(taskTimeBlockRepo.findByDailyPlanIdOrderByStartTimeAsc(plan.getId()));
+        java.time.LocalDateTime startOfDay = date.atStartOfDay();
+        java.time.LocalDateTime endOfDay = date.plusDays(1).atStartOfDay().minusNanos(1);
+        List<TaskTimeBlock> existingBlocks = new ArrayList<>(taskTimeBlockRepo.findByUserIdAndDateRange(plan.getUserId(), startOfDay, endOfDay));
 
         java.time.LocalDateTime dayEnd = java.time.LocalDateTime.of(date, LocalTime.MAX);
         
@@ -202,7 +203,6 @@ public class DailyCheckinServiceImpl implements DailyCheckinService {
             if (!overlap) {
                 TaskTimeBlock tb = new TaskTimeBlock();
                 tb.setTaskId(task.getId());
-                tb.setDailyPlanId(plan.getId());
                 tb.setStartTime(candidateStart);
                 tb.setEndTime(candidateEnd);
                 tb.setPartIndex(1);

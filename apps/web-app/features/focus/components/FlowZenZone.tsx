@@ -9,7 +9,7 @@ import { PlusSignIcon, Cancel01Icon } from "@hugeicons/core-free-icons";
 import { SoundscapePlayer } from "./SoundscapePlayer";
 import { SoundscapeAddForm } from "./SoundscapeAddForm";
 import { useQuery } from "@tanstack/react-query";
-import { getTasksAction } from "@/features/board/actions/task.action";
+import { fetchClient } from "@/lib/fetchClient";
 import type { Task } from "@/features/board/types";
 import { cn, fetchYouTubeTitle } from "@/lib/utils";
 import { Settings2, LayoutGrid, List, LogOut, PanelRightClose } from "lucide-react";
@@ -95,7 +95,7 @@ export function FlowZenZone({ onExit, onCollapse }: FlowZenZoneProps) {
   const addToHistory = useFocusStore((s) => s.addToHistory);
   const setIsSettingsOpen = useFocusStore((s) => s.setIsSettingsOpen);
   const isVideoBackground = useFocusStore((s) => s.isVideoBackground);
-  const { data: tasks = [] } = useQuery({ queryKey: ['tasks'], queryFn: getTasksAction });
+  const { data: tasks = [] } = useQuery({ queryKey: ['tasks'], queryFn: () => fetchClient.get<Task[]>('tasks').then(r => r.data) });
   const [isAdding, setIsAdding] = useState(false);
   const [layoutMode, setLayoutMode] = useState<"list" | "grid">("list");
   const [isDragOver, setIsDragOver] = useState(false);

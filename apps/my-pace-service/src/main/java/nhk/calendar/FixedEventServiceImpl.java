@@ -81,6 +81,8 @@ public class FixedEventServiceImpl implements FixedEventService {
         LocalTime start = isAllDay ? LocalTime.MIN : request.startTime();
         LocalTime end = isAllDay ? LocalTime.of(23, 59, 59) : request.endTime();
 
+        String availabilityStatus = request.availabilityStatus() != null ? request.availabilityStatus() : "BUSY";
+
         FixedEvent fe = FixedEvent.builder()
                 .user(user)
                 .category(category)
@@ -90,6 +92,7 @@ public class FixedEventServiceImpl implements FixedEventService {
                 .startTime(start)
                 .endTime(end)
                 .isAllDay(isAllDay)
+                .availabilityStatus(availabilityStatus)
                 .recurrenceType(request.recurrenceType())
                 .recurrenceRule(buildRecurrenceRule(request))
                 .recurrenceEndDate(request.recurrenceEndDate())
@@ -122,6 +125,9 @@ public class FixedEventServiceImpl implements FixedEventService {
         fe.setStartTime(start);
         fe.setEndTime(end);
         fe.setIsAllDay(isAllDay);
+        if (request.availabilityStatus() != null) {
+            fe.setAvailabilityStatus(request.availabilityStatus());
+        }
         fe.setRecurrenceType(request.recurrenceType());
         fe.setRecurrenceRule(buildRecurrenceRule(request));
         fe.setRecurrenceEndDate(request.recurrenceEndDate());
@@ -162,6 +168,9 @@ public class FixedEventServiceImpl implements FixedEventService {
         if (request.overrideCategoryId() != null) {
             Category overrideCat = findUserCategory(userId, request.overrideCategoryId());
             ex.setOverrideCategory(overrideCat);
+        }
+        if (request.overrideAvailabilityStatus() != null) {
+            ex.setOverrideAvailabilityStatus(request.overrideAvailabilityStatus());
         }
 
         exceptionRepo.save(ex);
@@ -235,7 +244,8 @@ public class FixedEventServiceImpl implements FixedEventService {
                 request.recurrenceType(),
                 request.recurrenceDaysOfWeek(),
                 request.recurrenceEndDate(),
-                request.categoryId()
+                request.categoryId(),
+                request.availabilityStatus()
         );
 
         return createEvent(userId, newSeriesRequest);
@@ -343,6 +353,10 @@ public class FixedEventServiceImpl implements FixedEventService {
 
         UUID categoryId = effectiveCategory != null ? effectiveCategory.getId() : null;
 
+        String availabilityStatus = (ex != null && ex.getOverrideAvailabilityStatus() != null)
+                ? ex.getOverrideAvailabilityStatus()
+                : (fe.getAvailabilityStatus() != null ? fe.getAvailabilityStatus() : "BUSY");
+
         return FixedEventResponse.builder()
                 .id(fe.getId() + "_" + occurrenceDate)
                 .seriesId(fe.getId())
@@ -358,6 +372,7 @@ public class FixedEventServiceImpl implements FixedEventService {
                 .isException(ex != null)
                 .categoryId(categoryId)
                 .category(categoryDto)
+                .availabilityStatus(availabilityStatus)
                 .build();
     }
 

@@ -120,6 +120,9 @@ export function Sidebar() {
                 onClick={() => {
                   router.push(item.href);
                 }}
+                onMouseEnter={() => {
+                  router.prefetch(item.href);
+                }}
                 title={isCollapsed ? item.label : undefined}
                 className={cn(
                   "flex w-full items-center rounded-xl py-2.5",

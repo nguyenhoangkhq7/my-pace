@@ -251,6 +251,10 @@ export interface Translations {
     showTodo: string;
     calendarTitle: string;
     calendarDesc: string;
+    flexible: string;
+    locked: string;
+    free: string;
+    eventBadge: string;
   };
   availableTime: {
     remaining: string;
@@ -276,6 +280,19 @@ export interface Translations {
     signingIn: string;
     loginBtn: string;
     loginError: string;
+    forgotPasswordLink: string;
+    forgotPasswordTitle: string;
+    forgotPasswordDesc: string;
+    resetPasswordTitle: string;
+    resetPasswordDesc: string;
+    newPasswordLabel: string;
+    newPasswordPlaceholder: string;
+    confirmNewPasswordLabel: string;
+    confirmNewPasswordPlaceholder: string;
+    resetPasswordBtn: string;
+    resetPasswordSuccess: string;
+    resetPasswordSuccessDesc: string;
+    backToLogin: string;
     noAccount: string;
     register: string;
     loginSuccess: string;

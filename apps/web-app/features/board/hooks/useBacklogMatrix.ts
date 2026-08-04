@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { useBoardStore } from "../store/board.store";
+import { useShallow } from "zustand/react/shallow";
 import { useAvailableTimeQuery } from "../../available-time/hooks/useAvailableTime";
 import { Task } from "../types";
 import { useTasks } from "./useTasks";
@@ -22,7 +23,21 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string, day2
     requireDuration,
     openTaskModal,
     closeTaskModal,
-  } = useBoardStore();
+  } = useBoardStore(useShallow((s) => ({
+    isPlanningMode: s.isPlanningMode,
+    plannedTaskIds: s.plannedTaskIds,
+    addPlannedTaskLocally: s.addPlannedTaskLocally,
+    removePlannedTaskLocally: s.removePlannedTaskLocally,
+    planningTarget: s.planningTarget,
+    selectedFilterId: s.selectedFilterId,
+    setFilter: s.setFilter,
+    editingTask: s.editingTask,
+    isTaskModalOpen: s.isTaskModalOpen,
+    prefilledGoalId: s.prefilledGoalId,
+    requireDuration: s.requireDuration,
+    openTaskModal: s.openTaskModal,
+    closeTaskModal: s.closeTaskModal,
+  })));
 
   const { tasks, createTask, updateTask } = useTasks();
   const { categories } = useCategories();
@@ -75,7 +90,7 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string, day2
   const handleCreateTask = async (data: Partial<Task>) => {
     let newTask;
     if (editingTask) {
-      newTask = await updateTask({ id: editingTask.id, data });
+      await updateTask({id: editingTask.id, data});
     } else {
       newTask = await createTask(data);
       if (isPlanningMode && newTask) {

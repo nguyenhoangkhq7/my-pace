@@ -1,19 +1,12 @@
 import { useCallback } from "react";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { 
-  getEventsAction,
-  createEventAction,
-  updateAllOccurrencesAction,
-  updateSingleOccurrenceAction,
-  updateFromDateOnwardsAction,
-  deleteAllOccurrencesAction,
-  deleteSingleOccurrenceAction,
-  deleteFromDateOnwardsAction
-} from "../actions/calendar.action";
+import { useAutoSchedule } from "@/features/board/hooks/useAutoSchedule";
+import { fetchClient } from "@/lib/fetchClient";
 import type {
   CreateEventPayload,
   UpdateOccurrencePayload,
+  FixedEventOccurrence
 } from "../types";
 
 interface UseCalendarEventsOptions {
@@ -22,10 +15,11 @@ interface UseCalendarEventsOptions {
 
 export function useCalendarEvents(dateRange: { start: string, end: string }, options?: UseCalendarEventsOptions) {
   const queryClient = useQueryClient();
+  const { triggerAutoSchedule } = useAutoSchedule();
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: ['calendar-events', dateRange.start, dateRange.end],
-    queryFn: () => getEventsAction(dateRange.start, dateRange.end),
+    queryFn: () => fetchClient.get<Record<string, unknown>[]>(`calendar/events?start=${dateRange.start}&end=${dateRange.end}`).then(r => r.data),
     enabled: !!dateRange.start && !!dateRange.end,
   });
   const refresh = useCallback(async () => {
@@ -36,13 +30,16 @@ export function useCalendarEvents(dateRange: { start: string, end: string }, opt
       console.error("Failed to auto-refresh available time or stats", err);
     }
 
+    // Auto re-schedule after event changes
+    triggerAutoSchedule();
+
     if (options?.onMutationSuccess) {
       options.onMutationSuccess();
     }
-  }, [options, queryClient]);
+  }, [options, queryClient, triggerAutoSchedule]);
 
   const createEventMutation = useMutation({
-    mutationFn: createEventAction,
+    mutationFn: (payload: CreateEventPayload) => fetchClient.post<FixedEventOccurrence>('calendar/events', payload).then(r => r.data),
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
       await refresh();
@@ -50,7 +47,7 @@ export function useCalendarEvents(dateRange: { start: string, end: string }, opt
   });
 
   const updateAllOccurrencesMutation = useMutation({
-    mutationFn: ({ seriesId, payload }: { seriesId: string, payload: CreateEventPayload }) => updateAllOccurrencesAction(seriesId, payload),
+    mutationFn: ({ seriesId, payload }: { seriesId: string, payload: CreateEventPayload }) => fetchClient.put(`calendar/events/${seriesId}/all`, payload).then(r => r.data),
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
       await refresh();
@@ -58,7 +55,7 @@ export function useCalendarEvents(dateRange: { start: string, end: string }, opt
   });
 
   const updateSingleOccurrenceMutation = useMutation({
-    mutationFn: ({ seriesId, date, payload }: { seriesId: string, date: string, payload: UpdateOccurrencePayload }) => updateSingleOccurrenceAction(seriesId, date, payload),
+    mutationFn: ({ seriesId, date, payload }: { seriesId: string, date: string, payload: UpdateOccurrencePayload }) => fetchClient.put(`calendar/events/${seriesId}/occurrences/${date}`, payload).then(r => r.data),
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
       await refresh();
@@ -66,7 +63,7 @@ export function useCalendarEvents(dateRange: { start: string, end: string }, opt
   });
 
   const updateFromDateOnwardsMutation = useMutation({
-    mutationFn: ({ seriesId, date, payload }: { seriesId: string, date: string, payload: CreateEventPayload }) => updateFromDateOnwardsAction(seriesId, date, payload),
+    mutationFn: ({ seriesId, date, payload }: { seriesId: string, date: string, payload: CreateEventPayload }) => fetchClient.put(`calendar/events/${seriesId}/from/${date}`, payload).then(r => r.data),
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
       await refresh();
@@ -74,7 +71,7 @@ export function useCalendarEvents(dateRange: { start: string, end: string }, opt
   });
 
   const deleteAllOccurrencesMutation = useMutation({
-    mutationFn: deleteAllOccurrencesAction,
+    mutationFn: (seriesId: string) => fetchClient.del(`calendar/events/${seriesId}/all`).then(r => r.data),
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
       await refresh();
@@ -82,7 +79,7 @@ export function useCalendarEvents(dateRange: { start: string, end: string }, opt
   });
 
   const deleteSingleOccurrenceMutation = useMutation({
-    mutationFn: ({ seriesId, date }: { seriesId: string, date: string }) => deleteSingleOccurrenceAction(seriesId, date),
+    mutationFn: ({ seriesId, date }: { seriesId: string, date: string }) => fetchClient.del(`calendar/events/${seriesId}/occurrences/${date}`).then(r => r.data),
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
       await refresh();
@@ -90,7 +87,7 @@ export function useCalendarEvents(dateRange: { start: string, end: string }, opt
   });
 
   const deleteFromDateOnwardsMutation = useMutation({
-    mutationFn: ({ seriesId, date }: { seriesId: string, date: string }) => deleteFromDateOnwardsAction(seriesId, date),
+    mutationFn: ({ seriesId, date }: { seriesId: string, date: string }) => fetchClient.del(`calendar/events/${seriesId}/from/${date}`).then(r => r.data),
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
       await refresh();
@@ -100,13 +97,13 @@ export function useCalendarEvents(dateRange: { start: string, end: string }, opt
   return {
     events,
     isLoading,
-    createEvent: createEventMutation.mutateAsync,
+    createEvent: async (payload: CreateEventPayload) => { return await createEventMutation.mutateAsync(payload); },
     updateAllOccurrences: async (seriesId: string, payload: CreateEventPayload) => { await updateAllOccurrencesMutation.mutateAsync({ seriesId, payload }); },
     updateSingleOccurrence: async (seriesId: string, date: string, payload: UpdateOccurrencePayload) => { await updateSingleOccurrenceMutation.mutateAsync({ seriesId, date, payload }); },
     updateFromDateOnwards: async (seriesId: string, date: string, payload: CreateEventPayload) => { await updateFromDateOnwardsMutation.mutateAsync({ seriesId, date, payload }); },
-    deleteAllOccurrences: deleteAllOccurrencesMutation.mutateAsync,
-    deleteSingleOccurrence: (seriesId: string, date: string) => deleteSingleOccurrenceMutation.mutateAsync({ seriesId, date }),
-    deleteFromDateOnwards: (seriesId: string, date: string) => deleteFromDateOnwardsMutation.mutateAsync({ seriesId, date }),
+    deleteAllOccurrences: async (seriesId: string) => { await deleteAllOccurrencesMutation.mutateAsync(seriesId); },
+    deleteSingleOccurrence: async (seriesId: string, date: string) => { await deleteSingleOccurrenceMutation.mutateAsync({ seriesId, date }); },
+    deleteFromDateOnwards: async (seriesId: string, date: string) => { await deleteFromDateOnwardsMutation.mutateAsync({ seriesId, date }); },
   };
 }
 

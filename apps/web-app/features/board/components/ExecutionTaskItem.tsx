@@ -1,9 +1,8 @@
-import { TaskDetails } from "./TaskDetails";
 import { Task } from "../types";
+import { TaskDetails } from "./TaskDetails";
 import { cn } from "@/lib/utils";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { updateTaskAction } from "@/features/board/actions/task.action";
 import { InlineTitleEditor } from "./InlineTitleEditor";
+import { useTasks } from "../hooks/useTasks";
 
 interface ExecutionTaskItemProps {
   task: Task;
@@ -12,13 +11,9 @@ interface ExecutionTaskItemProps {
 }
 
 export function ExecutionTaskItem({ task, isMit, isConfirmed }: ExecutionTaskItemProps) {
-  const queryClient = useQueryClient();
-  const updateTaskMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string, data: Partial<Task> }) => updateTaskAction(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
-  });
+  const { updateTask } = useTasks();
   const isDone = task.status === "Done";
-  
+
   return (
     <div className={cn(
       "p-3 bg-card rounded-lg flex items-start space-x-3 border",
@@ -28,7 +23,7 @@ export function ExecutionTaskItem({ task, isMit, isConfirmed }: ExecutionTaskIte
         <InlineTitleEditor
           initialTitle={task.title}
           onSave={async (newTitle) => {
-            await updateTaskMutation.mutateAsync({ id: task.id, data: { title: newTitle } });
+            await updateTask({ id: task.id, data: { title: newTitle } });
           }}
           className={cn(
             "text-sm cursor-text hover:bg-muted/60 px-1 -mx-1 rounded inline-block break-words max-w-full",

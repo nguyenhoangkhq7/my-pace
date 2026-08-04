@@ -1,34 +1,41 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getTasksAction, createTaskAction, updateTaskAction, deleteTaskAction } from "../actions/task.action";
+import {useQuery, useMutation, useQueryClient, QueryClient} from "@tanstack/react-query";
+import { fetchClient } from "@/lib/fetchClient";
 import type { Task } from "../types";
+import { useAutoSchedule } from "./useAutoSchedule";
+
+function onSuccessUpdateTask(queryClient: QueryClient, triggerAutoSchedule: () => void) {
+  queryClient.invalidateQueries({queryKey: ["tasks"]});
+  triggerAutoSchedule();
+}
 
 export function useTasks(initialData?: Task[]) {
   const queryClient = useQueryClient();
+  const { triggerAutoSchedule } = useAutoSchedule();
 
   const { data: tasks = [], isLoading, error } = useQuery({
     queryKey: ["tasks"],
-    queryFn: getTasksAction,
+    queryFn: () => fetchClient.get<Task[]>('tasks').then(res => res.data),
     initialData,
   });
 
   const createTaskMutation = useMutation({
-    mutationFn: createTaskAction,
+    mutationFn: (data: Partial<Task>) => fetchClient.post<Task, Partial<Task>>('tasks', data).then(res => res.data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      onSuccessUpdateTask(queryClient, triggerAutoSchedule);
     },
   });
 
   const updateTaskMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Task> }) => updateTaskAction(id, data),
+    mutationFn: ({ id, data }: { id: string; data: Partial<Task> }) => fetchClient.put<Task, Partial<Task>>(`tasks/${id}`, data).then(res => res.data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      onSuccessUpdateTask(queryClient, triggerAutoSchedule);
     },
   });
 
   const deleteTaskMutation = useMutation({
-    mutationFn: deleteTaskAction,
+    mutationFn: (id: string) => fetchClient.del<void>(`tasks/${id}`).then(res => res.data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      onSuccessUpdateTask(queryClient, triggerAutoSchedule);
     },
   });
 

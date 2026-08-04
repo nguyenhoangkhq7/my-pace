@@ -2,13 +2,14 @@
 
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getDailyPlanAction } from "@/features/board/actions/plan.action";
+import { fetchClient } from "@/lib/fetchClient";
 import { useTranslation } from "@/hooks/use-translation";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/features/auth";
 import { getTodayStr } from "@/lib/date";
-import type { DailyPlanTask, TaskTimeBlock } from "@/features/board/types";
+import type { DailyPlanTask, TaskTimeBlock, DailyPlan } from "@/features/board/types";
+import { useTaskTimeBlocks } from "@/features/board/hooks/useTaskTimeBlocks";
 import { FlowTodoItem } from "./FlowTodoItem";
 
 interface FlowTodoListProps {
@@ -19,7 +20,8 @@ export function FlowTodoList({ onTaskSelect }: FlowTodoListProps) {
   const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const todayStr = getTodayStr(user?.timezone);
-  const { data: dailyPlanToday } = useQuery({ queryKey: ['dailyPlan', todayStr], queryFn: () => getDailyPlanAction(todayStr) });
+  const { data: dailyPlanToday } = useQuery({ queryKey: ['dailyPlan', todayStr], queryFn: () => fetchClient.get<DailyPlan>(`daily-plans/${todayStr}`).then((r) => r.data) });
+  const { data: timeBlocks = [] } = useTaskTimeBlocks(todayStr, todayStr);
   const pomodoroState = useFocusStore((s) => s.pomodoroState);
   const isVideoBackground = useFocusStore((s) => s.isVideoBackground);
 
@@ -27,7 +29,7 @@ export function FlowTodoList({ onTaskSelect }: FlowTodoListProps) {
 
   const { orderedTasks, scheduleLabelsMap } = useMemo(() => {
     const tasks = dailyPlanToday?.tasks;
-    const blocks = dailyPlanToday?.timeBlocks ?? [];
+    const blocks = timeBlocks;
     if (!tasks) return { orderedTasks: [], scheduleLabelsMap: new Map<string, string | null>() };
 
     const formatTime = (iso: string) => {
@@ -68,7 +70,7 @@ export function FlowTodoList({ onTaskSelect }: FlowTodoListProps) {
       };
     };
 
-    const sorted = [...tasks].sort((a, b) => {
+    const sortedTasks = [...tasks].sort((a, b) => {
       const aKey = getOrderKey(a);
       const bKey = getOrderKey(b);
       if (aKey.hasSchedule !== bKey.hasSchedule) return aKey.hasSchedule ? -1 : 1;
@@ -77,8 +79,8 @@ export function FlowTodoList({ onTaskSelect }: FlowTodoListProps) {
       return aKey.sortOrder - bKey.sortOrder;
     });
 
-    return { orderedTasks: sorted, scheduleLabelsMap: labelsMap };
-  }, [dailyPlanToday]);
+    return { orderedTasks: sortedTasks, scheduleLabelsMap: labelsMap };
+  }, [dailyPlanToday, timeBlocks]);
 
   if (!dailyPlanToday || !dailyPlanToday.tasks || dailyPlanToday.tasks.length === 0) {
     return (

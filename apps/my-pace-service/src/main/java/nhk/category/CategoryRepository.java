@@ -15,7 +15,7 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
     List<Category> findByUserIdAndIdIn(UUID userId, Collection<UUID> ids);
     List<Category> findByUserIdAndTimeContextId(UUID userId, UUID timeContextId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Category c SET c.timeContext = NULL WHERE c.timeContext.id = :timeContextId")
     void clearTimeContextId(UUID timeContextId);
 }
