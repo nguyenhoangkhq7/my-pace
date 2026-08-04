@@ -748,6 +748,24 @@ export interface Translations {
     exampleTime: string;
     exampleUrgency: string;
     tryThese: string;
+    typeTask: string;
+    typeEvent: string;
+    switchToEvent: string;
+    switchToTask: string;
+    startTime: string;
+    endTime: string;
+    eventDate: string;
+    allDay: string;
+    formulaTabTask: string;
+    formulaTabEvent: string;
+    tokenEventName: string;
+    tokenEventTime: string;
+    tokenEventDate: string;
+    exampleEventName: string;
+    exampleEventTime: string;
+    exampleEventDate: string;
+    eventSuggestion1: string;
+    eventSuggestion2: string;
   };
 }
 

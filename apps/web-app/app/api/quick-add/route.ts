@@ -18,75 +18,71 @@ interface QuickAddRequestBody {
  *  ⚠️  Do NOT inject any dynamic values here.
  * ─────────────────────────────────────────────────────────────────
  */
-const STATIC_SYSTEM_PROMPT = `You are an expert task extraction engine for a Vietnamese productivity app.
-Your job: parse a user's free-form note (Vietnamese or English) and output structured task data as JSON.
+const STATIC_SYSTEM_PROMPT = `You are an expert task and calendar event extraction engine for a Vietnamese productivity app.
+Your job: parse a user's free-form note (Vietnamese or English) and output structured JSON data for EITHER a task or a calendar event.
 
 ━━━ OUTPUT FORMAT ━━━
 Respond ONLY with a single JSON object. No markdown, no explanation.
-{"title":string,"estimatedMinutes":number|null,"isUrgent":boolean,"isImportant":boolean,"dueDate":"YYYY-MM-DDTHH:mm:ss"|null,"categoryId":string|null,"goalId":string|null,"notes":string|null,"checklists":[{"title":string,"isCompleted":false,"orderIndex":number}]|null}
+{
+  "type": "task" | "event",
+  "title": string,
+  "estimatedMinutes": number | null,
+  "isUrgent": boolean,
+  "isImportant": boolean,
+  "dueDate": "YYYY-MM-DDTHH:mm:ss" | null,
+  "eventDate": "YYYY-MM-DD" | null,
+  "startTime": "HH:mm" | null,
+  "endTime": "HH:mm" | null,
+  "categoryId": string | null,
+  "goalId": string | null,
+  "notes": string | null,
+  "checklists": [{"title": string, "isCompleted": false, "orderIndex": number}] | null
+}
+
+━━━ TYPE DISCRIMINATION RULES ━━━
+- "event" if the input specifies a SPECIFIC CLOCK TIME / HOUR (e.g., "7h", "19:00", "8h30", "at 3pm", "lúc 9h") for a meeting, appointment, outing, exercise, or activity happening at a specific scheduled time.
+  Examples of events:
+  • "tối nay 7h đi công viên tập thể dục" → event (startTime="19:00", eventDate=today, title="Tập thể dục", notes="Công viên")
+  • "họp team lúc 3h chiều" → event (startTime="15:00", eventDate=today, title="Họp team")
+  • "ăn tối 7h tại nhà hàng" → event (startTime="19:00", eventDate=today, title="Ăn tối")
+  • "phỏng vấn 10h sáng thứ 3" → event (startTime="10:00", eventDate=Tuesday)
+
+- "task" for flexible work items, to-dos, deliverables, errands, or habits WITHOUT a specific scheduled clock hour:
+  • "nộp báo cáo trước thứ 6" → task (has deadline, no fixed meeting slot)
+  • "tập gym sáng mai" → task (general habit without exact hour)
+  • "đọc sách 30 phút" → task
+  • "đi siêu thị mua trứng" → task
+
+- Rule of thumb: Specific clock hour (e.g. 7h, 19:00, lúc 3h) = "event". Flexible deadline or general time-of-day = "task".
 
 ━━━ FIELD RULES ━━━
 
 [title]
 - Extract the CORE action verb + object. Drop time/urgency/modifier words.
 - Capitalize first letter. Preserve user's language (Vi/En).
-- Examples: "họp team gấp sáng mai" → "Họp team" | "urgent call with client tomorrow" → "Call with client"
-- Shopping list with no verb → "Mua sắm" (or "Shopping").
+- Examples: "họp team gấp sáng mai" → "Họp team" | "nộp báo cáo trước 5h" → "Nộp báo cáo"
 
-[estimatedMinutes] — infer if not explicit
+[estimatedMinutes] — infer if not explicit (for tasks)
 - Explicit: "30 phút"=30, "1 tiếng"=60, "2h"=120, "1.5h"=90, "nửa tiếng"=30
-- Implicit defaults:
-    họp/meeting/call=60  phim/movie=120  đọc sách/reading=30  gym/workout=60
-    nấu ăn/cooking=45   đi chợ/grocery=30  cà phê/coffee=60  học/study=45
-    viết báo cáo/report=90  email/reply=15  chạy bộ/run=30  yoga/thiền=30
-    phỏng vấn/interview=60  ăn tối/dinner=60  ăn trưa/lunch=45
-- Truly unknowable → null.
+- Implicit defaults: họp/meeting=60, phim/movie=120, đọc sách=30, gym=60, nấu ăn=45, đi chợ=30, cà phê=60, học/study=45, báo cáo=90, email=15, chạy bộ=30, phỏng vấn=60
 
-━━━ EISENHOWER MATRIX ━━━
-Q1: Urgent=true,  Important=true  → Crises, real deadlines, critical work
-Q2: Urgent=false, Important=true  → Health, learning, planning (most valuable!)
-Q3: Urgent=true,  Important=false → Interruptions, routine meetings
-Q4: Urgent=false, Important=false → Entertainment, trivial errands
+[isUrgent & isImportant] — (For TASKS)
+- Urgent: deadline within 48h OR keywords: gấp, khẩn, urgent, ASAP, ngay lập tức, hạn chót, deadline, trễ rồi, chạy deadline, phải xong hôm nay.
+- Important: Health, Finance, Work Deliverables, Education, Planning are ALWAYS true. Casual social/entertainment ALWAYS false.
 
-[isUrgent] — TIME PRESSURE only, not importance
-- true if: deadline within 48h (today/tomorrow) OR urgency keywords:
-  gấp, khẩn, urgent, ASAP, ngay lập tức, hạn chót, deadline, trễ rồi, chạy deadline,
-  còn X tiếng/phút nữa, phải xong hôm nay, trước X giờ hôm nay
-- ⚠️ Scheduled time ("tối nay", "sáng mai") ≠ urgent. Only urgent if time pressure.
-  "họp tối nay" → false | "họp còn 1 tiếng nữa!" → true
+[dueDate] — (For TASKS) parse from CONTEXT block below
+- Format: "YYYY-MM-DDTHH:mm:ss". Date only → 23:59. null if no date reference or if type is "event".
 
-[isImportant] — LONG-TERM VALUE only, not time pressure
-ALWAYS true (domain-based, no keyword needed):
-  • HEALTH: khám bệnh, uống thuốc, gym, workout, chạy bộ, yoga, thiền, xét nghiệm
-  • FINANCE: nộp tiền, đóng thuế, trả nợ, hóa đơn, hợp đồng, ngân hàng, đầu tư
-  • WORK DELIVERABLE: nộp báo cáo, submit, deploy, release, trình bày, demo cho sếp/khách
-  • EDUCATION: thi, exam, nộp bài, học kỹ năng có mục tiêu, certification, luyện tập
-  • PLANNING: lên kế hoạch, OKR, review mục tiêu, retrospective
-ALWAYS false: xem phim/series, chơi game, lướt mạng, đi chợ thường, cà phê thường
-CONTEXT: meetings → important if with boss/client/investor; reading → important if educational
+[eventDate, startTime, endTime] — (For EVENTS ONLY)
+- eventDate: "YYYY-MM-DD" (from date reference or today)
+- startTime: "HH:mm" (24h format, e.g. "09:00", "15:00", "19:00")
+- endTime: startTime + estimatedMinutes (default 60 minutes if unspecified, e.g. 15:00 → 16:00).
+- If type is "task" → eventDate, startTime, endTime MUST all be null.
 
-[dueDate] — parse from CONTEXT block below
-- Time-of-day (Vi): sáng sớm=06:00 sáng=08:00 trưa=12:00 chiều=14:00 chiều tối=17:00 tối=19:00 đêm=22:00
-- Time-of-day (En): morning=08:00 noon=12:00 afternoon=14:00 evening=19:00 tonight=20:00
-- Explicit: "lúc 3h chiều"→15:00 "9am"→09:00 "trước 5h"→17:00
-- Date only, no time → 23:59. null if zero time reference.
-
-[categoryId] — MUST attempt; never skip without reason
-- Semantic match against categories in CONTEXT block.
-- Guide: Công việc/Work←meetings,reports | Sức khỏe/Health←gym,doctor | Học tập/Study←study,exam
-         Cá nhân/Personal←shopping,errands | Tài chính/Finance←bills,tax | Dự án/Project←code,design
-- >60% confidence → use id. null only if no match or empty list.
-
-[goalId] — >80% confidence the task contributes to goal → use id. Otherwise null.
-
-[notes] — location, people, links, conditions not in title/checklists. null if nothing extra.
-
-[checklists] — extract lists: "mua: A,B,C" | "gồm: ..." | "steps: 1. A 2. B" | "- item". null if none.
-
-━━━ AMBIGUITY ━━━
-- Short (1-2 words): still match categoryId + estimatedMinutes; leave dueDate/notes/checklists null.
-- Ambiguous time without am/pm: use context clues, default afternoon=15:00.
-- Mixed Vi/En: handle normally. Preserve user's language in title.`;
+[categoryId] — MUST attempt semantic match against categories in CONTEXT block. >60% confidence → use id.
+[goalId] — >80% confidence task directly contributes to goal → use id. Otherwise null.
+[notes] — location, room, links, attendees, conditions not in title. null if none.
+[checklists] — extract sub-items: "mua: A,B,C" | "- item". null if none.`;
 
 /**
  * Dynamic context block — injected at END of system prompt.
@@ -186,8 +182,30 @@ function buildFewShotMessages(body: QuickAddRequestBody) {
   const personalCat = findCategoryByDomain(body.categories, "personal");
 
   return [
-    // ── Q1: Urgent + Important ─────────────────────────────
-    // Work deliverable + urgency keyword + weekday deadline
+    // ── Case 1: EVENT — Meeting with explicit time ──────────
+    {
+      role: "user" as const,
+      content: "họp team design review chiều mai lúc 3h tại phòng họp B2",
+    },
+    {
+      role: "assistant" as const,
+      content: JSON.stringify({
+        type: "event",
+        title: "Họp team design review",
+        estimatedMinutes: 60,
+        isUrgent: false,
+        isImportant: false,
+        dueDate: null,
+        eventDate: tomorrow,
+        startTime: "15:00",
+        endTime: "16:00",
+        categoryId: workCat?.id ?? null,
+        goalId: null,
+        notes: "Phòng họp B2",
+        checklists: null,
+      }),
+    },
+    // ── Case 2: TASK — Urgent deliverable ────────────────────
     {
       role: "user" as const,
       content: "nộp báo cáo quý trước thứ 6 gấp, mất khoảng 2 tiếng",
@@ -195,99 +213,91 @@ function buildFewShotMessages(body: QuickAddRequestBody) {
     {
       role: "assistant" as const,
       content: JSON.stringify({
+        type: "task",
         title: "Nộp báo cáo quý",
         estimatedMinutes: 120,
         isUrgent: true,
         isImportant: true,
         dueDate: `${friday}T23:59:00`,
+        eventDate: null,
+        startTime: null,
+        endTime: null,
         categoryId: workCat?.id ?? null,
         goalId: null,
         notes: null,
         checklists: null,
       }),
     },
-    // ── Q1: Urgent + Important ─────────────────────────────
-    // Health domain → always important; deadline today → urgent
+    // ── Case 3: EVENT — Interview with morning time ──────────
     {
       role: "user" as const,
-      content: "uống thuốc huyết áp tối nay không được quên",
+      content: "phỏng vấn ứng viên lúc 10h sáng thứ 3",
     },
     {
       role: "assistant" as const,
       content: JSON.stringify({
-        title: "Uống thuốc huyết áp",
-        estimatedMinutes: 5,
-        isUrgent: true,
-        isImportant: true,
-        dueDate: `${today}T20:00:00`,
-        categoryId: healthCat?.id ?? null,
+        type: "event",
+        title: "Phỏng vấn ứng viên",
+        estimatedMinutes: 60,
+        isUrgent: false,
+        isImportant: false,
+        dueDate: null,
+        eventDate: addDays(daysUntil(2)),
+        startTime: "10:00",
+        endTime: "11:00",
+        categoryId: workCat?.id ?? null,
         goalId: null,
         notes: null,
         checklists: null,
       }),
     },
-    // ── Q2: Not Urgent + Important ─────────────────────────
-    // Health → always important; no time pressure → not urgent
+    // ── Case 3b: EVENT — Scheduled evening exercise / activity ─────
     {
       role: "user" as const,
-      content: "tập gym",
+      content: "tối nay 7h đi công viên tập thể dục",
     },
     {
       role: "assistant" as const,
       content: JSON.stringify({
+        type: "event",
+        title: "Tập thể dục",
+        estimatedMinutes: 60,
+        isUrgent: false,
+        isImportant: false,
+        dueDate: null,
+        eventDate: today,
+        startTime: "19:00",
+        endTime: "20:00",
+        categoryId: healthCat?.id ?? null,
+        goalId: null,
+        notes: "Công viên",
+        checklists: null,
+      }),
+    },
+    // ── Case 4: TASK — Habit / Gym (Q2 task) ────────────────
+    {
+      role: "user" as const,
+      content: "tập gym 1 tiếng sáng mai",
+    },
+    {
+      role: "assistant" as const,
+      content: JSON.stringify({
+        type: "task",
         title: "Tập gym",
         estimatedMinutes: 60,
         isUrgent: false,
-        isImportant: true,        // ← health is ALWAYS important
-        dueDate: null,
+        isImportant: true,
+        dueDate: `${tomorrow}T08:00:00`,
+        eventDate: null,
+        startTime: null,
+        endTime: null,
         categoryId: healthCat?.id ?? null,
         goalId: null,
         notes: null,
         checklists: null,
       }),
     },
-    // ── Q2: Not Urgent + Important ─────────────────────────
-    // Study/skill building → important; scheduled but no deadline pressure → not urgent
-    {
-      role: "user" as const,
-      content: "study English 30 minutes tomorrow morning",
-    },
-    {
-      role: "assistant" as const,
-      content: JSON.stringify({
-        title: "Study English",
-        estimatedMinutes: 30,
-        isUrgent: false,
-        isImportant: true,        // ← education/learning is ALWAYS important
-        dueDate: `${tomorrow}T08:00:00`,
-        categoryId: studyCat?.id ?? null,
-        goalId: null,
-        notes: null,
-        checklists: null,
-      }),
-    },
-    // ── Q3: Urgent + Not Important ─────────────────────────
-    // Routine meeting today with time pressure → urgent but not high-value
-    {
-      role: "user" as const,
-      content: "họp sync team tối nay lúc 7h tại phòng họp B2",
-    },
-    {
-      role: "assistant" as const,
-      content: JSON.stringify({
-        title: "Họp sync team",
-        estimatedMinutes: 60,
-        isUrgent: false,          // ← scheduled, no time pressure signal
-        isImportant: false,       // ← casual routine sync, not a deliverable
-        dueDate: `${today}T19:00:00`,
-        categoryId: workCat?.id ?? null,
-        goalId: null,
-        notes: "Phòng họp B2",
-        checklists: null,
-      }),
-    },
-    // ── Q4: Not Urgent + Not Important ─────────────────────
-    // Entertainment + errands → low-value, no deadline
+    // ── Case 5: TASK — Shopping with checklist ───────────────
     {
       role: "user" as const,
       content: "đi siêu thị mua: trứng, sữa tươi, bánh mì, rau cải",
@@ -295,11 +305,15 @@ function buildFewShotMessages(body: QuickAddRequestBody) {
     {
       role: "assistant" as const,
       content: JSON.stringify({
+        type: "task",
         title: "Đi siêu thị",
         estimatedMinutes: 30,
         isUrgent: false,
-        isImportant: false,       // ← routine errand, not high-value
+        isImportant: false,
         dueDate: null,
+        eventDate: null,
+        startTime: null,
+        endTime: null,
         categoryId: personalCat?.id ?? null,
         goalId: null,
         notes: null,
@@ -385,7 +399,10 @@ export async function POST(request: Request) {
     }
 
     // Normalize & sanitize output
+    const extractedType = parsed.type === "event" ? "event" : "task";
+
     const result = {
+      type: extractedType,
       title: parsed.title,
       estimatedMinutes:
         typeof parsed.estimatedMinutes === "number" && parsed.estimatedMinutes > 0
@@ -395,6 +412,15 @@ export async function POST(request: Request) {
       isImportant: !!parsed.isImportant,
       dueDate: typeof parsed.dueDate === "string" && parsed.dueDate.length > 0
         ? parsed.dueDate
+        : null,
+      eventDate: typeof parsed.eventDate === "string" && parsed.eventDate.length > 0
+        ? parsed.eventDate
+        : null,
+      startTime: typeof parsed.startTime === "string" && parsed.startTime.length > 0
+        ? parsed.startTime
+        : null,
+      endTime: typeof parsed.endTime === "string" && parsed.endTime.length > 0
+        ? parsed.endTime
         : null,
       categoryId:
         typeof parsed.categoryId === "string" && parsed.categoryId.length > 0

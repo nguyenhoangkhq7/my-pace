@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslation } from "@/hooks/use-translation";
 
 interface QuickAddSuggestionsProps {
@@ -20,47 +21,109 @@ function Token({ label, color }: { label: string; color: string }) {
 
 export function QuickAddSuggestions({ onSelect }: QuickAddSuggestionsProps) {
   const { t } = useTranslation();
+  const [activeTab, setActiveTab] = useState<"task" | "event">("task");
 
-  const suggestions = [
+  const taskSuggestions = [
     t.quickAdd.suggestion1,
     t.quickAdd.suggestion2,
     t.quickAdd.suggestion3,
     t.quickAdd.suggestion4,
   ];
 
+  const eventSuggestions = [
+    t.quickAdd.eventSuggestion1,
+    t.quickAdd.eventSuggestion2,
+  ];
+
+  const suggestions = activeTab === "task" ? taskSuggestions : eventSuggestions;
+
   return (
     <div className="px-4 py-3 space-y-3">
-      {/* ── Formula anatomy ── */}
-      <div className="space-y-1.5">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
-          {t.quickAdd.formulaLabel}
-        </p>
-        <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
-          <Token label={t.quickAdd.tokenAction}   color="#6366f1" />
-          <span className="text-muted-foreground/40">+</span>
-          <Token label={t.quickAdd.tokenDuration}  color="#0ea5e9" />
-          <span className="text-muted-foreground/40">+</span>
-          <Token label={t.quickAdd.tokenTime}      color="#f59e0b" />
-          <span className="text-muted-foreground/40">+</span>
-          <Token label={t.quickAdd.tokenUrgency}   color="#ef4444" />
-        </div>
-
-        {/* Annotated example */}
-        <div className="flex flex-wrap items-baseline gap-1 text-[12px] leading-relaxed">
-          <span className="rounded px-1 py-0.5 font-medium" style={{ backgroundColor: "#6366f118", color: "#6366f1" }}>
-            {t.quickAdd.exampleAction}
-          </span>
-          <span className="rounded px-1 py-0.5 font-medium" style={{ backgroundColor: "#0ea5e918", color: "#0ea5e9" }}>
-            {t.quickAdd.exampleDuration}
-          </span>
-          <span className="rounded px-1 py-0.5 font-medium" style={{ backgroundColor: "#f59e0b18", color: "#f59e0b" }}>
-            {t.quickAdd.exampleTime}
-          </span>
-          <span className="rounded px-1 py-0.5 font-medium" style={{ backgroundColor: "#ef444418", color: "#ef4444" }}>
-            {t.quickAdd.exampleUrgency}
-          </span>
-        </div>
+      {/* Tab bar for Task vs Event formula */}
+      <div className="flex items-center gap-2 border-b border-border/40 pb-2">
+        <button
+          type="button"
+          onClick={() => setActiveTab("task")}
+          className={`text-xs font-semibold px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+            activeTab === "task"
+              ? "bg-primary/10 text-primary"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {t.quickAdd.formulaTabTask}
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("event")}
+          className={`text-xs font-semibold px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+            activeTab === "event"
+              ? "bg-primary/10 text-primary"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {t.quickAdd.formulaTabEvent}
+        </button>
       </div>
+
+      {/* ── Formula anatomy ── */}
+      {activeTab === "task" ? (
+        <div className="space-y-1.5 animate-in fade-in duration-150">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+            {t.quickAdd.formulaLabel}
+          </p>
+          <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+            <Token label={t.quickAdd.tokenAction} color="#6366f1" />
+            <span className="text-muted-foreground/40">+</span>
+            <Token label={t.quickAdd.tokenDuration} color="#0ea5e9" />
+            <span className="text-muted-foreground/40">+</span>
+            <Token label={t.quickAdd.tokenTime} color="#f59e0b" />
+            <span className="text-muted-foreground/40">+</span>
+            <Token label={t.quickAdd.tokenUrgency} color="#ef4444" />
+          </div>
+
+          {/* Annotated example */}
+          <div className="flex flex-wrap items-baseline gap-1 text-[12px] leading-relaxed">
+            <span className="rounded px-1 py-0.5 font-medium" style={{ backgroundColor: "#6366f118", color: "#6366f1" }}>
+              {t.quickAdd.exampleAction}
+            </span>
+            <span className="rounded px-1 py-0.5 font-medium" style={{ backgroundColor: "#0ea5e918", color: "#0ea5e9" }}>
+              {t.quickAdd.exampleDuration}
+            </span>
+            <span className="rounded px-1 py-0.5 font-medium" style={{ backgroundColor: "#f59e0b18", color: "#f59e0b" }}>
+              {t.quickAdd.exampleTime}
+            </span>
+            <span className="rounded px-1 py-0.5 font-medium" style={{ backgroundColor: "#ef444418", color: "#ef4444" }}>
+              {t.quickAdd.exampleUrgency}
+            </span>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-1.5 animate-in fade-in duration-150">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+            {t.quickAdd.formulaLabel}
+          </p>
+          <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+            <Token label={t.quickAdd.tokenEventName} color="#8b5cf6" />
+            <span className="text-muted-foreground/40">+</span>
+            <Token label={t.quickAdd.tokenEventTime} color="#10b981" />
+            <span className="text-muted-foreground/40">+</span>
+            <Token label={t.quickAdd.tokenEventDate} color="#f59e0b" />
+          </div>
+
+          {/* Annotated event example */}
+          <div className="flex flex-wrap items-baseline gap-1 text-[12px] leading-relaxed">
+            <span className="rounded px-1 py-0.5 font-medium" style={{ backgroundColor: "#8b5cf618", color: "#8b5cf6" }}>
+              {t.quickAdd.exampleEventName}
+            </span>
+            <span className="rounded px-1 py-0.5 font-medium" style={{ backgroundColor: "#10b98118", color: "#10b981" }}>
+              {t.quickAdd.exampleEventTime}
+            </span>
+            <span className="rounded px-1 py-0.5 font-medium" style={{ backgroundColor: "#f59e0b18", color: "#f59e0b" }}>
+              {t.quickAdd.exampleEventDate}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* ── Divider ── */}
       <div className="border-t border-border/50" />
@@ -87,3 +150,4 @@ export function QuickAddSuggestions({ onSelect }: QuickAddSuggestionsProps) {
     </div>
   );
 }
+

@@ -1,4 +1,11 @@
-export interface QuickAddResult {
+export interface QuickAddChecklist {
+  title: string;
+  isCompleted: boolean;
+  orderIndex: number;
+}
+
+export interface QuickAddTaskResult {
+  type: "task";
   title: string;
   estimatedMinutes: number | null;
   isUrgent: boolean;
@@ -10,10 +17,17 @@ export interface QuickAddResult {
   checklists: QuickAddChecklist[] | null;
 }
 
-export interface QuickAddChecklist {
+export interface QuickAddEventResult {
+  type: "event";
   title: string;
-  isCompleted: boolean;
-  orderIndex: number;
+  eventDate: string | null;
+  startTime: string | null;
+  endTime: string | null;
+  categoryId: string | null;
+  notes: string | null;
 }
 
+export type QuickAddResult = QuickAddTaskResult | QuickAddEventResult;
+
 export type QuickAddStatus = "idle" | "loading" | "preview" | "creating" | "error";
+

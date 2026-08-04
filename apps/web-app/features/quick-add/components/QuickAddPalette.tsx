@@ -17,7 +17,7 @@ export function QuickAddPalette() {
   const { isOpen, open, close } = useQuickAddUIStore();
   const [isEditing, setIsEditing] = useState(false);
   const { t } = useTranslation();
-  const { result, status, error, parseText, confirmCreate, reset, categories, goals } = useQuickAdd();
+  const { result, status, error, parseText, confirmCreate, toggleType, reset, categories, goals } = useQuickAdd();
 
   // Global "/" shortcut — only when not focused on input/textarea
   useEffect(() => {
@@ -88,6 +88,7 @@ export function QuickAddPalette() {
             goals={goals}
             onConfirm={handleConfirm}
             onEdit={() => setIsEditing(true)}
+            onToggleType={toggleType}
             isCreating={status === "creating"}
           />
         )}
