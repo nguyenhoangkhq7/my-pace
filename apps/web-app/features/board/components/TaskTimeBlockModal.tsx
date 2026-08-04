@@ -33,6 +33,8 @@ export function TaskTimeBlockModal({
   isSubmitting = false,
 }: TaskTimeBlockModalProps) {
   const { t } = useTranslation();
+  const [isToggling, setIsToggling] = React.useState(false);
+
   if (!block || !task) return null;
 
   const startTimeStr = new Date(block.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -44,7 +46,6 @@ export function TaskTimeBlockModal({
   };
 
   const isChunked = block.totalParts > 1;
-  const [isToggling, setIsToggling] = React.useState(false);
   const handleToggleLock = async () => {
     if (onToggleLock && block.id) {
       setIsToggling(true);

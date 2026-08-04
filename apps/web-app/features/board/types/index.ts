@@ -2,7 +2,9 @@ export interface Category {
   id: string;
   name: string;
   color: string;
+  icon?: string;
   timeContextId?: string;
+  isDefault?: boolean;
 }
 
 export interface TaskChecklistItem {
@@ -10,9 +12,9 @@ export interface TaskChecklistItem {
   taskId: string;
   title: string;
   isCompleted: boolean;
-  orderIndex?: number;
-  createdAt: string;
-  updatedAt: string;
+  orderIndex: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Task {
@@ -45,6 +47,8 @@ export interface TaskTimeBlock {
   endTime: string;
   partIndex: number;
   totalParts: number;
+  dailyPlanId?: string;
+  isMit?: boolean;
   availabilityStatus?: 'BUSY' | 'FREE';
 }
 
@@ -62,7 +66,17 @@ export interface DailyPlan {
   planDate: string;
   availableMinutes: number;
   isConfirmed: boolean;
-  isReviewed: boolean;
+  isReviewed?: boolean;
+  confirmedAt?: string;
   tasks: DailyPlanTask[];
+  timeBlocks: TaskTimeBlock[];
 }
 
+export interface DailyPlanSummary {
+  planDate: string;
+  isConfirmed: boolean;
+  totalTasks: number;
+  completedTasks: number;
+  totalEstimatedMinutes: number;
+  totalActualMinutes: number;
+}

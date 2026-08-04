@@ -31,12 +31,10 @@ export function EisenhowerQuadrant({
     if (t.isUrgent !== isUrgent || t.isImportant !== isImportant) return false;
     if (t.status === "Done" || t.status === "Icebox") return false;
 
-    if (isPlanningMode) {
-      if (plannedTaskIds.includes(t.id)) return false;
-      return t.status === "Backlog" || t.status === "Picked for Today";
-    } else {
-      return t.status === "Backlog";
+    if (isPlanningMode && plannedTaskIds.includes(t.id)) {
+      return false;
     }
+    return t.status === "Backlog" || t.status === "Picked for Today";
   });
   
   if (selectedFilterId === "goal") {

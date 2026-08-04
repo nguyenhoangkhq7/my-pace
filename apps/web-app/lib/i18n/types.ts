@@ -710,5 +710,44 @@ export interface Translations {
     doubleClickToMaximize: string;
     options: string;
   };
+  quickAdd: {
+    placeholder: string;
+    title: string;
+    hint: string;
+    creating: string;
+    created: string;
+    createTask: string;
+    openFullForm: string;
+    retry: string;
+    errorTitle: string;
+    errorDesc: string;
+    noApiKey: string;
+    duration: string;
+    dueDate: string;
+    urgent: string;
+    important: string;
+    category: string;
+    goal: string;
+    notes: string;
+    checklist: string;
+    suggestion1: string;
+    suggestion2: string;
+    suggestion3: string;
+    suggestion4: string;
+    noDueDate: string;
+    noDuration: string;
+    aiParsed: string;
+    edit: string;
+    formulaLabel: string;
+    tokenAction: string;
+    tokenDuration: string;
+    tokenTime: string;
+    tokenUrgency: string;
+    exampleAction: string;
+    exampleDuration: string;
+    exampleTime: string;
+    exampleUrgency: string;
+    tryThese: string;
+  };
 }
 

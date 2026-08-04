@@ -23,6 +23,9 @@ export function useDailyPlan(date: string, initialData?: DailyPlan | null) {
       }).then(res => res.data),
     onSuccess: async (data) => {
       queryClient.setQueryData(["dailyPlan", date], data);
+      queryClient.invalidateQueries({ queryKey: ["dailyPlan"] });
+      queryClient.invalidateQueries({ queryKey: ["dailyPlans"] });
+      queryClient.invalidateQueries({ queryKey: ["timeBlocks"] });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       try {
         triggerAutoSchedule();
@@ -36,7 +39,15 @@ export function useDailyPlan(date: string, initialData?: DailyPlan | null) {
     mutationFn: () => fetchClient.post<unknown, undefined>(`daily-plans/${date}/cancel`, undefined).then(res => res.data),
     onSuccess: () => {
       queryClient.setQueryData(["dailyPlan", date], null);
+      queryClient.invalidateQueries({ queryKey: ["dailyPlan"] });
+      queryClient.invalidateQueries({ queryKey: ["dailyPlans"] });
+      queryClient.invalidateQueries({ queryKey: ["timeBlocks"] });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      try {
+        triggerAutoSchedule();
+      } catch (e) {
+        console.error("Auto-schedule after cancelPlan failed", e);
+      }
     },
   });
 
@@ -50,5 +61,3 @@ export function useDailyPlan(date: string, initialData?: DailyPlan | null) {
     isCancellingPlan: cancelPlanMutation.isPending,
   };
 }
-
-

@@ -13,6 +13,13 @@ import { CalendarEventItem } from "@/features/calendar/components/CalendarEventI
 import { useCalendarPage } from "../hooks/useCalendarPage";
 import { useTranslation } from "@/hooks/use-translation";
 
+const formatFcDate = (date: Date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
 export function CalendarPage() {
   const { t } = useTranslation();
   const {
@@ -69,9 +76,9 @@ export function CalendarPage() {
     hasAllDayEvents,
     dailyPlanToday,
     timeBlocks,
+    datesWithPlanSet,
     plannable,
   } = useCalendarPage();
-
 
   const isConfirmed = !plannable || !!dailyPlanToday?.isConfirmed;
 
@@ -108,6 +115,14 @@ export function CalendarPage() {
               allDaySlot={hasAllDayEvents}
               nowIndicator
 
+              dayCellClassNames={(arg) => {
+                const dateStr = formatFcDate(arg.date);
+                return datesWithPlanSet.has(dateStr) ? ["fc-day-has-plan"] : [];
+              }}
+              dayHeaderClassNames={(arg) => {
+                const dateStr = formatFcDate(arg.date);
+                return datesWithPlanSet.has(dateStr) ? ["fc-col-header-has-plan"] : [];
+              }}
 
               selectable={plannable}
               selectMirror={plannable}
@@ -162,9 +177,6 @@ export function CalendarPage() {
         deleteSingleOccurrence={deleteSingleOccurrence}
         deleteFromDateOnwards={deleteFromDateOnwards}
       />
-
-
-
 
       <TaskTimeBlockModal
         open={blockModalOpen}

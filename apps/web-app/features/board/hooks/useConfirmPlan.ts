@@ -10,6 +10,10 @@ export function useConfirmPlan() {
       fetchClient.post<DailyPlan>(`daily-plans/${date}/confirm`, {}).then((r) => r.data),
     onSuccess: (data, date) => {
       queryClient.setQueryData(["dailyPlan", date], data);
+      queryClient.invalidateQueries({ queryKey: ["dailyPlan"] });
+      queryClient.invalidateQueries({ queryKey: ["dailyPlans"] });
+      queryClient.invalidateQueries({ queryKey: ["timeBlocks"] });
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
     },
   });
 

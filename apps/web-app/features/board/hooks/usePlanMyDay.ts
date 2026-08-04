@@ -24,6 +24,9 @@ export function usePlanMyDay(date: string) {
         .then((r) => r.data),
     onSuccess: async (data) => {
       queryClient.setQueryData(["dailyPlan", date], data);
+      queryClient.invalidateQueries({ queryKey: ["dailyPlan"] });
+      queryClient.invalidateQueries({ queryKey: ["dailyPlans"] });
+      queryClient.invalidateQueries({ queryKey: ["timeBlocks"] });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       try {
         triggerAutoSchedule();

@@ -20,6 +20,8 @@ import { useTranslation } from "@/hooks/use-translation";
 import { Settings } from "lucide-react";
 import { SettingsModal } from "@/features/settings/components/SettingsModal";
 import { StickyNotesTriggerBtn } from "@/features/sticky-notes/components/StickyNotesTriggerBtn";
+import { QuickAddTriggerBtn } from "@/features/quick-add/components/QuickAddTriggerBtn";
+import { useQuickAddUIStore } from "@/features/quick-add/store/quickAddUI.store";
 
 import { Time02Icon } from "@hugeicons/core-free-icons";
 import { useFocusStore } from "@/features/focus/store/focus.store";
@@ -38,6 +40,7 @@ export function Sidebar() {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const openQuickAdd = useQuickAddUIStore((s) => s.open);
 
   useEffect(() => {
     Promise.resolve().then(() => {
@@ -100,6 +103,11 @@ export function Sidebar() {
           >
             <HugeiconsIcon icon={isCollapsed ? ArrowRight01Icon : ArrowLeft01Icon} size={18} />
           </button>
+        </div>
+
+        {/* ── Quick Add ────────────────────────────────────────────── */}
+        <div className="mb-3">
+          <QuickAddTriggerBtn isCollapsed={isCollapsed} onClick={openQuickAdd} />
         </div>
 
         {/* ── Navigation ── */}

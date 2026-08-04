@@ -183,6 +183,28 @@ export function CalendarStyles({ fixedEventColor }: CalendarStylesProps) {
       .fc-block-not-in-plan:hover {
         opacity: 0.75 !important;
       }
+
+      /* ── Daily Plan Highlight Accent ── */
+      /* 1. Month View Day Cell */
+      .calendar-wrapper .fc-day-has-plan {
+        background: linear-gradient(180deg, rgba(99, 102, 241, 0.08) 0%, rgba(99, 102, 241, 0.02) 100%) !important;
+        box-shadow: inset 0 3px 0 0 hsl(var(--primary)) !important;
+      }
+      .calendar-wrapper .fc-day-has-plan .fc-daygrid-day-number {
+        font-weight: 700 !important;
+        color: hsl(var(--primary)) !important;
+      }
+
+      /* 2. Week/Day View Column Header */
+      .calendar-wrapper .fc-col-header-has-plan {
+        background-color: hsl(var(--primary) / 0.12) !important;
+        border-bottom: 2px solid hsl(var(--primary)) !important;
+      }
+      .calendar-wrapper .fc-col-header-has-plan .fc-col-header-cell-cushion {
+        color: hsl(var(--primary)) !important;
+        font-weight: 700 !important;
+        opacity: 1 !important;
+      }
     `}</style>
   );
 }

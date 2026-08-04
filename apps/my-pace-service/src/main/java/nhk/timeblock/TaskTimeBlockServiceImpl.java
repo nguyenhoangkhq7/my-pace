@@ -43,6 +43,23 @@ public class TaskTimeBlockServiceImpl implements TaskTimeBlockService {
         // Delete all blocks for this user on this date
         timeBlockRepository.deleteByUserIdAndDate(userId, startOfDay, endOfDay);
 
+        // Clean up stale FREE blocks for these tasks on other dates
+        List<UUID> taskIds = request.blocks().stream()
+                .map(TaskTimeBlockRequest::taskId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        if (!taskIds.isEmpty()) {
+            List<TaskTimeBlock> existingTaskBlocks = timeBlockRepository.findByTaskIdIn(taskIds);
+            List<TaskTimeBlock> staleFreeBlocks = existingTaskBlocks.stream()
+                    .filter(b -> !"BUSY".equalsIgnoreCase(b.getAvailabilityStatus()))
+                    .filter(b -> !b.getStartTime().toLocalDate().equals(request.targetDate()))
+                    .collect(Collectors.toList());
+            if (!staleFreeBlocks.isEmpty()) {
+                timeBlockRepository.deleteAll(staleFreeBlocks);
+            }
+        }
+
         // Insert new blocks
         List<TaskTimeBlock> blocks = request.blocks().stream()
                 .map(req -> {
@@ -73,86 +90,56 @@ public class TaskTimeBlockServiceImpl implements TaskTimeBlockService {
                 .orElseThrow(() -> new EntityNotFoundException("Task not found"));
 
         if (!task.getUserId().equals(userId)) {
-            throw new EntityNotFoundException("Time block not found");
+            throw new IllegalArgumentException("User does not own this task");
         }
 
-        if (actualMinutes != null && actualMinutes >= 0) {
-            block.setActualMinutes(actualMinutes);
-            // Marking progress switches availability to BUSY
-            block.setAvailabilityStatus("BUSY");
+        if (actualMinutes != null) {
+            int prevActual = task.getActualMinutes() != null ? task.getActualMinutes() : 0;
+            task.setActualMinutes(prevActual + actualMinutes);
         }
 
-        if (isCompleted != null) {
-            block.setIsCompleted(isCompleted);
-            if (isCompleted) {
-                block.setCompletedAt(OffsetDateTime.now());
-                block.setAvailabilityStatus("BUSY");
-            } else {
-                block.setCompletedAt(null);
-            }
+        if (Boolean.TRUE.equals(isCompleted)) {
+            task.setStatus("Done");
+            task.setDoneAt(OffsetDateTime.now());
         }
 
-        TaskTimeBlock savedBlock = timeBlockRepository.save(block);
+        taskRepository.save(task);
 
-        // Rollup actualMinutes to Task entity
-        UUID taskId = block.getTaskId();
-        List<TaskTimeBlock> allTaskBlocks = timeBlockRepository.findByTaskId(taskId);
-        int totalTaskActualMinutes = allTaskBlocks.stream()
-                .mapToInt(b -> b.getActualMinutes() != null ? b.getActualMinutes() : 0)
-                .sum();
-
-        taskRepository.findById(taskId).ifPresent(t -> {
-            t.setActualMinutes(totalTaskActualMinutes);
-            if (t.getEstimatedMinutes() != null && totalTaskActualMinutes >= t.getEstimatedMinutes()) {
-                t.setStatus("Done");
-                t.setDoneAt(OffsetDateTime.now());
-            }
-            taskRepository.save(t);
-        });
-
-        return toDto(savedBlock);
+        return toDto(block);
     }
 
     @Override
     @Transactional
     public List<TaskTimeBlockDto> splitTimeBlock(UUID blockId, Integer splitAtMinutes, UUID userId) {
-        TaskTimeBlock block = timeBlockRepository.findById(blockId)
+        TaskTimeBlock original = timeBlockRepository.findById(blockId)
                 .orElseThrow(() -> new EntityNotFoundException("Time block not found"));
 
-        Task task = taskRepository.findById(block.getTaskId())
-                .orElseThrow(() -> new EntityNotFoundException("Task not found"));
-
-        if (!task.getUserId().equals(userId)) {
-            throw new EntityNotFoundException("Time block not found");
+        long totalMinutes = java.time.Duration.between(original.getStartTime(), original.getEndTime()).toMinutes();
+        if (splitAtMinutes <= 0 || splitAtMinutes >= totalMinutes) {
+            throw new IllegalArgumentException("Split duration must be strictly between start and end");
         }
 
-        long totalDurationMinutes = java.time.Duration.between(block.getStartTime(), block.getEndTime()).toMinutes();
-        int splitPoint = (splitAtMinutes != null && splitAtMinutes > 0 && splitAtMinutes < totalDurationMinutes)
-                ? splitAtMinutes
-                : (int) totalDurationMinutes / 2;
+        java.time.LocalDateTime splitTime = original.getStartTime().plusMinutes(splitAtMinutes);
+        java.time.LocalDateTime originalEnd = original.getEndTime();
 
-        if (splitPoint <= 0 || splitPoint >= totalDurationMinutes) {
-            return List.of(toDto(block));
-        }
-
-        java.time.LocalDateTime originalEnd = block.getEndTime();
-        java.time.LocalDateTime splitTime = block.getStartTime().plusMinutes(splitPoint);
-
-        block.setEndTime(splitTime);
-        timeBlockRepository.save(block);
+        original.setEndTime(splitTime);
+        int oldTotal = original.getTotalParts() != null ? original.getTotalParts() : 1;
+        original.setTotalParts(oldTotal + 1);
 
         TaskTimeBlock newBlock = new TaskTimeBlock();
-        newBlock.setTaskId(block.getTaskId());
+        newBlock.setTaskId(original.getTaskId());
         newBlock.setStartTime(splitTime);
         newBlock.setEndTime(originalEnd);
-        newBlock.setPartIndex(block.getPartIndex() + 1);
-        newBlock.setTotalParts(block.getTotalParts() + 1);
-        newBlock.setAvailabilityStatus(block.getAvailabilityStatus() != null ? block.getAvailabilityStatus() : "FREE");
+        newBlock.setPartIndex((original.getPartIndex() != null ? original.getPartIndex() : 1) + 1);
+        newBlock.setTotalParts(oldTotal + 1);
+        newBlock.setAvailabilityStatus(original.getAvailabilityStatus());
+
+        timeBlockRepository.save(original);
         timeBlockRepository.save(newBlock);
 
-        java.time.LocalDateTime start = block.getStartTime().toLocalDate().atStartOfDay();
-        java.time.LocalDateTime end = block.getStartTime().toLocalDate().plusDays(1).atStartOfDay().minusNanos(1);
-        return timeBlockRepository.findByUserIdAndDateRange(userId, start, end)
+        java.time.LocalDateTime startOfDay = original.getStartTime().toLocalDate().atStartOfDay();
+        java.time.LocalDateTime endOfDay = original.getStartTime().toLocalDate().plusDays(1).atStartOfDay().minusNanos(1);
+        return timeBlockRepository.findByUserIdAndDateRange(userId, startOfDay, endOfDay)
                 .stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
@@ -164,26 +151,38 @@ public class TaskTimeBlockServiceImpl implements TaskTimeBlockService {
         TaskTimeBlock block = timeBlockRepository.findById(blockId)
                 .orElseThrow(() -> new EntityNotFoundException("Time block not found"));
 
-        Task task = taskRepository.findById(block.getTaskId())
-                .orElseThrow(() -> new EntityNotFoundException("Task not found"));
-
-        if (!task.getUserId().equals(userId)) {
-            throw new EntityNotFoundException("Time block not found");
+        if (!"BUSY".equalsIgnoreCase(availabilityStatus) && !"FREE".equalsIgnoreCase(availabilityStatus)) {
+            throw new IllegalArgumentException("Invalid availability status. Must be BUSY or FREE");
         }
 
-        String status = "BUSY".equalsIgnoreCase(availabilityStatus) ? "BUSY" : "FREE";
-        block.setAvailabilityStatus(status);
-        return toDto(timeBlockRepository.save(block));
+        block.setAvailabilityStatus(availabilityStatus.toUpperCase());
+        TaskTimeBlock savedBlock = timeBlockRepository.save(block);
+
+        UUID taskId = block.getTaskId();
+        List<TaskTimeBlock> allTaskBlocks = timeBlockRepository.findByTaskId(taskId);
+        
+        boolean allBusy = !allTaskBlocks.isEmpty() && allTaskBlocks.stream()
+                .allMatch(b -> "BUSY".equalsIgnoreCase(b.getAvailabilityStatus()));
+
+        Task task = taskRepository.findById(taskId).orElse(null);
+        if (task != null) {
+            if (allBusy) {
+                task.setStatus("Confirmed");
+            } else {
+                task.setStatus("Picked for Today");
+            }
+            taskRepository.save(task);
+        }
+
+        return toDto(savedBlock);
     }
 
     @Override
     @Transactional
     public TaskTimeBlockDto updateTimeBlock(UUID blockId, TaskTimeBlockController.UpdateTimeBlockRequest request, UUID userId) {
         TaskTimeBlock block = timeBlockRepository.findById(blockId)
-                .orElseThrow(() -> new EntityNotFoundException("Block not found"));
-        
-        // Authorize (if needed, but assuming user owns the task)
-        
+                .orElseThrow(() -> new EntityNotFoundException("Time block not found"));
+
         if (request.startTime() != null) {
             block.setStartTime(request.startTime());
         }
@@ -191,24 +190,27 @@ public class TaskTimeBlockServiceImpl implements TaskTimeBlockService {
             block.setEndTime(request.endTime());
         }
         if (request.availabilityStatus() != null) {
-            block.setAvailabilityStatus(request.availabilityStatus());
+            if (!"BUSY".equalsIgnoreCase(request.availabilityStatus()) && !"FREE".equalsIgnoreCase(request.availabilityStatus())) {
+                throw new IllegalArgumentException("Invalid availability status. Must be BUSY or FREE");
+            }
+            block.setAvailabilityStatus(request.availabilityStatus().toUpperCase());
         }
-        
+
         return toDto(timeBlockRepository.save(block));
     }
 
     private TaskTimeBlockDto toDto(TaskTimeBlock block) {
         return new TaskTimeBlockDto(
-            block.getId(),
-            block.getTaskId(),
-            block.getStartTime(),
-            block.getEndTime(),
-            block.getPartIndex(),
-            block.getTotalParts(),
-            block.getActualMinutes() != null ? block.getActualMinutes() : 0,
-            block.getIsCompleted() != null ? block.getIsCompleted() : false,
-            block.getCompletedAt(),
-            block.getAvailabilityStatus() != null ? block.getAvailabilityStatus() : "FREE"
+                block.getId(),
+                block.getTaskId(),
+                block.getStartTime(),
+                block.getEndTime(),
+                block.getPartIndex() != null ? block.getPartIndex() : 1,
+                block.getTotalParts() != null ? block.getTotalParts() : 1,
+                block.getActualMinutes() != null ? block.getActualMinutes() : 0,
+                block.getIsCompleted() != null ? block.getIsCompleted() : false,
+                block.getCompletedAt(),
+                block.getAvailabilityStatus() != null ? block.getAvailabilityStatus() : "FREE"
         );
     }
 }

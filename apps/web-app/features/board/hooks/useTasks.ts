@@ -1,10 +1,14 @@
-import {useQuery, useMutation, useQueryClient, QueryClient} from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, QueryClient } from "@tanstack/react-query";
 import { fetchClient } from "@/lib/fetchClient";
 import type { Task } from "../types";
 import { useAutoSchedule } from "./useAutoSchedule";
+import { toast } from "sonner";
 
 function onSuccessUpdateTask(queryClient: QueryClient, triggerAutoSchedule: () => void) {
-  queryClient.invalidateQueries({queryKey: ["tasks"]});
+  queryClient.invalidateQueries({ queryKey: ["tasks"] });
+  queryClient.invalidateQueries({ queryKey: ["dailyPlan"] });
+  queryClient.invalidateQueries({ queryKey: ["dailyPlans"] });
+  queryClient.invalidateQueries({ queryKey: ["timeBlocks"] });
   triggerAutoSchedule();
 }
 
@@ -30,6 +34,18 @@ export function useTasks(initialData?: Task[]) {
     onSuccess: () => {
       onSuccessUpdateTask(queryClient, triggerAutoSchedule);
     },
+    onError: (err: unknown) => {
+      const errorObj = err as { status?: number; message?: string };
+      if (errorObj?.status === 404 || errorObj?.message?.includes("Task not found")) {
+        toast.error("Công việc không tồn tại hoặc đã bị xóa.");
+      } else {
+        toast.error("Không thể cập nhật công việc.");
+      }
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["timeBlocks"] });
+      queryClient.invalidateQueries({ queryKey: ["dailyPlan"] });
+      queryClient.invalidateQueries({ queryKey: ["dailyPlans"] });
+    }
   });
 
   const deleteTaskMutation = useMutation({

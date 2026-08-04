@@ -61,8 +61,6 @@ export function useCalendarPage() {
   });
 
   // ── Fetch ALL daily plans in the visible calendar range ───────────────────
-  // This ensures time blocks from backlog tasks (auto-scheduled on future days)
-  // are visible directly on the calendar without navigating to each day.
   const { data: plansInRange } = useQuery({
     queryKey: ['dailyPlans', dateRange.start, dateRange.end],
     queryFn: () =>
@@ -71,6 +69,18 @@ export function useCalendarPage() {
         .then(r => r.data),
     enabled: !!dateRange.start && !!dateRange.end,
   });
+
+  const datesWithPlanSet = useMemo(() => {
+    const set = new Set<string>();
+    if (plansInRange) {
+      for (const p of plansInRange) {
+        if (p.tasks && p.tasks.length > 0) {
+          set.add(p.planDate);
+        }
+      }
+    }
+    return set;
+  }, [plansInRange]);
 
   const {
     events,
@@ -89,7 +99,6 @@ export function useCalendarPage() {
   // Time blocks for focused date only (used for interactions / save)
   const { data: timeBlocks = [] } = useTaskTimeBlocks(focusedDate, focusedDate);
 
-  
   const saveTimeBlocksMutation = useMutation({
     mutationFn: (blocks: Omit<TaskTimeBlock, 'id'>[]) => fetchClient.post<TaskTimeBlock[]>('time-blocks/batch', { targetDate: focusedDate, blocks }).then(r => r.data),
     onSuccess: () => {
@@ -144,9 +153,6 @@ export function useCalendarPage() {
     }
   }, [dailyPlanToday, confirmPlanMutation, router]);
 
-
-
-
   const slotMin = toSlotTime(user?.wakeTime, "05:00:00");
   
   let slotMax = "23:00:00";
@@ -197,7 +203,6 @@ export function useCalendarPage() {
       return;
     }
     setIsUnscheduling(true);
-    // Remove all blocks associated with this task ID
     const updatedBlocks = timeBlocks
       .filter((b) => b.taskId !== taskId)
       .map((b) => {
@@ -246,16 +251,13 @@ export function useCalendarPage() {
   });
 
   // ── FullCalendar events ────────────────────────────────────────────────────
-  // scheduledTaskIds: tasks that already have a block on the focused date
   const scheduledTaskIds = useMemo(() => new Set(timeBlocks.map((b) => b.taskId)), [timeBlocks]);
-
 
   const hasAllDayEvents = useMemo(() => {
     return events.some((e) => !!e.isAllDay);
   }, [events]);
 
   const fcEvents = useMemo<EventInput[]>(() => {
-
     const list: EventInput[] = [
       ...(events as unknown as FixedEventOccurrence[]).map((occ) => {
         const color = occ.category?.color || fixedEventColor;
@@ -282,78 +284,91 @@ export function useCalendarPage() {
       })
     ];
 
-    // Build a lookup: taskId → Task, from all tasks
     const taskLookup = new Map<string, Task>();
     for (const t of tasks) {
       taskLookup.set(t.id, t);
     }
 
-    // Render time blocks for ALL days in the visible range
     list.push(
-      ...allTimeBlocks.map((block) => {
-        const task = taskLookup.get(block.taskId);
-        
-        let isMit = task?.isImportant || false;
-        let isInPlan = false;
-        if (plansInRange) {
-          for (const plan of plansInRange) {
-            const pt = plan.tasks?.find(p => p.task.id === block.taskId);
-            if (pt) {
-              isMit = pt.isMit;
-              isInPlan = true;
-              break;
+      ...allTimeBlocks
+        .filter((block) => {
+          // Deduplicate / Filter stale FREE blocks for tasks that are no longer in that date's plan
+          const blockDate = block.startTime.substring(0, 10);
+          const planForBlockDate = plansInRange?.find(p => p.planDate === blockDate);
+          
+          // If a plan exists for this date, verify if task is in this date's plan
+          if (planForBlockDate && planForBlockDate.tasks && planForBlockDate.tasks.length > 0) {
+            const inThisPlan = planForBlockDate.tasks.some(pt => pt.task.id === block.taskId);
+            if (!inThisPlan && block.availabilityStatus !== 'BUSY') {
+              // Block is FREE and task is NOT in this date's plan -> stale/orphaned block
+              return false;
             }
           }
-        }
+          return true;
+        })
+        .map((block) => {
+          const task = taskLookup.get(block.taskId);
+          const blockDate = block.startTime.substring(0, 10);
+          
+          let isMit = task?.isImportant || false;
+          let isInPlan = false;
+          if (plansInRange) {
+            const planForBlockDate = plansInRange.find(p => p.planDate === blockDate);
+            if (planForBlockDate) {
+              const pt = planForBlockDate.tasks?.find(p => p.task.id === block.taskId);
+              if (pt) {
+                isMit = pt.isMit;
+                isInPlan = true;
+              }
+            }
+          }
 
-        const label = block.totalParts > 1
-          ? `${task?.title || "Task"} (${block.partIndex}/${block.totalParts})`
-          : task?.title || "Task";
+          const label = block.totalParts > 1
+            ? `${task?.title || "Task"} (${block.partIndex}/${block.totalParts})`
+            : task?.title || "Task";
 
-        const color = task?.category?.color
-          ? task.category.color
-          : isMit
-          ? TASK_COLOR_MIT
-          : TASK_COLOR_REG;
+          const color = task?.category?.color
+            ? task.category.color
+            : isMit
+            ? TASK_COLOR_MIT
+            : TASK_COLOR_REG;
 
-        // A block is editable only when it belongs to the focused date's unconfirmed plan
-        const blockBelongsToFocused = block.startTime.startsWith(focusedDate);
-        const blockEditable = blockBelongsToFocused && !isConfirmed;
-        const isBlockBusy = block.availabilityStatus === 'BUSY';
+          const blockBelongsToFocused = block.startTime.startsWith(focusedDate);
+          const blockEditable = blockBelongsToFocused && !isConfirmed;
+          const isBlockBusy = block.availabilityStatus === 'BUSY';
 
-        return {
-          id: block.id || `block-${block.taskId}-${block.partIndex}`,
-          title: label,
-          start: block.startTime,
-          end: block.endTime,
-          backgroundColor: color,
-          borderColor: color,
-          textColor: "#ffffff",
-          editable: blockEditable,
-          durationEditable: blockEditable,
-          classNames: [
-            'fc-task-block',
-            isBlockBusy ? 'fc-task-busy' : 'fc-task-free',
-            !isInPlan ? 'fc-block-not-in-plan' : ''
-          ].filter(Boolean),
-          extendedProps: {
-            blockId: block.id,
-            taskId: block.taskId,
-            taskTitle: task?.title || "Task",
-            partIndex: block.partIndex,
-            totalParts: block.totalParts,
-            isMit,
-            isTimeBlock: true,
-            isBusy: isBlockBusy,
-            isFree: !isBlockBusy,
-          },
-        };
-      })
+          return {
+            id: block.id || `block-${block.taskId}-${block.partIndex}`,
+            title: label,
+            start: block.startTime,
+            end: block.endTime,
+            backgroundColor: color,
+            borderColor: color,
+            textColor: "#ffffff",
+            editable: blockEditable,
+            durationEditable: blockEditable,
+            classNames: [
+              'fc-task-block',
+              isBlockBusy ? 'fc-task-busy' : 'fc-task-free',
+              !isInPlan ? 'fc-block-not-in-plan' : ''
+            ].filter(Boolean),
+            extendedProps: {
+              blockId: block.id,
+              taskId: block.taskId,
+              taskTitle: task?.title || "Task",
+              partIndex: block.partIndex,
+              totalParts: block.totalParts,
+              isMit,
+              isTimeBlock: true,
+              isBusy: isBlockBusy,
+              isFree: !isBlockBusy,
+            },
+          };
+        })
     );
 
     return list;
   }, [events, allTimeBlocks, plansInRange, fixedEventColor, isConfirmed, tasks, focusedDate]);
-
 
   const [initialView] = useState(() => {
     if (typeof window !== "undefined") {
@@ -363,13 +378,11 @@ export function useCalendarPage() {
   });
   const [isCalendarMounted, setIsCalendarMounted] = useState(false);
 
-  // Restore saved view on mount
   useEffect(() => {
     const timer = setTimeout(() => setIsCalendarMounted(true), 0);
     return () => clearTimeout(timer);
   }, []);
 
-  // Update FullCalendar size to prevent scrollbar gutter gaps on mount or sidebar toggle
   useEffect(() => {
     if (isCalendarMounted && calendarRef.current) {
       const api = calendarRef.current.getApi();
@@ -430,12 +443,11 @@ export function useCalendarPage() {
     }
   }, [queryClient]);
 
-
   const handleEventClick = useCallback((arg: EventClickArg) => {
     if (arg.event.extendedProps.isTimeBlock) {
       const blockId = arg.event.extendedProps.blockId;
       const taskId = arg.event.extendedProps.taskId;
-      const block = timeBlocks.find((b) => b.id === blockId);
+      const block = allTimeBlocks.find((b) => b.id === blockId) || timeBlocks.find((b) => b.id === blockId);
       let task = tasks.find(t => t.id === taskId) || null;
       
       let isMit = task?.isImportant || false;
@@ -458,7 +470,7 @@ export function useCalendarPage() {
     setModalMode("edit");
     setModalDefaults({});
     setModalOpen(true);
-  }, [timeBlocks, dailyPlanToday, tasks]);
+  }, [allTimeBlocks, timeBlocks, dailyPlanToday, tasks]);
 
   const planTasks = dailyPlanToday?.tasks || [];
   const hasPlan   = planTasks.length > 0;
@@ -519,6 +531,7 @@ export function useCalendarPage() {
     hasAllDayEvents,
     dailyPlanToday,
     timeBlocks,
+    datesWithPlanSet,
 
     focusedDate,
     plannable,
