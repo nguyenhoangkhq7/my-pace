@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Clock01Icon, Logout03Icon, Location01Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuthStore } from "@/features/auth/store/auth.store";
+import { useAuthStore, normalizeAuthSession } from "@/features/auth/store/auth.store";
 import { syncTimezoneCookie } from "@/features/auth/actions/auth.action";
 import { fetchClient } from "@/lib/fetchClient";
 import { AppAlert } from "@/components/feedback/app-alert";
@@ -18,13 +18,6 @@ import { DialogFooter } from "@/components/ui/dialog";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { profileSchema, ProfileFormValues } from "../schema/profile.schema";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 const TIMEZONES = [
   { value: "Asia/Ho_Chi_Minh",    label: "🇻🇳 Hà Nội / Hồ Chí Minh (UTC+7)" },
@@ -63,44 +56,75 @@ export function ProfileFormContent({ onSuccess, onCancel, onLogoutClick, isOpen 
 
   const [buffer, setBuffer] = useState(20);
   const [error, setError] = useState<string | null>(null);
+  const hasInitializedRef = useRef(false);
 
   const {
     register,
     handleSubmit,
     control,
     reset,
+    trigger,
     formState: { errors, isValid, isSubmitting },
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     mode: "onChange",
     defaultValues: {
-      fullName: "",
-      wakeTime: "07:00",
-      sleepTime: "23:00",
-      timezone: "Asia/Ho_Chi_Minh",
+      fullName: user?.name || (user as unknown as Record<string, string>)?.fullName || "",
+      wakeTime: user?.wakeTime ? user.wakeTime.substring(0, 5) : "07:00",
+      sleepTime: user?.sleepTime ? user.sleepTime.substring(0, 5) : "23:00",
+      timezone: user?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Ho_Chi_Minh",
     }
   });
 
   useEffect(() => {
-    if (user && isOpen) {
-      Promise.resolve().then(() => {
-        reset({
-          fullName: user.name || "",
-          wakeTime: user.wakeTime ? user.wakeTime.substring(0, 5) : "07:00",
-          sleepTime: user.sleepTime ? user.sleepTime.substring(0, 5) : "23:00",
-          timezone: user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Ho_Chi_Minh",
-        });
-        setBuffer(user.bufferPct ?? 20);
-        setError(null);
-      });
+    let isMounted = true;
+
+    if (isOpen) {
+      if (!hasInitializedRef.current) {
+        hasInitializedRef.current = true;
+
+        const populateForm = (u: typeof user) => {
+          if (!u) return;
+          const initialName = u.name || (u as unknown as Record<string, string>).fullName || "";
+          reset({
+            fullName: initialName,
+            wakeTime: u.wakeTime ? u.wakeTime.substring(0, 5) : "07:00",
+            sleepTime: u.sleepTime ? u.sleepTime.substring(0, 5) : "23:00",
+            timezone: u.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Ho_Chi_Minh",
+          });
+          setBuffer(u.bufferPct ?? 20);
+          setError(null);
+          void trigger();
+        };
+
+        populateForm(user);
+
+        fetchClient.get<unknown>("auth/refresh")
+          .then((res) => {
+            if (isMounted && res.data) {
+              const session = normalizeAuthSession(res.data);
+              if (session) {
+                setSession(session);
+                populateForm(session.user);
+              }
+            }
+          })
+          .catch(() => {});
+      }
+    } else {
+      hasInitializedRef.current = false;
     }
-  }, [user, isOpen, reset]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen, reset, trigger, setSession, user]);
 
   const onSubmit = async (data: ProfileFormValues) => {
     setError(null);
 
     const payload = {
-      name: data.fullName,
+      fullName: data.fullName,
       wakeTime: `${data.wakeTime}:00`,
       sleepTime: `${data.sleepTime}:00`,
       bufferPct: buffer,
@@ -109,25 +133,26 @@ export function ProfileFormContent({ onSuccess, onCancel, onLogoutClick, isOpen 
 
     try {
       const response = await fetchClient.put("users/profile", payload);
-      const responseData = response.data as { timezone?: string; };
+      const responseData = response.data as { timezone?: string; name?: string; fullName?: string };
       
       // Sync timezone to Server Component's cookies
-      if (responseData.timezone) {
-        await syncTimezoneCookie(responseData.timezone);
+      const tzToSync = responseData.timezone || payload.timezone;
+      if (tzToSync) {
+        await syncTimezoneCookie(tzToSync);
       }
       
-      if (user) {
-        setSession({
-          user: {
-            ...user,
-            name: payload.name,
-            wakeTime: payload.wakeTime,
-            sleepTime: payload.sleepTime,
-            bufferPct: payload.bufferPct,
-            timezone: payload.timezone,
-          },
-        });
-      }
+      const updatedUser = {
+        id: user?.id ?? "",
+        name: data.fullName,
+        email: user?.email ?? "",
+        role: user?.role,
+        wakeTime: payload.wakeTime,
+        sleepTime: payload.sleepTime,
+        bufferPct: payload.bufferPct,
+        timezone: payload.timezone,
+      };
+
+      setSession({ user: updatedUser });
       
       // Invalidate queries to update UI in real-time
       queryClient.invalidateQueries({ queryKey: ["availableTime"] });
@@ -173,22 +198,31 @@ export function ProfileFormContent({ onSuccess, onCancel, onLogoutClick, isOpen 
             name="timezone"
             control={control}
             render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value}>
-                <SelectTrigger className="w-full! h-10! rounded-xl bg-muted/20 border-border/40 focus:border-primary text-xs text-foreground flex justify-between items-center cursor-pointer">
-                  <SelectValue placeholder={t.profile.timezonePlaceholder} />
-                </SelectTrigger>
-                <SelectContent className="max-h-[250px] z-[300] bg-popover text-popover-foreground border border-border/50">
-                  {TIMEZONES.map((tz) => (
-                    <SelectItem key={tz.value} value={tz.value}>
-                      {tz.label}
-                    </SelectItem>
-                  ))}
-                  {/* Fallback: nếu timezone của user không có trong list, vẫn hiển thị được */}
-                  {field.value && !TIMEZONES.find((tz) => tz.value === field.value) && (
-                    <SelectItem value={field.value}>{field.value}</SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
+              <select
+                value={field.value || "Asia/Ho_Chi_Minh"}
+                onChange={(e) => field.onChange(e.target.value)}
+                onPointerDown={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full h-10 rounded-xl bg-muted/20 border border-border/40 focus:border-primary text-xs text-foreground px-3 cursor-pointer appearance-none outline-none font-medium"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "right 12px center",
+                  backgroundSize: "12px",
+                  paddingRight: "32px"
+                }}
+              >
+                {TIMEZONES.map((tz) => (
+                  <option key={tz.value} value={tz.value} className="bg-popover text-popover-foreground py-1">
+                    {tz.label}
+                  </option>
+                ))}
+                {/* Fallback: nếu timezone của user không có trong list, vẫn hiển thị được */}
+                {field.value && !TIMEZONES.find((tz) => tz.value === field.value) && (
+                  <option value={field.value} className="bg-popover text-popover-foreground py-1">{field.value}</option>
+                )}
+              </select>
             )}
           />
         </div>

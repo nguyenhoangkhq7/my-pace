@@ -8,7 +8,7 @@ import { useTasks } from "./useTasks";
 import { useDailyPlan } from "./useDailyPlan";
 import { useCategories } from "./useCategories";
 
-export function useBacklogMatrix(currentDate: string, tomorrowDate: string, day2Date: string, day3Date: string) {
+export function useBacklogMatrix(currentDate: string, tomorrowDate: string) {
   const {
     isPlanningMode,
     plannedTaskIds,
@@ -44,35 +44,25 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string, day2
   
   const todayPlan = useDailyPlan(currentDate);
   const tomorrowPlan = useDailyPlan(tomorrowDate);
-  const day2Plan = useDailyPlan(day2Date);
-  const day3Plan = useDailyPlan(day3Date);
 
   const dailyPlanToday = todayPlan.dailyPlan;
   const dailyPlanTomorrow = tomorrowPlan.dailyPlan;
-  const dailyPlanDay2 = day2Plan.dailyPlan;
-  const dailyPlanDay3 = day3Plan.dailyPlan;
 
   const targetPlan = useMemo(() => {
     if (planningTarget === 'today') return dailyPlanToday;
     if (planningTarget === 'tomorrow') return dailyPlanTomorrow;
-    if (planningTarget === 'day2') return dailyPlanDay2;
-    if (planningTarget === 'day3') return dailyPlanDay3;
     return null;
-  }, [planningTarget, dailyPlanToday, dailyPlanTomorrow, dailyPlanDay2, dailyPlanDay3]);
+  }, [planningTarget, dailyPlanToday, dailyPlanTomorrow]);
 
 
   const { data: dataToday } = useAvailableTimeQuery(currentDate);
   const { data: dataTomorrow } = useAvailableTimeQuery(tomorrowDate);
-  const { data: dataDay2 } = useAvailableTimeQuery(day2Date);
-  const { data: dataDay3 } = useAvailableTimeQuery(day3Date);
   
   const availableTimeData = useMemo(() => {
     if (planningTarget === 'today') return dataToday;
     if (planningTarget === 'tomorrow') return dataTomorrow;
-    if (planningTarget === 'day2') return dataDay2;
-    if (planningTarget === 'day3') return dataDay3;
     return null;
-  }, [planningTarget, dataToday, dataTomorrow, dataDay2, dataDay3]);
+  }, [planningTarget, dataToday, dataTomorrow]);
 
   const availableMinutes = availableTimeData?.availableMinutes || 0;
 

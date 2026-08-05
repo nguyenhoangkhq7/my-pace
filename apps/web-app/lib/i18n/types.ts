@@ -218,14 +218,13 @@ export interface Translations {
     saveChanges: string;
     deleteRecurring: string;
     editRecurring: string;
-    recurringQuestion: (action: string) => string;
+    recurringQuestion: (action: "delete" | "edit") => string;
     onlyThis: string;
-    onlyThisDesc: (action: string) => string;
+    onlyThisDesc: (action: "delete" | "edit") => string;
     thisAndFollowing: string;
-    thisAndFollowingDesc: (action: string) => string;
+    thisAndFollowingDesc: (action: "delete" | "edit") => string;
     allEvents: string;
-    allEventsDesc: (action: string) => string;
-
+    allEventsDesc: (action: "delete" | "edit") => string;
     cancelBtn2: string;
     fcToday: string;
     fcMonth: string;
@@ -255,6 +254,10 @@ export interface Translations {
     locked: string;
     free: string;
     eventBadge: string;
+    showAs: string;
+    selectStatus: string;
+    statusBusy: string;
+    statusFree: string;
   };
   availableTime: {
     remaining: string;
@@ -734,19 +737,34 @@ export interface Translations {
     suggestion2: string;
     suggestion3: string;
     suggestion4: string;
+    suggestion5: string;
+    suggestion6: string;
     noDueDate: string;
     noDuration: string;
     aiParsed: string;
     edit: string;
     formulaLabel: string;
+    formulaTip: string;
+    formulaTaskPattern: string;
+    formulaEventPattern: string;
     tokenAction: string;
     tokenDuration: string;
-    tokenTime: string;
+    tokenDueDate: string;
     tokenUrgency: string;
+    tokenCategory: string;
+    tokenGoal: string;
+    tokenNotes: string;
+    tokenChecklist: string;
+    tokenAllDay: string;
     exampleAction: string;
     exampleDuration: string;
-    exampleTime: string;
+    exampleDueDate: string;
     exampleUrgency: string;
+    exampleCategory: string;
+    exampleGoal: string;
+    exampleNotes: string;
+    exampleChecklist: string;
+    exampleAllDay: string;
     tryThese: string;
     typeTask: string;
     typeEvent: string;
@@ -766,6 +784,8 @@ export interface Translations {
     exampleEventDate: string;
     eventSuggestion1: string;
     eventSuggestion2: string;
+    eventSuggestion3: string;
+    eventSuggestion4: string;
   };
 }
 

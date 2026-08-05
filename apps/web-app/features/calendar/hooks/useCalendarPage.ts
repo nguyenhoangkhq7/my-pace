@@ -119,18 +119,6 @@ export function useCalendarPage() {
     }
   }, [triggerAutoSchedule, queryClient]);
 
-  const handleToggleEventLock = useCallback(async (occ: FixedEventOccurrence, currentStatus: string) => {
-    const newStatus = currentStatus === "BUSY" ? "FREE" : "BUSY";
-    try {
-      await updateSingleOccurrence(occ.seriesId, occ.occurrenceDate, { overrideAvailabilityStatus: newStatus });
-      toast.success(newStatus === "BUSY" ? "Đã khóa sự kiện!" : "Đã mở khóa sự kiện!");
-      setModalOpen(false);
-      triggerAutoSchedule();
-    } catch {
-      toast.error("Không thể thay đổi trạng thái sự kiện.");
-    }
-  }, [updateSingleOccurrence, triggerAutoSchedule]);
-
   const confirmPlanMutation = useMutation({
     mutationFn: (date: string) => fetchClient.post<DailyPlan>(`daily-plans/${date}/confirm`, {}).then(r => r.data),
     onSuccess: (data, variables) => {
@@ -180,6 +168,7 @@ export function useCalendarPage() {
   const [selectedBlock, setSelectedBlock] = useState<TaskTimeBlock | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isBlockMit, setIsBlockMit] = useState(false);
+  const [isBlockInPlan, setIsBlockInPlan] = useState(false);
   const [isUnscheduling, setIsUnscheduling] = useState(false);
   const [isAutoScheduling, setIsAutoScheduling] = useState(false);
   
@@ -258,17 +247,35 @@ export function useCalendarPage() {
   }, [events]);
 
   const fcEvents = useMemo<EventInput[]>(() => {
+    const todayDate = new Date(today);
+    todayDate.setHours(0, 0, 0, 0);
+
+    const isOccurrenceEditable = (occDate: string): boolean => {
+      const d = new Date(occDate);
+      d.setHours(0, 0, 0, 0);
+      const diffDays = Math.ceil((d.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24));
+      // Only allow drag if within plannable window (today ~ today+3)
+      // and the focused date's plan is not confirmed
+      if (diffDays < 0 || diffDays > 3) return false;
+      // Check if plan for that specific date is confirmed
+      const planForDate = plansInRange?.find(p => p.planDate === occDate);
+      return !planForDate?.isConfirmed;
+    };
+
     const list: EventInput[] = [
       ...(events as unknown as FixedEventOccurrence[]).map((occ) => {
         const color = occ.category?.color || fixedEventColor;
         const isAllDay = !!occ.isAllDay;
         const isFree = occ.availabilityStatus === 'FREE';
+        const occEditable = !isAllDay && isOccurrenceEditable(occ.occurrenceDate);
         return {
           id: occ.id,
           title: occ.title,
           start: isAllDay ? occ.occurrenceDate : `${occ.occurrenceDate}T${occ.startTime}`,
           end: isAllDay ? occ.occurrenceDate : `${occ.occurrenceDate}T${occ.endTime}`,
           allDay: isAllDay,
+          editable: occEditable,
+          durationEditable: occEditable,
           extendedProps: {
             occurrence: occ,
             isTimeBlock: false,
@@ -334,7 +341,7 @@ export function useCalendarPage() {
             : TASK_COLOR_REG;
 
           const blockBelongsToFocused = block.startTime.startsWith(focusedDate);
-          const blockEditable = blockBelongsToFocused && !isConfirmed;
+          const blockEditable = blockBelongsToFocused && !isConfirmed && isInPlan;
           const isBlockBusy = block.availabilityStatus === 'BUSY';
 
           return {
@@ -362,13 +369,14 @@ export function useCalendarPage() {
               isTimeBlock: true,
               isBusy: isBlockBusy,
               isFree: !isBlockBusy,
+              isInPlan,
             },
           };
         })
     );
 
     return list;
-  }, [events, allTimeBlocks, plansInRange, fixedEventColor, isConfirmed, tasks, focusedDate]);
+  }, [events, allTimeBlocks, plansInRange, fixedEventColor, isConfirmed, tasks, focusedDate, today]);
 
   const [initialView] = useState(() => {
     if (typeof window !== "undefined") {
@@ -461,6 +469,7 @@ export function useCalendarPage() {
         setSelectedBlock(block);
         setSelectedTask(task);
         setIsBlockMit(isMit);
+        setIsBlockInPlan(arg.event.extendedProps.isInPlan);
         setBlockModalOpen(true);
       }
       return;
@@ -492,7 +501,6 @@ export function useCalendarPage() {
     unscheduledTasks,
     hasUnscheduled,
     handleToggleBlockLock,
-    handleToggleEventLock,
     isAutoScheduling,
     handleAutoScheduleFromSidebar,
     modalOpen,
@@ -513,6 +521,7 @@ export function useCalendarPage() {
     selectedBlock,
     selectedTask,
     isBlockMit,
+    isBlockInPlan,
     handleUnscheduleTask,
     isUnscheduling,
     handleConfirmPlan,

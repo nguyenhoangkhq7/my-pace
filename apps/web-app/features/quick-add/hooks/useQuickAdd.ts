@@ -2,11 +2,9 @@
 
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCategories } from "@/features/board/hooks/useCategories";
-import { useGoals } from "@/features/board/hooks/useGoals";
 import { useTasks } from "@/features/board/hooks/useTasks";
 import { useAutoSchedule } from "@/features/board/hooks/useAutoSchedule";
-import { fetchClient } from "@/lib/fetchClient";
+import { fetchClient, getApiErrorMessage } from "@/lib/fetchClient";
 import type { QuickAddResult, QuickAddStatus } from "../types";
 import type { CreateEventPayload } from "@/features/calendar/types";
 
@@ -15,8 +13,6 @@ export function useQuickAdd() {
   const [status, setStatus] = useState<QuickAddStatus>("idle");
   const [error, setError] = useState<string | null>(null);
 
-  const { categories } = useCategories();
-  const { goals } = useGoals();
   const { createTask } = useTasks();
   const { triggerAutoSchedule } = useAutoSchedule();
   const queryClient = useQueryClient();
@@ -28,37 +24,13 @@ export function useQuickAdd() {
     setError(null);
     setResult(null);
 
-    const now = new Date();
-    const days = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
-
     try {
-      const res = await fetch("/api/quick-add", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text,
-          categories: categories.map((c) => ({ id: c.id, name: c.name })),
-          goals: goals
-            .filter((g) => g.status === "In Progress")
-            .map((g) => ({ id: g.id, title: g.title })),
-          currentDateTime: now.toISOString().slice(0, 19),
-          dayOfWeek: days[now.getDay()],
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        }),
-      });
+      const res = await fetchClient.post<QuickAddResult>("quick-add", { text });
 
-      const json = await res.json();
-
-      if (!res.ok) {
-        setError(json.error || "Unknown error");
-        setStatus("error");
-        return;
-      }
-
-      setResult(json.data);
+      setResult(res.data);
       setStatus("preview");
-    } catch {
-      setError("Network error");
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Network error"));
       setStatus("error");
     }
   };
@@ -70,14 +42,21 @@ export function useQuickAdd() {
 
     try {
       if (result.type === "event") {
+        const isAllDay = result.isAllDay ?? !result.startTime;
+        const inferredEndTime = result.startTime
+          ? result.endTime ?? addMinutes(result.startTime, 60)
+          : undefined;
+
         const payload: CreateEventPayload = {
           title: result.title,
           notes: result.notes ?? undefined,
-          startTime: result.startTime ? `${result.startTime}:00` : "09:00:00",
-          endTime: result.endTime ? `${result.endTime}:00` : "10:00:00",
+          startTime: isAllDay ? undefined : (result.startTime ? `${result.startTime}:00` : undefined),
+          endTime: isAllDay ? undefined : (inferredEndTime ? `${inferredEndTime}:00` : undefined),
           eventDate: result.eventDate ?? new Date().toISOString().split("T")[0],
-          isAllDay: !result.startTime,
-          recurrenceType: "NONE",
+          isAllDay,
+          recurrenceType: (result.recurrenceType as CreateEventPayload["recurrenceType"]) || "NONE",
+          recurrenceDaysOfWeek: result.recurrenceDaysOfWeek ?? undefined,
+          recurrenceEndDate: result.recurrenceEndDate ?? undefined,
           categoryId: result.categoryId ?? undefined,
         };
         await fetchClient.post("calendar/events", payload);
@@ -156,8 +135,18 @@ export function useQuickAdd() {
     toggleType,
     reset,
     updateResult,
-    categories,
-    goals,
   };
+}
+
+function addMinutes(time: string, minutes: number) {
+  const [hours, mins] = time.split(":").map(Number);
+  const totalMinutes = hours * 60 + mins + minutes;
+  const normalizedMinutes = ((totalMinutes % 1440) + 1440) % 1440;
+  const nextHours = Math.floor(normalizedMinutes / 60)
+    .toString()
+    .padStart(2, "0");
+  const nextMinutes = (normalizedMinutes % 60).toString().padStart(2, "0");
+
+  return `${nextHours}:${nextMinutes}`;
 }
 

@@ -137,7 +137,7 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
         Map<UUID, Goal> goalMap = goalRepository.findByUserId(userId)
                 .stream().collect(Collectors.toMap(Goal::getId, g -> g, (a, b) -> a));
 
-        Map<UUID, Category> categoryMap = categoryRepository.findByUserIdOrderByNameAsc(userId)
+        Map<UUID, Category> categoryMap = categoryRepository.findByUserIdWithTimeContext(userId)
                 .stream().collect(Collectors.toMap(Category::getId, c -> c, (a, b) -> a));
 
         List<LocalDate> dateRange = new ArrayList<>();
@@ -711,20 +711,11 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
                     }
                 }
 
-                List<DailyPlanTask> orphanedTasks = existingPlanTasks.stream()
-                        .filter(dpt -> !validTaskIds.contains(dpt.getTask().getId()))
-                        .collect(Collectors.toList());
-
-                if (!orphanedTasks.isEmpty()) {
-                    for (DailyPlanTask orphan : orphanedTasks) {
-                        Task orphanTask = queues.userTaskMap().get(orphan.getTask().getId());
-                        if (orphanTask != null && !"Done".equalsIgnoreCase(orphanTask.getStatus())) {
-                            orphanTask.setStatus("Backlog");
-                            taskRepository.save(orphanTask);
-                        }
-                    }
-                    dailyPlanTaskRepository.deleteAll(orphanedTasks);
-                }
+                // NOTE: We intentionally do NOT remove orphaned tasks from the plan.
+                // When there is no available slot for a task, it stays in the daily plan as
+                // "unscheduled" (no time block). The user can then decide what to do with it
+                // via the UI (e.g. drag to calendar or move back to Backlog via OverscheduledModal).
+                // Automatically removing tasks without user consent is bad UX.
 
                 Map<UUID, Integer> taskMaxParts = new HashMap<>();
                 for (TaskTimeBlock b : allBlocks) {

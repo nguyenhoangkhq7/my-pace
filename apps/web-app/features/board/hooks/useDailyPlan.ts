@@ -23,15 +23,15 @@ export function useDailyPlan(date: string, initialData?: DailyPlan | null) {
       }).then(res => res.data),
     onSuccess: async (data) => {
       queryClient.setQueryData(["dailyPlan", date], data);
+      try {
+        await fetchClient.post("auto-schedule", {});
+      } catch (e) {
+        console.error("Auto-schedule after savePlan failed", e);
+      }
       queryClient.invalidateQueries({ queryKey: ["dailyPlan"] });
       queryClient.invalidateQueries({ queryKey: ["dailyPlans"] });
       queryClient.invalidateQueries({ queryKey: ["timeBlocks"] });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      try {
-        triggerAutoSchedule();
-      } catch (e) {
-        console.error("Auto-schedule after savePlan failed", e);
-      }
     },
   });
 

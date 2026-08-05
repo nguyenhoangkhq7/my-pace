@@ -34,7 +34,7 @@ export function EisenhowerQuadrant({
     if (isPlanningMode && plannedTaskIds.includes(t.id)) {
       return false;
     }
-    return t.status === "Backlog" || t.status === "Picked for Today";
+    return t.status === "Backlog";
   });
   
   if (selectedFilterId === "goal") {

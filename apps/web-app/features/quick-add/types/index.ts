@@ -25,6 +25,10 @@ export interface QuickAddEventResult {
   endTime: string | null;
   categoryId: string | null;
   notes: string | null;
+  isAllDay?: boolean;
+  recurrenceType?: "NONE" | "DAILY" | "WEEKLY" | null;
+  recurrenceDaysOfWeek?: number[] | null;
+  recurrenceEndDate?: string | null;
 }
 
 export type QuickAddResult = QuickAddTaskResult | QuickAddEventResult;

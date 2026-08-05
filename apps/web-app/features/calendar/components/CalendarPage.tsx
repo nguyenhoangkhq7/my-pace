@@ -37,7 +37,6 @@ export function CalendarPage() {
     unscheduledTasks,
     hasUnscheduled,
     handleToggleBlockLock,
-    handleToggleEventLock,
     isAutoScheduling,
     handleAutoScheduleFromSidebar,
     modalOpen,
@@ -58,6 +57,7 @@ export function CalendarPage() {
     selectedBlock,
     selectedTask,
     isBlockMit,
+    isBlockInPlan,
     handleUnscheduleTask,
     isUnscheduling,
     handleConfirmPlan,
@@ -167,7 +167,6 @@ export function CalendarPage() {
         defaultStart={modalDefaults.start}
         defaultEnd={modalDefaults.end}
         occurrence={editOccurrence}
-        onToggleLock={handleToggleEventLock}
         onClose={() => setModalOpen(false)}
         createEvent={createEvent}
         updateAllOccurrences={updateAllOccurrences}
@@ -183,7 +182,7 @@ export function CalendarPage() {
         block={selectedBlock}
         task={selectedTask}
         isMit={isBlockMit}
-        isConfirmed={isConfirmed}
+        isConfirmed={isConfirmed || !isBlockInPlan}
         onClose={() => setBlockModalOpen(false)}
         onUnschedule={handleUnscheduleTask}
         onToggleLock={handleToggleBlockLock}

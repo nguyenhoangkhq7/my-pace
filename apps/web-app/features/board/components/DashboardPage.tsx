@@ -15,8 +15,6 @@ export interface DashboardPageProps {
   initialData: {
     currentDate: string;
     tomorrowDate: string;
-    day2Date: string;
-    day3Date: string;
   };
 }
 
@@ -35,7 +33,7 @@ function isPastSleepTime(sleepTime?: string | null): boolean {
 }
 
 export function DashboardPage({ 
-  initialData: { currentDate, tomorrowDate, day2Date, day3Date } 
+  initialData: { currentDate, tomorrowDate } 
 }: DashboardPageProps) {
   useAppVisibility();
   const user = useAuthStore((s) => s.user);
@@ -76,16 +74,12 @@ export function DashboardPage({
           <BacklogMatrix 
             currentDate={currentDate} 
             tomorrowDate={tomorrowDate} 
-            day2Date={day2Date}
-            day3Date={day3Date}
           />
         </div>
         <div className="min-h-0 h-full">
           <ExecutionBoard 
             currentDate={currentDate} 
             tomorrowDate={tomorrowDate} 
-            day2Date={day2Date}
-            day3Date={day3Date}
           />
         </div>
       </div>

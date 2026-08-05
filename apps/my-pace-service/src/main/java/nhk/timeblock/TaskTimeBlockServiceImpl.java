@@ -196,7 +196,22 @@ public class TaskTimeBlockServiceImpl implements TaskTimeBlockService {
             block.setAvailabilityStatus(request.availabilityStatus().toUpperCase());
         }
 
-        return toDto(timeBlockRepository.save(block));
+        TaskTimeBlock savedBlock = timeBlockRepository.save(block);
+
+        // Recalculate total estimated minutes for the task
+        List<TaskTimeBlock> allBlocks = timeBlockRepository.findByTaskId(block.getTaskId());
+        long totalMinutes = 0;
+        for (TaskTimeBlock b : allBlocks) {
+            totalMinutes += java.time.Duration.between(b.getStartTime(), b.getEndTime()).toMinutes();
+        }
+
+        Task task = taskRepository.findById(block.getTaskId()).orElse(null);
+        if (task != null) {
+            task.setEstimatedMinutes((int) totalMinutes);
+            taskRepository.save(task);
+        }
+
+        return toDto(savedBlock);
     }
 
     private TaskTimeBlockDto toDto(TaskTimeBlock block) {

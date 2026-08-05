@@ -7,6 +7,8 @@ import nhk.auth.InvalidOtpException;
 import nhk.auth.InvalidTokenException;
 import nhk.goal.GoalLimitExceededException;
 import nhk.mail.EmailSendingException;
+import nhk.quickadd.QuickAddExternalServiceException;
+import nhk.quickadd.QuickAddParseException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -100,6 +102,18 @@ public class GlobalExceptionHandler {
    public ResponseEntity<ErrorResponse> handleEmailSendingException(EmailSendingException ex) {
       log.error("Error sending email: ", ex);
       return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "There is error while sending email");
+   }
+
+   @ExceptionHandler(QuickAddExternalServiceException.class)
+   public ResponseEntity<ErrorResponse> handleQuickAddExternalServiceException(QuickAddExternalServiceException ex) {
+      log.error("Quick add external service error: ", ex);
+      return buildResponse(HttpStatus.BAD_GATEWAY, ex.getMessage());
+   }
+
+   @ExceptionHandler(QuickAddParseException.class)
+   public ResponseEntity<ErrorResponse> handleQuickAddParseException(QuickAddParseException ex) {
+      log.error("Quick add parse error: ", ex);
+      return buildResponse(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
    }
 
    @ExceptionHandler(NullPointerException.class)

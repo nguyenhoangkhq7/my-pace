@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RecurringActionDialog } from "./RecurringActionDialog";
 import { EventDateTimeRow } from "./EventDateTimeRow";
 import { RecurrenceSelector } from "./RecurrenceSelector";
@@ -19,7 +20,7 @@ import { useEventForm, UseEventFormProps } from "../hooks/useEventForm";
 import { useTranslation } from "@/hooks/use-translation";
 import type { FixedEventOccurrence } from "../types";
 
-export function EventModal(props: UseEventFormProps & { onToggleLock?: (occ: FixedEventOccurrence, status: string) => Promise<void> }) {
+export function EventModal(props: UseEventFormProps) {
   const {
     open,
     mode,
@@ -51,6 +52,8 @@ export function EventModal(props: UseEventFormProps & { onToggleLock?: (occ: Fix
     error,
     recurringDialog,
     isRecurring,
+    availabilityStatus,
+    setAvailabilityStatus,
 
     // Handlers
     toggleDay,
@@ -105,6 +108,20 @@ export function EventModal(props: UseEventFormProps & { onToggleLock?: (occ: Fix
               />
             </div>
 
+            {/* Availability Status */}
+            <div className="flex flex-col gap-1.5">
+              <Label>{t.calendar.showAs}</Label>
+              <Select value={availabilityStatus} onValueChange={setAvailabilityStatus}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t.calendar.selectStatus} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="BUSY">{t.calendar.statusBusy}</SelectItem>
+                  <SelectItem value="FREE">{t.calendar.statusFree}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Date + Times row */}
             <EventDateTimeRow
               date={date}
@@ -141,24 +158,13 @@ export function EventModal(props: UseEventFormProps & { onToggleLock?: (occ: Fix
           </div>
 
           <DialogFooter className="flex-col sm:flex-row gap-2 pt-2">
-            {mode === "edit" && props.onToggleLock && props.occurrence && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => props.onToggleLock!(props.occurrence!, props.occurrence!.availabilityStatus || 'BUSY')}
-                disabled={isSubmitting}
-                className="w-full sm:w-auto mr-auto"
-              >
-                {props.occurrence.availabilityStatus === 'BUSY' ? 'Mở khóa (Unlock)' : 'Khóa (Lock)'}
-              </Button>
-            )}
             {mode === "edit" && (
               <Button
                 variant="destructive"
                 size="sm"
                 onClick={handleDeleteClick}
                 disabled={isSubmitting}
-                className={props.onToggleLock && props.occurrence ? "sm:ml-2" : "sm:mr-auto"}
+                className="sm:mr-auto"
               >
                 {t.calendar.deleteBtn}
               </Button>

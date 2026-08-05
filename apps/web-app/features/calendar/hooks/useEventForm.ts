@@ -54,6 +54,7 @@ export function useEventForm({
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const [recurrenceEndDate, setRecurrenceEndDate] = useState("");
   const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
+  const [availabilityStatus, setAvailabilityStatus] = useState<string>("BUSY");
 
   // ── UI State ───────────────────────────────────────────────────────────────
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -80,6 +81,7 @@ export function useEventForm({
         setSelectedDays(occurrence.recurrenceDaysOfWeek ?? []);
         setRecurrenceEndDate(occurrence.recurrenceEndDate ?? "");
         setCategoryId(occurrence.categoryId ?? occurrence.category?.id ?? undefined);
+        setAvailabilityStatus(occurrence.availabilityStatus || "BUSY");
       } else {
         // Create mode — use drag-select defaults
         setTitle("");
@@ -92,6 +94,7 @@ export function useEventForm({
         setSelectedDays([]);
         setRecurrenceEndDate("");
         setCategoryId(undefined);
+        setAvailabilityStatus("BUSY");
       }
       setError(null);
     });
@@ -125,6 +128,7 @@ export function useEventForm({
         : undefined,
     recurrenceEndDate: recurrenceEndDate || undefined,
     categoryId: categoryId || undefined,
+    availabilityStatus: availabilityStatus,
   });
 
   const validate = (): boolean => {
@@ -208,6 +212,7 @@ export function useEventForm({
       overrideEndTime: isAllDay ? undefined : `${endTime}:00`,
       overrideIsAllDay: isAllDay,
       overrideCategoryId: categoryId || null,
+      overrideAvailabilityStatus: availabilityStatus,
     };
     try {
       await updateSingleOccurrence(occurrence.seriesId, occurrence.occurrenceDate, payload);
@@ -302,6 +307,8 @@ export function useEventForm({
     setRecurrenceEndDate,
     categoryId,
     setCategoryId,
+    availabilityStatus,
+    setAvailabilityStatus,
     isSubmitting,
     error,
     recurringDialog,

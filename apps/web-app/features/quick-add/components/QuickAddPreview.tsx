@@ -157,8 +157,8 @@ export function QuickAddPreview({
         </div>
       )}
 
-      {/* Category & Goal */}
-      {(category || goal) && (
+      {/* Category & Goal & Recurrence */}
+      {(category || goal || (result.type === "event" && result.recurrenceType && result.recurrenceType !== "NONE")) && (
         <div className="flex gap-2 flex-wrap">
           {category && (
             <span className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-md bg-muted/60 text-foreground">
@@ -170,6 +170,12 @@ export function QuickAddPreview({
             <span className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-md bg-muted/60 text-foreground">
               <HugeiconsIcon icon={Target01Icon} className="h-3 w-3 text-primary" />
               {goal.title}
+            </span>
+          )}
+          {result.type === "event" && result.recurrenceType && result.recurrenceType !== "NONE" && (
+            <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-blue-500/10 text-blue-400 font-medium">
+              <HugeiconsIcon icon={Calendar03Icon} className="h-3 w-3" />
+              {result.recurrenceType === "DAILY" ? "Lặp hàng ngày" : "Lặp hàng tuần"}
             </span>
           )}
         </div>

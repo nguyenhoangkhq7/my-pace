@@ -11,13 +11,17 @@ import { QuickAddPreview } from "./QuickAddPreview";
 import { QuickAddForm } from "./QuickAddForm";
 import { useQuickAdd } from "../hooks/useQuickAdd";
 import { useQuickAddUIStore } from "../store/quickAddUI.store";
+import { useCategories } from "@/features/board/hooks/useCategories";
+import { useGoals } from "@/features/board/hooks/useGoals";
 import { useState } from "react";
 
 export function QuickAddPalette() {
   const { isOpen, open, close } = useQuickAddUIStore();
   const [isEditing, setIsEditing] = useState(false);
   const { t } = useTranslation();
-  const { result, status, error, parseText, confirmCreate, toggleType, reset, categories, goals } = useQuickAdd();
+  const { result, status, error, parseText, confirmCreate, toggleType, reset } = useQuickAdd();
+  const { categories } = useCategories();
+  const { goals } = useGoals();
 
   // Global "/" shortcut — only when not focused on input/textarea
   useEffect(() => {
@@ -70,7 +74,7 @@ export function QuickAddPalette() {
   return (
     <Dialog open={isOpen} onOpenChange={(v) => (v ? open() : handleClose())}>
       <DialogContent
-        className="sm:max-w-[520px] !top-[20%] !-translate-y-0 p-0 gap-0 bg-background/95 backdrop-blur-xl border-border/50 shadow-2xl"
+        className="sm:max-w-[680px] !top-[20%] !-translate-y-0 p-0 gap-0 bg-background/95 backdrop-blur-xl border-border/50 shadow-2xl"
         showCloseButton={false}
       >
         <VisuallyHidden.Root>

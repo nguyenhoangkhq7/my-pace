@@ -211,7 +211,9 @@ export function useCalendarInteractions({
   const handleEventResize = useCallback(
     async (info: EventResizeDoneArg) => {
       const blockId = info.event.extendedProps?.blockId as string | undefined;
-      if (!blockId) {
+      const occ = info.event.extendedProps?.occurrence as FixedEventOccurrence | undefined;
+
+      if (!blockId && !occ) {
         info.revert();
         return;
       }
@@ -229,20 +231,75 @@ export function useCalendarInteractions({
         return;
       }
 
-      try {
-        await updateTimeBlock(blockId, {
-          startTime: toLocalISOString(startTime),
-          endTime: toLocalISOString(endTime),
-          availabilityStatus: "BUSY"
-        });
-        toast.success("Đã cập nhật thời lượng!");
-        triggerAutoSchedule();
-      } catch {
-        info.revert();
-        toast.error("Không thể cập nhật thời lượng.");
+      if (blockId) {
+        try {
+          await updateTimeBlock(blockId, {
+            startTime: toLocalISOString(startTime),
+            endTime: toLocalISOString(endTime),
+            availabilityStatus: "BUSY"
+          });
+          
+          // Optimistically update the task's estimatedMinutes in dailyPlan so the modal is instantly correct
+          const taskId = info.event.extendedProps?.taskId as string | undefined;
+          if (taskId && dailyPlanToday) {
+            const startMs = startTime.getTime();
+            const endMs = endTime.getTime();
+            const durationMins = Math.round((endMs - startMs) / 60000);
+            
+            queryClient.setQueryData(['dailyPlan', dailyPlanToday.planDate], (old: DailyPlan | undefined) => {
+              if (!old) return old;
+              return {
+                ...old,
+                tasks: old.tasks.map(pt => pt.task.id === taskId ? {
+                  ...pt,
+                  task: { ...pt.task, estimatedMinutes: durationMins }
+                } : pt)
+              };
+            });
+          }
+
+          queryClient.invalidateQueries({ queryKey: ['tasks'] }); 
+          queryClient.invalidateQueries({ queryKey: ['dailyPlan'] });
+          queryClient.invalidateQueries({ queryKey: ['dailyPlans'] });
+          
+          toast.success("Đã cập nhật thời lượng!");
+          triggerAutoSchedule();
+        } catch {
+          info.revert();
+          toast.error("Không thể cập nhật thời lượng.");
+        }
+      } else if (occ) {
+        const pad = (n: number) => String(n).padStart(2, "0");
+        const newStartTimeStr = `${pad(startTime.getHours())}:${pad(startTime.getMinutes())}:00`;
+        const newEndTimeStr = `${pad(endTime.getHours())}:${pad(endTime.getMinutes())}:00`;
+
+        try {
+          const categoryId = occ.categoryId ?? occ.category?.id ?? undefined;
+          if (occ.recurrenceType === "NONE") {
+            await updateAllOccurrences(occ.seriesId, {
+              title: occ.title,
+              notes: occ.notes || undefined,
+              startTime: newStartTimeStr.substring(0, 5),
+              endTime: newEndTimeStr.substring(0, 5),
+              eventDate: occ.occurrenceDate,
+              recurrenceType: "NONE",
+              categoryId,
+            });
+          } else {
+            await updateSingleOccurrence(occ.seriesId, occ.occurrenceDate, {
+              overrideStartTime: newStartTimeStr,
+              overrideEndTime: newEndTimeStr,
+            });
+          }
+          toast.success("Đã cập nhật thời lượng!");
+          triggerAutoSchedule();
+        } catch {
+          info.revert();
+          toast.error("Không thể cập nhật thời lượng.");
+        }
       }
     },
-    [updateTimeBlock, isConfirmed, triggerAutoSchedule]
+    [updateTimeBlock, updateAllOccurrences, updateSingleOccurrence, isConfirmed, triggerAutoSchedule, queryClient]
   );
 
   const handleEventDragStop = useCallback(
