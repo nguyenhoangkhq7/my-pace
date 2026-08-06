@@ -24,9 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Transactional
 @TestPropertySource(properties = {
     "RESEND_API_KEY=test-api-key",
-    "JWT_SECRET=test-jwt-secret-with-at-least-256-bits-length-so-it-does-not-fail-validation",
-    "spring.flyway.enabled=false",
-    "spring.jpa.hibernate.ddl-auto=create-drop"
+    "JWT_SECRET=test-jwt-secret-with-at-least-256-bits-length-so-it-does-not-fail-validation"
 })
 class CategoryIntegrationTest {
 
