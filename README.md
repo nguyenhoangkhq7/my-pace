@@ -73,8 +73,8 @@ flowchart TD
 
 ### **Backend (`apps/my-pace-service`)**
 - **Framework:** Spring Boot 4.x, Java 21, Maven
-- **Database & Cache:** PostgreSQL 16 (Spring Data JPA), Redis 7 (Token Blacklist & Caching)
-- **Security:** JWT Authentication (`jjwt`), BCrypt, Redis Session Blacklist
+- **Database & Cache:** PostgreSQL 16 (Spring Data JPA), Spring ConcurrentMapCache
+- **Security:** JWT Authentication (`jjwt`), BCrypt
 - **Mappers & Tools:** MapStruct, Lombok
 
 ### **Orchestration & DevOps**

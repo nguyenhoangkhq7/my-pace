@@ -21,7 +21,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.MethodParameter;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -67,9 +66,6 @@ class StatsIntegrationTest {
 
     @Autowired
     private DailyCheckinRepository dailyCheckinRepository;
-
-    @MockitoBean
-    private StringRedisTemplate redisTemplate;
 
     @MockitoBean
     private SendOtpMailService sendOtpMailService;
