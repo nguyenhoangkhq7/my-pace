@@ -542,18 +542,78 @@ export function SoundscapePlayer() {
     window.addEventListener("resize", updateRect);
     window.addEventListener("scroll", updateRect, true);
 
-    let resizeObserver: ResizeObserver | null = null;
-    if (cardRef.current && typeof ResizeObserver !== "undefined") {
-      resizeObserver = new ResizeObserver(() => updateRect());
-      resizeObserver.observe(cardRef.current);
+    const resizeObservers: ResizeObserver[] = [];
+    if (typeof ResizeObserver !== "undefined") {
+      if (cardRef.current) {
+        const ro1 = new ResizeObserver(() => updateRect());
+        ro1.observe(cardRef.current);
+        resizeObservers.push(ro1);
+
+        const panel = cardRef.current.closest("#zenzone-panel") || cardRef.current.parentElement;
+        if (panel) {
+          const ro2 = new ResizeObserver(() => updateRect());
+          ro2.observe(panel);
+          resizeObservers.push(ro2);
+        }
+      }
     }
 
     return () => {
       window.removeEventListener("resize", updateRect);
       window.removeEventListener("scroll", updateRect, true);
-      if (resizeObserver) resizeObserver.disconnect();
+      resizeObservers.forEach((ro) => ro.disconnect());
     };
   }, [isBgModeActive, isZenFull]);
+
+  const computePortalStyle = (): React.CSSProperties => {
+    if (!cardRect) {
+      return { top: 0, left: 0, width: 0, height: 0, opacity: 0, pointerEvents: "none" };
+    }
+
+    const panel = typeof document !== "undefined" ? document.querySelector("#zenzone-panel") : null;
+    const panelRect = panel ? panel.getBoundingClientRect() : null;
+    const isPanelCollapsed =
+      panel?.getAttribute("data-state") === "collapsed" ||
+      (panelRect && panelRect.width < 100);
+
+    if (isPanelCollapsed) {
+      return { top: 0, left: 0, width: 0, height: 0, opacity: 0, pointerEvents: "none" };
+    }
+
+    if (panelRect) {
+      const visibleLeft = Math.max(cardRect.left, panelRect.left);
+      const visibleRight = Math.min(cardRect.right, panelRect.right);
+      const visibleWidth = Math.max(0, visibleRight - visibleLeft);
+
+      const visibleTop = Math.max(cardRect.top, panelRect.top);
+      const visibleBottom = Math.min(cardRect.bottom, panelRect.bottom);
+      const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+
+      if (visibleWidth < 80 || visibleHeight < 40) {
+        return { top: 0, left: 0, width: 0, height: 0, opacity: 0, pointerEvents: "none" };
+      }
+
+      return {
+        top: `${visibleTop}px`,
+        left: `${visibleLeft}px`,
+        width: `${visibleWidth}px`,
+        height: `${visibleHeight}px`,
+        opacity: 1,
+      };
+    }
+
+    if (cardRect.width > 80 && cardRect.top < window.innerHeight && cardRect.bottom > 0) {
+      return {
+        top: `${cardRect.top}px`,
+        left: `${cardRect.left}px`,
+        width: `${cardRect.width}px`,
+        height: `${cardRect.height}px`,
+        opacity: 1,
+      };
+    }
+
+    return { top: 0, left: 0, width: 0, height: 0, opacity: 0, pointerEvents: "none" };
+  };
 
   const portalContent = mounted && typeof document !== "undefined"
     ? createPortal(
@@ -566,26 +626,7 @@ export function SoundscapePlayer() {
             !isBgModeActive && isZenFull && "rounded-2xl border border-border/30 shadow-[0_8px_40px_rgba(0,0,0,0.35)]",
             !isBgModeActive && !isZenFull && "rounded-xl border border-border shadow-[0_4px_20px_rgba(0,0,0,0.15)] group"
           )}
-          style={
-            isBgModeActive
-              ? undefined
-              : cardRect && cardRect.width > 0 && cardRect.top < window.innerHeight && cardRect.bottom > 0
-              ? {
-                  top: `${cardRect.top}px`,
-                  left: `${cardRect.left}px`,
-                  width: `${cardRect.width}px`,
-                  height: `${cardRect.height}px`,
-                  opacity: 1,
-                }
-              : {
-                  top: 0,
-                  left: 0,
-                  width: 0,
-                  height: 0,
-                  opacity: 0,
-                  pointerEvents: "none",
-                }
-          }
+          style={computePortalStyle()}
         >
           {/* Inner Video Container holding containerRef - NEVER UNMOUNTS */}
           <div

@@ -9,14 +9,10 @@ import { useBoardStore } from "../store/board.store";
 
 export function BacklogMatrix({ 
   currentDate, 
-  tomorrowDate,
-  day2Date,
-  day3Date
+  tomorrowDate
 }: { 
   currentDate: string;
   tomorrowDate: string;
-  day2Date: string;
-  day3Date: string;
 }) {
   const { t } = useTranslation();
 
@@ -39,7 +35,7 @@ export function BacklogMatrix({
     handleTaskClick,
     handleTaskDrop,
     handleMissingDurationSubmit,
-  } = useBacklogMatrix(currentDate, tomorrowDate, day2Date, day3Date);
+  } = useBacklogMatrix(currentDate, tomorrowDate);
 
   const openTaskModal = useBoardStore(s => s.openTaskModal);
   const closeTaskModal = useBoardStore(s => s.closeTaskModal);

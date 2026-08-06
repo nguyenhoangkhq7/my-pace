@@ -53,7 +53,7 @@ public class FixedEventController {
      * PUT /api/calendar/events/{id}
      * Updates the entire series and clears all exceptions.
      */
-    @PutMapping("/events/{id}")
+    @PutMapping({"/events/{id}", "/events/{id}/all"})
     public ResponseEntity<FixedEventResponse> updateAllOccurrences(
             @AuthenticationPrincipal UserDetailsCustom principal,
             @PathVariable UUID id,
@@ -65,7 +65,10 @@ public class FixedEventController {
      * PATCH /api/calendar/events/{id}/exceptions/{date}
      * Updates (or creates) an exception for one specific occurrence date.
      */
-    @PatchMapping("/events/{id}/exceptions/{date}")
+    @RequestMapping(
+            value = {"/events/{id}/exceptions/{date}", "/events/{id}/occurrences/{date}"},
+            method = {RequestMethod.PUT, RequestMethod.PATCH}
+    )
     public ResponseEntity<FixedEventResponse> updateSingleOccurrence(
             @AuthenticationPrincipal UserDetailsCustom principal,
             @PathVariable UUID id,
@@ -76,10 +79,23 @@ public class FixedEventController {
     }
 
     /**
+     * PUT /api/calendar/events/{id}/from/{date}
+     * Updates this occurrence and all future occurrences (splits series).
+     */
+    @PutMapping("/events/{id}/from/{date}")
+    public ResponseEntity<FixedEventResponse> updateFromDateOnwards(
+            @AuthenticationPrincipal UserDetailsCustom principal,
+            @PathVariable UUID id,
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @Valid @RequestBody FixedEventRequest request) {
+        return ResponseEntity.ok(service.updateFromDateOnwards(principal.user().getId(), id, date, request));
+    }
+
+    /**
      * DELETE /api/calendar/events/{id}
      * Deletes the entire recurring series (and all its exceptions via CASCADE).
      */
-    @DeleteMapping("/events/{id}")
+    @DeleteMapping({"/events/{id}", "/events/{id}/all"})
     public ResponseEntity<Void> deleteAllOccurrences(
             @AuthenticationPrincipal UserDetailsCustom principal,
             @PathVariable UUID id) {
@@ -91,7 +107,7 @@ public class FixedEventController {
      * DELETE /api/calendar/events/{id}/exceptions/{date}
      * Soft-deletes one specific occurrence of a recurring series.
      */
-    @DeleteMapping("/events/{id}/exceptions/{date}")
+    @DeleteMapping({"/events/{id}/exceptions/{date}", "/events/{id}/occurrences/{date}"})
     public ResponseEntity<Void> deleteSingleOccurrence(
             @AuthenticationPrincipal UserDetailsCustom principal,
             @PathVariable UUID id,
@@ -99,6 +115,20 @@ public class FixedEventController {
         service.deleteSingleOccurrence(principal.user().getId(), id, date);
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * DELETE /api/calendar/events/{id}/from/{date}
+     * Deletes this occurrence and all future occurrences.
+     */
+    @DeleteMapping("/events/{id}/from/{date}")
+    public ResponseEntity<Void> deleteFromDateOnwards(
+            @AuthenticationPrincipal UserDetailsCustom principal,
+            @PathVariable UUID id,
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        service.deleteFromDateOnwards(principal.user().getId(), id, date);
+        return ResponseEntity.noContent().build();
+    }
+
 
     // ─── Available Time & Checkin ─────────────────────────────────────────────
 

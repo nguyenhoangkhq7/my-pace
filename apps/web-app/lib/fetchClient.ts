@@ -137,12 +137,6 @@ const request = async <T>(endpoint: string, options: RequestOptions): Promise<Ap
             throw error;
         }
 
-        const hasToken = Boolean(getAccessToken());
-
-        if (!hasToken) {
-            throw error;
-        }
-
         const refreshedSession = await refreshAccessToken();
 
         if (!refreshedSession) {
@@ -160,7 +154,7 @@ export function get<T>(endpoint: string, options: RequestInit = {}) {
     return request<T>(endpoint, { ...options, method: 'GET' });
 }
 
-export function post<T, D>(endpoint: string, body: D, options: RequestInit = {}) {
+export function post<T, D = unknown>(endpoint: string, body: D, options: RequestInit = {}) {
     const isFormData = body instanceof FormData;
     return request<T>(endpoint, {
         ...options,
@@ -169,7 +163,7 @@ export function post<T, D>(endpoint: string, body: D, options: RequestInit = {})
     });
 }
 
-export function patch<T, D>(endpoint: string, body: D, options: RequestInit = {}) {
+export function patch<T, D = unknown>(endpoint: string, body: D, options: RequestInit = {}) {
     const isFormData = body instanceof FormData;
     return request<T>(endpoint, {
         ...options,
@@ -178,7 +172,7 @@ export function patch<T, D>(endpoint: string, body: D, options: RequestInit = {}
     });
 }
 
-export function put<T, D>(endpoint: string, body: D, options: RequestInit = {}) {
+export function put<T, D = unknown>(endpoint: string, body: D, options: RequestInit = {}) {
     const isFormData = body instanceof FormData;
     return request<T>(endpoint, {
         ...options,

@@ -37,16 +37,26 @@ function isSameYouTubeSource(url1: string | null, url2: string | null): boolean 
   return false;
 }
 
+export interface ActiveTimeBlockInfo {
+  id?: string;
+  startTime: string;
+  endTime: string;
+  partIndex: number;
+  totalParts: number;
+  durationMinutes: number;
+}
+
 interface FocusState {
   // Session config
   focusMinutes: number;
   breakMinutes: number;
   soundEnabled: boolean;
   
-  // Current active task
+  // Current active task & timeblock
   activeTaskId: string | null;
   activePlanTaskId: string | null;
   activeTaskEstimatedMinutes: number;
+  activeTimeBlockInfo: ActiveTimeBlockInfo | null;
   
   // Pomodoro runtime state
   pomodoroState: PomodoroState;
@@ -85,6 +95,11 @@ interface FocusState {
   isFlowFullscreen: boolean;
   toggleFlowFullscreen: () => void;
 
+  // Soundscape Controller Bar visibility (persisted)
+  isControllerBarVisible: boolean;
+  toggleControllerBar: () => void;
+  setControllerBarVisible: (visible: boolean) => void;
+
   // Video Background mode (plays YouTube soundscape video as full viewport background)
   isVideoBackground: boolean;
   videoBgOpacity: number; // 10 to 95
@@ -108,7 +123,13 @@ interface FocusState {
   addToHistory: (url: string, title: string) => void;
   removeFromHistory: (url: string) => void;
   updateHistoryTitle: (url: string, newTitle: string) => void;
-  openFocusMode: (taskId: string, planTaskId: string, estimatedMinutes: number, alreadyWorkedMinutes?: number) => void;
+  openFocusMode: (
+    taskId: string,
+    planTaskId: string,
+    estimatedMinutes: number,
+    alreadyWorkedMinutes?: number,
+    timeBlockInfo?: ActiveTimeBlockInfo | null
+  ) => void;
   closeFocusMode: () => void;
 
   // Playback Control Actions
@@ -139,6 +160,7 @@ interface FocusState {
   pauseTimer: () => void;
   resumeTimer: (previousState: "focusing" | "breaking") => void;
   tick: (seconds: number) => void;
+  seekTimer: (deltaSeconds: number) => void;
   transitionToBreak: () => void;
   transitionToFocus: () => void;
   completeAllSessions: () => void;
@@ -156,6 +178,7 @@ export const useFocusStore = create<FocusState>()(
       activeTaskId: null,
       activePlanTaskId: null,
       activeTaskEstimatedMinutes: 25,
+      activeTimeBlockInfo: null,
       pomodoroState: "idle",
       timeLeft: 0,
       currentSession: 1,
@@ -249,6 +272,10 @@ export const useFocusStore = create<FocusState>()(
       setIsSettingsOpen: (open) => set({ isSettingsOpen: open }),
       setZenFull: (value) => set({ isZenFull: value }),
       toggleFlowFullscreen: () => set((state) => ({ isFlowFullscreen: !state.isFlowFullscreen })),
+      isControllerBarVisible: true,
+      toggleControllerBar: () => set((state) => ({ isControllerBarVisible: !state.isControllerBarVisible })),
+      setControllerBarVisible: (visible) => set({ isControllerBarVisible: visible }),
+
       isVideoBackground: false,
       videoBgOpacity: 75,
       videoBgBlur: 2,
@@ -275,7 +302,7 @@ export const useFocusStore = create<FocusState>()(
         )
       })),
       
-      openFocusMode: (taskId, planTaskId, estimatedMinutes, alreadyWorkedMinutes = 0) => {
+      openFocusMode: (taskId, planTaskId, estimatedMinutes, alreadyWorkedMinutes = 0, timeBlockInfo = null) => {
         const { focusMinutes } = get();
         // Calculate total sessions and current session index based on total estimated time
         const totalSessions = Math.max(1, Math.ceil(estimatedMinutes / focusMinutes));
@@ -285,6 +312,7 @@ export const useFocusStore = create<FocusState>()(
           activeTaskId: taskId,
           activePlanTaskId: planTaskId,
           activeTaskEstimatedMinutes: estimatedMinutes,
+          activeTimeBlockInfo: timeBlockInfo ?? null,
           pomodoroState: "idle",
           currentSession,
           totalSessions,
@@ -298,6 +326,7 @@ export const useFocusStore = create<FocusState>()(
         set({
           activeTaskId: null,
           activePlanTaskId: null,
+          activeTimeBlockInfo: null,
           pomodoroState: "idle",
           lastActiveTimestamp: 0
         });
@@ -332,6 +361,13 @@ export const useFocusStore = create<FocusState>()(
             lastActiveTimestamp: Date.now()
           };
         });
+      },
+
+      seekTimer: (deltaSeconds) => {
+        const { timeLeft, pomodoroState } = get();
+        if (pomodoroState === "idle" || pomodoroState === "finished") return;
+        const newTimeLeft = Math.max(0, timeLeft - deltaSeconds);
+        set({ timeLeft: newTimeLeft, lastActiveTimestamp: Date.now() });
       },
 
       transitionToBreak: () => {
@@ -469,6 +505,7 @@ export const useFocusStore = create<FocusState>()(
         activeVideoTitle: state.activeVideoTitle,
         activeVideoAuthor: state.activeVideoAuthor,
         activeVideoId: state.activeVideoId,
+        isControllerBarVisible: state.isControllerBarVisible,
         isVideoBackground: state.isVideoBackground,
         videoBgOpacity: state.videoBgOpacity,
         videoBgBlur: state.videoBgBlur,

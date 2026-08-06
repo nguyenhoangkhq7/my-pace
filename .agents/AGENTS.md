@@ -79,7 +79,7 @@ Mọi Agent khi làm việc với UI components (tạo mới hoặc refactor) ph
 - **+15m Buffer:** Lên lịch ngày hôm nay tính từ `Hiện tại + 15 phút`. Ngày mai tính từ `Giờ thức dậy + 15 phút`. Tách biệt State `dataToday` và `dataTomorrow`.
 
 ### Timeboxing & Daily Lifecycle
-- **Auto-Schedule:** Thuật toán ở client, ưu tiên Q1 > Q2 > Q3 > Q4. Chia khối tối thiểu 30 phút. Bỏ qua gap < 30 phút.
+- **Auto-Schedule:** Thuật toán xử lý tập trung hoàn toàn ở Backend (`ReclaimAutoScheduleServiceImpl`), ưu tiên Q1 > Q2 > Q3 > Q4. Chia khối tối thiểu 30 phút. Bỏ qua gap < 30 phút. Client gọi API `POST /api/daily-plans/auto-schedule-week`.
 - **Execution Mode (isConfirmed):** Khi đã chốt lịch, khóa UI (ẩn nút thêm/sửa/xóa task).
 - **Read-Only Board:** Tab "Hôm nay" chỉ đọc. Việc hoàn thành task phải đi qua tab "Flow" để tận hưởng màn hình ăn mừng khi xong hết việc.
 - **Backend Coding:** Controller mỏng, đẩy logic vào Service. Dùng MapStruct mapper và Lombok boilerplate. Dùng `@RequiredArgsConstructor`.

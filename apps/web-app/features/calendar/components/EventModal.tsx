@@ -11,9 +11,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RecurringActionDialog } from "./RecurringActionDialog";
 import { EventDateTimeRow } from "./EventDateTimeRow";
 import { RecurrenceSelector } from "./RecurrenceSelector";
+import { FixedEventCategorySelector } from "./FixedEventCategorySelector";
 import { useEventForm, UseEventFormProps } from "../hooks/useEventForm";
 import { useTranslation } from "@/hooks/use-translation";
 
@@ -36,23 +38,31 @@ export function EventModal(props: UseEventFormProps) {
     setStartTime,
     endTime,
     setEndTime,
+    isAllDay,
+    setIsAllDay,
     recurrenceType,
     setRecurrenceType,
     selectedDays,
     recurrenceEndDate,
     setRecurrenceEndDate,
+    categoryId,
+    setCategoryId,
     isSubmitting,
     error,
     recurringDialog,
     isRecurring,
+    availabilityStatus,
+    setAvailabilityStatus,
 
     // Handlers
     toggleDay,
     handleSaveClick,
     handleDeleteClick,
     submitUpdateSingle,
+    submitUpdateFollowing,
     submitUpdateAll,
     submitDeleteSingle,
+    submitDeleteFollowing,
     submitDeleteAll,
     handleCancelRecurringDialog,
   } = useEventForm(props);
@@ -79,6 +89,12 @@ export function EventModal(props: UseEventFormProps) {
               />
             </div>
 
+            {/* Category */}
+            <FixedEventCategorySelector
+              categoryId={categoryId}
+              onCategoryChange={setCategoryId}
+            />
+
             {/* Notes */}
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="evt-notes">{t.calendar.notesLabel}</Label>
@@ -91,6 +107,20 @@ export function EventModal(props: UseEventFormProps) {
               />
             </div>
 
+            {/* Availability Status */}
+            <div className="flex flex-col gap-1.5">
+              <Label>{t.calendar.showAs}</Label>
+              <Select value={availabilityStatus} onValueChange={setAvailabilityStatus}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t.calendar.selectStatus} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="BUSY">{t.calendar.statusBusy}</SelectItem>
+                  <SelectItem value="FREE">{t.calendar.statusFree}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Date + Times row */}
             <EventDateTimeRow
               date={date}
@@ -99,6 +129,8 @@ export function EventModal(props: UseEventFormProps) {
               setStartTime={setStartTime}
               endTime={endTime}
               setEndTime={setEndTime}
+              isAllDay={isAllDay}
+              setIsAllDay={setIsAllDay}
               recurrenceType={recurrenceType}
               mode={mode}
             />
@@ -153,6 +185,9 @@ export function EventModal(props: UseEventFormProps) {
         onSelectSingle={
           recurringDialog.action === "delete" ? submitDeleteSingle : submitUpdateSingle
         }
+        onSelectFollowing={
+          recurringDialog.action === "delete" ? submitDeleteFollowing : submitUpdateFollowing
+        }
         onSelectAll={
           recurringDialog.action === "delete" ? submitDeleteAll : submitUpdateAll
         }
@@ -161,3 +196,4 @@ export function EventModal(props: UseEventFormProps) {
     </>
   );
 }
+

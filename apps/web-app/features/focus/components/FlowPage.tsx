@@ -4,13 +4,8 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import { useAuthStore } from "@/features/auth";
-import { useBoardStore } from "@/features/board/store/board.store";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getTasksAction, updateTaskAction } from "@/features/board/actions/task.action";
-import { getDailyPlanAction, confirmPlanAction } from "@/features/board/actions/plan.action";
-import { getCategoriesAction } from "@/features/board/actions/category.action";
+import { useFlowPageData } from "@/features/focus/hooks/useFlowPageData";
 import { useAppVisibility } from "@/features/available-time";
-import { getTodayStr } from "@/lib/date";
 import { FlowTodoList } from "@/features/focus/components/FlowTodoList";
 import { FlowPomodoro } from "@/features/focus/components/FlowPomodoro";
 import { FloatingPomodoroWidget } from "@/features/focus/components/FloatingPomodoroWidget";
@@ -29,12 +24,12 @@ import { FlowSettingsDropdown } from "@/features/focus/components/FlowSettingsDr
 import { ConfirmPlanDialog } from "@/features/focus/components/ConfirmPlanDialog";
 import { useFlowLayoutState } from "@/features/focus/hooks/useFlowLayoutState";
 import { cn } from "@/lib/utils";
-import type { DailyPlan, DailyPlanTask } from "@/features/board/types";
+import type { DailyPlanTask, TaskTimeBlock } from "@/features/board/types";
+import type { ActiveTimeBlockInfo } from "@/features/focus/store/focus.store";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Clock01Icon } from "@hugeicons/core-free-icons";
 import { useTranslation } from "@/hooks/use-translation";
-
 
 export function FlowPage() {
   useAppVisibility();
@@ -44,46 +39,21 @@ export function FlowPage() {
   const pomodoroState = useFocusStore((s) => s.pomodoroState);
   const openFocusMode = useFocusStore((s) => s.openFocusMode);
   const activeTaskId = useFocusStore((s) => s.activeTaskId);
+  const activeTimeBlockInfo = useFocusStore((s) => s.activeTimeBlockInfo);
+  const startTimer = useFocusStore((s) => s.startTimer);
   const pauseTimer = useFocusStore((s) => s.pauseTimer);
   const resumeTimer = useFocusStore((s) => s.resumeTimer);
   const closeFocusMode = useFocusStore((s) => s.closeFocusMode);
   const isZenFull = useFocusStore((s) => s.isZenFull);
   const isVideoBackground = useFocusStore((s) => s.isVideoBackground);
-  const queryClient = useQueryClient();
-  const currentDate = getTodayStr(user?.timezone);
-  
-  const { data: tasks = [] } = useQuery({ queryKey: ['tasks'], queryFn: getTasksAction, enabled: !!user });
-  useQuery({ queryKey: ['categories'], queryFn: getCategoriesAction, enabled: !!user });
-  const { data: dailyPlanToday } = useQuery({ queryKey: ['dailyPlan', currentDate], queryFn: () => getDailyPlanAction(currentDate), enabled: !!user });
-  
-  const confirmPlanMutation = useMutation({
-    mutationFn: confirmPlanAction,
-    onSuccess: (data, variables) => {
-      queryClient.setQueryData(['dailyPlan', variables], data);
-      useBoardStore.setState({ isStarted: true });
-    }
-  });
+  const isControllerBarVisible = useFocusStore((s) => s.isControllerBarVisible);
 
-  const updateTaskMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: { actualMinutes: number } }) =>
-      updateTaskAction(id, data),
-    onSuccess: (updatedTask) => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      // Also patch the dailyPlan cache immediately so pendingSwitchTask.task.actualMinutes
-      // is always fresh — prevents stale alreadyWorkedMinutes on re-open.
-      queryClient.setQueryData(['dailyPlan', currentDate], (old: DailyPlan | undefined) => {
-        if (!old) return old;
-        return {
-          ...old,
-          tasks: old.tasks.map((pt) =>
-            pt.task.id === updatedTask.id
-              ? { ...pt, task: { ...pt.task, actualMinutes: updatedTask.actualMinutes } }
-              : pt
-          ),
-        };
-      });
-    },
-  });
+  const {
+    tasks,
+    dailyPlanToday,
+    handleConfirmPlan,
+    saveActualMinutes,
+  } = useFlowPageData();
 
 
 
@@ -112,6 +82,7 @@ export function FlowPage() {
   // Switch-task guard state
   const [isSwitchDialogOpen, setIsSwitchDialogOpen] = useState(false);
   const [pendingSwitchTask, setPendingSwitchTask] = useState<DailyPlanTask | null>(null);
+  const [pendingSwitchBlock, setPendingSwitchBlock] = useState<TaskTimeBlock | undefined>(undefined);
   const [isSavingSwitch, setIsSavingSwitch] = useState(false);
   // Remember the exact pomodoroState before we paused it for the dialog
   const [prevPomodoroState, setPrevPomodoroState] = useState<"focusing" | "breaking" | null>(null);
@@ -129,13 +100,52 @@ export function FlowPage() {
     };
   }, []);
 
-  const doSwitch = (task: DailyPlanTask) => {
-    openFocusMode(task.task.id, task.id, task.task.estimatedMinutes || 25, task.task.actualMinutes || 0);
+  const formatTime = (iso: string) => {
+    const date = new Date(iso);
+    return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
   };
 
-  const handleTaskSelect = (task: DailyPlanTask) => {
-    // Ignore click on the currently active task
-    if (task.task.id === activeTaskId) return;
+  const createTimeBlockInfo = (block?: TaskTimeBlock): ActiveTimeBlockInfo | null => {
+    if (!block) return null;
+    const startStr = formatTime(block.startTime);
+    const endStr = formatTime(block.endTime);
+    const dur = Math.max(15, Math.round((new Date(block.endTime).getTime() - new Date(block.startTime).getTime()) / (1000 * 60)));
+    return {
+      id: block.id,
+      startTime: startStr,
+      endTime: endStr,
+      partIndex: block.partIndex,
+      totalParts: block.totalParts,
+      durationMinutes: dur,
+    };
+  };
+
+  const doSwitch = (task: DailyPlanTask, block?: TaskTimeBlock) => {
+    const timeBlockInfo = createTimeBlockInfo(block);
+    const estMinutes = timeBlockInfo ? timeBlockInfo.durationMinutes : (task.task.estimatedMinutes || 25);
+    openFocusMode(
+      task.task.id,
+      task.id,
+      estMinutes,
+      task.task.actualMinutes || 0,
+      timeBlockInfo
+    );
+  };
+
+  const handleTaskSelect = (task: DailyPlanTask, block?: TaskTimeBlock) => {
+    const isSameTask = task.task.id === activeTaskId;
+    const blockInfo = createTimeBlockInfo(block);
+    const isSameBlock = isSameTask && (
+      (!blockInfo && !activeTimeBlockInfo) ||
+      (blockInfo && activeTimeBlockInfo && blockInfo.startTime === activeTimeBlockInfo.startTime)
+    );
+
+    if (isSameBlock) {
+      if (pomodoroState === "idle" || pomodoroState === "paused") {
+        startTimer();
+      }
+      return;
+    }
 
     if (!dailyPlanToday?.isConfirmed) {
       setPendingTask(task);
@@ -155,16 +165,18 @@ export function FlowPage() {
       }
       setPrevPomodoroState(wasRunning ? (pomodoroState as "focusing" | "breaking") : null);
       setPendingSwitchTask(task);
+      setPendingSwitchBlock(block);
       setIsSwitchDialogOpen(true);
       return;
     }
 
-    doSwitch(task);
+    doSwitch(task, block);
   };
 
   const handleSwitchCancel = () => {
     setIsSwitchDialogOpen(false);
     setPendingSwitchTask(null);
+    setPendingSwitchBlock(undefined);
     // Resume timer if it was actively running before we paused it for the dialog
     if (prevPomodoroState) {
       resumeTimer(prevPomodoroState);
@@ -176,9 +188,11 @@ export function FlowPage() {
     setIsSwitchDialogOpen(false);
     if (!pendingSwitchTask) return;
     const next = pendingSwitchTask;
+    const nextBlock = pendingSwitchBlock;
     setPendingSwitchTask(null);
+    setPendingSwitchBlock(undefined);
     closeFocusMode();
-    doSwitch(next);
+    doSwitch(next, nextBlock);
   };
 
   const handleSwitchSaveAndSwitch = async () => {
@@ -188,13 +202,15 @@ export function FlowPage() {
       const accumulatedFocusTime = useFocusStore.getState().accumulatedFocusTime;
       const actualMinutes = Math.floor(accumulatedFocusTime / 60);
       if (actualMinutes > 0) {
-        await updateTaskMutation.mutateAsync({ id: activeTaskId, data: { actualMinutes } });
+        await saveActualMinutes(activeTaskId, actualMinutes);
       }
       setIsSwitchDialogOpen(false);
       const next = pendingSwitchTask;
+      const nextBlock = pendingSwitchBlock;
       setPendingSwitchTask(null);
+      setPendingSwitchBlock(undefined);
       closeFocusMode();
-      doSwitch(next);
+      doSwitch(next, nextBlock);
     } catch (err) {
       console.error(err);
       toast.error("Không thể lưu tiến trình.");
@@ -206,7 +222,7 @@ export function FlowPage() {
   const handleConfirmDailyPlan = async () => {
     if (!dailyPlanToday) { setIsConfirmPlanOpen(false); setPendingTask(null); return; }
     try {
-      if (!dailyPlanToday.isConfirmed) await confirmPlanMutation.mutateAsync(dailyPlanToday.planDate);
+      await handleConfirmPlan();
       setIsConfirmPlanOpen(false);
       if (pendingTask) {
         openFocusMode(pendingTask.task.id, pendingTask.id, pendingTask.task.estimatedMinutes || 25, pendingTask.task.actualMinutes || 0);
@@ -384,7 +400,7 @@ export function FlowPage() {
       </ResizablePanelGroup>
       </div>
 
-      {isRightCollapsed && (
+      {isRightCollapsed && isControllerBarVisible && (
         <SoundscapeControllerBar onExpandZenZone={handleExpandZenZone} />
       )}
 

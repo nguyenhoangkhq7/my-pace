@@ -11,14 +11,16 @@ import nhk.calendar.FixedEventResponse;
 import nhk.task.Task;
 import nhk.task.TaskRepository;
 import nhk.timeblock.TaskTimeBlock;
-import nhk.timeblock.TaskTimeBlockDto;
 import nhk.timeblock.TaskTimeBlockRepository;
 import nhk.user.User;
 import nhk.user.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import nhk.scheduling.AutoScheduleService;
+
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
@@ -37,6 +39,7 @@ public class DailyPlanServiceImpl implements DailyPlanService {
     private final UserRepository userRepo;
     private final GoalRepository goalRepository;
     private final FixedEventService eventService;
+    private final AutoScheduleService autoScheduleService;
 
     @Override
     @Transactional(readOnly = true)
@@ -49,27 +52,28 @@ public class DailyPlanServiceImpl implements DailyPlanService {
                             .map(dailyPlanMapper::toDto)
                             .collect(Collectors.toList());
 
-                    // Load time blocks for this plan
-                    List<TaskTimeBlockDto> timeBlocks = timeBlockRepository
-                            .findByDailyPlanIdOrderByStartTimeAsc(plan.getId())
-                            .stream()
-                            .map(tb -> new TaskTimeBlockDto(
-                                tb.getId(),
-                                tb.getTaskId(),
-                                tb.getDailyPlanId(),
-                                tb.getStartTime(),
-                                tb.getEndTime(),
-                                tb.getPartIndex(),
-                                tb.getTotalParts()
-                            ))
-                            .collect(Collectors.toList());
-
                     return dto.toBuilder()
                             .tasks(taskDtos)
-                            .timeBlocks(timeBlocks)
                             .build();
                 })
                 .orElse(null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DailyPlanDto> getDailyPlansInRange(LocalDate startDate, LocalDate endDate, UUID userId) {
+        List<DailyPlan> plans = dailyPlanRepository.findByUserIdAndPlanDateBetweenOrderByPlanDateAsc(userId, startDate, endDate);
+        return plans.stream().map(plan -> {
+            DailyPlanDto dto = dailyPlanMapper.toDto(plan);
+            List<DailyPlanTask> planTasks = dailyPlanTaskRepository.findByDailyPlanIdOrderBySortOrderAsc(plan.getId());
+            List<DailyPlanTaskDto> taskDtos = planTasks.stream()
+                    .map(dailyPlanMapper::toDto)
+                    .collect(Collectors.toList());
+
+            return dto.toBuilder()
+                    .tasks(taskDtos)
+                    .build();
+        }).collect(Collectors.toList());
     }
 
     @Override
@@ -128,8 +132,9 @@ public class DailyPlanServiceImpl implements DailyPlanService {
                     if (task.getGoalId() != null) {
                         Goal goal = goalRepository.findById(task.getGoalId()).orElse(null);
                         if (goal != null && goal.getPreferTime() != null) {
-                            // Check if a timeblock already exists for this task on this day
-                            boolean blockExists = !timeBlockRepository.findByTaskIdAndDailyPlanId(task.getId(), plan.getId()).isEmpty();
+                            final java.time.LocalDate planDateFinal = plan.getPlanDate();
+                            boolean blockExists = timeBlockRepository.findByTaskId(task.getId()).stream()
+                                    .anyMatch(tb -> tb.getStartTime().toLocalDate().equals(planDateFinal));
                             if (!blockExists) {
                                 User user = userRepo.findById(userId)
                                         .orElseThrow(() -> new UserNotFoundException("User not found"));
@@ -161,6 +166,16 @@ public class DailyPlanServiceImpl implements DailyPlanService {
 
         plan.setConfirmedAt(OffsetDateTime.now(zoneId));
         dailyPlanRepository.save(plan);
+
+        // Transition all TaskTimeBlocks for this plan to BUSY
+        java.time.LocalDateTime start = plan.getPlanDate().atStartOfDay();
+        java.time.LocalDateTime end = plan.getPlanDate().plusDays(1).atStartOfDay().minusNanos(1);
+        List<TaskTimeBlock> blocks = timeBlockRepository.findByUserIdAndDateRange(userId, start, end);
+        for (TaskTimeBlock b : blocks) {
+            b.setAvailabilityStatus("BUSY");
+        }
+        timeBlockRepository.saveAll(blocks);
+
         return getDailyPlan(planDate, userId);
     }
 
@@ -189,7 +204,9 @@ public class DailyPlanServiceImpl implements DailyPlanService {
                         }
                     }
                     // Delete time blocks too
-                    timeBlockRepository.deleteByDailyPlanId(plan.getId());
+                    java.time.LocalDateTime startOfDay = plan.getPlanDate().atStartOfDay();
+                    java.time.LocalDateTime endOfDay = plan.getPlanDate().plusDays(1).atStartOfDay();
+                    timeBlockRepository.deleteByUserIdAndDate(userId, startOfDay, endOfDay);
                     dailyPlanTaskRepository.deleteByDailyPlanId(plan.getId());
                     dailyPlanRepository.delete(plan);
                 });
@@ -239,6 +256,26 @@ public class DailyPlanServiceImpl implements DailyPlanService {
         plan.setIsReviewed(true);
         dailyPlanRepository.save(plan);
 
+        // Process time blocks for planDate:
+        // - Worked (actualMinutes > 0): Keep and adjust endTime = startTime + actualMinutes
+        // - Completed (isCompleted == true): Keep as is
+        // - Unworked (actualMinutes == 0 && !isCompleted): Delete block
+        LocalDateTime planStart = planDate.atStartOfDay();
+        LocalDateTime planEnd = planDate.plusDays(1).atStartOfDay().minusNanos(1);
+        List<TaskTimeBlock> pastBlocks = timeBlockRepository.findByUserIdAndDateRange(userId, planStart, planEnd);
+        for (TaskTimeBlock tb : pastBlocks) {
+            int actMins = tb.getActualMinutes() != null ? tb.getActualMinutes() : 0;
+            boolean isComp = Boolean.TRUE.equals(tb.getIsCompleted());
+            if (actMins > 0) {
+                tb.setEndTime(tb.getStartTime().plusMinutes(actMins));
+                timeBlockRepository.save(tb);
+            } else if (!isComp) {
+                timeBlockRepository.delete(tb);
+            }
+        }
+
+        boolean hasMovedToToday = false;
+
         if (request != null && request.taskReviews() != null && !request.taskReviews().isEmpty()) {
             LocalDate today = request.today();
             if (today == null) {
@@ -285,6 +322,7 @@ public class DailyPlanServiceImpl implements DailyPlanService {
                 } else if ("TODAY".equalsIgnoreCase(action)) {
                     task.setStatus("Picked for Today");
                     taskRepository.save(task);
+                    hasMovedToToday = true;
 
                     // Add to todayPlan if not exists
                     boolean exists = dailyPlanTaskRepository.findByDailyPlanIdOrderBySortOrderAsc(todayPlan.getId())
@@ -307,6 +345,12 @@ public class DailyPlanServiceImpl implements DailyPlanService {
                     }
                 }
             }
+
+            if (hasMovedToToday) {
+                try {
+                    autoScheduleService.autoScheduleWeek(userId, finalToday, 15, true);
+                } catch (Exception ignored) {}
+            }
         }
 
         return getDailyPlan(planDate, userId);
@@ -326,7 +370,9 @@ public class DailyPlanServiceImpl implements DailyPlanService {
         java.time.LocalDateTime candidateEnd = candidateStart.plusMinutes(estimatedMinutes);
 
         List<FixedEventResponse> fixedEvents = eventService.getEventsInRange(plan.getUserId(), date, date);
-        List<TaskTimeBlock> existingBlocks = new java.util.ArrayList<>(timeBlockRepository.findByDailyPlanIdOrderByStartTimeAsc(plan.getId()));
+        java.time.LocalDateTime startOfDay = date.atStartOfDay();
+        java.time.LocalDateTime endOfDay = date.plusDays(1).atStartOfDay().minusNanos(1);
+        List<TaskTimeBlock> existingBlocks = new java.util.ArrayList<>(timeBlockRepository.findByUserIdAndDateRange(plan.getUserId(), startOfDay, endOfDay));
 
         java.time.LocalDateTime dayEnd = java.time.LocalDateTime.of(date, java.time.LocalTime.MAX);
         
@@ -367,11 +413,11 @@ public class DailyPlanServiceImpl implements DailyPlanService {
             if (!overlap) {
                 TaskTimeBlock tb = new TaskTimeBlock();
                 tb.setTaskId(task.getId());
-                tb.setDailyPlanId(plan.getId());
                 tb.setStartTime(candidateStart);
                 tb.setEndTime(candidateEnd);
                 tb.setPartIndex(1);
                 tb.setTotalParts(1);
+                tb.setAvailabilityStatus("BUSY");
                 timeBlockRepository.save(tb);
                 existingBlocks.add(tb);
                 break;

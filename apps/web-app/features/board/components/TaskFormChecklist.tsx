@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { addChecklistItemAction, updateChecklistItemAction, deleteChecklistItemAction, reorderChecklistsAction } from "@/features/board/actions/checklist.action";
+import { useChecklistMutations } from "../hooks/useChecklistMutations";
 import type { TaskChecklistItem } from "../types";
 import { TaskChecklistItemRow } from "./TaskChecklistItemRow";
 import { TaskChecklistCreateForm } from "./TaskChecklistCreateForm";
@@ -23,23 +22,7 @@ export function TaskFormChecklist({
   onDeleteChecklistLocal,
   onReorderLocal
 }: TaskFormChecklistProps) {
-  const queryClient = useQueryClient();
-  const addChecklistItemMutation = useMutation({
-    mutationFn: ({ taskId, title }: { taskId: string, title: string }) => addChecklistItemAction(taskId, { title }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
-  });
-  const updateChecklistItemMutation = useMutation({
-    mutationFn: ({ taskId, checklistId, data }: { taskId: string, checklistId: string, data: { title?: string, isCompleted?: boolean } }) => updateChecklistItemAction(taskId, checklistId, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
-  });
-  const deleteChecklistItemMutation = useMutation({
-    mutationFn: ({ taskId, checklistId }: { taskId: string, checklistId: string }) => deleteChecklistItemAction(taskId, checklistId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
-  });
-  const reorderChecklistsMutation = useMutation({
-    mutationFn: ({ taskId, checklistIds }: { taskId: string, checklistIds: string[] }) => reorderChecklistsAction(taskId, checklistIds),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
-  });
+  const { addChecklist, updateChecklist, deleteChecklistAsync, reorderChecklists } = useChecklistMutations(taskId);
   const { t } = useTranslation();
 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -51,7 +34,7 @@ export function TaskFormChecklist({
   const handleAddChecklist = async (title: string) => {
     if (taskId) {
       try {
-        await addChecklistItemMutation.mutateAsync({ taskId, title });
+        await addChecklist(title);
       } catch (err) {
         console.error(err);
       }
@@ -77,7 +60,6 @@ export function TaskFormChecklist({
     if (draggedIndex === null || draggedIndex === index) return;
 
     if (taskId) {
-      // Create a new array of IDs with the moved item
       const newOrder = [...checklists];
       const [movedItem] = newOrder.splice(draggedIndex, 1);
       newOrder.splice(index, 0, movedItem);
@@ -85,7 +67,7 @@ export function TaskFormChecklist({
       const newIds = newOrder.map(c => c.id).filter((id): id is string => !!id);
       if (newIds.length === checklists.length) {
         try {
-          await reorderChecklistsMutation.mutateAsync({ taskId, checklistIds: newIds });
+          await reorderChecklists(newIds);
         } catch (err) {
           console.error(err);
         }
@@ -101,8 +83,6 @@ export function TaskFormChecklist({
     setDragOverIndex(null);
   };
 
-  // Sort checklists if they have orderIndex, though backend should return them ordered.
-  // In local mode they might not have orderIndex.
   const sortedChecklists = [...checklists].sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
 
   return (
@@ -141,14 +121,14 @@ export function TaskFormChecklist({
               isDragOver={dragOverIndex === index}
               onUpdate={(updates) => {
                 if (taskId && item.id) {
-                  updateChecklistItemMutation.mutateAsync({ taskId, checklistId: item.id, data: updates });
+                  updateChecklist({ checklistId: item.id, data: updates });
                 } else if (onUpdateChecklistLocal) {
                   onUpdateChecklistLocal(index, updates);
                 }
               }}
               onDelete={() => {
                 if (taskId && item.id) {
-                  deleteChecklistItemMutation.mutateAsync({ taskId, checklistId: item.id });
+                  deleteChecklistAsync(item.id);
                 } else if (onDeleteChecklistLocal) {
                   onDeleteChecklistLocal(index);
                 }

@@ -2,9 +2,8 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { createFeedbackAction } from "@/features/feedback";
+import { useFeedback } from "./useFeedback";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 
@@ -23,18 +22,7 @@ export function FeedbackModal({ isOpen, onOpenChange }: FeedbackModalProps) {
   const { t } = useTranslation();
   const [category, setCategory] = useState("BUG");
   const [content, setContent] = useState("");
-  const createFeedbackMutation = useMutation({
-    mutationFn: createFeedbackAction,
-    onSuccess: () => {
-      toast.success(t.feedback.toastSuccess);
-      setContent("");
-      onOpenChange(false);
-    },
-    onError: (error) => {
-      toast.error(t.feedback.toastError);
-      console.error(error);
-    }
-  });
+  const { createFeedback, isSubmitting } = useFeedback();
 
   const handleSubmit = async () => {
     if (!content.trim()) {
@@ -42,7 +30,20 @@ export function FeedbackModal({ isOpen, onOpenChange }: FeedbackModalProps) {
       return;
     }
 
-    createFeedbackMutation.mutate({ category, content });
+    createFeedback(
+      { category, content },
+      {
+        onSuccess: () => {
+          toast.success(t.feedback.toastSuccess);
+          setContent("");
+          onOpenChange(false);
+        },
+        onError: (error) => {
+          toast.error(t.feedback.toastError);
+          console.error(error);
+        },
+      }
+    );
   };
 
   const getCategoryLabel = (id: string) => {
@@ -95,11 +96,11 @@ export function FeedbackModal({ isOpen, onOpenChange }: FeedbackModalProps) {
         </div>
  
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={createFeedbackMutation.isPending}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
             {t.common.cancel}
           </Button>
-          <Button onClick={handleSubmit} disabled={createFeedbackMutation.isPending}>
-            {createFeedbackMutation.isPending ? t.feedback.submitting : t.feedback.submit}
+          <Button onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? t.feedback.submitting : t.feedback.submit}
           </Button>
         </DialogFooter>
       </DialogContent>

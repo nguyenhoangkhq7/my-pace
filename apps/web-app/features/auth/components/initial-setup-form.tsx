@@ -8,8 +8,9 @@ import { Clock01Icon, InformationCircleIcon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { updateProfileAction } from "@/features/profile";
+import { syncTimezoneCookie } from "@/features/auth/actions/auth.action";
 import { useAuthStore } from "../store/auth.store";
+import { useUpdateProfile } from "../hooks/useUpdateProfile";
 import { appToast } from "@/components/feedback/app-toast";
 import { AppAlert } from "@/components/feedback/app-alert";
 import { cn } from "@/lib/utils";
@@ -22,9 +23,9 @@ export function InitialSetupForm() {
   const { t } = useTranslation();
   const setSession = useAuthStore((s) => s.setSession);
   const user = useAuthStore((s) => s.user);
-  const [buffer, setBuffer] = useState(20); // default 20%
+  const [buffer, setBuffer] = useState(20);
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { updateProfile, isUpdating } = useUpdateProfile();
 
   const {
     handleSubmit,
@@ -40,36 +41,23 @@ export function InitialSetupForm() {
   });
 
   const onSubmit = async (data: InitialSetupFormValues) => {
-    setIsSubmitting(true);
     setError(null);
-
     const payload = {
       wakeTime: data.wakeTime.length === 5 ? `${data.wakeTime}:00` : data.wakeTime,
       sleepTime: data.sleepTime.length === 5 ? `${data.sleepTime}:00` : data.sleepTime,
       bufferPct: buffer,
     };
-
     try {
-      const response = await updateProfileAction(payload);
-
-      if (response.success && user) {
-        setSession({
-          user: {
-            ...user,
-            ...payload
-          },
-        });
-        
-        appToast.success(t.auth.setupSuccess, {
-          description: t.auth.setupSuccessDesc,
-        });
-      } else {
-        setError(response.error || "Failed to update profile");
+      const responseData = await updateProfile(payload);
+      if (responseData?.timezone) {
+        await syncTimezoneCookie(responseData.timezone);
+      }
+      if (user) {
+        setSession({ user: { ...user, ...payload } });
+        appToast.success(t.auth.setupSuccess, { description: t.auth.setupSuccessDesc });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Cannot connect to server");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -178,10 +166,10 @@ export function InitialSetupForm() {
         <CardFooter className="flex flex-col gap-4 pt-2 pb-6">
           <Button
             type="submit"
-            disabled={isSubmitting || !isValid}
+            disabled={isUpdating || !isValid}
             className="h-12 w-full rounded-xl text-base font-semibold transition-all active:scale-[0.98]"
           >
-            {isSubmitting ? t.auth.savingSetup : t.auth.completeSetup}
+            {isUpdating ? t.auth.savingSetup : t.auth.completeSetup}
           </Button>
 
           {error && (

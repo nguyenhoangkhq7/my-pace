@@ -19,6 +19,7 @@ public interface FixedEventRepository extends JpaRepository<FixedEvent, UUID> {
      */
     @Query("""
             SELECT fe FROM FixedEvent fe
+            LEFT JOIN FETCH fe.category
             WHERE fe.user.id = :userId
               AND (
                    (fe.recurrenceType = 'NONE' AND fe.eventDate BETWEEN :start AND :end)
@@ -37,6 +38,7 @@ public interface FixedEventRepository extends JpaRepository<FixedEvent, UUID> {
     /** Fetch all non-recurring events for a specific date plus all recurring series active on that date. */
     @Query("""
             SELECT fe FROM FixedEvent fe
+            LEFT JOIN FETCH fe.category
             WHERE fe.user.id = :userId
               AND (
                    (fe.recurrenceType = 'NONE' AND fe.eventDate = :date)

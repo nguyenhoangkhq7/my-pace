@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import nhk.timecontext.TimeContext;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.time.OffsetDateTime;
@@ -36,6 +37,10 @@ public class Category {
     @NotNull
     @Column(name = "color", nullable = false)
     private String color = "#64748b";
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "time_context_id")
+    private TimeContext timeContext;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     @org.springframework.data.annotation.CreatedDate

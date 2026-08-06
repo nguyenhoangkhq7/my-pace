@@ -21,6 +21,7 @@ public class StatsServiceImpl implements StatsService {
     @PersistenceContext
     private EntityManager entityManager;
     private final nhk.user.UserRepository userRepository;
+    private final nhk.calendar.FixedEventService fixedEventService;
 
     @Override
     @Transactional(readOnly = true)
@@ -109,6 +110,16 @@ public class StatsServiceImpl implements StatsService {
             String categoryName = row[0] != null ? (String) row[0] : "Chưa phân loại";
             Long sumMinutes = (Long) row[1];
             categoryTime.put(categoryName, sumMinutes != null ? sumMinutes.intValue() : 0);
+        }
+
+        // Include duration from Fixed Events in categoryTime
+        List<nhk.calendar.FixedEventResponse> fixedEvents = fixedEventService.getEventsInRange(userId, startDateDate, endDateDate);
+        for (nhk.calendar.FixedEventResponse fe : fixedEvents) {
+            long minutes = java.time.Duration.between(fe.startTime(), fe.endTime()).toMinutes();
+            if (minutes > 0) {
+                String catName = fe.category() != null ? fe.category().name() : "Chưa phân loại";
+                categoryTime.put(catName, categoryTime.getOrDefault(catName, 0) + (int) minutes);
+            }
         }
 
         // 3. Plan Completion Rate

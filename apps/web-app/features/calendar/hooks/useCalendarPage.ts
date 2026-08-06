@@ -4,17 +4,19 @@ import type { DateSelectArg, EventClickArg, DatesSetArg, EventInput } from "@ful
 import { useCalendarEvents } from "@/features/calendar";
 
 import type { FixedEventOccurrence, ModalMode } from "@/features/calendar/types";
-import { useAuthStore } from "@/features/auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getDailyPlanAction, confirmPlanAction } from "@/features/board/actions/plan.action";
+import { useAuthStore } from "@/features/auth";
 import { useBoardStore } from "@/features/board/store/board.store";
-import { saveTimeBlocksAction } from "@/features/board/actions/timeblock.action";
-import type { TaskTimeBlock, Task, DailyPlanTask } from "@/features/board/types";
+import type { TaskTimeBlock, Task, DailyPlanTask, DailyPlan } from "@/features/board/types";
 import { toast } from "sonner";
-import { autoSchedule, type OccupiedSlot } from "@/features/board/utils/autoSchedule";
+import { fetchClient } from "@/lib/fetchClient";
 import { useCalendarInteractions } from "./useCalendarInteractions";
 import { getTodayStr } from "@/lib/date";
 import { useRouter } from "next/navigation";
+import { useAutoSchedule } from "@/features/board/hooks/useAutoSchedule";
+
+import { useTaskTimeBlocks } from "@/features/board/hooks/useTaskTimeBlocks";
+import { useTasks } from "@/features/board/hooks/useTasks";
 
 // ─── Constants & Helpers ──────────────────────────────────────────────────────
 const EVENT_TEXT      = "#ffffff";
@@ -24,14 +26,6 @@ const TASK_COLOR_REG  = "#475569"; // slate for regular tasks
 const toHHMM = (t: string) => t.substring(0, 5);
 const toSlotTime = (t: string | null | undefined, fallback: string) =>
   t ? t.substring(0, 5) + ":00" : fallback;
-const toLocalDateStr = (iso: string) => {
-  const date = new Date(iso);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-};
-const toLocalTimeStr = (iso: string) => {
-  const date = new Date(iso);
-  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
-};
 
 export function useCalendarPage() {
   const router = useRouter();
@@ -53,20 +47,103 @@ export function useCalendarPage() {
   }, [focusedDate, today]);
 
   const queryClient = useQueryClient();
-  const { data: dailyPlanToday } = useQuery({ queryKey: ['dailyPlan', focusedDate], queryFn: () => getDailyPlanAction(focusedDate) });
-  const timeBlocks = useMemo(() => dailyPlanToday?.timeBlocks || [], [dailyPlanToday?.timeBlocks]);
-  
-  const saveTimeBlocksMutation = useMutation({
-    mutationFn: (blocks: Omit<TaskTimeBlock, 'id'>[]) => saveTimeBlocksAction({ dailyPlanId: dailyPlanToday!.id, blocks }),
-    onSuccess: (data) => {
-      if (dailyPlanToday) {
-        queryClient.setQueryData(['dailyPlan', focusedDate], { ...dailyPlanToday, timeBlocks: data });
+
+  const { tasks } = useTasks();
+  const { triggerAutoSchedule } = useAutoSchedule();
+
+  // dateRange tracks the visible calendar window (updated by handleDatesSet)
+  const [dateRange, setDateRange] = useState({ start: today, end: today });
+
+  // ── Fetch daily plan for focused date (sidebar + interactions) ────────────
+  const { data: dailyPlanToday } = useQuery({
+    queryKey: ['dailyPlan', focusedDate],
+    queryFn: () => fetchClient.get<DailyPlan>(`daily-plans/${focusedDate}`).then(r => r.data),
+  });
+
+  // ── Fetch ALL daily plans in the visible calendar range ───────────────────
+  const { data: plansInRange } = useQuery({
+    queryKey: ['dailyPlans', dateRange.start, dateRange.end],
+    queryFn: () =>
+      fetchClient
+        .get<DailyPlan[]>(`daily-plans/range?startDate=${dateRange.start}&endDate=${dateRange.end}`)
+        .then(r => r.data),
+    enabled: !!dateRange.start && !!dateRange.end,
+  });
+
+  const datesWithPlanSet = useMemo(() => {
+    const set = new Set<string>();
+    if (plansInRange) {
+      for (const p of plansInRange) {
+        if (p.tasks && p.tasks.length > 0) {
+          set.add(p.planDate);
+        }
       }
+    }
+    return set;
+  }, [plansInRange]);
+
+  const {
+    events,
+    createEvent,
+    updateAllOccurrences,
+    updateSingleOccurrence,
+    updateFromDateOnwards,
+    deleteAllOccurrences,
+    deleteSingleOccurrence,
+    deleteFromDateOnwards,
+  } = useCalendarEvents(dateRange);
+
+  // All time blocks across the visible range (used for fcEvents)
+  const { data: allTimeBlocks = [] } = useTaskTimeBlocks(dateRange.start, dateRange.end);
+
+  // Time blocks for focused date only (used for interactions / save)
+  const { data: timeBlocks = [] } = useTaskTimeBlocks(focusedDate, focusedDate);
+
+  // ── Modal & UI state ────────────────────────────────────────────────────────
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<ModalMode>("create");
+  const [modalDefaults, setModalDefaults] = useState<{ date?: string; start?: string; end?: string }>({});
+  const [editOccurrence, setEditOccurrence] = useState<FixedEventOccurrence | undefined>();
+
+  // Task Time Block Modal state
+  const [blockModalOpen, setBlockModalOpen] = useState(false);
+  const [selectedBlock, setSelectedBlock] = useState<TaskTimeBlock | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isBlockMit, setIsBlockMit] = useState(false);
+  const [isBlockInPlan, setIsBlockInPlan] = useState(false);
+  const [isUnscheduling, setIsUnscheduling] = useState(false);
+  const [isAutoScheduling, setIsAutoScheduling] = useState(false);
+  
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [fixedEventColor, setFixedEventColor] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("myPaceFixedEventColor") || "#0ea5e9";
+    }
+    return "#0ea5e9";
+  });
+
+  const saveTimeBlocksMutation = useMutation({
+    mutationFn: (blocks: Omit<TaskTimeBlock, 'id'>[]) => fetchClient.post<TaskTimeBlock[]>('time-blocks/batch', { targetDate: focusedDate, blocks }).then(r => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['timeBlocks'] });
     }
   });
 
+  const handleToggleBlockLock = useCallback(async (blockId: string, currentStatus: string) => {
+    const newStatus: "BUSY" | "FREE" = currentStatus === "BUSY" ? "FREE" : "BUSY";
+    try {
+      await fetchClient.patch(`time-blocks/${blockId}/lock-status`, { availabilityStatus: newStatus });
+      queryClient.invalidateQueries({ queryKey: ['timeBlocks'] });
+      toast.success(newStatus === "BUSY" ? "Đã khóa công việc!" : "Đã mở khóa công việc!");
+      setBlockModalOpen(false);
+      triggerAutoSchedule();
+    } catch {
+      toast.error("Không thể thay đổi trạng thái.");
+    }
+  }, [triggerAutoSchedule, queryClient]);
+
   const confirmPlanMutation = useMutation({
-    mutationFn: confirmPlanAction,
+    mutationFn: (date: string) => fetchClient.post<DailyPlan>(`daily-plans/${date}/confirm`, {}).then(r => r.data),
     onSuccess: (data, variables) => {
       queryClient.setQueryData(['dailyPlan', variables], data);
       if (variables === today) {
@@ -87,56 +164,69 @@ export function useCalendarPage() {
     }
   }, [dailyPlanToday, confirmPlanMutation, router]);
 
-  const [dateRange, setDateRange] = useState({ start: today, end: today });
+  const slotMin = "00:00:00";
+  const slotMax = "24:00:00";
 
-  const {
-    events,
-    createEvent,
-    updateAllOccurrences,
-    updateSingleOccurrence,
-    deleteAllOccurrences,
-    deleteSingleOccurrence,
-  } = useCalendarEvents(dateRange);
+  const scrollTime = useMemo(() => {
+    return user?.wakeTime ? toSlotTime(user.wakeTime, "06:00:00") : "06:00:00";
+  }, [user]);
 
-
-
-  const slotMin = toSlotTime(user?.wakeTime, "05:00:00");
-  
-  let slotMax = "23:00:00";
-  if (user?.sleepTime && user?.wakeTime) {
-    const [sh, sm] = user.sleepTime.split(":").map(Number);
-    const [wh, wm] = user.wakeTime.split(":").map(Number);
-    if (sh < wh || (sh === wh && sm < wm)) {
-      const adjustedHour = sh + 24;
-      slotMax = `${String(adjustedHour).padStart(2, "0")}:${String(sm).padStart(2, "0")}:00`;
-    } else {
-      slotMax = toSlotTime(user.sleepTime, "23:00:00");
+  const businessHours = useMemo(() => {
+    const wake = user?.wakeTime ? user.wakeTime.substring(0, 5) : "06:00";
+    const sleep = user?.sleepTime ? user.sleepTime.substring(0, 5) : "22:00";
+    if (sleep < wake) {
+      return [
+        { daysOfWeek: [0, 1, 2, 3, 4, 5, 6], startTime: "00:00", endTime: sleep },
+        { daysOfWeek: [0, 1, 2, 3, 4, 5, 6], startTime: wake, endTime: "24:00" },
+      ];
     }
-  } else {
-    slotMax = toSlotTime(user?.sleepTime, "23:00:00");
-  }
+    return {
+      daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+      startTime: wake,
+      endTime: sleep,
+    };
+  }, [user]);
 
-  // ── Modal state ───────────────────────────────────────────────────────────
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<ModalMode>("create");
-  const [modalDefaults, setModalDefaults] = useState<{ date?: string; start?: string; end?: string }>({});
-  const [editOccurrence, setEditOccurrence] = useState<FixedEventOccurrence | undefined>();
+  const wakeSleepLineEvents = useMemo<EventInput[]>(() => {
+    const formatHHMM = (t: string | undefined | null, fallback: string) => {
+      if (!t) return fallback;
+      const parts = t.split(":");
+      if (parts.length < 2) return fallback;
+      const h = String(parts[0]).padStart(2, "0");
+      const m = String(parts[1]).padStart(2, "0");
+      return `${h}:${m}`;
+    };
 
-  // Task Time Block Modal state
-  const [blockModalOpen, setBlockModalOpen] = useState(false);
-  const [selectedBlock, setSelectedBlock] = useState<TaskTimeBlock | null>(null);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [isBlockMit, setIsBlockMit] = useState(false);
-  const [isUnscheduling, setIsUnscheduling] = useState(false);
-  const [isAutoScheduling, setIsAutoScheduling] = useState(false);
-  
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [fixedEventColor, setFixedEventColor] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("myPaceFixedEventColor") || "#0ea5e9";
-    }
-    return "#0ea5e9";
-  });
+    const wake = formatHHMM(user?.wakeTime, "08:00");
+    const sleep = formatHHMM(user?.sleepTime, "22:00");
+
+    const add15 = (t: string) => {
+      const [h, m] = t.split(":").map(Number);
+      const totalMins = h * 60 + m + 15;
+      const nh = Math.floor(totalMins / 60) % 24;
+      const nm = totalMins % 60;
+      return `${String(nh).padStart(2, "0")}:${String(nm).padStart(2, "0")}:00`;
+    };
+
+    return [
+      {
+        id: "wake-line-indicator",
+        daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+        startTime: `${wake}:00`,
+        endTime: add15(wake),
+        display: "background",
+        classNames: ["fc-wake-line-event"],
+      },
+      {
+        id: "sleep-line-indicator",
+        daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+        startTime: `${sleep}:00`,
+        endTime: add15(sleep),
+        display: "background",
+        classNames: ["fc-sleep-line-event"],
+      },
+    ];
+  }, [user]);
 
   const handleColorChange = (color: string) => {
     setFixedEventColor(color);
@@ -150,13 +240,12 @@ export function useCalendarPage() {
       return;
     }
     setIsUnscheduling(true);
-    // Remove all blocks associated with this task ID
     const updatedBlocks = timeBlocks
       .filter((b) => b.taskId !== taskId)
       .map((b) => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { id: _, ...rest } = b;
-        return rest as Omit<TaskTimeBlock, "id">;
+        const copy = { ...b } as Partial<TaskTimeBlock>;
+        delete copy.id;
+        return copy as Omit<TaskTimeBlock, "id">;
       });
 
     try {
@@ -171,16 +260,25 @@ export function useCalendarPage() {
     } finally {
       setIsUnscheduling(false);
     }
-  }, [dailyPlanToday, timeBlocks, saveTimeBlocksMutation]);
+  }, [dailyPlanToday, timeBlocks, saveTimeBlocksMutation, setBlockModalOpen]);
 
   const isConfirmed = !plannable || !!dailyPlanToday?.isConfirmed;
 
   // ── Custom Hooks ──────────────────────────────────────────────────────────
+  const updateTimeBlockMutation = useMutation({
+    mutationFn: (args: { id: string, data: { startTime?: string, endTime?: string, availabilityStatus?: string } }) => 
+      fetchClient.patch(`time-blocks/${args.id}`, args.data).then(r => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['timeBlocks'] });
+    }
+  });
+
   const { handleEventReceive, handleEventDrop, handleEventResize, handleEventDragStop } = useCalendarInteractions({
     dailyPlanToday: dailyPlanToday ?? null,
     timeBlocks,
-    isConfirmed,
-    saveTimeBlocks: (blocks: Partial<TaskTimeBlock>[]) => saveTimeBlocksMutation.mutateAsync(blocks as Omit<TaskTimeBlock, 'id'>[]),
+    isConfirmed: dailyPlanToday?.isConfirmed ?? false,
+    saveTimeBlocks: (blocks) => saveTimeBlocksMutation.mutateAsync(blocks),
+    updateTimeBlock: (id, data) => updateTimeBlockMutation.mutateAsync({ id, data }),
     updateAllOccurrences,
     updateSingleOccurrence,
     createEvent,
@@ -192,57 +290,142 @@ export function useCalendarPage() {
   // ── FullCalendar events ────────────────────────────────────────────────────
   const scheduledTaskIds = useMemo(() => new Set(timeBlocks.map((b) => b.taskId)), [timeBlocks]);
 
+  const hasAllDayEvents = useMemo(() => {
+    return events.some((e) => !!e.isAllDay);
+  }, [events]);
+
   const fcEvents = useMemo<EventInput[]>(() => {
+    const todayDate = new Date(today);
+    todayDate.setHours(0, 0, 0, 0);
+
+    const isOccurrenceEditable = (occDate: string): boolean => {
+      const d = new Date(occDate);
+      d.setHours(0, 0, 0, 0);
+      const diffDays = Math.ceil((d.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24));
+      // Only allow drag if within plannable window (today ~ today+3)
+      // and the focused date's plan is not confirmed
+      if (diffDays < 0 || diffDays > 3) return false;
+      // Check if plan for that specific date is confirmed
+      const planForDate = plansInRange?.find(p => p.planDate === occDate);
+      return !planForDate?.isConfirmed;
+    };
+
     const list: EventInput[] = [
-      // Fixed events
-      ...events.map((occ) => ({
-        id: occ.id,
-        title: occ.title,
-        start: `${occ.occurrenceDate}T${occ.startTime}`,
-        end: `${occ.occurrenceDate}T${occ.endTime}`,
-        extendedProps: { occurrence: occ },
-        backgroundColor: fixedEventColor,
-        borderColor: fixedEventColor,
-        textColor: EVENT_TEXT,
-        ...(occ.recurrenceType !== "NONE" && { backgroundColor: fixedEventColor + "d9" }),
-      }))
-    ];
-
-    // Render time blocks unconditionally (whether confirmed or not)
-    list.push(
-      ...timeBlocks.map((block) => {
-        const planTask = dailyPlanToday?.tasks.find((pt: DailyPlanTask) => pt.task.id === block.taskId);
-        const task     = planTask?.task;
-        const isMit    = planTask?.isMit || false;
-
-        const label = block.totalParts > 1
-          ? `${task?.title || "Task"} (${block.partIndex}/${block.totalParts})`
-          : task?.title || "Task";
-
-        const color = task?.category?.color
-          ? task.category.color
-          : isMit
-          ? TASK_COLOR_MIT
-          : TASK_COLOR_REG;
-
+      ...wakeSleepLineEvents,
+      ...(events as unknown as FixedEventOccurrence[]).map((occ) => {
+        const color = occ.category?.color || fixedEventColor;
+        const isAllDay = !!occ.isAllDay;
+        const isFree = occ.availabilityStatus === 'FREE';
+        const occEditable = !isAllDay && isOccurrenceEditable(occ.occurrenceDate);
         return {
-          id: block.id || `block-${block.taskId}-${block.partIndex}`,
-          title: label,
-          start: block.startTime,
-          end: block.endTime,
-          backgroundColor: color,
-          borderColor: color,
-          textColor: "#ffffff",
-          // Editable only when the plan is NOT confirmed (planning mode)
-          editable: !isConfirmed,
-          durationEditable: !isConfirmed,
-          extendedProps: { blockId: block.id, taskId: block.taskId, isTimeBlock: true },
+          id: occ.id,
+          title: occ.title,
+          start: isAllDay ? occ.occurrenceDate : `${occ.occurrenceDate}T${occ.startTime}`,
+          end: isAllDay ? occ.occurrenceDate : `${occ.occurrenceDate}T${occ.endTime}`,
+          allDay: isAllDay,
+          editable: occEditable,
+          durationEditable: occEditable,
+          extendedProps: {
+            occurrence: occ,
+            isTimeBlock: false,
+            isFree,
+            isBusy: !isFree,
+          },
+          backgroundColor: isFree ? `${color}25` : color,
+          borderColor: isFree ? color : color,
+          textColor: isFree ? color : EVENT_TEXT,
+          classNames: ['fc-event-item', isFree ? 'fc-event-free' : 'fc-event-busy'],
+          ...(occ.recurrenceType !== "NONE" && !isFree && { backgroundColor: color + "d9" }),
         };
       })
+    ];
+
+    const taskLookup = new Map<string, Task>();
+    for (const t of tasks) {
+      taskLookup.set(t.id, t);
+    }
+
+    list.push(
+      ...allTimeBlocks
+        .filter((block) => {
+          // Deduplicate / Filter stale FREE blocks for tasks that are no longer in that date's plan
+          const blockDate = block.startTime.substring(0, 10);
+          const planForBlockDate = plansInRange?.find(p => p.planDate === blockDate);
+          
+          // If a plan exists for this date, verify if task is in this date's plan
+          if (planForBlockDate && planForBlockDate.tasks && planForBlockDate.tasks.length > 0) {
+            const inThisPlan = planForBlockDate.tasks.some(pt => pt.task.id === block.taskId);
+            if (!inThisPlan && block.availabilityStatus !== 'BUSY') {
+              // Block is FREE and task is NOT in this date's plan -> stale/orphaned block
+              return false;
+            }
+          }
+          return true;
+        })
+        .map((block) => {
+          const task = taskLookup.get(block.taskId);
+          const blockDate = block.startTime.substring(0, 10);
+          
+          let isMit = task?.isImportant || false;
+          let isInPlan = false;
+          if (plansInRange) {
+            const planForBlockDate = plansInRange.find(p => p.planDate === blockDate);
+            if (planForBlockDate) {
+              const pt = planForBlockDate.tasks?.find(p => p.task.id === block.taskId);
+              if (pt) {
+                isMit = pt.isMit;
+                isInPlan = true;
+              }
+            }
+          }
+
+          const label = block.totalParts > 1
+            ? `${task?.title || "Task"} (${block.partIndex}/${block.totalParts})`
+            : task?.title || "Task";
+
+          const color = task?.category?.color
+            ? task.category.color
+            : isMit
+            ? TASK_COLOR_MIT
+            : TASK_COLOR_REG;
+
+          const blockBelongsToFocused = block.startTime.startsWith(focusedDate);
+          const blockEditable = blockBelongsToFocused && !isConfirmed && isInPlan;
+          const isBlockBusy = block.availabilityStatus === 'BUSY';
+
+          return {
+            id: block.id || `block-${block.taskId}-${block.partIndex}`,
+            title: label,
+            start: block.startTime,
+            end: block.endTime,
+            backgroundColor: color,
+            borderColor: color,
+            textColor: "#ffffff",
+            editable: blockEditable,
+            durationEditable: blockEditable,
+            classNames: [
+              'fc-task-block',
+              isBlockBusy ? 'fc-task-busy' : 'fc-task-free',
+              !isInPlan ? 'fc-block-not-in-plan' : ''
+            ].filter(Boolean),
+            extendedProps: {
+              blockId: block.id,
+              taskId: block.taskId,
+              taskTitle: task?.title || "Task",
+              partIndex: block.partIndex,
+              totalParts: block.totalParts,
+              isMit,
+              isTimeBlock: true,
+              isBusy: isBlockBusy,
+              isFree: !isBlockBusy,
+              isInPlan,
+            },
+          };
+        })
     );
 
     return list;
-  }, [events, timeBlocks, dailyPlanToday, fixedEventColor, isConfirmed]);
+  }, [events, allTimeBlocks, plansInRange, fixedEventColor, isConfirmed, tasks, focusedDate, today, wakeSleepLineEvents]);
 
   const [initialView] = useState(() => {
     if (typeof window !== "undefined") {
@@ -252,13 +435,11 @@ export function useCalendarPage() {
   });
   const [isCalendarMounted, setIsCalendarMounted] = useState(false);
 
-  // Restore saved view on mount
   useEffect(() => {
     const timer = setTimeout(() => setIsCalendarMounted(true), 0);
     return () => clearTimeout(timer);
   }, []);
 
-  // Update FullCalendar size to prevent scrollbar gutter gaps on mount or sidebar toggle
   useEffect(() => {
     if (isCalendarMounted && calendarRef.current) {
       const api = calendarRef.current.getApi();
@@ -304,75 +485,40 @@ export function useCalendarPage() {
   }, []);
 
   const handleAutoScheduleFromSidebar = useCallback(async () => {
-    if (!dailyPlanToday || !user?.wakeTime || !user?.sleepTime) {
-      toast.error("Không thể tự động lên lịch. Hãy kiểm tra lại cài đặt giờ thức/ngủ.");
-      return;
-    }
-
     setIsAutoScheduling(true);
     try {
-      const scheduledTaskIdsSet = new Set(timeBlocks.map((b) => b.taskId));
-      const unscheduledPlanTasks = dailyPlanToday.tasks.filter((pt: DailyPlanTask) => !scheduledTaskIdsSet.has(pt.task.id));
-
-      if (unscheduledPlanTasks.length === 0) {
-        toast.info("Tất cả công việc đã được lên lịch!");
-        return;
-      }
-
-      const occupiedSlots: OccupiedSlot[] = [
-        ...events.map((e) => ({
-          date: e.occurrenceDate,
-          startTime: e.startTime.substring(0, 5),
-          endTime: e.endTime.substring(0, 5),
-        })),
-        ...timeBlocks.map((tb) => ({
-          date: toLocalDateStr(tb.startTime),
-          startTime: toLocalTimeStr(tb.startTime),
-          endTime: toLocalTimeStr(tb.endTime),
-        })),
-      ];
-
-      const newBlocks = autoSchedule(
-        unscheduledPlanTasks,
-        occupiedSlots,
-        dailyPlanToday.id,
-        today,
-        user.wakeTime,
-        user.sleepTime,
-        user.timezone
-      );
-
-      if (newBlocks.length === 0) {
-        toast.warning("Không còn đủ khoảng trống thời gian tối thiểu (30 phút) để xếp lịch tự động cho các task còn lại.");
-        return;
-      }
-
-      const existingCleanBlocks = timeBlocks.map((b) => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { id: _, ...rest } = b;
-        return rest as Omit<TaskTimeBlock, "id">;
-      });
-      await saveTimeBlocksMutation.mutateAsync([...existingCleanBlocks, ...newBlocks] as Omit<TaskTimeBlock, 'id'>[]);
-      toast.success("Đã tự động sắp xếp các công việc còn lại vào lịch!");
+      await fetchClient.post("auto-schedule", {});
+      queryClient.invalidateQueries({ queryKey: ["dailyPlan"] });
+      queryClient.invalidateQueries({ queryKey: ["dailyPlans"] });
+      queryClient.invalidateQueries({ queryKey: ["timeBlocks"] });
+      toast.success("Đã tự động sắp xếp các công việc vào lịch!");
     } catch (err) {
       console.error(err);
       toast.error("Có lỗi xảy ra khi tự động xếp lịch.");
     } finally {
       setIsAutoScheduling(false);
     }
-  }, [dailyPlanToday, timeBlocks, events, user, today, saveTimeBlocksMutation]);
+  }, [queryClient]);
 
   const handleEventClick = useCallback((arg: EventClickArg) => {
     if (arg.event.extendedProps.isTimeBlock) {
       const blockId = arg.event.extendedProps.blockId;
       const taskId = arg.event.extendedProps.taskId;
-      const block = timeBlocks.find((b) => b.id === blockId);
+      const block = allTimeBlocks.find((b) => b.id === blockId) || timeBlocks.find((b) => b.id === blockId);
+      let task = tasks.find(t => t.id === taskId) || null;
+      
+      let isMit = task?.isImportant || false;
       const planTask = dailyPlanToday?.tasks.find((pt: DailyPlanTask) => pt.task.id === taskId);
+      if (planTask) {
+        task = planTask.task;
+        isMit = planTask.isMit;
+      }
 
-      if (block && planTask) {
+      if (block && task) {
         setSelectedBlock(block);
-        setSelectedTask(planTask.task);
-        setIsBlockMit(planTask.isMit);
+        setSelectedTask(task);
+        setIsBlockMit(isMit);
+        setIsBlockInPlan(arg.event.extendedProps.isInPlan);
         setBlockModalOpen(true);
       }
       return;
@@ -382,7 +528,7 @@ export function useCalendarPage() {
     setModalMode("edit");
     setModalDefaults({});
     setModalOpen(true);
-  }, [timeBlocks, dailyPlanToday]);
+  }, [allTimeBlocks, timeBlocks, dailyPlanToday, tasks]);
 
   const planTasks = dailyPlanToday?.tasks || [];
   const hasPlan   = planTasks.length > 0;
@@ -394,6 +540,8 @@ export function useCalendarPage() {
     sidebarRef,
     slotMin,
     slotMax,
+    scrollTime,
+    businessHours,
     fcEvents,
     initialView,
     isCalendarMounted,
@@ -403,6 +551,7 @@ export function useCalendarPage() {
     handleColorChange,
     unscheduledTasks,
     hasUnscheduled,
+    handleToggleBlockLock,
     isAutoScheduling,
     handleAutoScheduleFromSidebar,
     modalOpen,
@@ -413,13 +562,17 @@ export function useCalendarPage() {
     createEvent,
     updateAllOccurrences,
     updateSingleOccurrence,
+    updateFromDateOnwards,
     deleteAllOccurrences,
     deleteSingleOccurrence,
+    deleteFromDateOnwards,
+
     blockModalOpen,
     setBlockModalOpen,
     selectedBlock,
     selectedTask,
     isBlockMit,
+    isBlockInPlan,
     handleUnscheduleTask,
     isUnscheduling,
     handleConfirmPlan,
@@ -435,8 +588,11 @@ export function useCalendarPage() {
     handleEventDragStop,
 
     // Store data
+    hasAllDayEvents,
     dailyPlanToday,
     timeBlocks,
+    datesWithPlanSet,
+
     focusedDate,
     plannable,
   };

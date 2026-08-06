@@ -14,6 +14,7 @@ interface RecurringActionDialogProps {
   open: boolean;
   action: "edit" | "delete";
   onSelectSingle: () => void;
+  onSelectFollowing: () => void;
   onSelectAll: () => void;
   onCancel: () => void;
 }
@@ -22,6 +23,7 @@ export function RecurringActionDialog({
   open,
   action,
   onSelectSingle,
+  onSelectFollowing,
   onSelectAll,
   onCancel,
 }: RecurringActionDialogProps) {
@@ -43,8 +45,9 @@ export function RecurringActionDialog({
 
         <div className="flex flex-col gap-2 pt-1">
           <button
+            type="button"
             onClick={onSelectSingle}
-            className="flex flex-col rounded-xl border border-border bg-card px-4 py-3 text-left transition-all hover:border-primary/50 hover:bg-primary/5 active:scale-[0.98]"
+            className="flex flex-col rounded-xl border border-border bg-card px-4 py-3 text-left transition-all hover:border-primary/50 hover:bg-accent hover:text-accent-foreground active:scale-[0.98]"
           >
             <span className="font-medium text-sm text-foreground">
               {t.calendar.onlyThis}
@@ -55,8 +58,22 @@ export function RecurringActionDialog({
           </button>
 
           <button
+            type="button"
+            onClick={onSelectFollowing}
+            className="flex flex-col rounded-xl border border-border bg-card px-4 py-3 text-left transition-all hover:border-primary/50 hover:bg-accent hover:text-accent-foreground active:scale-[0.98]"
+          >
+            <span className="font-medium text-sm text-foreground">
+              {t.calendar.thisAndFollowing}
+            </span>
+            <span className="text-xs text-muted-foreground mt-0.5">
+              {t.calendar.thisAndFollowingDesc(action)}
+            </span>
+          </button>
+
+          <button
+            type="button"
             onClick={onSelectAll}
-            className="flex flex-col rounded-xl border border-border bg-card px-4 py-3 text-left transition-all hover:border-primary/50 hover:bg-primary/5 active:scale-[0.98]"
+            className="flex flex-col rounded-xl border border-border bg-card px-4 py-3 text-left transition-all hover:border-primary/50 hover:bg-accent hover:text-accent-foreground active:scale-[0.98]"
           >
             <span className="font-medium text-sm text-foreground">
               {t.calendar.allEvents}
@@ -66,6 +83,7 @@ export function RecurringActionDialog({
             </span>
           </button>
         </div>
+
 
         <DialogFooter className="pt-2">
           <Button variant="ghost" size="sm" onClick={onCancel}>

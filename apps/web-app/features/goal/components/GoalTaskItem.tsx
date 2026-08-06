@@ -4,8 +4,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { CheckmarkCircle01Icon, PlusSignIcon, InboxIcon, Delete01Icon, Archive02Icon, ArrowRight01Icon, ArrowDown01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { updateTaskAction, deleteTaskAction } from "@/features/board/actions/task.action";
-import { addChecklistItemAction, updateChecklistItemAction, deleteChecklistItemAction } from "@/features/board/actions/checklist.action";
+import { fetchClient } from "@/lib/fetchClient";
 import { toast } from "sonner";
 import { ConfirmDeleteDialog } from "@/components/feedback/ConfirmDeleteDialog";
 import { useTranslation } from "@/hooks/use-translation";
@@ -27,23 +26,23 @@ export function GoalTaskItem({ task, defaultExpanded = false, onAddToBacklog, on
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   const queryClient = useQueryClient();
   const updateTaskMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string, data: Partial<Task> }) => updateTaskAction(id, data),
+    mutationFn: ({ id, data }: { id: string, data: Partial<Task> }) => fetchClient.put(`tasks/${id}`, data).then(r => r.data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
   });
   const deleteTaskMutation = useMutation({
-    mutationFn: deleteTaskAction,
+    mutationFn: (id: string) => fetchClient.del(`tasks/${id}`).then(r => r.data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
   });
   const addChecklistItemMutation = useMutation({
-    mutationFn: ({ taskId, data }: { taskId: string, data: { title: string, isCompleted?: boolean } }) => addChecklistItemAction(taskId, data),
+    mutationFn: ({ taskId, data }: { taskId: string, data: { title: string, isCompleted?: boolean } }) => fetchClient.post(`tasks/${taskId}/checklists`, data).then(r => r.data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
   });
   const updateChecklistItemMutation = useMutation({
-    mutationFn: ({ taskId, checklistId, data }: { taskId: string, checklistId: string, data: { title?: string, isCompleted?: boolean } }) => updateChecklistItemAction(taskId, checklistId, data),
+    mutationFn: ({ taskId, checklistId, data }: { taskId: string, checklistId: string, data: { title?: string, isCompleted?: boolean } }) => fetchClient.put(`tasks/${taskId}/checklists/${checklistId}`, data).then(r => r.data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
   });
   const deleteChecklistItemMutation = useMutation({
-    mutationFn: ({ taskId, checklistId }: { taskId: string, checklistId: string }) => deleteChecklistItemAction(taskId, checklistId),
+    mutationFn: ({ taskId, checklistId }: { taskId: string, checklistId: string }) => fetchClient.del(`tasks/${taskId}/checklists/${checklistId}`).then(r => r.data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
   });
   const { locale } = useTranslation();

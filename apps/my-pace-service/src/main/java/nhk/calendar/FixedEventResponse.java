@@ -1,6 +1,8 @@
 package nhk.calendar;
 
 import lombok.Builder;
+import nhk.category.CategoryDto;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -15,8 +17,13 @@ public record FixedEventResponse(
     LocalDate occurrenceDate,
     LocalTime startTime,
     LocalTime endTime,
+    Boolean isAllDay,
     String recurrenceType,
+
     List<Integer> recurrenceDaysOfWeek,
     LocalDate recurrenceEndDate,
-    boolean isException
+    boolean isException,
+    UUID categoryId,
+    CategoryDto category,
+    String availabilityStatus
 ) {}

@@ -2,9 +2,10 @@
 
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useAvailableTimeQuery, useCheckinMutation } from "./useAvailableTime";
+import { useAvailableTimeQuery } from "./useAvailableTime";
 import { useAuthStore } from "@/features/auth";
 import { getTodayStr as getTodayStrHelper } from "@/lib/date";
+import {useCheckinMutation} from "@/features/available-time/hooks/useCheckinMutation";
 
 export function useAppVisibility() {
   const user = useAuthStore((s) => s.user);

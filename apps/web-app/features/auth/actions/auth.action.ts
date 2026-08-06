@@ -2,7 +2,7 @@
 
 import { cookies } from 'next/headers';
 import { LoginValues, RegisterValues } from '@/features/auth/schema/auth.schema';
-import { serverFetch } from '@/lib/server-fetchClient';
+import { serverFetch } from '@/features/auth/utils/auth-server-fetch';
 import { AuthUser } from '@/features/auth/store/auth.store';
 
 const BASE_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
@@ -64,6 +64,10 @@ export async function setAuthCookies(tokens: { accessToken?: string; refreshToke
   }
 }
 
+export async function syncTimezoneCookie(timezone: string) {
+  await setAuthCookies({ timezone });
+}
+
 export async function loginAction(data: LoginValues) {
   try {
     const response = await fetch(`${BASE_URL}/auth/login`, {
@@ -76,14 +80,17 @@ export async function loginAction(data: LoginValues) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      return { success: false, error: errorData.message || 'Login failed' };
+      return {
+        success: false,
+        error: errorData.message || 'Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại.'
+      };
     }
 
     const json = await response.json();
     const { accessToken, refreshToken, user } = extractAuthData(json);
     
     if (!accessToken) {
-      return { success: false, error: 'Invalid token received from server' };
+      return { success: false, error: 'Phản hồi từ hệ thống không hợp lệ.' };
     }
 
     await setAuthCookies({
@@ -95,7 +102,7 @@ export async function loginAction(data: LoginValues) {
     return { success: true, user };
   } catch (err) {
     console.error('Login action error:', err);
-    return { success: false, error: 'Cannot connect to the server' };
+    return { success: false, error: 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại kết nối mạng.' };
   }
 }
 
@@ -151,6 +158,50 @@ export async function verifyOtpAction(data: { email: string; otp: string }) {
   } catch (err) {
     console.error('Verify OTP action error:', err);
     return { success: false, error: 'Cannot connect to the server' };
+  }
+}
+
+export async function requestForgotPasswordOtpAction(data: { email: string }) {
+  try {
+    const response = await fetch(`${BASE_URL}/auth/send-forgot-password-otp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return { success: false, error: errorData.message || 'Không thể gửi mã xác minh.' };
+    }
+
+    return { success: true };
+  } catch (err) {
+    console.error('Request forgot password OTP action error:', err);
+    return { success: false, error: 'Không thể kết nối đến máy chủ. Vui lòng thử lại sau.' };
+  }
+}
+
+export async function resetPasswordAction(data: { email: string; otp: string; newPassword: string }) {
+  try {
+    const response = await fetch(`${BASE_URL}/auth/reset-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return { success: false, error: errorData.message || 'Đặt lại mật khẩu không thành công.' };
+    }
+
+    return { success: true };
+  } catch (err) {
+    console.error('Reset password action error:', err);
+    return { success: false, error: 'Không thể kết nối đến máy chủ. Vui lòng thử lại sau.' };
   }
 }
 

@@ -14,7 +14,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const clearSession = useAuthStore((state) => state.clearSession);
     const user = useAuthStore((state) => state.user);
     const isInitialized = useAuthStore((state) => state.isInitialized);
-    const isAuthRoute = pathname === "/login" || pathname === "/register";
+    const isAuthRoute = pathname === "/login" || pathname === "/register" || pathname === "/forgot-password";
     const hasSession = Boolean(user);
 
     useEffect(() => {

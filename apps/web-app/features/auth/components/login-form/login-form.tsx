@@ -35,7 +35,7 @@ export function LoginForm() {
     const result = await login(data);
     if (!result.success) {
       loginForm.setError("root", {
-        message: result.error || "Login failed",
+        message: result.error || "Email hoặc mật khẩu không chính xác",
       });
     }
   };
@@ -72,7 +72,15 @@ export function LoginForm() {
               </Field>
 
               <Field className="space-y-2">
-                <FieldLabel htmlFor="password">{t.auth.passwordLabel}</FieldLabel>
+                <div className="flex items-center justify-between">
+                  <FieldLabel htmlFor="password">{t.auth.passwordLabel}</FieldLabel>
+                  <Link
+                    href="/forgot-password"
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {t.auth.forgotPasswordLink}
+                  </Link>
+                </div>
 
                 <Input
                     {...loginForm.register("password")}
