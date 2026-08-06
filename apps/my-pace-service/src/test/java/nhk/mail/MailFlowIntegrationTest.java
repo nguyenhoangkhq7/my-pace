@@ -37,12 +37,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
+@ActiveProfiles("test")
 @TestPropertySource(properties = {
-        "spring.flyway.enabled=false",
-        "spring.jpa.hibernate.ddl-auto=create-drop",
-        "spring.datasource.driver-class-name=org.h2.Driver",
-        "spring.datasource.url=jdbc:h2:mem:testmailflowdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
-        "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
         "spring.resend.api-key=re_test_key_12345",
         "spring.resend.from=noreply@mypace.app",
         "JWT_SECRET=test-jwt-secret-with-at-least-256-bits-length-so-it-does-not-fail-validation"

@@ -55,6 +55,9 @@ class AutoScheduleServiceImplTest {
         categoryRepository = mock(CategoryRepository.class);
         dailyPlanTaskRepository = mock(DailyPlanTaskRepository.class);
 
+        when(categoryRepository.findByUserIdWithTimeContext(any())).thenReturn(List.of());
+        when(categoryRepository.findByUserIdOrderByNameAsc(any())).thenReturn(List.of());
+
         service = new AutoScheduleServiceImpl(
                 userRepo, taskRepository, dailyPlanRepository,
                 timeBlockRepository, eventService, bitmapScheduler,
@@ -118,8 +121,8 @@ class AutoScheduleServiceImplTest {
         User user = new User();
         user.setId(userId);
         user.setTimezone("Asia/Ho_Chi_Minh");
-        user.setWakeTime(LocalTime.of(7, 0));
-        user.setSleepTime(LocalTime.of(23, 0));
+        user.setWakeTime(LocalTime.of(0, 0));
+        user.setSleepTime(LocalTime.of(23, 59));
 
         when(userRepo.findById(userId)).thenReturn(Optional.of(user));
         when(eventService.getEventsInRange(any(), any(), any())).thenReturn(List.of());
@@ -146,7 +149,7 @@ class AutoScheduleServiceImplTest {
 
         when(taskRepository.findByUserId(userId)).thenReturn(List.of(q1BacklogTask, q2PickedTask));
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh"));
         DailyPlan todayPlan = new DailyPlan();
         todayPlan.setId(UUID.randomUUID());
         todayPlan.setUserId(userId);
@@ -209,7 +212,7 @@ class AutoScheduleServiceImplTest {
 
         when(taskRepository.findByUserId(userId)).thenReturn(List.of(task));
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh"));
         DailyPlan todayPlan = new DailyPlan();
         todayPlan.setId(UUID.randomUUID());
         todayPlan.setUserId(userId);
@@ -252,8 +255,8 @@ class AutoScheduleServiceImplTest {
         User user = new User();
         user.setId(userId);
         user.setTimezone("Asia/Ho_Chi_Minh");
-        user.setWakeTime(LocalTime.of(7, 0));
-        user.setSleepTime(LocalTime.of(23, 0));
+        user.setWakeTime(LocalTime.of(0, 0));
+        user.setSleepTime(LocalTime.of(23, 59));
 
         when(userRepo.findById(userId)).thenReturn(Optional.of(user));
         when(eventService.getEventsInRange(any(), any(), any())).thenReturn(List.of());
@@ -271,7 +274,7 @@ class AutoScheduleServiceImplTest {
 
         when(taskRepository.findByUserId(userId)).thenReturn(List.of(task250));
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh"));
         DailyPlan plan = new DailyPlan();
         plan.setId(UUID.randomUUID());
         plan.setUserId(userId);

@@ -33,15 +33,10 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
 @SpringBootTest
+@ActiveProfiles("test")
 @Transactional
 @TestPropertySource(properties = {
-    "spring.jpa.hibernate.ddl-auto=create-drop",
-    "spring.flyway.enabled=false",
-    "spring.datasource.driver-class-name=org.h2.Driver",
-    "spring.datasource.url=jdbc:h2:mem:testauthdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
-    "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
     "RESEND_API_KEY=test-api-key",
     "JWT_SECRET=test-jwt-secret-with-at-least-256-bits-length-so-it-does-not-fail-validation"
 })
