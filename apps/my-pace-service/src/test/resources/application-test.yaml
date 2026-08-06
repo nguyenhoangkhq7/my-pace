@@ -22,10 +22,6 @@ spring:
   resend:
     api-key: test-resend-key
     from: test@example.com
-  data:
-    redis:
-      repositories:
-        enabled: false
 
 app:
   cors:

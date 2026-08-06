@@ -27,8 +27,8 @@ my-pace-app/
 
 ### Backend (`apps/my-pace-service`)
 - **Core:** Spring Boot 4.x, Java 21, Maven
-- **Database & Caching:** Spring Data JPA (PostgreSQL), Redis
-- **Authentication:** JWT (`jjwt`), Redis Blacklist
+- **Database & Caching:** Spring Data JPA (PostgreSQL), Spring ConcurrentMapCache
+- **Authentication:** JWT (`jjwt`)
 - **Package Structure (`nhk`):**
   - `auth`, `user`: Security, auth, user profiles.
   - `calendar`: Fixed events, daily check-ins, available time calculation.

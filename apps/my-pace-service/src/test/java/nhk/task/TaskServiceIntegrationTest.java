@@ -41,9 +41,6 @@ class TaskServiceIntegrationTest {
     @MockitoBean
     private nhk.mail.SendOtpMailService sendOtpMailService;
 
-    @MockitoBean
-    private org.springframework.data.redis.core.StringRedisTemplate stringRedisTemplate;
-
     @Autowired
     private TaskServiceImpl taskService;
 

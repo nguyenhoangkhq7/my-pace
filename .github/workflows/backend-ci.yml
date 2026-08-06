@@ -42,7 +42,6 @@ jobs:
           fi
           # Force connection to localhost for host runner tests (docker maps ports to localhost)
           echo "SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/my_pace_db" >> $GITHUB_ENV
-          echo "SPRING_DATA_REDIS_HOST=localhost" >> $GITHUB_ENV
           
       - name: Make Maven Wrapper executable
         run: chmod +x mvnw
@@ -50,9 +49,9 @@ jobs:
       - name: Check Lint / Format (Checkstyle)
         run: ./mvnw checkstyle:check || echo "Checkstyle is not configured yet. Skipping."
         
-      - name: Start Database and Redis
+      - name: Start Database
         working-directory: ${{ github.workspace }}
-        run: docker compose up -d db redis
+        run: docker compose up -d db
         
       - name: Wait for services
         run: |
