@@ -2,6 +2,7 @@ package nhk.calendar;
 
 import jakarta.persistence.*;
 import lombok.*;
+import nhk.category.Category;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDate;
@@ -48,6 +49,16 @@ public class FixedEventException {
 
     @Column(name = "override_end_time")
     private LocalTime overrideEndTime;
+
+    @Column(name = "override_is_all_day")
+    private Boolean overrideIsAllDay;
+
+    @Column(name = "override_availability_status", length = 20)
+    private String overrideAvailabilityStatus;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "override_category_id")
+    private Category overrideCategory;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     @org.springframework.data.annotation.CreatedDate

@@ -2,14 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getGoalsAction } from "../actions/goal.action";
+import { fetchClient } from "@/lib/fetchClient";
 import { GoalFormModal } from "./GoalFormModal";
 import { GoalRulesModal } from "./GoalRulesModal";
 import { Goal } from "../types";
 import { TaskFormModal } from "@/features/board/components/TaskFormModal";
 import { toast } from "sonner";
-import { getCategoriesAction } from "@/features/board/actions/category.action";
-import { getTasksAction } from "@/features/board/actions/task.action";
 import { GoalDetailModal } from "./GoalDetailModal";
 
 // Sub-components
@@ -22,7 +20,7 @@ import { GoalEmptyState } from "./GoalEmptyState";
 export function GoalDashboard({ initialGoals = [] }: { initialGoals?: Goal[] }) {
   const { data: goals = [], isLoading, error } = useQuery({
     queryKey: ['goals'],
-    queryFn: () => getGoalsAction(),
+    queryFn: () => fetchClient.get<Goal[]>('goals').then(r => r.data),
     initialData: initialGoals,
   });
   const [filterType, setFilterType] = useState<string>("ALL");
@@ -36,8 +34,8 @@ export function GoalDashboard({ initialGoals = [] }: { initialGoals?: Goal[] }) 
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [prefilledGoalId, setPrefilledGoalId] = useState<string | undefined>(undefined);
 
-  useQuery({ queryKey: ['categories'], queryFn: getCategoriesAction });
-  useQuery({ queryKey: ['tasks'], queryFn: getTasksAction });
+  useQuery({ queryKey: ['categories'], queryFn: () => fetchClient.get('categories').then(r => r.data) });
+  useQuery({ queryKey: ['tasks'], queryFn: () => fetchClient.get('tasks').then(r => r.data) });
 
   // Handle errors from backend e.g. Limit Exceeded
   useEffect(() => {

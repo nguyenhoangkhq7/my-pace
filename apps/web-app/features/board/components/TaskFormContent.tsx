@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useId } from "react";
 import { DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,10 +8,9 @@ import { Task, TaskChecklistItem } from "../types";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
-import { useQuery } from "@tanstack/react-query";
 import { useTasks } from "../hooks/useTasks";
 import { useCategories } from "../hooks/useCategories";
-import { getGoalsAction } from "@/features/goal/actions/goal.action";
+import { useGoals } from "../hooks/useGoals";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Calendar01Icon, Delete01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
@@ -27,6 +26,7 @@ import { TimeSelect } from "@/components/ui/time-select";
 import { TaskFormChecklist } from "./TaskFormChecklist";
 import { TaskFormDuration } from "./TaskFormDuration";
 import { TaskFormCategory } from "./TaskFormCategory";
+import { TaskFormSplittable } from "./TaskFormSplittable";
 
 interface TaskFormContentProps {
   isOpen: boolean;
@@ -57,8 +57,7 @@ export function TaskFormContent({
 }: TaskFormContentProps) {
   const { tasks, createTask, updateTask, deleteTask } = useTasks();
   const { categories } = useCategories();
-
-  const { data: goals = [], refetch: fetchGoals } = useQuery({ queryKey: ['goals'], queryFn: getGoalsAction });
+  const { goals, fetchGoals } = useGoals();
   const { t } = useTranslation();
 
   const [localChecklists, setLocalChecklists] = useState<Partial<TaskChecklistItem>[]>([]);
@@ -85,11 +84,15 @@ export function TaskFormContent({
   const baseValuesRef = useRef<TaskFormValues | null>(null);
   const baseChecklistsRef = useRef<Partial<TaskChecklistItem>[]>([]);
 
+  const urgentId = useId();
+  const importantId = useId();
+
   const currentTask = initialData?.id ? tasks.find(t => t.id === initialData.id) : null;
   const checklists = currentTask?.checklists || [];
 
-  const { register, handleSubmit, control, setValue, reset, watch, formState } = useForm<TaskFormValues>({
+  const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema(!!requireDuration)),
+    mode: "onChange",
     defaultValues: {
       title: "",
       estimatedMinutes: undefined,
@@ -99,8 +102,12 @@ export function TaskFormContent({
       categoryId: undefined,
       goalId: undefined,
       dueDate: undefined,
+      isSplittable: false,
+      minChunkMinutes: undefined,
+      maxDailyDuration: undefined,
     }
   });
+  const { register, handleSubmit, control, setValue, reset, watch, formState } = form;
 
   const watchRef = useRef(watch);
   useEffect(() => {
@@ -127,6 +134,9 @@ export function TaskFormContent({
       categoryId: initialData?.categoryId || undefined,
       goalId: prefilledGoalId || initialData?.goalId || undefined,
       dueDate: initialDueDate,
+      isSplittable: initialData?.isSplittable ?? false,
+      minChunkMinutes: initialData?.minChunkMinutes ?? undefined,
+      maxDailyDuration: initialData?.maxDailyDuration ?? undefined,
     };
   }, [initialData, planningTarget, prefilledGoalId, initialStatus, prefilledUrgent, prefilledImportant]);
 
@@ -168,6 +178,7 @@ export function TaskFormContent({
           try {
             const draft = JSON.parse(savedDraft);
             if (draft.dueDate) draft.dueDate = new Date(draft.dueDate);
+            if (draft.isSplittable === undefined) draft.isSplittable = false;
             reset(draft);
             baseValuesRef.current = draft;
 
@@ -229,6 +240,13 @@ export function TaskFormContent({
       
       const valDueDateMs = currentVal.dueDate ? new Date(currentVal.dueDate).getTime() : undefined;
       const baseDueDateMs = baseValuesRef.current.dueDate ? new Date(baseValuesRef.current.dueDate).getTime() : undefined;
+
+      const valIsSplittable = normalizeBoolean(currentVal.isSplittable);
+      const baseIsSplittable = normalizeBoolean(baseValuesRef.current.isSplittable);
+      const valMinChunkMinutes = normalizeNumber(currentVal.minChunkMinutes);
+      const baseMinChunkMinutes = normalizeNumber(baseValuesRef.current.minChunkMinutes);
+      const valMaxDailyDuration = normalizeNumber(currentVal.maxDailyDuration);
+      const baseMaxDailyDuration = normalizeNumber(baseValuesRef.current.maxDailyDuration);
       
       return (
         valTitle !== baseTitle ||
@@ -238,7 +256,10 @@ export function TaskFormContent({
         valIsImportant !== baseIsImportant ||
         valCategoryId !== baseCategoryId ||
         valGoalId !== baseGoalId ||
-        valDueDateMs !== baseDueDateMs
+        valDueDateMs !== baseDueDateMs ||
+        valIsSplittable !== baseIsSplittable ||
+        valMinChunkMinutes !== baseMinChunkMinutes ||
+        valMaxDailyDuration !== baseMaxDailyDuration
       );
     };
 
@@ -297,6 +318,9 @@ export function TaskFormContent({
       categoryId: values.categoryId === "none" ? undefined : (values.categoryId || undefined),
       goalId: values.goalId === "none" ? undefined : (values.goalId || undefined),
       dueDate: values.dueDate ? `${format(values.dueDate, "yyyy-MM-dd")}T${dueTime || "23:59"}:00` : undefined,
+      isSplittable: values.isSplittable || false,
+      minChunkMinutes: values.isSplittable ? (values.minChunkMinutes || undefined) : undefined,
+      maxDailyDuration: values.isSplittable ? (values.maxDailyDuration || undefined) : undefined,
     };
 
     if (!initialData?.id && localChecklists.length > 0) {
@@ -511,7 +535,10 @@ export function TaskFormContent({
                 <div className="grid gap-2">
                   <TaskFormDuration 
                     value={field.value ? String(field.value) : ""}
-                    onChange={(val) => field.onChange(val ? parseInt(val, 10) : undefined)}
+                    onChange={(val) => {
+                      field.onChange(val ? parseInt(val, 10) : undefined);
+                      form.trigger(["estimatedMinutes", "minChunkMinutes", "maxDailyDuration"]);
+                    }}
                     requireDuration={requireDuration}
                   />
                   {formState.errors.estimatedMinutes && (
@@ -529,14 +556,14 @@ export function TaskFormContent({
                     control={control}
                     render={({ field }) => (
                       <Checkbox 
-                        id="urgent" 
-                        checked={field.value}
+                        id={urgentId} 
+                        checked={!!field.value}
                         onCheckedChange={(checked) => field.onChange(checked === true)}
-                        className="border-border"
+                        className="border-border cursor-pointer"
                       />
                     )}
                   />
-                  <Label htmlFor="urgent" className="cursor-pointer font-normal text-sm">{t.taskForm.urgentLabel}</Label>
+                  <Label htmlFor={urgentId} className="cursor-pointer font-normal text-sm select-none">{t.taskForm.urgentLabel}</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Controller
@@ -544,17 +571,19 @@ export function TaskFormContent({
                     control={control}
                     render={({ field }) => (
                       <Checkbox 
-                        id="important" 
-                        checked={field.value}
+                        id={importantId} 
+                        checked={!!field.value}
                         onCheckedChange={(checked) => field.onChange(checked === true)}
-                        className="border-border"
+                        className="border-border cursor-pointer"
                       />
                     )}
                   />
-                  <Label htmlFor="important" className="cursor-pointer font-normal text-sm">{t.taskForm.importantLabel}</Label>
+                  <Label htmlFor={importantId} className="cursor-pointer font-normal text-sm select-none">{t.taskForm.importantLabel}</Label>
                 </div>
               </div>
             )}
+
+            <TaskFormSplittable form={form} />
           </div>
           
           {error && <p className="text-red-500 text-sm md:col-span-3">{error}</p>}

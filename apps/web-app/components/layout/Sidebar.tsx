@@ -20,6 +20,8 @@ import { useTranslation } from "@/hooks/use-translation";
 import { Settings } from "lucide-react";
 import { SettingsModal } from "@/features/settings/components/SettingsModal";
 import { StickyNotesTriggerBtn } from "@/features/sticky-notes/components/StickyNotesTriggerBtn";
+import { QuickAddTriggerBtn } from "@/features/quick-add/components/QuickAddTriggerBtn";
+import { useQuickAddUIStore } from "@/features/quick-add/store/quickAddUI.store";
 
 import { Time02Icon } from "@hugeicons/core-free-icons";
 import { useFocusStore } from "@/features/focus/store/focus.store";
@@ -38,6 +40,7 @@ export function Sidebar() {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const openQuickAdd = useQuickAddUIStore((s) => s.open);
 
   useEffect(() => {
     Promise.resolve().then(() => {
@@ -69,9 +72,9 @@ export function Sidebar() {
 
   const NAV_ITEMS: NavItem[] = [
     { id: "dashboard", label: t.nav.planYourDay, href: "/", icon: Grid02Icon },
-    { id: "goals", label: t.nav.goals, href: "/goals", icon: Target02Icon },
     { id: "calendar", label: t.nav.calendar, href: "/calendar", icon: Calendar03Icon },
     { id: "flow", label: t.nav.flow, href: "/flow", icon: Time02Icon },
+    { id: "goals", label: t.nav.goals, href: "/goals", icon: Target02Icon },
     { id: "stats", label: t.nav.analytics, href: "/stats", icon: Analytics01Icon },
   ];
 
@@ -102,6 +105,11 @@ export function Sidebar() {
           </button>
         </div>
 
+        {/* ── Quick Add ────────────────────────────────────────────── */}
+        <div className="mb-3">
+          <QuickAddTriggerBtn isCollapsed={isCollapsed} onClick={openQuickAdd} />
+        </div>
+
         {/* ── Navigation ── */}
         <nav className="flex flex-col gap-1">
           {!isCollapsed && (
@@ -119,6 +127,9 @@ export function Sidebar() {
                 key={item.id}
                 onClick={() => {
                   router.push(item.href);
+                }}
+                onMouseEnter={() => {
+                  router.prefetch(item.href);
                 }}
                 title={isCollapsed ? item.label : undefined}
                 className={cn(

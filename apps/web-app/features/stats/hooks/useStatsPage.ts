@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
-import { getStatsOverviewAction } from "../actions/stats.action";
+import { fetchClient } from "@/lib/fetchClient";
+import type { StatsOverviewResponse } from "../types";
 import { getRangeBounds, formatDateStr } from "../utils/statsDateUtils";
 
 export function useStatsPage() {
@@ -13,7 +14,14 @@ export function useStatsPage() {
 
   const { data: overview, isLoading, error } = useQuery({
     queryKey: ["stats", "overview", range, startDateStr, endDateStr],
-    queryFn: () => getStatsOverviewAction(startDateStr, endDateStr),
+    queryFn: () => {
+      let url = 'stats/overview';
+      const params: string[] = [];
+      if (startDateStr) params.push(`startDate=${startDateStr}`);
+      if (endDateStr) params.push(`endDate=${endDateStr}`);
+      if (params.length > 0) url += `?${params.join('&')}`;
+      return fetchClient.get<StatsOverviewResponse>(url).then(r => r.data);
+    },
     placeholderData: keepPreviousData,
   });
 
@@ -62,6 +70,22 @@ export function useStatsPage() {
       .sort((a, b) => b.value - a.value); // Sort descending
   }, [overview]);
 
+  const planVsActualData = useMemo(() => {
+    if (!overview?.dailyTimeStats) return [];
+    return overview.dailyTimeStats.map(item => {
+      const dateParts = item.date.split("-");
+      const label = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}` : item.date;
+      return {
+        date: label,
+        fullDate: item.date,
+        plannedHours: Math.round((item.plannedMinutes / 60) * 10) / 10,
+        actualHours: Math.round((item.actualMinutes / 60) * 10) / 10,
+        plannedMinutes: item.plannedMinutes,
+        actualMinutes: item.actualMinutes,
+      };
+    });
+  }, [overview]);
+
   return {
     overview,
     isLoading,
@@ -76,5 +100,6 @@ export function useStatsPage() {
     handleNext,
     matrixData,
     categoryData,
+    planVsActualData,
   };
 }

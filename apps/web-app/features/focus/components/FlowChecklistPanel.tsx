@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { addChecklistItemAction, updateChecklistItemAction, deleteChecklistItemAction } from "@/features/board/actions/checklist.action";
 import type { Task } from "@/features/board/types";
 import { cn } from "@/lib/utils";
 import { ListTodo, ChevronDown } from "lucide-react";
 import { TaskChecklistCreateForm } from "@/features/board/components/TaskChecklistCreateForm";
 import { FlowChecklistItemRow } from "./FlowChecklistItemRow";
+import { useChecklistMutations } from "@/features/board/hooks/useChecklistMutations";
 import { toast } from "sonner";
 
 interface FlowChecklistPanelProps {
@@ -15,38 +14,17 @@ interface FlowChecklistPanelProps {
 }
 
 export function FlowChecklistPanel({ task }: FlowChecklistPanelProps) {
-  const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
+  const { addChecklist, updateChecklist, deleteChecklist } = useChecklistMutations(task?.id);
 
   const checklists = task.checklists ?? [];
   const completedCount = checklists.filter((c) => c.isCompleted).length;
   const totalCount = checklists.length;
   const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-  const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ["tasks"] });
-    queryClient.invalidateQueries({ queryKey: ["dailyPlan"] });
-  };
-
-  const addMutation = useMutation({
-    mutationFn: (title: string) => addChecklistItemAction(task.id, { title }),
-    onSuccess: invalidate,
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ checklistId, data }: { checklistId: string; data: { title?: string; isCompleted?: boolean } }) =>
-      updateChecklistItemAction(task.id, checklistId, data),
-    onSuccess: invalidate,
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (checklistId: string) => deleteChecklistItemAction(task.id, checklistId),
-    onSuccess: invalidate,
-  });
-
   const handleAdd = async (title: string) => {
     try {
-      await addMutation.mutateAsync(title);
+      await addChecklist(title);
     } catch {
       toast.error("Không thể thêm subtask.");
     }
@@ -90,9 +68,9 @@ export function FlowChecklistPanel({ task }: FlowChecklistPanelProps) {
                 id={item.id}
                 title={item.title}
                 isCompleted={item.isCompleted}
-                onToggle={(checked) => updateMutation.mutate({ checklistId: item.id, data: { isCompleted: checked } })}
-                onUpdateTitle={async (newTitle) => { await updateMutation.mutateAsync({ checklistId: item.id, data: { title: newTitle } }); }}
-                onDelete={() => deleteMutation.mutate(item.id)}
+                onToggle={(checked) => updateChecklist({ checklistId: item.id, data: { isCompleted: checked } })}
+                onUpdateTitle={async (newTitle) => { await updateChecklist({ checklistId: item.id, data: { title: newTitle } }); }}
+                onDelete={() => deleteChecklist(item.id)}
               />
             ))}
           </div>

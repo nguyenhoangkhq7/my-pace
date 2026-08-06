@@ -20,10 +20,11 @@ function isAuthUser(value: unknown): value is AuthUser {
   }
 
   const candidate = value as Record<string, unknown>;
+  const nameVal = candidate.name ?? candidate.fullName;
 
   return (
     (typeof candidate.id === "string" || typeof candidate.id === "number") &&
-    typeof candidate.name === "string" &&
+    (typeof nameVal === "string" || nameVal === null || nameVal === undefined) &&
     typeof candidate.email === "string" &&
     (candidate.role === undefined || typeof candidate.role === "string") &&
     (candidate.wakeTime === undefined || candidate.wakeTime === null || typeof candidate.wakeTime === "string") &&
@@ -33,6 +34,24 @@ function isAuthUser(value: unknown): value is AuthUser {
   );
 }
 
+function extractUser(rawUser: Record<string, unknown>): AuthUser {
+  const resolvedName =
+    (typeof rawUser.name === "string" && rawUser.name) ||
+    (typeof rawUser.fullName === "string" && rawUser.fullName) ||
+    "";
+
+  return {
+    id: (rawUser.id as string | number) ?? "",
+    name: resolvedName,
+    email: (rawUser.email as string) || "",
+    role: rawUser.role as string | undefined,
+    wakeTime: rawUser.wakeTime as string | null | undefined,
+    sleepTime: rawUser.sleepTime as string | null | undefined,
+    bufferPct: typeof rawUser.bufferPct === "number" ? rawUser.bufferPct : 20,
+    timezone: (rawUser.timezone as string) || "Asia/Ho_Chi_Minh",
+  };
+}
+
 export function normalizeAuthSession(payload: unknown): AuthSession | null {
   if (typeof payload !== "object" || payload === null) {
     return null;
@@ -40,15 +59,23 @@ export function normalizeAuthSession(payload: unknown): AuthSession | null {
 
   const candidate = payload as Record<string, unknown>;
 
-  if (isAuthUser(candidate.user)) {
+  // Case 1: candidate has { user: ... }
+  if (typeof candidate.user === "object" && candidate.user !== null && isAuthUser(candidate.user)) {
     return {
-      user: candidate.user,
+      user: extractUser(candidate.user as unknown as Record<string, unknown>),
     };
   }
 
-  if ("data" in candidate) {
-    const nestedSession = normalizeAuthSession(candidate.data);
+  // Case 2: candidate itself is user object
+  if (isAuthUser(candidate)) {
+    return {
+      user: extractUser(candidate),
+    };
+  }
 
+  // Case 3: candidate has { data: ... }
+  if ("data" in candidate && candidate.data) {
+    const nestedSession = normalizeAuthSession(candidate.data);
     if (nestedSession) {
       return nestedSession;
     }

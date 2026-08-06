@@ -18,7 +18,6 @@ export function shiftTimeBlocks(
 ): Omit<TaskTimeBlock, "id">[] {
   const stripId = (tb: TaskTimeBlock): Omit<TaskTimeBlock, "id"> => ({
     taskId: tb.taskId,
-    dailyPlanId: tb.dailyPlanId,
     startTime: tb.startTime,
     endTime: tb.endTime,
     partIndex: tb.partIndex,

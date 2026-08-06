@@ -4,27 +4,16 @@ import { PlanningModeView } from "./PlanningModeView";
 import { ExecutionModeView } from "./ExecutionModeView";
 import { NoPlanState } from "./NoPlanState";
 import { CancelPlanDialog } from "./CancelPlanDialog";
+import { PlanOverloadModal } from "./PlanOverloadModal";
 import { useExecutionBoard } from "../hooks/useExecutionBoard";
 import { useTranslation } from "@/hooks/use-translation";
 
-const formatShortDate = (dateStr: string) => {
-  if (!dateStr) return "";
-  const parts = dateStr.split("-");
-  if (parts.length < 3) return dateStr;
-  const [, m, d] = parts;
-  return `${d}/${m}`;
-};
-
 export function ExecutionBoard({ 
   currentDate, 
-  tomorrowDate,
-  day2Date,
-  day3Date
+  tomorrowDate
 }: { 
   currentDate: string; 
   tomorrowDate: string;
-  day2Date: string;
-  day3Date: string;
 }) {
   const {
     tasks,
@@ -40,14 +29,18 @@ export function ExecutionBoard({
     setIsCancelModalOpen,
     isStartMyDayOpen,
     setIsStartMyDayOpen,
+    isOverloadModalOpen,
+    setIsOverloadModalOpen,
     currentPlan,
+    currentTimeBlocks,
     currentAvailable,
     totalAvailable,
     availableData,
     handleSavePlan,
+    doSavePlan,
     handleCancelPlan,
     handleRemoveExcessTasks,
-  } = useExecutionBoard({ currentDate, tomorrowDate, day2Date, day3Date });
+  } = useExecutionBoard({ currentDate, tomorrowDate });
   const { t } = useTranslation();
 
   const renderContent = () => {
@@ -71,6 +64,7 @@ export function ExecutionBoard({
       return (
         <ExecutionModeView
           currentPlan={currentPlan}
+          currentTimeBlocks={currentTimeBlocks || []}
           currentAvailable={currentAvailable}
           totalAvailable={totalAvailable}
           availableData={availableData ?? null}
@@ -107,8 +101,6 @@ export function ExecutionBoard({
           <TabsList className="bg-muted border border-border flex flex-wrap">
             <TabsTrigger value="today" className="data-[state=active]:bg-card data-[state=active]:text-foreground cursor-pointer">{t.board.today}</TabsTrigger>
             <TabsTrigger value="tomorrow" className="data-[state=active]:bg-card data-[state=active]:text-foreground cursor-pointer">{t.board.tomorrow}</TabsTrigger>
-            <TabsTrigger value="day2" className="data-[state=active]:bg-card data-[state=active]:text-foreground cursor-pointer">{formatShortDate(day2Date)}</TabsTrigger>
-            <TabsTrigger value="day3" className="data-[state=active]:bg-card data-[state=active]:text-foreground cursor-pointer">{formatShortDate(day3Date)}</TabsTrigger>
           </TabsList>
         </div>
         
@@ -118,14 +110,6 @@ export function ExecutionBoard({
         
         <TabsContent value="tomorrow" className="flex-1 mt-0 outline-none flex flex-col h-full overflow-hidden">
           {activeTab === 'tomorrow' && renderContent()}
-        </TabsContent>
-
-        <TabsContent value="day2" className="flex-1 mt-0 outline-none flex flex-col h-full overflow-hidden">
-          {activeTab === 'day2' && renderContent()}
-        </TabsContent>
-
-        <TabsContent value="day3" className="flex-1 mt-0 outline-none flex flex-col h-full overflow-hidden">
-          {activeTab === 'day3' && renderContent()}
         </TabsContent>
       </Tabs>
 
@@ -140,6 +124,15 @@ export function ExecutionBoard({
         isOpen={isStartMyDayOpen}
         onClose={() => setIsStartMyDayOpen(false)}
         todayStr={currentDate}
+      />
+
+      <PlanOverloadModal
+        isOpen={isOverloadModalOpen}
+        onClose={() => setIsOverloadModalOpen(false)}
+        overflowMinutes={Math.abs(Math.min(0, currentAvailable))}
+        plannedTasks={tasks.filter(t => plannedTaskIds.includes(t.id))}
+        onRemoveTask={(taskId) => removePlannedTaskLocally(taskId)}
+        onSaveAnyway={doSavePlan}
       />
     </div>
   );

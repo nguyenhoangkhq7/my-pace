@@ -10,10 +10,12 @@ public record TaskTimeBlockRequest(
     @NotNull LocalDateTime startTime,
     @NotNull LocalDateTime endTime,
     Integer partIndex,
-    Integer totalParts
+    Integer totalParts,
+    String availabilityStatus
 ) {
     public TaskTimeBlockRequest {
         if (partIndex == null) partIndex = 1;
         if (totalParts == null) totalParts = 1;
+        if (availabilityStatus == null || availabilityStatus.isBlank()) availabilityStatus = "FREE";
     }
 }

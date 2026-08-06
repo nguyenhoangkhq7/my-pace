@@ -30,6 +30,18 @@ public class AuthController {
       return ResponseEntity.ok().body(otp);
    }
 
+   @PostMapping("/send-forgot-password-otp")
+   public ResponseEntity<SendOtpResponse> sendOtpForgotPassword(@Valid @RequestBody SendOtpEmailRequest request) {
+      SendOtpResponse otp = authService.sendOtpForgotPassword(request);
+      return ResponseEntity.ok().body(otp);
+   }
+
+   @PostMapping("/reset-password")
+   public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+      authService.resetPassword(request);
+      return ResponseEntity.ok().build();
+   }
+
     @PostMapping("/register")
     public ResponseEntity<JwtResponse> register(
             @Valid @RequestBody RegisterRequest request,

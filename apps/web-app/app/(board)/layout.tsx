@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 
 import { StickyNotesOverlay } from "@/features/sticky-notes/components/StickyNotesOverlay";
 import { StickyNotesManagerDrawer } from "@/features/sticky-notes/components/StickyNotesManagerDrawer";
+import { QuickAddPalette } from "@/features/quick-add/components/QuickAddPalette";
 
 export default function AppLayout({
   children,
@@ -67,6 +68,8 @@ export default function AppLayout({
       <OnboardingModal />
       <StickyNotesOverlay />
       <StickyNotesManagerDrawer />
+      <QuickAddPalette />
     </div>
   );
 }
+

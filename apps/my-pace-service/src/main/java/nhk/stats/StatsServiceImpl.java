@@ -21,6 +21,7 @@ public class StatsServiceImpl implements StatsService {
     @PersistenceContext
     private EntityManager entityManager;
     private final nhk.user.UserRepository userRepository;
+    private final nhk.calendar.FixedEventService fixedEventService;
 
     @Override
     @Transactional(readOnly = true)
@@ -111,6 +112,16 @@ public class StatsServiceImpl implements StatsService {
             categoryTime.put(categoryName, sumMinutes != null ? sumMinutes.intValue() : 0);
         }
 
+        // Include duration from Fixed Events in categoryTime
+        List<nhk.calendar.FixedEventResponse> fixedEvents = fixedEventService.getEventsInRange(userId, startDateDate, endDateDate);
+        for (nhk.calendar.FixedEventResponse fe : fixedEvents) {
+            long minutes = java.time.Duration.between(fe.startTime(), fe.endTime()).toMinutes();
+            if (minutes > 0) {
+                String catName = fe.category() != null ? fe.category().name() : "Chưa phân loại";
+                categoryTime.put(catName, categoryTime.getOrDefault(catName, 0) + (int) minutes);
+            }
+        }
+
         // 3. Plan Completion Rate
         Long totalPlanTasks = entityManager.createQuery(
                 "SELECT COUNT(dpt.id) FROM DailyPlanTask dpt, DailyPlan dp " +
@@ -173,11 +184,97 @@ public class StatsServiceImpl implements StatsService {
             }
         }
 
+        // 5. P1 & P2 Extended Metrics: Q2 Focus Ratio, Rollover Rate, Plan vs Actual
+        int totalMatrixTime = matrixTime.values().stream().mapToInt(Integer::intValue).sum();
+        double q2FocusRatio = totalMatrixTime > 0 ? (matrixTime.getOrDefault("q2", 0) * 100.0) / totalMatrixTime : 0.0;
+
+        long uncompletedPlanTasks = (totalPlanTasks != null ? totalPlanTasks : 0L) - (donePlanTasks != null ? donePlanTasks : 0L);
+        double rolloverRate = (totalPlanTasks != null && totalPlanTasks > 0) ? (uncompletedPlanTasks * 100.0) / totalPlanTasks : 0.0;
+
+        List<Object[]> timeResults = entityManager.createQuery(
+                "SELECT CAST(dp.planDate AS string), " +
+                "SUM(COALESCE(t.estimatedMinutes, 25)), " +
+                "SUM(COALESCE(t.actualMinutes, 0)) " +
+                "FROM DailyPlanTask dpt JOIN dpt.task t, DailyPlan dp " +
+                "WHERE dp.id = dpt.dailyPlanId AND dp.userId = :userId " +
+                "AND dp.planDate >= :startDate AND dp.planDate <= :endDate " +
+                "GROUP BY dp.planDate " +
+                "ORDER BY dp.planDate ASC", Object[].class)
+                .setParameter("userId", user.getId())
+                .setParameter("startDate", startDateDate)
+                .setParameter("endDate", endDateDate)
+                .getResultList();
+
+        Map<String, int[]> dailyMap = new java.util.LinkedHashMap<>();
+        for (Object[] row : timeResults) {
+            String dateStr = row[0] != null ? row[0].toString() : "";
+            if (dateStr.isEmpty()) continue;
+            Long pMin = (Long) row[1];
+            Long aMin = (Long) row[2];
+            int p = pMin != null ? pMin.intValue() : 0;
+            int a = aMin != null ? aMin.intValue() : 0;
+            dailyMap.put(dateStr, new int[]{p, a});
+        }
+
+        List<Object[]> taskTimeResults = entityManager.createQuery(
+                "SELECT COALESCE(t.doneAt, t.updatedAt), " +
+                "COALESCE(t.estimatedMinutes, 25), " +
+                "COALESCE(t.actualMinutes, 0) " +
+                "FROM Task t " +
+                "WHERE t.userId = :userId AND COALESCE(t.doneAt, t.updatedAt) >= :startDate AND COALESCE(t.doneAt, t.updatedAt) <= :endDate " +
+                "AND (t.status = 'Done' OR t.actualMinutes > 0)", Object[].class)
+                .setParameter("userId", user.getId())
+                .setParameter("startDate", startDate)
+                .setParameter("endDate", endDate)
+                .getResultList();
+
+        for (Object[] row : taskTimeResults) {
+            OffsetDateTime dt = (OffsetDateTime) row[0];
+            if (dt == null) continue;
+            String dateStr = dt.atZoneSameInstant(userZone).toLocalDate().toString();
+            Integer pMin = (Integer) row[1];
+            Integer aMin = (Integer) row[2];
+            int p = pMin != null ? pMin : 0;
+            int a = aMin != null ? aMin : 0;
+            if (!dailyMap.containsKey(dateStr)) {
+                dailyMap.put(dateStr, new int[]{p, a});
+            } else {
+                int[] curr = dailyMap.get(dateStr);
+                curr[1] = Math.max(curr[1], a);
+            }
+        }
+
+        List<StatsResponse.DailyTimeStat> dailyTimeStats = new java.util.ArrayList<>();
+        int totalPlanned = 0;
+        int totalActual = 0;
+
+        for (Map.Entry<String, int[]> entry : dailyMap.entrySet()) {
+            int p = entry.getValue()[0];
+            int a = entry.getValue()[1];
+            totalPlanned += p;
+            totalActual += a;
+            dailyTimeStats.add(new StatsResponse.DailyTimeStat(entry.getKey(), p, a));
+        }
+
+        double estimationAccuracy = 0.0;
+        if (totalPlanned > 0) {
+            double diffRatio = Math.abs(totalActual - totalPlanned) / (double) totalPlanned;
+            estimationAccuracy = Math.max(0.0, (1.0 - diffRatio) * 100.0);
+        } else if (totalActual > 0) {
+            estimationAccuracy = 100.0;
+        }
+
         return StatsResponse.builder()
                 .matrixTime(matrixTime)
                 .categoryTime(categoryTime)
                 .completionRate(Math.round(completionRate * 10.0) / 10.0)
                 .streak(streak)
+                .totalPlannedMinutes(totalPlanned)
+                .totalActualMinutes(totalActual)
+                .estimationAccuracy(Math.round(estimationAccuracy * 10.0) / 10.0)
+                .q2FocusRatio(Math.round(q2FocusRatio * 10.0) / 10.0)
+                .rolloverRate(Math.round(rolloverRate * 10.0) / 10.0)
+                .dailyTimeStats(dailyTimeStats)
                 .build();
     }
 }

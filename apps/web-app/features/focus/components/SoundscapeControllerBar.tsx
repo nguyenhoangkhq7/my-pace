@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 import { 
   Play, Pause, SkipForward, SkipBack, ChevronsRight, ChevronsLeft,
-  Volume2, Volume1, VolumeX, Repeat, Shuffle, PanelRightOpen, Music, Tv
+  Volume2, Volume1, VolumeX, Repeat, Shuffle, PanelRightOpen, Music, Tv, X
 } from "lucide-react";
 import { useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -243,16 +243,16 @@ export function SoundscapeControllerBar({ onExpandZenZone }: SoundscapeControlle
                   ? "bg-primary/20 text-primary border border-primary/30 shadow-xs" 
                   : "text-muted-foreground hover:text-foreground hover:bg-accent"
               )}
-              title="Tùy chỉnh Video Nền toàn trang (Độ mờ & Độ phủ)"
+              title={t.flow.player.videoBgTitle}
             >
               <Tv className="w-4 h-4 text-primary" />
-              <span className="hidden md:inline text-[11px]">{isVideoBackground ? "Nền: Bật" : "Nền: Tắt"}</span>
+              <span className="hidden md:inline text-[11px]">{isVideoBackground ? t.flow.player.bgOn : t.flow.player.bgOff}</span>
             </button>
           </PopoverTrigger>
           <PopoverContent className="w-64 p-3 bg-card border border-border text-foreground shadow-2xl rounded-xl space-y-3 z-[100]" side="top" align="end">
             <div className="flex items-center justify-between pb-2 border-b border-border">
               <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                <Tv className="w-3.5 h-3.5 text-primary" /> Video Nền Toàn App
+                <Tv className="w-3.5 h-3.5 text-primary" /> {t.flow.player.videoBgHeader}
               </span>
               <button
                 onClick={toggleVideoBackground}
@@ -261,7 +261,7 @@ export function SoundscapeControllerBar({ onExpandZenZone }: SoundscapeControlle
                   isVideoBackground ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" : "bg-muted text-muted-foreground border-border"
                 )}
               >
-                {isVideoBackground ? "BẬT" : "TẮT"}
+                {isVideoBackground ? t.flow.player.on : t.flow.player.off}
               </button>
             </div>
 
@@ -269,7 +269,7 @@ export function SoundscapeControllerBar({ onExpandZenZone }: SoundscapeControlle
               <div className="space-y-3 pt-1">
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-[11px] font-medium text-muted-foreground">
-                    <span>Độ phủ tối (Opacity)</span>
+                    <span>{t.flow.player.bgOpacity}</span>
                     <span className="font-mono text-foreground font-bold">{videoBgOpacity}%</span>
                   </div>
                   <input
@@ -284,7 +284,7 @@ export function SoundscapeControllerBar({ onExpandZenZone }: SoundscapeControlle
 
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-[11px] font-medium text-muted-foreground">
-                    <span>Độ mờ kính (Blur)</span>
+                    <span>{t.flow.player.bgBlur}</span>
                     <span className="font-mono text-foreground font-bold">{videoBgBlur}px</span>
                   </div>
                   <input
@@ -299,24 +299,24 @@ export function SoundscapeControllerBar({ onExpandZenZone }: SoundscapeControlle
 
                 <div className="space-y-1.5 pt-1 border-t border-border/50">
                   <div className="flex items-center justify-between text-[11px] font-medium text-muted-foreground">
-                    <span>Chất lượng Video</span>
+                    <span>{t.flow.player.videoQuality}</span>
                   </div>
                   <select
                     value={videoQuality}
                     onChange={(e) => setVideoQuality(e.target.value as "auto" | "hd1080" | "hd720" | "large" | "medium")}
                     className="w-full text-xs bg-muted/60 border border-border rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer font-medium"
                   >
-                    <option value="auto">Tự động (Mặc định YouTube)</option>
-                    <option value="hd1080">1080p (Full HD - Sắc nét)</option>
-                    <option value="hd720">720p (Cân bằng - Khuyên dùng)</option>
-                    <option value="large">480p (Tiết kiệm RAM)</option>
-                    <option value="medium">360p (Siêu tiết kiệm)</option>
+                    <option value="auto">{t.flow.player.qualityAuto}</option>
+                    <option value="hd1080">{t.flow.player.quality1080}</option>
+                    <option value="hd720">{t.flow.player.quality720}</option>
+                    <option value="large">{t.flow.player.quality480}</option>
+                    <option value="medium">{t.flow.player.quality360}</option>
                   </select>
                 </div>
               </div>
             ) : (
               <p className="text-[11px] text-muted-foreground text-center py-1">
-                Nhấp nút công tắc phía trên để bật Video Nền chìm toàn màn hình.
+                {t.flow.player.videoBgHint}
               </p>
             )}
           </PopoverContent>
@@ -363,6 +363,15 @@ export function SoundscapeControllerBar({ onExpandZenZone }: SoundscapeControlle
             title={`${t.flow.player.volume}: ${volume}%`}
           />
         </div>
+
+        {/* Nút Ẩn Thanh Controller Bar */}
+        <button
+          onClick={() => useFocusStore.getState().setControllerBarVisible(false)}
+          className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer shrink-0 ml-1"
+          title={t.flow.player.hideBar}
+        >
+          <X className="w-4 h-4" />
+        </button>
       </div>
     </div>
   );

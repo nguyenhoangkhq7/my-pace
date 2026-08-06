@@ -2,28 +2,18 @@ import { useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Tick01Icon } from "@hugeicons/core-free-icons";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { updateChecklistItemAction, reorderChecklistsAction } from "@/features/board/actions/checklist.action";
+import { useChecklistMutations } from "../hooks/useChecklistMutations";
 import { Task } from "../types";
 import { cn } from "@/lib/utils";
 import { InlineTitleEditor } from "./InlineTitleEditor";
 
 interface TaskCardChecklistProps {
   task: Task;
-  disabled?: boolean; // When in execution mode, we might want to disable toggling if we are not the current task? Actually no, checklist can always be toggled. Wait, read-only board?
+  disabled?: boolean;
 }
 
 export function TaskCardChecklist({ task, disabled }: TaskCardChecklistProps) {
-  const queryClient = useQueryClient();
-  const updateChecklistItemMutation = useMutation({
-    mutationFn: ({ taskId, checklistId, data }: { taskId: string, checklistId: string, data: { title?: string, isCompleted?: boolean } }) => updateChecklistItemAction(taskId, checklistId, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
-  });
-
-  const reorderChecklistsMutation = useMutation({
-    mutationFn: ({ taskId, checklistIds }: { taskId: string, checklistIds: string[] }) => reorderChecklistsAction(taskId, checklistIds),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
-  });
+  const { updateChecklist, reorderChecklists } = useChecklistMutations(task.id);
   const [isExpanded, setIsExpanded] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -63,7 +53,7 @@ export function TaskCardChecklist({ task, disabled }: TaskCardChecklistProps) {
     const newIds = newOrder.map(c => c.id).filter((id): id is string => !!id);
     if (newIds.length === sortedChecklists.length) {
       try {
-        await reorderChecklistsMutation.mutateAsync({ taskId: task.id, checklistIds: newIds });
+        await reorderChecklists(newIds);
       } catch (err) {
         console.error(err);
       }
@@ -112,7 +102,7 @@ export function TaskCardChecklist({ task, disabled }: TaskCardChecklistProps) {
             >
               <Checkbox 
                 checked={item.isCompleted} 
-                onCheckedChange={(checked) => !disabled && updateChecklistItemMutation.mutate({ taskId: task.id, checklistId: item.id!, data: { isCompleted: checked === true } })}
+                onCheckedChange={(checked) => !disabled && updateChecklist({ checklistId: item.id!, data: { isCompleted: checked === true } })}
                 className="h-3.5 w-3.5 border-border shrink-0"
                 disabled={disabled}
               />
@@ -120,7 +110,7 @@ export function TaskCardChecklist({ task, disabled }: TaskCardChecklistProps) {
                 initialTitle={item.title}
                 onSave={async (newTitle) => {
                   if (!disabled) {
-                    await updateChecklistItemMutation.mutateAsync({ taskId: task.id, checklistId: item.id!, data: { title: newTitle } });
+                    await updateChecklist({ checklistId: item.id!, data: { title: newTitle } });
                   }
                 }}
                 className={cn(

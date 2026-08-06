@@ -36,7 +36,7 @@ export function ReactQueryProvider({ children }: { children: ReactNode }) {
       }),
       defaultOptions: {
         queries: {
-          staleTime: 1000 * 60 * 5, // 5 minutes
+          staleTime: Infinity,
           retry: (failureCount, error: unknown) => {
             const err = error as { status?: number; message?: string } | null;
             if (err?.status === 401 || err?.message?.includes('status 401')) {

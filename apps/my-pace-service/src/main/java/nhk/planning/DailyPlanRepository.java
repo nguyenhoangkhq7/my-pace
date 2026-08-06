@@ -10,5 +10,6 @@ import java.util.UUID;
 @Repository
 public interface DailyPlanRepository extends JpaRepository<DailyPlan, UUID> {
     Optional<DailyPlan> findByUserIdAndPlanDate(UUID userId, LocalDate planDate);
+    java.util.List<DailyPlan> findByUserIdAndPlanDateBetweenOrderByPlanDateAsc(UUID userId, LocalDate startDate, LocalDate endDate);
     Optional<DailyPlan> findFirstByUserIdAndPlanDateBeforeAndIsConfirmedTrueAndIsReviewedFalseOrderByPlanDateDesc(UUID userId, LocalDate planDate);
 }

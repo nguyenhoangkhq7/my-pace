@@ -5,6 +5,7 @@ import java.util.UUID;
 
 public interface DailyPlanService {
     DailyPlanDto getDailyPlan(LocalDate planDate, UUID userId);
+    java.util.List<DailyPlanDto> getDailyPlansInRange(LocalDate startDate, LocalDate endDate, UUID userId);
     DailyPlanDto planMyDay(PlanMyDayRequest request, UUID userId);
     DailyPlanDto confirmPlan(LocalDate planDate, UUID userId);
     DailyPlanDto unconfirmPlan(LocalDate planDate, UUID userId);

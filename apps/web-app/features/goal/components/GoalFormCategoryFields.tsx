@@ -10,7 +10,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Settings01Icon, PlusSignIcon } from "@hugeicons/core-free-icons";
 import { CategoryCreateForm } from "@/features/board/components/CategoryCreateForm";
 import { useQuery } from "@tanstack/react-query";
-import { getCategoriesAction } from "@/features/board/actions/category.action";
+import { fetchClient } from "@/lib/fetchClient";
 import { useTranslation } from "@/hooks/use-translation";
 
 interface GoalFormCategoryFieldsProps {
@@ -28,7 +28,7 @@ export function GoalFormCategoryFields({
   setIsCreatingCategory,
   setIsManagingCategories,
 }: GoalFormCategoryFieldsProps) {
-  const { data: categories = [] } = useQuery({ queryKey: ['categories'], queryFn: getCategoriesAction });
+  const { data: categories = [] } = useQuery({ queryKey: ['categories'], queryFn: () => fetchClient.get<Array<{ id: string; name: string; color: string }>>('categories').then(r => r.data) });
   const { t } = useTranslation();
 
   const handleCategoryCreateSuccess = (catId: string) => {

@@ -40,6 +40,9 @@ export function TimeSelect({ value, onChange, className, size = "default" }: Tim
       <select
         value={currentHour}
         onChange={handleHourChange}
+        onPointerDown={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
         className={cn(
           "flex-1 bg-card border border-border text-foreground text-xs font-mono font-semibold focus:outline-hidden focus:border-primary cursor-pointer text-center appearance-none",
           isSm ? "h-7 rounded-md px-2" : isMd ? "h-9 rounded-md px-2.5" : "h-10 rounded-xl px-3"
@@ -62,6 +65,9 @@ export function TimeSelect({ value, onChange, className, size = "default" }: Tim
       <select
         value={currentMin}
         onChange={handleMinChange}
+        onPointerDown={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
         className={cn(
           "flex-1 bg-card border border-border text-foreground text-xs font-mono font-semibold focus:outline-hidden focus:border-primary cursor-pointer text-center appearance-none",
           isSm ? "h-7 rounded-md px-2" : isMd ? "h-9 rounded-md px-2.5" : "h-10 rounded-xl px-3"

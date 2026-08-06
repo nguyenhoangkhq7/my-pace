@@ -1,29 +1,23 @@
 'use client';
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { updateTaskStatusAction } from '../actions/task.action';
 import { Button } from '@/components/ui/button';
 import { appToast } from '@/components/feedback/app-toast';
 import { Task } from '../types';
+import { useUpdateTaskStatus } from '../hooks/useUpdateTaskStatus';
 
 interface TaskItemProps {
   task: Task;
 }
 
 export function TaskItem({ task }: TaskItemProps) {
-  const queryClient = useQueryClient();
+  const { updateStatus, isUpdatingStatus } = useUpdateTaskStatus(task.id);
 
-  const { mutate: updateStatus, isPending } = useMutation({
-    mutationFn: (newStatus: string) => updateTaskStatusAction(task.id, newStatus),
-    onSuccess: () => {
-      // Invalidate the 'tasks' query to refetch updated data
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      appToast.success('Task updated');
-    },
-    onError: (error) => {
-      appToast.error(error.message || 'Failed to update task');
-    },
-  });
+  const handleToggle = () => {
+    updateStatus(task.isImportant ? 'COMPLETED' : 'IN_PROGRESS', {
+      onSuccess: () => appToast.success('Task updated'),
+      onError: (error) => appToast.error(error.message || 'Failed to update task'),
+    });
+  };
 
   return (
     <div className="flex items-center justify-between p-3 border rounded-lg shadow-sm hover:shadow-md transition-shadow bg-card">
@@ -34,13 +28,13 @@ export function TaskItem({ task }: TaskItemProps) {
         )}
       </div>
 
-      <Button 
+      <Button
         variant={task.isImportant ? "default" : "outline"}
         size="sm"
-        disabled={isPending}
-        onClick={() => updateStatus(task.isImportant ? 'COMPLETED' : 'IN_PROGRESS')}
+        disabled={isUpdatingStatus}
+        onClick={handleToggle}
       >
-        {isPending ? 'Updating...' : 'Toggle Status'}
+        {isUpdatingStatus ? 'Updating...' : 'Toggle Status'}
       </Button>
     </div>
   );

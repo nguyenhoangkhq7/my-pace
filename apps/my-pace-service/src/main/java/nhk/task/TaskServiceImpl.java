@@ -7,6 +7,8 @@ import nhk.goal.Goal;
 import nhk.goal.GoalRepository;
 import nhk.user.User;
 import nhk.user.UserRepository;
+import nhk.scheduling.event.TaskMutatedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +28,7 @@ public class TaskServiceImpl implements TaskService {
     private final UserRepository userRepository;
     private final nhk.planning.DailyPlanTaskRepository dailyPlanTaskRepository;
     private final nhk.timeblock.TaskTimeBlockRepository timeBlockRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -61,6 +64,9 @@ public class TaskServiceImpl implements TaskService {
         if (task.getIsImportant() == null) {
             task.setIsImportant(false);
         }
+        if (task.getIsSplittable() == null) {
+            task.setIsSplittable(false);
+        }
         if (request.status() != null && !request.status().trim().isEmpty()) {
             task.setStatus(request.status());
         } else {
@@ -87,6 +93,7 @@ public class TaskServiceImpl implements TaskService {
         if (saved.getGoalId() != null) {
             goalService.updateGoalProgress(saved.getGoalId());
         }
+        eventPublisher.publishEvent(new TaskMutatedEvent(userId, saved.getId(), java.time.LocalDate.now()));
         return taskMapper.toDto(saved);
     }
 
@@ -178,6 +185,7 @@ public class TaskServiceImpl implements TaskService {
         dailyPlanTaskRepository.deleteByTaskId(taskId);
         timeBlockRepository.deleteByTaskId(taskId);
         taskRepository.delete(task);
+        eventPublisher.publishEvent(new TaskMutatedEvent(userId, taskId, java.time.LocalDate.now()));
         if (goalId != null) {
             goalService.updateGoalProgress(goalId);
         }

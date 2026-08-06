@@ -22,6 +22,13 @@ public class DailyPlanController {
         return dailyPlanService.getDailyPlan(date, userDetails.user().getId());
     }
 
+    @GetMapping("/range")
+    public java.util.List<DailyPlanDto> getDailyPlansInRange(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+                                                             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+                                                             @AuthenticationPrincipal UserDetailsCustom userDetails) {
+        return dailyPlanService.getDailyPlansInRange(startDate, endDate, userDetails.user().getId());
+    }
+
     @GetMapping("/unreviewed")
     public DailyPlanDto getUnreviewedPlan(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate today,
                                           @AuthenticationPrincipal UserDetailsCustom userDetails) {

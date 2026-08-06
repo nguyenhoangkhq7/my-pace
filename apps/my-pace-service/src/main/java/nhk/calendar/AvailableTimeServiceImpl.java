@@ -152,7 +152,11 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
 
     private UnionResult computeUnionBlockedMinutes(List<FixedEventResponse> occurrences,
                                                    LocalTime windowStart, LocalTime windowEnd) {
-        if (occurrences.isEmpty()) {
+        List<FixedEventResponse> busyOccurrences = occurrences.stream()
+                .filter(e -> !"FREE".equalsIgnoreCase(e.availabilityStatus()))
+                .toList();
+
+        if (busyOccurrences.isEmpty()) {
             return new UnionResult(0, java.util.Collections.emptyList());
         }
 
@@ -161,9 +165,20 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
 
         boolean crossesMidnight = windowEnd.isBefore(windowStart);
 
+        boolean hasAllDay = busyOccurrences.stream().anyMatch(e -> Boolean.TRUE.equals(e.isAllDay()));
+        if (hasAllDay) {
+            int totalWindow = !crossesMidnight
+                    ? (windowEndMin - windowStartMin)
+                    : (1440 - windowStartMin + windowEndMin);
+            totalWindow = Math.max(0, totalWindow);
+            return new UnionResult(totalWindow, List.of(
+                    new AvailableTimeResponse.TimeInterval(minutesToHHMM(windowStartMin), minutesToHHMM(windowEndMin))
+            ));
+        }
+
         List<int[]> intervals;
         if (!crossesMidnight) {
-            intervals = occurrences.stream()
+            intervals = busyOccurrences.stream()
                     .map(e -> new int[]{
                             Math.max((int) (e.startTime().toSecondOfDay() / 60), windowStartMin),
                             Math.min((int) (e.endTime().toSecondOfDay() / 60),   windowEndMin)
@@ -173,7 +188,7 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
                     .collect(Collectors.toList());
         } else {
             int endOfTodayMin = 24 * 60; // 1440 minutes
-            intervals = occurrences.stream()
+            intervals = busyOccurrences.stream()
                     .map(e -> new int[]{
                             Math.max((int) (e.startTime().toSecondOfDay() / 60), windowStartMin),
                             Math.min((int) (e.endTime().toSecondOfDay() / 60),   endOfTodayMin)

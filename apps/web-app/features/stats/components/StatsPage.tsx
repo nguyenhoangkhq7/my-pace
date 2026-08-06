@@ -5,6 +5,8 @@ import { useStatsPage } from "../hooks/useStatsPage";
 import { StatsHeaderSection } from "./StatsHeaderSection";
 import { EisenhowerMatrixChart } from "./EisenhowerMatrixChart";
 import { CategoryChart } from "./CategoryChart";
+import { PlanVsActualChart } from "./PlanVsActualChart";
+import { KPISection } from "./KPISection";
 import { StatsLoadingState } from "./StatsLoadingState";
 import { StatsErrorState } from "./StatsErrorState";
 import { useAvailableTimeQuery } from "@/features/available-time/hooks/useAvailableTime";
@@ -12,6 +14,7 @@ import { formatDateStr } from "../utils/statsDateUtils";
 
 export function StatsPage() {
   const {
+    overview,
     isLoading,
     error,
     range,
@@ -22,11 +25,12 @@ export function StatsPage() {
     handleNext,
     matrixData,
     categoryData,
+    planVsActualData,
   } = useStatsPage();
 
   const todayStr = formatDateStr(new Date());
   const { data: dataToday } = useAvailableTimeQuery(todayStr);
-  const streak = dataToday?.streak ?? 0;
+  const streak = overview?.streak ?? dataToday?.streak ?? 0;
 
   if (isLoading && !matrixData.length && !categoryData.length) {
     return <StatsLoadingState />;
@@ -49,8 +53,19 @@ export function StatsPage() {
         streak={streak}
       />
 
+      {/* KPI Cards Grid */}
+      <KPISection
+        completionRate={overview?.completionRate ?? 0}
+        streak={streak}
+        q2FocusRatio={overview?.q2FocusRatio ?? 0}
+        estimationAccuracy={overview?.estimationAccuracy ?? 0}
+      />
+
       {/* Main Content Dashboard */}
       <div className={cn("space-y-8 transition-opacity duration-200", isLoading && "opacity-60")}>
+        {/* Plan vs Actual Chart */}
+        <PlanVsActualChart data={planVsActualData} />
+
         {/* Charts Grid */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           {/* Matrix Chart */}
@@ -63,3 +78,4 @@ export function StatsPage() {
     </div>
   );
 }
+

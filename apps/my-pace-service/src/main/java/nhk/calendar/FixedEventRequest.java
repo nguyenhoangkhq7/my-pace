@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.UUID;
 
 public record FixedEventRequest(
     @NotBlank
@@ -14,18 +15,23 @@ public record FixedEventRequest(
 
     String notes,
 
-    @NotNull
     LocalTime startTime,
 
-    @NotNull
     LocalTime endTime,
 
+    Boolean isAllDay,
+
     LocalDate eventDate,
+
 
     @NotNull
     String recurrenceType,
 
     List<Integer> recurrenceDaysOfWeek,
 
-    LocalDate recurrenceEndDate
+    LocalDate recurrenceEndDate,
+
+    UUID categoryId,
+
+    String availabilityStatus
 ) {}

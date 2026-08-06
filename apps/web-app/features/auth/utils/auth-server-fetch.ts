@@ -1,0 +1,110 @@
+import 'server-only';
+import { cookies } from 'next/headers';
+
+const BASE_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+
+interface ServerFetchOptions extends RequestInit {
+  skipAuthHeader?: boolean;
+  isRetry?: boolean;
+}
+
+export async function serverFetch<T>(endpoint: string, options: ServerFetchOptions = {}): Promise<T> {
+  const { skipAuthHeader, isRetry, ...fetchOptions } = options;
+  
+  // Await cookies() for Next.js 15+ compatibility
+  const cookieStore = await cookies();
+  const token = cookieStore.get('accessToken')?.value;
+
+  const headers = new Headers(fetchOptions.headers);
+  if (!(fetchOptions.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json');
+  }
+  
+  if (token && !skipAuthHeader) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  const url = `${BASE_URL}/${endpoint}`;
+  
+  let response = await fetch(url, {
+    cache: 'no-store',
+    ...fetchOptions,
+    headers,
+  });
+
+  // Transparent token refresh on 401
+  if (response.status === 401 && !skipAuthHeader && !isRetry && endpoint !== 'auth/refresh') {
+    const refreshToken = cookieStore.get('refreshToken')?.value;
+    if (refreshToken) {
+      try {
+        const refreshResponse = await fetch(`${BASE_URL}/auth/refresh`, {
+          method: 'GET',
+          cache: 'no-store',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': `refreshToken=${refreshToken}`
+          },
+        });
+
+        if (refreshResponse.ok) {
+          const json = await refreshResponse.json();
+          const data = json?.data || json;
+          const newAccessToken = data?.accessToken || data?.token;
+          const newRefreshToken = data?.refreshToken;
+
+          if (newAccessToken) {
+            const isProd = process.env.NODE_ENV === 'production';
+            cookieStore.set('accessToken', newAccessToken, {
+              httpOnly: true,
+              secure: isProd,
+              sameSite: 'lax',
+              path: '/',
+              maxAge: 60 * 60 * 24 * 7,
+            });
+            if (newRefreshToken) {
+              cookieStore.set('refreshToken', newRefreshToken, {
+                httpOnly: true,
+                secure: isProd,
+                sameSite: 'lax',
+                path: '/',
+                maxAge: 60 * 60 * 24 * 30,
+              });
+            }
+
+            // Retry request with new token
+            headers.set('Authorization', `Bearer ${newAccessToken}`);
+            response = await fetch(url, {
+              cache: 'no-store',
+              ...fetchOptions,
+              headers,
+            });
+          }
+        }
+      } catch {
+        // Refresh failed, fallback to throwing original 401 error
+      }
+    }
+  }
+
+  if (!response.ok) {
+    let errorMessage = `Request failed with status ${response.status}`;
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.message || errorMessage;
+    } catch {
+      // Ignored
+    }
+    const error = new Error(errorMessage) as Error & { status?: number };
+    error.status = response.status;
+    throw error;
+  }
+
+  if (response.status === 204 || response.headers.get("content-length") === "0") {
+    return {} as T;
+  }
+
+  const json = await response.json();
+  const hasWrapper = json && typeof json === "object" && "data" in json;
+  
+  return hasWrapper ? json.data : json;
+}

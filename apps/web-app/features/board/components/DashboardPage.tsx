@@ -8,20 +8,13 @@ import { OutstandingTasksModal } from "./OutstandingTasksModal";
 import { StreakCelebrationModal } from "@/features/gamification";
 import { useTasks } from "../hooks/useTasks";
 import { useDailyPlan } from "../hooks/useDailyPlan";
-import { Task, Category, DailyPlan } from "@/features/board/types";
-import { useQuery } from "@tanstack/react-query";
-import { getUnreviewedPlanAction } from "../actions/plan.action";
+import { useUnreviewedPlan } from "../hooks/useUnreviewedPlan";
+import { Loader2 } from "lucide-react";
 
 export interface DashboardPageProps {
   initialData: {
-    tasks: Task[];
-    categories: Category[];
-    dailyPlanToday: DailyPlan | null;
-    dailyPlanTomorrow: DailyPlan | null;
     currentDate: string;
     tomorrowDate: string;
-    day2Date: string;
-    day3Date: string;
   };
 }
 
@@ -40,31 +33,33 @@ function isPastSleepTime(sleepTime?: string | null): boolean {
 }
 
 export function DashboardPage({ 
-  initialData: { currentDate, tomorrowDate, day2Date, day3Date, tasks: initialTasks, dailyPlanToday: initialDailyPlanToday, dailyPlanTomorrow: initialDailyPlanTomorrow } 
+  initialData: { currentDate, tomorrowDate } 
 }: DashboardPageProps) {
   useAppVisibility();
   const user = useAuthStore((s) => s.user);
 
-  useTasks(initialTasks);
-  useDailyPlan(currentDate, initialDailyPlanToday);
-  useDailyPlan(tomorrowDate, initialDailyPlanTomorrow);
+  const { isLoading: isLoadingTasks } = useTasks();
+  useDailyPlan(currentDate);
+  useDailyPlan(tomorrowDate);
 
   // Don't query for an unreviewed plan if the user hasn't gone to sleep yet.
   // e.g. user sleeps at 22:00 and it's currently 23:00 → they're still in today,
   // so the "old unreviewed plan from yesterday" dialog should not appear.
   const isStillInCurrentDay = isPastSleepTime(user?.sleepTime);
-
-  const { data: unreviewedPlan = null } = useQuery({
-    queryKey: ['unreviewedPlan', currentDate],
-    queryFn: () => getUnreviewedPlanAction(currentDate),
-    // Disable the query entirely while the user is still in their current day.
-    enabled: !isStillInCurrentDay,
-  });
+  const { unreviewedPlan } = useUnreviewedPlan(currentDate, !isStillInCurrentDay);
 
   const showSetup = user && (!user.wakeTime || !user.sleepTime);
 
   if (showSetup) {
     return <InitialSetupForm />;
+  }
+
+  if (isLoadingTasks) {
+    return (
+      <div className="flex-1 flex w-full h-[calc(100vh-4rem)] items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   // The modal is shown only when there is a plan with uncompleted tasks.
@@ -79,16 +74,12 @@ export function DashboardPage({
           <BacklogMatrix 
             currentDate={currentDate} 
             tomorrowDate={tomorrowDate} 
-            day2Date={day2Date}
-            day3Date={day3Date}
           />
         </div>
         <div className="min-h-0 h-full">
           <ExecutionBoard 
             currentDate={currentDate} 
             tomorrowDate={tomorrowDate} 
-            day2Date={day2Date}
-            day3Date={day3Date}
           />
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { DailyPlan } from "../types";
+import { DailyPlan, TaskTimeBlock } from "../types";
 import type { AvailableTimeData } from "@/features/available-time/types";
 import { useTranslation } from "@/hooks/use-translation";
 import { useAuthStore } from "@/features/auth";
@@ -10,6 +10,7 @@ import { ExecutionTaskList } from "./ExecutionTaskList";
 
 interface ExecutionModeViewProps {
   currentPlan: DailyPlan;
+  currentTimeBlocks: TaskTimeBlock[];
   currentAvailable: number;
   totalAvailable: number;
   availableData: AvailableTimeData | null;
@@ -23,6 +24,7 @@ interface ExecutionModeViewProps {
 
 export function ExecutionModeView({
   currentPlan,
+  currentTimeBlocks,
   currentAvailable,
   totalAvailable,
   availableData,
@@ -38,7 +40,7 @@ export function ExecutionModeView({
   const tasksList = currentPlan.tasks || [];
 
   const exceedsSleepTime = useMemo(() => {
-    const timeBlocks = currentPlan.timeBlocks || [];
+    const timeBlocks = currentTimeBlocks || [];
     if (!timeBlocks.length || !user?.sleepTime || !user?.wakeTime) return false;
     
     const endTimes = timeBlocks.map(tb => new Date(tb.endTime).getTime());
@@ -58,7 +60,7 @@ export function ExecutionModeView({
     }
     
     return maxEndDate > sleepDate;
-  }, [currentPlan, user]);
+  }, [currentPlan, user, currentTimeBlocks]);
 
   if (tasksList.length === 0) {
     return null;

@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useForm, useWatch, FormProvider, Controller } from "react-hook-form";
 import { Goal, GoalCreateRequest, GoalUpdateRequest, GoalStatus } from "../types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createGoalAction, updateGoalAction, deleteGoalAction } from "../actions/goal.action";
+import { fetchClient } from "@/lib/fetchClient";
 import {
   DialogContent,
   DialogHeader,
@@ -41,17 +41,17 @@ export function GoalFormContent({ isOpen, onOpenChange, goal, onSuccess }: GoalF
   const queryClient = useQueryClient();
   
   const createMutation = useMutation({
-    mutationFn: createGoalAction,
+    mutationFn: (data: GoalCreateRequest) => fetchClient.post('goals', data).then(r => r.data as Goal),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['goals'] }),
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string, data: GoalUpdateRequest }) => updateGoalAction(id, data),
+    mutationFn: ({ id, data }: { id: string, data: GoalUpdateRequest }) => fetchClient.put(`goals/${id}`, data).then(r => r.data as Goal),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['goals'] }),
   });
   
   const deleteMutation = useMutation({
-    mutationFn: deleteGoalAction,
+    mutationFn: (id: string) => fetchClient.del(`goals/${id}`).then(r => r.data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['goals'] }),
   });
   const [isManagingCategories, setIsManagingCategories] = useState(false);

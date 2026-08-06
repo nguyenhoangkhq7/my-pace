@@ -7,6 +7,8 @@ import nhk.auth.InvalidOtpException;
 import nhk.auth.InvalidTokenException;
 import nhk.goal.GoalLimitExceededException;
 import nhk.mail.EmailSendingException;
+import nhk.quickadd.QuickAddExternalServiceException;
+import nhk.quickadd.QuickAddParseException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -52,8 +54,9 @@ public class GlobalExceptionHandler {
       return buildResponse(HttpStatus.BAD_REQUEST, "OTP not exist or not valid in system");
    }
 
-   @ExceptionHandler(BadCredentialsException.class)
-   public ResponseEntity<ErrorResponse> handleBadCredentialsException() {
+   @ExceptionHandler({BadCredentialsException.class, org.springframework.security.core.AuthenticationException.class})
+   public ResponseEntity<ErrorResponse> handleBadCredentialsException(Exception ex) {
+      log.warn("Authentication failed: {}", ex.getMessage());
       return buildResponse(HttpStatus.UNAUTHORIZED, "Sai tên đăng nhập hoặc mật khẩu");
    }
 
@@ -67,7 +70,8 @@ public class GlobalExceptionHandler {
             UserNotFoundException.class,
             EventNotFoundException.class,
             CategoryNotFoundException.class,
-            GoalNotFoundException.class
+            GoalNotFoundException.class,
+            TimeContextNotFoundException.class
     })
     public ResponseEntity<ErrorResponse> handleNotFound(Exception ex) {
        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
@@ -100,21 +104,33 @@ public class GlobalExceptionHandler {
       return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "There is error while sending email");
    }
 
+   @ExceptionHandler(QuickAddExternalServiceException.class)
+   public ResponseEntity<ErrorResponse> handleQuickAddExternalServiceException(QuickAddExternalServiceException ex) {
+      log.error("Quick add external service error: ", ex);
+      return buildResponse(HttpStatus.BAD_GATEWAY, ex.getMessage());
+   }
+
+   @ExceptionHandler(QuickAddParseException.class)
+   public ResponseEntity<ErrorResponse> handleQuickAddParseException(QuickAddParseException ex) {
+      log.error("Quick add parse error: ", ex);
+      return buildResponse(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+   }
+
    @ExceptionHandler(NullPointerException.class)
    public ResponseEntity<ErrorResponse> handleNullPointerException(NullPointerException ex) {
       log.error("Null Pointer Exception xảy ra: ", ex);
       return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Lỗi hệ thống null pointer exception");
    }
 
+   @ExceptionHandler(InvalidTokenException.class)
+   public ResponseEntity<ErrorResponse> handleTokenInvalid(InvalidTokenException ex) {
+      log.error("Token invalid: ", ex);
+      return buildResponse(HttpStatus.UNAUTHORIZED, "Token hết hạn hoặc không hợp lệ");
+   }
+
    @ExceptionHandler({RuntimeException.class, Exception.class})
    public ResponseEntity<ErrorResponse> handleAllExceptions(Exception ex) {
       log.error("System Error: ", ex);
       return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Có lỗi hệ thống xảy ra, vui lòng thử lại sau");
-   }
-
-   @ExceptionHandler({InvalidTokenException.class})
-   public ResponseEntity<ErrorResponse> handleTokenInvalid(Exception ex) {
-      log.error("System Error: ", ex);
-      return buildResponse(HttpStatus.UNAUTHORIZED, "Token hết hạn hoặc không hợp lệ");
    }
 }

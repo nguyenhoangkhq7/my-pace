@@ -1,20 +1,22 @@
 package nhk.mail;
 
 import lombok.extern.slf4j.Slf4j;
+import nhk.auth.OtpEntity;
+import nhk.auth.OtpRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import java.security.SecureRandom;
-import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Map;
 
 @Service
 @Slf4j
 public class SendOtpMailService {
-    private final StringRedisTemplate redisTemplate;
+    private final OtpRepository otpRepository;
     private final RestClient restClient;
     private final String apiKey;
     private final String fromEmail;
@@ -23,21 +25,34 @@ public class SendOtpMailService {
     private static final String OTP_PREFIX = "otp:";
     private static final int OTP_EXPIRED = 5; // minutes
 
+    @Autowired
     public SendOtpMailService(
-            StringRedisTemplate redisTemplate,
+            OtpRepository otpRepository,
             @Value("${spring.resend.api-key}") String apiKey,
             @Value("${spring.resend.from}") String fromEmail) {
-        this.redisTemplate = redisTemplate;
-        this.apiKey = apiKey;
-        this.fromEmail = fromEmail;
-        this.restClient = RestClient.builder()
+        this(otpRepository, apiKey, fromEmail, RestClient.builder()
                 .baseUrl("https://api.resend.com")
                 .defaultHeader("Authorization", "Bearer " + apiKey)
-                .build();
+                .build());
+    }
+
+    SendOtpMailService(
+            OtpRepository otpRepository,
+            String apiKey,
+            String fromEmail,
+            RestClient restClient) {
+        this.otpRepository = otpRepository;
+        this.apiKey = apiKey;
+        this.fromEmail = fromEmail;
+        this.restClient = restClient;
     }
 
     public void sendOtpMail(String email, String otp) {
-        redisTemplate.opsForValue().set(OTP_PREFIX + email, otp, Duration.ofMinutes(OTP_EXPIRED));
+        OtpEntity otpEntity = otpRepository.findByEmail(email).orElse(new OtpEntity());
+        otpEntity.setEmail(email);
+        otpEntity.setOtp(otp);
+        otpEntity.setExpiresAt(LocalDateTime.now().plusMinutes(OTP_EXPIRED));
+        otpRepository.save(otpEntity);
 
         String text = "Xin chào,\n\nMã OTP của bạn là: " + otp + "\n\nMã này sẽ hết hạn sau " + OTP_EXPIRED + " phút.\n\nTrân trọng.";
 
