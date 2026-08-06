@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import nhk.scheduling.AutoScheduleService;
+
 @Service
 @RequiredArgsConstructor
 public class DailyCheckinServiceImpl implements DailyCheckinService {
@@ -36,6 +38,7 @@ public class DailyCheckinServiceImpl implements DailyCheckinService {
     private final TaskTimeBlockRepository taskTimeBlockRepo;
     private final FixedEventService eventService;
     private final AvailableTimeService availableTimeService;
+    private final AutoScheduleService autoScheduleService;
 
     @Override
     @Transactional
@@ -58,6 +61,10 @@ public class DailyCheckinServiceImpl implements DailyCheckinService {
 
             // Auto-generate daily tasks for active goals
             generateDailyTasksForGoals(userId, date);
+
+            try {
+                autoScheduleService.autoScheduleWeek(userId, date, 15, false);
+            } catch (Exception ignored) {}
         }
 
         return availableTimeService.getAvailableTime(userId, date);
@@ -160,8 +167,9 @@ public class DailyCheckinServiceImpl implements DailyCheckinService {
         java.time.LocalDateTime candidateEnd = candidateStart.plusMinutes(estimatedMinutes);
 
         List<FixedEventResponse> fixedEvents = eventService.getEventsInRange(plan.getUserId(), date, date);
-        // Create mutable list from repo
-        List<TaskTimeBlock> existingBlocks = new ArrayList<>(taskTimeBlockRepo.findByDailyPlanIdOrderByStartTimeAsc(plan.getId()));
+        java.time.LocalDateTime startOfDay = date.atStartOfDay();
+        java.time.LocalDateTime endOfDay = date.plusDays(1).atStartOfDay().minusNanos(1);
+        List<TaskTimeBlock> existingBlocks = new ArrayList<>(taskTimeBlockRepo.findByUserIdAndDateRange(plan.getUserId(), startOfDay, endOfDay));
 
         java.time.LocalDateTime dayEnd = java.time.LocalDateTime.of(date, LocalTime.MAX);
         
@@ -202,11 +210,11 @@ public class DailyCheckinServiceImpl implements DailyCheckinService {
             if (!overlap) {
                 TaskTimeBlock tb = new TaskTimeBlock();
                 tb.setTaskId(task.getId());
-                tb.setDailyPlanId(plan.getId());
                 tb.setStartTime(candidateStart);
                 tb.setEndTime(candidateEnd);
                 tb.setPartIndex(1);
                 tb.setTotalParts(1);
+                tb.setAvailabilityStatus("BUSY");
                 taskTimeBlockRepo.save(tb);
                 existingBlocks.add(tb);
                 break;

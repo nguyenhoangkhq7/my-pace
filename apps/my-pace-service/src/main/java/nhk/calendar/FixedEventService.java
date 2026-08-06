@@ -9,6 +9,10 @@ public interface FixedEventService {
     FixedEventResponse createEvent(UUID userId, FixedEventRequest request);
     FixedEventResponse updateAllOccurrences(UUID userId, UUID eventId, FixedEventRequest request);
     FixedEventResponse updateSingleOccurrence(UUID userId, UUID eventId, LocalDate occurrenceDate, FixedEventExceptionRequest request);
+    FixedEventResponse updateFromDateOnwards(UUID userId, UUID eventId, LocalDate occurrenceDate, FixedEventRequest request);
     void deleteAllOccurrences(UUID userId, UUID eventId);
     void deleteSingleOccurrence(UUID userId, UUID eventId, LocalDate occurrenceDate);
+    void deleteFromDateOnwards(UUID userId, UUID eventId, LocalDate occurrenceDate);
 }
+
+

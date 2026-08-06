@@ -1,42 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🌐 My Pace — Web Application (Frontend)
 
-## Getting Started
+Phân hệ Frontend cho ứng dụng **My Pace**, được xây dựng trên nền tảng Next.js 16 (App Router), React 19 và Tailwind CSS v4.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 🛠️ Công nghệ & Thư viện
+
+- **Framework:** Next.js 16 (App Router), React 19, TypeScript
+- **Styling:** Tailwind CSS v4, Radix UI / shadcn/ui components
+- **State Management:** Zustand
+- **Calendar & Timeboxing:** FullCalendar v6
+- **Icon Set:** Lucide React
+- **Animations & Effects:** Canvas Confetti, Framer Motion
+
+---
+
+## 📂 Cấu trúc thư mục
+
+```text
+apps/web-app/
+├── app/
+│   ├── (auth)/             # Màn hình Đăng nhập / Đăng ký / Xác thực OTP
+│   ├── (board)/            # Các màn hình chính (Today, Tomorrow, Flow, Goals, Stats, Calendar)
+│   ├── api/                # Next.js API Routes Proxy (nếu có)
+│   ├── globals.css         # Import Tailwind CSS v4 & theme variables
+│   └── layout.tsx          # Root Layout & Providers
+├── components/
+│   ├── features/           # Components nghiệp vụ (Eisenhower Matrix, Flow Timer, Daily Plan, Goal Tree)
+│   ├── layout/             # Sidebar, Navbar, Page Header
+│   └── ui/                 # Atomic design UI primitives (Button, Dialog, Card, Input...)
+├── features/               # Custom hooks & stores theo module
+├── hooks/                  # Global Custom React Hooks
+└── lib/                    # API Client, Axios Config & Utility functions
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🚀 Khởi chạy ứng dụng
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 1. Cấu hình biến môi trường
+Tạo file `.env` từ `.env.example`:
+```bash
+cp .env.example .env
+```
 
-## Learn More
+Ghi nội dung:
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8080
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 2. Cài đặt dependencies & Chạy dev server
+```bash
+npm install
+npm run dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Ứng dụng sẽ hoạt động tại [http://localhost:3000](http://localhost:3000).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 📝 Quy tắc phát triển Frontend (Clean Code Rules)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-## UI Structure
-
-- `app/(board)` contains the main layouts and pages (today, tomorrow, backlog, flow).
-- `components/layout` holds the sidebar and header.
-- `components/ui` includes the shadcn-style UI primitives.
+1. **Atomic Design & Single Responsibility:**
+   - Component Container chỉ làm nhiệm vụ bố cục và điều phối state.
+   - Các item lặp (`.map`) hoặc form inline (nhập text, Enter/Escape) phải được tách thành component con độc lập dưới 70 dòng.
+2. **State Management:**
+   - Dùng Zustand cho global states (User Session, Current Board Plan, Active Flow Task).
+   - Dùng React local state cho UI transient states (modal visibility, inline edit value).

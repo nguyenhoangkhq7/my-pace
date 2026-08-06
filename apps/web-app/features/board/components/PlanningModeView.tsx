@@ -6,6 +6,7 @@ import type { AvailableTimeData } from "@/features/available-time/types";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { InformationCircleIcon } from "@hugeicons/core-free-icons";
+import { AlertTriangle } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
 
 interface PlanningModeViewProps {
@@ -107,6 +108,16 @@ export function PlanningModeView({
           </div>
         )}
       </div>
+
+      {currentAvailable < 0 && (
+        <div className="flex items-start gap-2.5 px-3.5 py-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 animate-in fade-in slide-in-from-top-1 duration-300">
+          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+          <p className="text-xs leading-relaxed">
+            <span className="font-semibold">Vượt quá thời gian trống!</span> Một số công việc sẽ không được xếp lịch tự động.
+            Bấm <strong>Lưu kế hoạch</strong> để xem lại và quyết định bỏ bớt công việc nào.
+          </p>
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto space-y-6 pr-2 scrollbar-thin">
         {mits.length > 0 && (

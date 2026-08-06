@@ -5,8 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import type { Task } from "@/features/board/types";
 import { FlowChecklistItemRow } from "./FlowChecklistItemRow";
 import { TaskChecklistCreateForm } from "@/features/board/components/TaskChecklistCreateForm";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { addChecklistItemAction, updateChecklistItemAction, deleteChecklistItemAction } from "@/features/board/actions/checklist.action";
+import { useChecklistMutations } from "@/features/board/hooks/useChecklistMutations";
 import { toast } from "sonner";
 import { ListTodo } from "lucide-react";
 
@@ -18,28 +17,7 @@ interface ChecklistModalProps {
 }
 
 export function ChecklistModal({ isOpen, onOpenChange, activeTask, onAllCompleted }: ChecklistModalProps) {
-  const queryClient = useQueryClient();
-
-  const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ["tasks"] });
-    queryClient.invalidateQueries({ queryKey: ["dailyPlan"] });
-  };
-
-  const addMutation = useMutation({
-    mutationFn: (title: string) => addChecklistItemAction(activeTask?.id ?? "", { title }),
-    onSuccess: invalidate,
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ checklistId, data }: { checklistId: string; data: { title?: string; isCompleted?: boolean } }) =>
-      updateChecklistItemAction(activeTask?.id ?? "", checklistId, data),
-    onSuccess: invalidate,
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (checklistId: string) => deleteChecklistItemAction(activeTask?.id ?? "", checklistId),
-    onSuccess: invalidate,
-  });
+  const { addChecklist, updateChecklist, deleteChecklist } = useChecklistMutations(activeTask?.id);
 
   if (!activeTask) return null;
 
@@ -50,7 +28,7 @@ export function ChecklistModal({ isOpen, onOpenChange, activeTask, onAllComplete
 
   const handleAdd = async (title: string) => {
     try {
-      await addMutation.mutateAsync(title);
+      await addChecklist(title);
     } catch {
       toast.error("Không thể thêm subtask.");
     }
@@ -58,7 +36,7 @@ export function ChecklistModal({ isOpen, onOpenChange, activeTask, onAllComplete
 
   const handleToggle = async (checklistId: string, isCompleted: boolean) => {
     try {
-      await updateMutation.mutateAsync({ checklistId, data: { isCompleted } });
+      await updateChecklist({ checklistId, data: { isCompleted } });
       const allDone = checklists.every((c) => (c.id === checklistId ? isCompleted : c.isCompleted));
       if (allDone && totalCount > 0) {
         setTimeout(() => {
@@ -110,9 +88,9 @@ export function ChecklistModal({ isOpen, onOpenChange, activeTask, onAllComplete
                 isCompleted={item.isCompleted}
                 onToggle={(checked) => handleToggle(item.id, checked)}
                 onUpdateTitle={async (newTitle) => {
-                  await updateMutation.mutateAsync({ checklistId: item.id, data: { title: newTitle } });
+                  await updateChecklist({ checklistId: item.id, data: { title: newTitle } });
                 }}
-                onDelete={() => deleteMutation.mutate(item.id)}
+                onDelete={() => deleteChecklist(item.id)}
               />
             ))
           )}

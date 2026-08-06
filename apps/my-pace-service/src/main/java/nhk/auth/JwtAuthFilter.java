@@ -2,13 +2,14 @@ package nhk.auth;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import nhk.user.UserDetailsCustom;
 import nhk.user.UserRepository;
-import org.springframework.data.redis.core.StringRedisTemplate;
+
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -22,28 +23,35 @@ import java.io.IOException;
 public class JwtAuthFilter extends OncePerRequestFilter {
    private final JwtService jwtService;
    private final UserRepository userRepository;
-   private final StringRedisTemplate stringRedisTemplate;
+
 
    @Override
-   protected void doFilterInternal(HttpServletRequest request, @NonNull HttpServletResponse response,@NonNull FilterChain filterChain) throws ServletException, IOException {
+   protected void doFilterInternal(HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
+      String token = null;
       String authHeader = request.getHeader("Authorization");
-      if(authHeader==null || !authHeader.startsWith("Bearer ")) {
-         filterChain.doFilter(request, response);
-         return;
+      if (authHeader != null && authHeader.startsWith("Bearer ")) {
+         token = authHeader.substring(7);
+      } else if (request.getCookies() != null) {
+         for (Cookie cookie : request.getCookies()) {
+            if ("accessToken".equals(cookie.getName())) {
+               token = cookie.getValue();
+               break;
+            }
+         }
       }
-      String token = authHeader.replace("Bearer ", "");
-      Jwt jwt = jwtService.parseToken(token);
-      if(jwt == null || jwt.isExpirated()) {
+
+      if (token == null || token.isBlank()) {
          filterChain.doFilter(request, response);
          return;
       }
 
-      // Check if token is blacklisted in Redis
-      Boolean isBlacklisted = stringRedisTemplate.hasKey("blacklist:token:" + token);
-      if (Boolean.TRUE.equals(isBlacklisted)) {
+      Jwt jwt = jwtService.parseToken(token);
+      if (jwt == null || jwt.isExpirated()) {
          filterChain.doFilter(request, response);
          return;
       }
+
+
 
       userRepository.findById(jwt.getUserIdFromToken()).ifPresent(user -> {
          var userDetails = new UserDetailsCustom(user);

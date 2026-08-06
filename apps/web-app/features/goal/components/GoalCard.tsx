@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Edit01Icon, Folder01Icon } from "@hugeicons/core-free-icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { updateGoalAction } from "../actions/goal.action";
+import { fetchClient } from "@/lib/fetchClient";
 import { useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
@@ -26,7 +26,7 @@ export function GoalCard({ goal, onEdit, onCreateTask }: GoalCardProps) {
   const isVi = locale === "vi";
   const queryClient = useQueryClient();
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string, data: GoalUpdateRequest }) => updateGoalAction(id, data),
+    mutationFn: ({ id, data }: { id: string, data: GoalUpdateRequest }) => fetchClient.put(`goals/${id}`, data).then(r => r.data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['goals'] }),
   });
   const updateGoal = useCallback((id: string, data: GoalUpdateRequest) => updateMutation.mutateAsync({ id, data }), [updateMutation]);

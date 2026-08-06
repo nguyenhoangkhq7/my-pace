@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar01Icon, Clock01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import React from "react";
 import { useTranslation } from "@/hooks/use-translation";
 import type { Task, TaskTimeBlock } from "../types";
 
@@ -16,6 +17,7 @@ interface TaskTimeBlockModalProps {
   isConfirmed?: boolean;
   onClose: () => void;
   onUnschedule: (taskId: string) => Promise<void>;
+  onToggleLock?: (blockId: string, currentStatus: string) => Promise<void>;
   isSubmitting?: boolean;
 }
 
@@ -27,9 +29,12 @@ export function TaskTimeBlockModal({
   isConfirmed = false,
   onClose,
   onUnschedule,
+  onToggleLock,
   isSubmitting = false,
 }: TaskTimeBlockModalProps) {
   const { t } = useTranslation();
+  const [isToggling, setIsToggling] = React.useState(false);
+
   if (!block || !task) return null;
 
   const startTimeStr = new Date(block.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -41,6 +46,13 @@ export function TaskTimeBlockModal({
   };
 
   const isChunked = block.totalParts > 1;
+  const handleToggleLock = async () => {
+    if (onToggleLock && block.id) {
+      setIsToggling(true);
+      await onToggleLock(block.id, block.availabilityStatus || 'FREE');
+      setIsToggling(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -122,7 +134,18 @@ export function TaskTimeBlockModal({
           </div>
         </div>
 
-        <DialogFooter className="flex gap-2">
+        <DialogFooter className="flex gap-2 flex-wrap">
+          {!isConfirmed && onToggleLock && block.id && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleToggleLock}
+              disabled={isSubmitting || isToggling}
+              className="w-full sm:w-auto mr-auto"
+            >
+              {block.availabilityStatus === 'BUSY' ? 'Mở khóa (Unlock)' : 'Khóa (Lock)'}
+            </Button>
+          )}
           {!isConfirmed && (
             <Button
               variant="destructive"

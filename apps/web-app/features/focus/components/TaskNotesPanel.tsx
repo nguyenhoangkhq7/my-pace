@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { updateTaskAction } from "@/features/board/actions/task.action";
+import { fetchClient } from "@/lib/fetchClient";
 import type { Task } from "@/features/board/types";
 import { cn } from "@/lib/utils";
 import { NotebookPen, ChevronDown, Maximize2 } from "lucide-react";
@@ -41,7 +41,7 @@ export function TaskNotesPanel({ task }: TaskNotesPanelProps) {
   }, [isOpen]);
 
   const updateMutation = useMutation({
-    mutationFn: (notes: string) => updateTaskAction(task.id, { notes }),
+    mutationFn: (notes: string) => fetchClient.put(`tasks/${task.id}`, { notes }).then(r => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       setIsSaving(false);

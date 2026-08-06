@@ -9,8 +9,16 @@ import { CalendarSidebar } from "@/features/calendar/components/CalendarSidebar"
 import { CalendarStyles } from "@/features/calendar/components/CalendarStyles";
 import { EventModal } from "@/features/calendar/components/EventModal";
 import { TaskTimeBlockModal } from "@/features/board/components/TaskTimeBlockModal";
+import { CalendarEventItem } from "@/features/calendar/components/CalendarEventItem";
 import { useCalendarPage } from "../hooks/useCalendarPage";
 import { useTranslation } from "@/hooks/use-translation";
+
+const formatFcDate = (date: Date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
 
 export function CalendarPage() {
   const { t } = useTranslation();
@@ -19,6 +27,8 @@ export function CalendarPage() {
     sidebarRef,
     slotMin,
     slotMax,
+    scrollTime,
+    businessHours,
     fcEvents,
     initialView,
     isCalendarMounted,
@@ -28,6 +38,7 @@ export function CalendarPage() {
     handleColorChange,
     unscheduledTasks,
     hasUnscheduled,
+    handleToggleBlockLock,
     isAutoScheduling,
     handleAutoScheduleFromSidebar,
     modalOpen,
@@ -38,13 +49,17 @@ export function CalendarPage() {
     createEvent,
     updateAllOccurrences,
     updateSingleOccurrence,
+    updateFromDateOnwards,
     deleteAllOccurrences,
     deleteSingleOccurrence,
+    deleteFromDateOnwards,
+
     blockModalOpen,
     setBlockModalOpen,
     selectedBlock,
     selectedTask,
     isBlockMit,
+    isBlockInPlan,
     handleUnscheduleTask,
     isUnscheduling,
     handleConfirmPlan,
@@ -60,8 +75,10 @@ export function CalendarPage() {
     handleEventDragStop,
 
     // Store data
+    hasAllDayEvents,
     dailyPlanToday,
     timeBlocks,
+    datesWithPlanSet,
     plannable,
   } = useCalendarPage();
 
@@ -96,15 +113,29 @@ export function CalendarPage() {
               firstDay={1}
               slotMinTime={slotMin}
               slotMaxTime={slotMax}
+              scrollTime={scrollTime}
+              scrollTimeReset={false}
+              businessHours={businessHours}
               snapDuration="00:15:00"
-              allDaySlot={false}
+              allDaySlot={hasAllDayEvents}
               nowIndicator
+
+              dayCellClassNames={(arg) => {
+                const dateStr = formatFcDate(arg.date);
+                return datesWithPlanSet.has(dateStr) ? ["fc-day-has-plan"] : [];
+              }}
+              dayHeaderClassNames={(arg) => {
+                const dateStr = formatFcDate(arg.date);
+                return datesWithPlanSet.has(dateStr) ? ["fc-col-header-has-plan"] : [];
+              }}
+
               selectable={plannable}
               selectMirror={plannable}
               editable={plannable}
               droppable={plannable && !dailyPlanToday?.isConfirmed}
               eventResizableFromStart={false}
               events={fcEvents}
+              eventContent={(eventInfo) => <CalendarEventItem eventInfo={eventInfo} />}
               datesSet={handleDatesSet}
               select={handleSelect}
               eventClick={handleEventClick}
@@ -145,8 +176,10 @@ export function CalendarPage() {
         createEvent={createEvent}
         updateAllOccurrences={updateAllOccurrences}
         updateSingleOccurrence={updateSingleOccurrence}
+        updateFromDateOnwards={updateFromDateOnwards}
         deleteAllOccurrences={deleteAllOccurrences}
         deleteSingleOccurrence={deleteSingleOccurrence}
+        deleteFromDateOnwards={deleteFromDateOnwards}
       />
 
       <TaskTimeBlockModal
@@ -154,9 +187,10 @@ export function CalendarPage() {
         block={selectedBlock}
         task={selectedTask}
         isMit={isBlockMit}
-        isConfirmed={isConfirmed}
+        isConfirmed={isConfirmed || !isBlockInPlan}
         onClose={() => setBlockModalOpen(false)}
         onUnschedule={handleUnscheduleTask}
+        onToggleLock={handleToggleBlockLock}
         isSubmitting={isUnscheduling}
       />
 

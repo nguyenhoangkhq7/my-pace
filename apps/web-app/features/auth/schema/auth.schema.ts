@@ -55,4 +55,19 @@ export const initialSetupSchema = z.object({
 
 export type InitialSetupFormValues = z.infer<typeof initialSetupSchema>;
 
+export const resetPasswordSchema = z
+  .object({
+    email: emailFieldSchema,
+    otp: otpFieldSchema,
+    password: passwordFieldSchema,
+    confirmPassword: passwordFieldSchema,
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
+
+export type ResetPasswordValues = z.infer<typeof resetPasswordSchema>;
+
+
 

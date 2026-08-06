@@ -63,8 +63,171 @@ export function CalendarStyles({ fixedEventColor }: CalendarStylesProps) {
       .calendar-wrapper td, .calendar-wrapper th { border-color: rgba(255, 255, 255, 0.04) !important; }
       .calendar-wrapper .fc-timegrid-slots td { border-color: rgba(255, 255, 255, 0.03) !important; }
       
+      /* ── Dynamic & Compact All-Day Bar (Google Calendar Style) ── */
+      .calendar-wrapper .fc-timegrid-allday {
+        background-color: rgba(255, 255, 255, 0.015) !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+        padding: 0 !important;
+      }
+      .calendar-wrapper .fc-timegrid-allday-frame {
+        min-height: 1.8rem !important;
+        padding: 2px 2px !important;
+      }
+      .calendar-wrapper .fc-timegrid-allday .fc-daygrid-body {
+        min-height: 0 !important;
+      }
+      .calendar-wrapper .fc-timegrid-allday .fc-daygrid-day-frame {
+        min-height: 1.8rem !important;
+        padding: 1px 2px !important;
+      }
+      .calendar-wrapper .fc-timegrid-allday .fc-timegrid-axis-cushion {
+        padding: 2px 6px !important;
+        font-size: 0.7rem !important;
+        font-weight: 500 !important;
+        text-transform: lowercase;
+        opacity: 0.65;
+        height: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+      }
+      .calendar-wrapper .fc-daygrid-event {
+        border-radius: 6px !important;
+        padding: 4px 10px !important;
+        margin: 1px 2px !important;
+        font-size: 0.76rem !important;
+        font-weight: 600 !important;
+        letter-spacing: -0.01em !important;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.12) !important;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease !important;
+        border: none !important;
+        min-height: 1.7rem !important;
+        height: calc(100% - 2px) !important;
+        display: flex !important;
+        align-items: center !important;
+      }
+      .calendar-wrapper .fc-daygrid-event:hover {
+        transform: translateY(-1px) scale(1.005) !important;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.18) !important;
+        filter: brightness(1.08) !important;
+      }
+      .calendar-wrapper .fc-daygrid-event-dot {
+        border-color: currentColor !important;
+        margin-right: 5px !important;
+      }
+      .calendar-wrapper .fc-event-main {
+        padding: 0 !important;
+        height: 100% !important;
+        width: 100% !important;
+        display: flex !important;
+        align-items: flex-start !important;
+      }
+      .calendar-wrapper .fc-event-main-frame {
+        height: 100% !important;
+        width: 100% !important;
+        display: flex !important;
+        align-items: flex-start !important;
+      }
+
       /* Dragging ghost style */
       .fc-event-dragging { opacity: 0.85 !important; }
+
+      /* ── Reclaim.ai Inspired Visual Distinction ── */
+      
+      /* 1. Fixed Events (Sự kiện cố định) */
+      .fc-event-item {
+        border-radius: 6px !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
+        transition: transform 0.15s ease, filter 0.15s ease !important;
+      }
+      .fc-event-item:hover {
+        filter: brightness(1.08) !important;
+      }
+      .fc-event-busy {
+        border-left: 3.5px solid rgba(255, 255, 255, 0.85) !important;
+      }
+      .fc-event-free {
+        border: 1.5px dotted currentColor !important;
+        opacity: 0.75 !important;
+      }
+      .fc-event-free:hover {
+        opacity: 0.95 !important;
+      }
+      
+      /* 2. Task Time Blocks (Công việc xếp lịch) */
+      .fc-task-block {
+        border-radius: 8px !important;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.18) !important;
+        transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+      }
+      .fc-task-block:hover {
+        transform: translateY(-1px) scale(1.005) !important;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25) !important;
+      }
+      .fc-task-busy {
+        border-left: 4px solid rgba(255, 255, 255, 0.9) !important;
+      }
+      /* Reclaim.ai Adaptive Hatch Pattern for Free Tasks */
+      .fc-task-free {
+        border: 1.5px dashed rgba(255, 255, 255, 0.5) !important;
+        background-image: repeating-linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.15),
+          rgba(255, 255, 255, 0.15) 8px,
+          transparent 8px,
+          transparent 16px
+        ) !important;
+      }
+      .fc-block-not-in-plan {
+        opacity: 0.45 !important;
+      }
+      .fc-block-not-in-plan:hover {
+        opacity: 0.75 !important;
+      }
+
+      /* ── Daily Plan Highlight Accent ── */
+      /* 1. Month View Day Cell */
+      .calendar-wrapper .fc-day-has-plan {
+        background: linear-gradient(180deg, rgba(99, 102, 241, 0.08) 0%, rgba(99, 102, 241, 0.02) 100%) !important;
+        box-shadow: inset 0 3px 0 0 var(--primary) !important;
+      }
+      .calendar-wrapper .fc-day-has-plan .fc-daygrid-day-number {
+        font-weight: 700 !important;
+        color: var(--primary) !important;
+      }
+
+      /* 2. Week/Day View Column Header */
+      .calendar-wrapper .fc-col-header-has-plan {
+        background-color: rgba(59, 130, 246, 0.12) !important;
+        border-bottom: 2px solid var(--primary) !important;
+      }
+      .calendar-wrapper .fc-col-header-has-plan .fc-col-header-cell-cushion {
+        color: var(--primary) !important;
+        font-weight: 700 !important;
+        opacity: 1 !important;
+      }
+
+      /* ── Boundary Dashed Lines (Ranh giới nét đứt Wake Time & Sleep Time) ── */
+      .calendar-wrapper .fc-timegrid-bg-harness,
+      .calendar-wrapper .fc-timegrid-col-bg {
+        z-index: 3 !important;
+      }
+      .calendar-wrapper .fc-non-business {
+        background: transparent !important;
+      }
+      .calendar-wrapper .fc-sleep-line-event {
+        background: transparent !important;
+        border-top: 2px dashed #f59e0b !important; /* 🌙 Sleep Time line (Cam Amber) */
+        opacity: 1 !important;
+        pointer-events: none !important;
+        z-index: 5 !important;
+      }
+      .calendar-wrapper .fc-wake-line-event {
+        background: transparent !important;
+        border-top: 2px dashed #3b82f6 !important; /* ☀️ Wake Time line (Xanh Primary #3b82f6) */
+        opacity: 1 !important;
+        pointer-events: none !important;
+        z-index: 5 !important;
+      }
     `}</style>
   );
 }

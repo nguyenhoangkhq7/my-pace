@@ -1,10 +1,10 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useFocusStore } from "../store/focus.store";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
-import { updateTaskAction } from "@/features/board/actions/task.action";
+import { fetchClient } from "@/lib/fetchClient";
 import { useAuthStore } from "@/features/auth";
 import { getTodayStr } from "@/lib/date";
-import type { DailyPlan } from "@/features/board/types";
+import type { DailyPlan, Task } from "@/features/board/types";
 
 export function usePomodoro() {
   const pomodoroState = useFocusStore((s) => s.pomodoroState);
@@ -17,8 +17,8 @@ export function usePomodoro() {
 
   const updateTaskMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: { actualMinutes: number } }) =>
-      updateTaskAction(id, data),
-    onSuccess: (updatedTask) => {
+      fetchClient.put(`tasks/${id}`, data).then(r => r.data as Task),
+    onSuccess: (updatedTask: Task) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       if (user) {
         const currentDate = getTodayStr(user.timezone);
@@ -276,7 +276,7 @@ export function usePomodoro() {
       if (state.activeTaskId) {
         const finalMinutes = Math.round(state.accumulatedFocusTime / 60);
         if (finalMinutes > 0) {
-          updateTaskAction(state.activeTaskId, { actualMinutes: finalMinutes }).catch(console.error);
+          fetchClient.put(`tasks/${state.activeTaskId}`, { actualMinutes: finalMinutes }).catch(console.error);
         }
       }
     };

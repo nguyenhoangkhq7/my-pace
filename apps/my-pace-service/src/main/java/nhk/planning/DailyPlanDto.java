@@ -1,7 +1,6 @@
 package nhk.planning;
 
 import lombok.Builder;
-import nhk.timeblock.TaskTimeBlockDto;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -17,6 +16,5 @@ public record DailyPlanDto(
     Boolean isConfirmed,
     OffsetDateTime confirmedAt,
     Boolean isReviewed,
-    List<DailyPlanTaskDto> tasks,
-    List<TaskTimeBlockDto> timeBlocks
+    List<DailyPlanTaskDto> tasks
 ) {}

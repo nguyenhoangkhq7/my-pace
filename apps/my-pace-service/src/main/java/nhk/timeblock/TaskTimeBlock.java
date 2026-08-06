@@ -26,10 +26,6 @@ public class TaskTimeBlock {
     private UUID taskId;
 
     @NotNull
-    @Column(name = "daily_plan_id", nullable = false)
-    private UUID dailyPlanId;
-
-    @NotNull
     @Column(name = "start_time", nullable = false, columnDefinition = "TIMESTAMP")
     private LocalDateTime startTime;
 
@@ -44,6 +40,25 @@ public class TaskTimeBlock {
     @NotNull
     @Column(name = "total_parts", nullable = false)
     private Integer totalParts = 1;
+
+    @NotNull
+    @Column(name = "actual_minutes", nullable = false)
+    private Integer actualMinutes = 0;
+
+    @NotNull
+    @Column(name = "is_completed", nullable = false)
+    private Boolean isCompleted = false;
+
+    @Column(name = "completed_at")
+    private OffsetDateTime completedAt;
+
+    @NotNull
+    @Column(name = "availability_status", nullable = false)
+    private String availabilityStatus = "FREE";
+
+    @NotNull
+    @Column(name = "is_locked", nullable = false)
+    private Boolean isLocked = false;
 
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;

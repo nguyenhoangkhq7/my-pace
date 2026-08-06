@@ -1,13 +1,14 @@
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { useBoardStore } from "../store/board.store";
+import { useShallow } from "zustand/react/shallow";
 import { useAvailableTimeQuery } from "../../available-time/hooks/useAvailableTime";
 import { Task } from "../types";
 import { useTasks } from "./useTasks";
 import { useDailyPlan } from "./useDailyPlan";
 import { useCategories } from "./useCategories";
 
-export function useBacklogMatrix(currentDate: string, tomorrowDate: string, day2Date: string, day3Date: string) {
+export function useBacklogMatrix(currentDate: string, tomorrowDate: string) {
   const {
     isPlanningMode,
     plannedTaskIds,
@@ -22,42 +23,46 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string, day2
     requireDuration,
     openTaskModal,
     closeTaskModal,
-  } = useBoardStore();
+  } = useBoardStore(useShallow((s) => ({
+    isPlanningMode: s.isPlanningMode,
+    plannedTaskIds: s.plannedTaskIds,
+    addPlannedTaskLocally: s.addPlannedTaskLocally,
+    removePlannedTaskLocally: s.removePlannedTaskLocally,
+    planningTarget: s.planningTarget,
+    selectedFilterId: s.selectedFilterId,
+    setFilter: s.setFilter,
+    editingTask: s.editingTask,
+    isTaskModalOpen: s.isTaskModalOpen,
+    prefilledGoalId: s.prefilledGoalId,
+    requireDuration: s.requireDuration,
+    openTaskModal: s.openTaskModal,
+    closeTaskModal: s.closeTaskModal,
+  })));
 
   const { tasks, createTask, updateTask } = useTasks();
   const { categories } = useCategories();
   
   const todayPlan = useDailyPlan(currentDate);
   const tomorrowPlan = useDailyPlan(tomorrowDate);
-  const day2Plan = useDailyPlan(day2Date);
-  const day3Plan = useDailyPlan(day3Date);
 
   const dailyPlanToday = todayPlan.dailyPlan;
   const dailyPlanTomorrow = tomorrowPlan.dailyPlan;
-  const dailyPlanDay2 = day2Plan.dailyPlan;
-  const dailyPlanDay3 = day3Plan.dailyPlan;
 
   const targetPlan = useMemo(() => {
     if (planningTarget === 'today') return dailyPlanToday;
     if (planningTarget === 'tomorrow') return dailyPlanTomorrow;
-    if (planningTarget === 'day2') return dailyPlanDay2;
-    if (planningTarget === 'day3') return dailyPlanDay3;
     return null;
-  }, [planningTarget, dailyPlanToday, dailyPlanTomorrow, dailyPlanDay2, dailyPlanDay3]);
+  }, [planningTarget, dailyPlanToday, dailyPlanTomorrow]);
 
 
   const { data: dataToday } = useAvailableTimeQuery(currentDate);
   const { data: dataTomorrow } = useAvailableTimeQuery(tomorrowDate);
-  const { data: dataDay2 } = useAvailableTimeQuery(day2Date);
-  const { data: dataDay3 } = useAvailableTimeQuery(day3Date);
   
   const availableTimeData = useMemo(() => {
     if (planningTarget === 'today') return dataToday;
     if (planningTarget === 'tomorrow') return dataTomorrow;
-    if (planningTarget === 'day2') return dataDay2;
-    if (planningTarget === 'day3') return dataDay3;
     return null;
-  }, [planningTarget, dataToday, dataTomorrow, dataDay2, dataDay3]);
+  }, [planningTarget, dataToday, dataTomorrow]);
 
   const availableMinutes = availableTimeData?.availableMinutes || 0;
 
@@ -75,7 +80,7 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string, day2
   const handleCreateTask = async (data: Partial<Task>) => {
     let newTask;
     if (editingTask) {
-      newTask = await updateTask({ id: editingTask.id, data });
+      await updateTask({id: editingTask.id, data});
     } else {
       newTask = await createTask(data);
       if (isPlanningMode && newTask) {

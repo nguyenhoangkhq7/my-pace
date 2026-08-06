@@ -12,6 +12,7 @@ import java.util.UUID;
 @Repository
 public interface DailyPlanTaskRepository extends JpaRepository<DailyPlanTask, UUID> {
     List<DailyPlanTask> findByDailyPlanIdOrderBySortOrderAsc(UUID dailyPlanId);
+    List<DailyPlanTask> findByDailyPlanIdIn(List<UUID> dailyPlanIds);
     
     @Modifying
     @Query("DELETE FROM DailyPlanTask d WHERE d.dailyPlanId = :dailyPlanId")
