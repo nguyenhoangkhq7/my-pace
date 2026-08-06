@@ -21,6 +21,7 @@ public class TaskTimeBlockServiceImpl implements TaskTimeBlockService {
 
     private final TaskTimeBlockRepository timeBlockRepository;
     private final DailyPlanRepository dailyPlanRepository;
+    private final nhk.planning.DailyPlanTaskRepository dailyPlanTaskRepository;
     private final TaskRepository taskRepository;
 
     @Override
@@ -87,25 +88,44 @@ public class TaskTimeBlockServiceImpl implements TaskTimeBlockService {
                 .orElseThrow(() -> new EntityNotFoundException("Time block not found"));
 
         Task task = taskRepository.findById(block.getTaskId())
-                .orElseThrow(() -> new EntityNotFoundException("Task not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Time block not found"));
 
         if (!task.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("User does not own this task");
+            throw new EntityNotFoundException("Time block not found");
         }
 
         if (actualMinutes != null) {
-            int prevActual = task.getActualMinutes() != null ? task.getActualMinutes() : 0;
-            task.setActualMinutes(prevActual + actualMinutes);
+            int prevBlockActual = block.getActualMinutes() != null ? block.getActualMinutes() : 0;
+            block.setActualMinutes(prevBlockActual + actualMinutes);
+
+            int prevTaskActual = task.getActualMinutes() != null ? task.getActualMinutes() : 0;
+            task.setActualMinutes(prevTaskActual + actualMinutes);
+
+            if (actualMinutes > 0) {
+                block.setAvailabilityStatus("BUSY");
+            }
         }
 
-        if (Boolean.TRUE.equals(isCompleted)) {
-            task.setStatus("Done");
-            task.setDoneAt(OffsetDateTime.now());
+        if (isCompleted != null) {
+            block.setIsCompleted(isCompleted);
+            if (Boolean.TRUE.equals(isCompleted)) {
+                block.setCompletedAt(OffsetDateTime.now());
+                block.setAvailabilityStatus("BUSY");
+                task.setStatus("Done");
+                task.setDoneAt(OffsetDateTime.now());
+            } else {
+                block.setCompletedAt(null);
+                if ("Done".equalsIgnoreCase(task.getStatus())) {
+                    task.setStatus("Picked for Today");
+                    task.setDoneAt(null);
+                }
+            }
         }
 
+        TaskTimeBlock savedBlock = timeBlockRepository.save(block);
         taskRepository.save(task);
 
-        return toDto(block);
+        return toDto(savedBlock);
     }
 
     @Override
@@ -114,12 +134,20 @@ public class TaskTimeBlockServiceImpl implements TaskTimeBlockService {
         TaskTimeBlock original = timeBlockRepository.findById(blockId)
                 .orElseThrow(() -> new EntityNotFoundException("Time block not found"));
 
-        long totalMinutes = java.time.Duration.between(original.getStartTime(), original.getEndTime()).toMinutes();
-        if (splitAtMinutes <= 0 || splitAtMinutes >= totalMinutes) {
-            throw new IllegalArgumentException("Split duration must be strictly between start and end");
+        Task task = taskRepository.findById(original.getTaskId())
+                .orElseThrow(() -> new EntityNotFoundException("Time block not found"));
+
+        if (!task.getUserId().equals(userId)) {
+            throw new EntityNotFoundException("Time block not found");
         }
 
-        java.time.LocalDateTime splitTime = original.getStartTime().plusMinutes(splitAtMinutes);
+        long totalMinutes = java.time.Duration.between(original.getStartTime(), original.getEndTime()).toMinutes();
+        int splitVal = (splitAtMinutes != null && splitAtMinutes > 0) ? splitAtMinutes : (int) (totalMinutes / 2);
+        if (splitVal <= 0 || splitVal >= totalMinutes) {
+            return List.of(toDto(original));
+        }
+
+        java.time.LocalDateTime splitTime = original.getStartTime().plusMinutes(splitVal);
         java.time.LocalDateTime originalEnd = original.getEndTime();
 
         original.setEndTime(splitTime);
@@ -150,6 +178,13 @@ public class TaskTimeBlockServiceImpl implements TaskTimeBlockService {
     public TaskTimeBlockDto toggleTimeBlockLockStatus(UUID blockId, String availabilityStatus, UUID userId) {
         TaskTimeBlock block = timeBlockRepository.findById(blockId)
                 .orElseThrow(() -> new EntityNotFoundException("Time block not found"));
+
+        Task ownerTask = taskRepository.findById(block.getTaskId())
+                .orElseThrow(() -> new EntityNotFoundException("Time block not found"));
+
+        if (!ownerTask.getUserId().equals(userId)) {
+            throw new EntityNotFoundException("Time block not found");
+        }
 
         if (!"BUSY".equalsIgnoreCase(availabilityStatus) && !"FREE".equalsIgnoreCase(availabilityStatus)) {
             throw new IllegalArgumentException("Invalid availability status. Must be BUSY or FREE");
@@ -214,6 +249,31 @@ public class TaskTimeBlockServiceImpl implements TaskTimeBlockService {
         return toDto(savedBlock);
     }
 
+    @Override
+    @Transactional
+    public TaskTimeBlockDto toggleLock(UUID blockId, UUID userId) {
+        TaskTimeBlock block = timeBlockRepository.findById(blockId)
+                .orElseThrow(() -> new EntityNotFoundException("Time block not found"));
+
+        java.time.LocalDate date = block.getStartTime().toLocalDate();
+        DailyPlan plan = dailyPlanRepository.findByUserIdAndPlanDate(userId, date).orElse(null);
+
+        if (plan == null) {
+            throw new IllegalStateException("Cannot lock timeblock for a task that is not in the daily plan");
+        }
+
+        List<nhk.planning.DailyPlanTask> planTasks = dailyPlanTaskRepository.findByDailyPlanIdOrderBySortOrderAsc(plan.getId());
+        boolean isInDailyPlan = planTasks.stream().anyMatch(pt -> pt.getTask() != null && pt.getTask().getId().equals(block.getTaskId()));
+
+        if (!isInDailyPlan) {
+            throw new IllegalStateException("Cannot lock timeblock for a task that is not in the daily plan");
+        }
+
+        block.setIsLocked(!Boolean.TRUE.equals(block.getIsLocked()));
+        TaskTimeBlock savedBlock = timeBlockRepository.save(block);
+        return toDto(savedBlock);
+    }
+
     private TaskTimeBlockDto toDto(TaskTimeBlock block) {
         return new TaskTimeBlockDto(
                 block.getId(),
@@ -225,7 +285,8 @@ public class TaskTimeBlockServiceImpl implements TaskTimeBlockService {
                 block.getActualMinutes() != null ? block.getActualMinutes() : 0,
                 block.getIsCompleted() != null ? block.getIsCompleted() : false,
                 block.getCompletedAt(),
-                block.getAvailabilityStatus() != null ? block.getAvailabilityStatus() : "FREE"
+                block.getAvailabilityStatus() != null ? block.getAvailabilityStatus() : "FREE",
+                Boolean.TRUE.equals(block.getIsLocked())
         );
     }
 }

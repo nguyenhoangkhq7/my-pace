@@ -13,7 +13,7 @@ import { useTaskTimeBlocks } from "@/features/board/hooks/useTaskTimeBlocks";
 import { FlowTodoItem } from "./FlowTodoItem";
 
 interface FlowTodoListProps {
-  onTaskSelect?: (task: DailyPlanTask) => void;
+  onTaskSelect?: (task: DailyPlanTask, block?: TaskTimeBlock) => void;
 }
 
 export function FlowTodoList({ onTaskSelect }: FlowTodoListProps) {
@@ -27,10 +27,10 @@ export function FlowTodoList({ onTaskSelect }: FlowTodoListProps) {
 
   const isFocusing = pomodoroState === "focusing";
 
-  const { orderedTasks, scheduleLabelsMap } = useMemo(() => {
+  const { orderedTasks, scheduleLabelsMap, taskBlocksMap } = useMemo(() => {
     const tasks = dailyPlanToday?.tasks;
     const blocks = timeBlocks;
-    if (!tasks) return { orderedTasks: [], scheduleLabelsMap: new Map<string, string | null>() };
+    if (!tasks) return { orderedTasks: [], scheduleLabelsMap: new Map<string, string | null>(), taskBlocksMap: new Map<string, TaskTimeBlock[]>() };
 
     const formatTime = (iso: string) => {
       const date = new Date(iso);
@@ -79,7 +79,7 @@ export function FlowTodoList({ onTaskSelect }: FlowTodoListProps) {
       return aKey.sortOrder - bKey.sortOrder;
     });
 
-    return { orderedTasks: sortedTasks, scheduleLabelsMap: labelsMap };
+    return { orderedTasks: sortedTasks, scheduleLabelsMap: labelsMap, taskBlocksMap };
   }, [dailyPlanToday, timeBlocks]);
 
   if (!dailyPlanToday || !dailyPlanToday.tasks || dailyPlanToday.tasks.length === 0) {
@@ -124,6 +124,7 @@ export function FlowTodoList({ onTaskSelect }: FlowTodoListProps) {
           <FlowTodoItem
             key={pt.id}
             task={pt}
+            blocks={taskBlocksMap.get(pt.task.id)}
             scheduleLabel={scheduleLabelsMap.get(pt.task.id) ?? null}
             onTaskSelect={onTaskSelect}
           />

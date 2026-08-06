@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useId } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
@@ -10,7 +10,8 @@ import { useTasks } from "@/features/board/hooks/useTasks";
 import { useCategories } from "@/features/board/hooks/useCategories";
 import { useGoals } from "@/features/board/hooks/useGoals";
 import { useAutoSchedule } from "@/features/board/hooks/useAutoSchedule";
-import { fetchClient } from "@/lib/fetchClient";
+import { fetchClient, getApiErrorMessage } from "@/lib/fetchClient";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,8 +60,8 @@ export function QuickAddForm({ initialData, onSuccess, onCancel }: QuickAddFormP
   const [eventTitle, setEventTitle] = useState(initialData.title);
   const [eventDateStr, setEventDateStr] = useState(
     initialData.type === "event"
-      ? (initialData.eventDate ?? new Date().toISOString().split("T")[0])
-      : new Date().toISOString().split("T")[0]
+      ? (initialData.eventDate ?? format(new Date(), "yyyy-MM-dd"))
+      : format(new Date(), "yyyy-MM-dd")
   );
   const [eventStart, setEventStart] = useState(
     initialData.type === "event" ? (initialData.startTime ?? "09:00") : "09:00"
@@ -100,7 +101,7 @@ export function QuickAddForm({ initialData, onSuccess, onCancel }: QuickAddFormP
   });
 
   const { register, handleSubmit, control, formState } = form;
-  const watchGoalId = form.watch("goalId");
+  const watchGoalId = useWatch({ control, name: "goalId" });
   const associatedGoal = goals.find((g) => g.id === (initialData.type === "task" ? initialData.goalId || watchGoalId : undefined));
 
   const onSubmitTask = async (values: TaskFormValues) => {
@@ -121,6 +122,8 @@ export function QuickAddForm({ initialData, onSuccess, onCancel }: QuickAddFormP
       });
       onSuccess();
     } catch (err) {
+      const msg = getApiErrorMessage(err, "Failed to create task");
+      toast.error(msg);
       console.error("Failed to create task:", err);
     }
   };
@@ -146,6 +149,8 @@ export function QuickAddForm({ initialData, onSuccess, onCancel }: QuickAddFormP
       triggerAutoSchedule();
       onSuccess();
     } catch (err) {
+      const msg = getApiErrorMessage(err, "Failed to create event");
+      toast.error(msg);
       console.error("Failed to create event:", err);
     } finally {
       setIsSubmittingEvent(false);

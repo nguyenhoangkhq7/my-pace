@@ -8,14 +8,6 @@ import { PlanOverloadModal } from "./PlanOverloadModal";
 import { useExecutionBoard } from "../hooks/useExecutionBoard";
 import { useTranslation } from "@/hooks/use-translation";
 
-const formatShortDate = (dateStr: string) => {
-  if (!dateStr) return "";
-  const parts = dateStr.split("-");
-  if (parts.length < 3) return dateStr;
-  const [, m, d] = parts;
-  return `${d}/${m}`;
-};
-
 export function ExecutionBoard({ 
   currentDate, 
   tomorrowDate

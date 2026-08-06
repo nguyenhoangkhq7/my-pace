@@ -35,6 +35,9 @@ class TaskTimeBlockServiceImplTest {
     private DailyPlanRepository dailyPlanRepository;
 
     @Mock
+    private nhk.planning.DailyPlanTaskRepository dailyPlanTaskRepository;
+
+    @Mock
     private TaskRepository taskRepository;
 
     @InjectMocks
@@ -142,14 +145,13 @@ class TaskTimeBlockServiceImplTest {
         void updateProgress_ActualMinutes() {
             Task task = new Task();
             task.setId(taskId);
+            task.setUserId(userId);
             task.setEstimatedMinutes(60);
             task.setActualMinutes(0);
             task.setStatus("Picked for Today");
 
             when(timeBlockRepository.findById(blockId)).thenReturn(Optional.of(sampleBlock));
-            when(dailyPlanRepository.findById(dailyPlanId)).thenReturn(Optional.of(samplePlan));
             when(timeBlockRepository.save(any(TaskTimeBlock.class))).thenAnswer(inv -> inv.getArgument(0));
-            when(timeBlockRepository.findByTaskId(taskId)).thenReturn(List.of(sampleBlock));
             when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
 
             TaskTimeBlockDto result = timeBlockService.updateTimeBlockProgress(blockId, 30, null, userId);
@@ -166,14 +168,13 @@ class TaskTimeBlockServiceImplTest {
         void updateProgress_MarkCompleted_TaskDone() {
             Task task = new Task();
             task.setId(taskId);
+            task.setUserId(userId);
             task.setEstimatedMinutes(30);
             task.setActualMinutes(0);
             task.setStatus("Picked for Today");
 
             when(timeBlockRepository.findById(blockId)).thenReturn(Optional.of(sampleBlock));
-            when(dailyPlanRepository.findById(dailyPlanId)).thenReturn(Optional.of(samplePlan));
             when(timeBlockRepository.save(any(TaskTimeBlock.class))).thenAnswer(inv -> inv.getArgument(0));
-            when(timeBlockRepository.findByTaskId(taskId)).thenReturn(List.of(sampleBlock));
             when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
 
             TaskTimeBlockDto result = timeBlockService.updateTimeBlockProgress(blockId, 45, true, userId);
@@ -190,14 +191,16 @@ class TaskTimeBlockServiceImplTest {
         @Test
         @DisplayName("Should mark timeblock uncompleted and clear completedAt")
         void updateProgress_MarkUncompleted() {
+            Task task = new Task();
+            task.setId(taskId);
+            task.setUserId(userId);
+
             sampleBlock.setIsCompleted(true);
             sampleBlock.setCompletedAt(java.time.OffsetDateTime.now());
 
             when(timeBlockRepository.findById(blockId)).thenReturn(Optional.of(sampleBlock));
-            when(dailyPlanRepository.findById(dailyPlanId)).thenReturn(Optional.of(samplePlan));
+            when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
             when(timeBlockRepository.save(any(TaskTimeBlock.class))).thenAnswer(inv -> inv.getArgument(0));
-            when(timeBlockRepository.findByTaskId(taskId)).thenReturn(List.of(sampleBlock));
-            when(taskRepository.findById(taskId)).thenReturn(Optional.empty());
 
             TaskTimeBlockDto result = timeBlockService.updateTimeBlockProgress(blockId, null, false, userId);
 
@@ -229,6 +232,11 @@ class TaskTimeBlockServiceImplTest {
         @DisplayName("Should split block into two at specified splitAtMinutes")
         void splitTimeBlock_CustomSplitAt() {
             when(timeBlockRepository.findById(blockId)).thenReturn(Optional.of(sampleBlock));
+            Task task = new Task();
+            task.setId(taskId);
+            task.setUserId(userId);
+            when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+
             TaskTimeBlock newBlock = new TaskTimeBlock();
             newBlock.setId(UUID.randomUUID());
             newBlock.setTaskId(taskId);
@@ -250,6 +258,11 @@ class TaskTimeBlockServiceImplTest {
         @DisplayName("Should split block at midpoint when splitAtMinutes is null")
         void splitTimeBlock_DefaultSplitAt() {
             when(timeBlockRepository.findById(blockId)).thenReturn(Optional.of(sampleBlock));
+            Task task = new Task();
+            task.setId(taskId);
+            task.setUserId(userId);
+            when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+
             when(timeBlockRepository.findByUserIdAndDateRange(eq(userId), any(), any()))
                     .thenReturn(List.of(sampleBlock));
 
@@ -268,6 +281,11 @@ class TaskTimeBlockServiceImplTest {
             sampleBlock.setEndTime(LocalDateTime.of(2026, 8, 2, 9, 1)); // 1 min duration
 
             when(timeBlockRepository.findById(blockId)).thenReturn(Optional.of(sampleBlock));
+            Task task = new Task();
+            task.setId(taskId);
+            task.setUserId(userId);
+            when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+
             List<TaskTimeBlockDto> result = timeBlockService.splitTimeBlock(blockId, null, userId);
 
             assertNotNull(result);
@@ -299,6 +317,10 @@ class TaskTimeBlockServiceImplTest {
         @DisplayName("Should set status to BUSY when availabilityStatus is BUSY or busy")
         void toggleLockStatus_Busy() {
             when(timeBlockRepository.findById(blockId)).thenReturn(Optional.of(sampleBlock));
+            Task task = new Task();
+            task.setId(taskId);
+            task.setUserId(userId);
+            when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
             when(timeBlockRepository.save(any(TaskTimeBlock.class))).thenAnswer(inv -> inv.getArgument(0));
 
             TaskTimeBlockDto result = timeBlockService.toggleTimeBlockLockStatus(blockId, "busy", userId);
@@ -313,6 +335,10 @@ class TaskTimeBlockServiceImplTest {
         void toggleLockStatus_Free() {
             sampleBlock.setAvailabilityStatus("BUSY");
             when(timeBlockRepository.findById(blockId)).thenReturn(Optional.of(sampleBlock));
+            Task task = new Task();
+            task.setId(taskId);
+            task.setUserId(userId);
+            when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
             when(timeBlockRepository.save(any(TaskTimeBlock.class))).thenAnswer(inv -> inv.getArgument(0));
 
             TaskTimeBlockDto result = timeBlockService.toggleTimeBlockLockStatus(blockId, "FREE", userId);

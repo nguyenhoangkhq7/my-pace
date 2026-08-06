@@ -9,5 +9,6 @@ public interface TaskTimeBlockService {
     TaskTimeBlockDto updateTimeBlockProgress(UUID blockId, Integer actualMinutes, Boolean isCompleted, UUID userId);
     List<TaskTimeBlockDto> splitTimeBlock(UUID blockId, Integer splitAtMinutes, UUID userId);
     TaskTimeBlockDto toggleTimeBlockLockStatus(UUID blockId, String availabilityStatus, UUID userId);
+    TaskTimeBlockDto toggleLock(UUID blockId, UUID userId);
     TaskTimeBlockDto updateTimeBlock(UUID blockId, TaskTimeBlockController.UpdateTimeBlockRequest request, UUID userId);
 }

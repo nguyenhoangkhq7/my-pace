@@ -42,7 +42,26 @@ class CategoryResolver {
             String normName = DateResolver.normalizeVietnamese(c.getName().toLowerCase());
             if (normName.contains(normHint) || normHint.contains(normName)) return c.getId();
         }
+        // 5. Acronym / Initials match (e.g. "KLTN" -> "Khóa luận tốt nghiệp")
+        for (Category c : categories) {
+            String acronym = buildAcronym(c.getName());
+            if (!acronym.isEmpty() && acronym.equalsIgnoreCase(normHint)) return c.getId();
+        }
 
         return null;
+    }
+
+    static String buildAcronym(String name) {
+        if (name == null || name.isBlank()) return "";
+        String normalized = DateResolver.normalizeVietnamese(name.trim().toLowerCase()).replaceAll("[^a-z0-9\\s]", " ");
+        String[] words = normalized.split("\\s+");
+        if (words.length <= 1) return "";
+        StringBuilder sb = new StringBuilder();
+        for (String w : words) {
+            if (!w.isBlank()) {
+                sb.append(w.charAt(0));
+            }
+        }
+        return sb.toString();
     }
 }

@@ -230,7 +230,7 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
             if (plan != null) {
                 List<TaskTimeBlock> existingBlocks = ctx.blocksByDate().getOrDefault(date, new ArrayList<>());
                 for (TaskTimeBlock tb : existingBlocks) {
-                    if (Boolean.TRUE.equals(plan.getIsConfirmed()) || "BUSY".equalsIgnoreCase(tb.getAvailabilityStatus())) {
+                    if (Boolean.TRUE.equals(plan.getIsConfirmed()) || "BUSY".equalsIgnoreCase(tb.getAvailabilityStatus()) || Boolean.TRUE.equals(tb.getIsLocked())) {
                         int sMin = tb.getStartTime().getHour() * 60 + tb.getStartTime().getMinute();
                         int eMin = tb.getEndTime().getHour() * 60 + tb.getEndTime().getMinute();
                         if (eMin <= sMin) eMin = 1440;
@@ -286,11 +286,13 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
 
             int busyMinutes = existingTaskBlocks.stream()
                     .filter(b -> "BUSY".equalsIgnoreCase(b.getAvailabilityStatus()))
+                    .filter(b -> !b.getStartTime().toLocalDate().isBefore(ctx.startDate()))
                     .mapToInt(b -> (int) java.time.Duration.between(b.getStartTime(), b.getEndTime()).toMinutes())
                     .sum();
 
             int existingPartsCount = (int) existingTaskBlocks.stream()
                     .filter(b -> "BUSY".equalsIgnoreCase(b.getAvailabilityStatus()))
+                    .filter(b -> !b.getStartTime().toLocalDate().isBefore(ctx.startDate()))
                     .count();
 
             int rem = est - act - busyMinutes;
@@ -733,7 +735,8 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
                                 b.getActualMinutes() != null ? b.getActualMinutes() : 0,
                                 b.getIsCompleted() != null ? b.getIsCompleted() : false,
                                 b.getCompletedAt(),
-                                b.getAvailabilityStatus() != null ? b.getAvailabilityStatus() : "FREE"
+                                b.getAvailabilityStatus() != null ? b.getAvailabilityStatus() : "FREE",
+                                Boolean.TRUE.equals(b.getIsLocked())
                         ))
                         .collect(Collectors.toList());
                 responseMap.put(date, dtos);
@@ -750,7 +753,8 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
                                 b.getActualMinutes() != null ? b.getActualMinutes() : 0,
                                 b.getIsCompleted() != null ? b.getIsCompleted() : false,
                                 b.getCompletedAt(),
-                                b.getAvailabilityStatus() != null ? b.getAvailabilityStatus() : "FREE"
+                                b.getAvailabilityStatus() != null ? b.getAvailabilityStatus() : "FREE",
+                                Boolean.TRUE.equals(b.getIsLocked())
                         ))
                         .collect(Collectors.toList());
                 responseMap.put(date, existingDtos);

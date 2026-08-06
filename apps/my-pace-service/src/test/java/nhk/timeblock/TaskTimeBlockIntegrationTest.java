@@ -41,6 +41,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @Transactional
 @TestPropertySource(properties = {
+    "spring.jpa.hibernate.ddl-auto=create-drop",
+    "spring.flyway.enabled=false",
+    "spring.datasource.driver-class-name=org.h2.Driver",
+    "spring.datasource.url=jdbc:h2:mem:testtimeblockdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
+    "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
     "RESEND_API_KEY=test-api-key",
     "JWT_SECRET=test-jwt-secret-with-at-least-256-bits-length-so-it-does-not-fail-validation"
 })
@@ -159,7 +164,7 @@ class TaskTimeBlockIntegrationTest {
                     user1Task.getId(), UUID.randomUUID(), start2, end2, 2, 2, "FREE"
             );
 
-            SaveTimeBlocksRequest batchRequest = new SaveTimeBlocksRequest(LocalDate.now(), List.of(req1, req2));
+            SaveTimeBlocksRequest batchRequest = new SaveTimeBlocksRequest(LocalDate.of(2026, 8, 2), List.of(req1, req2));
 
             // 1. Batch Save via HTTP POST
             mockMvc.perform(post("/api/time-blocks/batch")
@@ -172,13 +177,13 @@ class TaskTimeBlockIntegrationTest {
                     .andExpect(jsonPath("$[1].partIndex", is(2)));
 
             // Verify DB State
-            List<TaskTimeBlock> dbBlocks = timeBlockRepository.findByUserIdAndDateRange(user1.getId(), LocalDate.now().atStartOfDay(), LocalDate.now().plusDays(1).atStartOfDay());
+            List<TaskTimeBlock> dbBlocks = timeBlockRepository.findByUserIdAndDateRange(user1.getId(), LocalDateTime.of(2026, 8, 2, 0, 0), LocalDateTime.of(2026, 8, 3, 0, 0));
             assertEquals(2, dbBlocks.size());
 
             // 2. Retrieve via HTTP GET
-            mockMvc.perform(get("/api/time-blocks")
-                            .param("startDate", LocalDate.now().toString())
-                            .param("endDate", LocalDate.now().toString())
+            mockMvc.perform(get("/api/time-blocks/range")
+                            .param("startDate", "2026-08-02")
+                            .param("endDate", "2026-08-02")
                             .with(authUser1))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$", hasSize(2)))
@@ -206,7 +211,7 @@ class TaskTimeBlockIntegrationTest {
                     LocalDateTime.of(2026, 8, 2, 15, 0),
                     1, 1, "FREE"
             );
-            SaveTimeBlocksRequest replaceRequest = new SaveTimeBlocksRequest(LocalDate.now(), List.of(newReq));
+            SaveTimeBlocksRequest replaceRequest = new SaveTimeBlocksRequest(LocalDate.of(2026, 8, 2), List.of(newReq));
 
             mockMvc.perform(post("/api/time-blocks/batch")
                             .with(authUser1)
@@ -216,7 +221,7 @@ class TaskTimeBlockIntegrationTest {
                     .andExpect(jsonPath("$", hasSize(1)));
 
             // DB verify: Old block deleted, new block saved
-            List<TaskTimeBlock> dbBlocks = timeBlockRepository.findByUserIdAndDateRange(user1.getId(), LocalDate.now().atStartOfDay(), LocalDate.now().plusDays(1).atStartOfDay());
+            List<TaskTimeBlock> dbBlocks = timeBlockRepository.findByUserIdAndDateRange(user1.getId(), LocalDateTime.of(2026, 8, 2, 0, 0), LocalDateTime.of(2026, 8, 3, 0, 0));
             assertEquals(1, dbBlocks.size());
             assertEquals(LocalDateTime.of(2026, 8, 2, 14, 0), dbBlocks.get(0).getStartTime());
         }
@@ -285,7 +290,7 @@ class TaskTimeBlockIntegrationTest {
                     .andExpect(jsonPath("$", hasSize(2)));
 
             // DB verify
-            List<TaskTimeBlock> dbBlocks = timeBlockRepository.findByUserIdAndDateRange(user1.getId(), LocalDate.now().atStartOfDay(), LocalDate.now().plusDays(1).atStartOfDay());
+            List<TaskTimeBlock> dbBlocks = timeBlockRepository.findByUserIdAndDateRange(user1.getId(), LocalDateTime.of(2026, 8, 2, 0, 0), LocalDateTime.of(2026, 8, 3, 0, 0));
             assertEquals(2, dbBlocks.size());
             assertEquals(LocalDateTime.of(2026, 8, 2, 9, 30), dbBlocks.get(0).getEndTime());
             assertEquals(LocalDateTime.of(2026, 8, 2, 9, 30), dbBlocks.get(1).getStartTime());
@@ -340,12 +345,13 @@ class TaskTimeBlockIntegrationTest {
             user1Block.setAvailabilityStatus("FREE");
             TaskTimeBlock savedBlock1 = timeBlockRepository.save(user1Block);
 
-            // User2 GET User1's plan -> returns 404 (EntityNotFoundException handled)
-            mockMvc.perform(get("/api/time-blocks")
-                            .param("startDate", LocalDate.now().toString())
-                            .param("endDate", LocalDate.now().toString())
+            // User2 GET range -> returns empty list 200 OK
+            mockMvc.perform(get("/api/time-blocks/range")
+                            .param("startDate", "2026-08-02")
+                            .param("endDate", "2026-08-02")
                             .with(authUser2))
-                    .andExpect(status().isNotFound());
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$", hasSize(0)));
 
             // User2 PATCH progress on User1's block -> returns 404
             TaskTimeBlockController.UpdateTimeBlockProgressRequest progressReq =

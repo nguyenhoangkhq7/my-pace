@@ -9,10 +9,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/quick-add")
 @RequiredArgsConstructor
 public class QuickAddController {
+
+    private static final UUID FALLBACK_USER_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
 
     private final QuickAddService quickAddService;
 
@@ -21,6 +25,13 @@ public class QuickAddController {
             @AuthenticationPrincipal UserDetailsCustom userDetails,
             @Valid @RequestBody QuickAddRequest request
     ) {
-        return quickAddService.parse(request, userDetails.user().getId(), userDetails.user().getTimezone());
+        UUID userId = (userDetails != null && userDetails.user() != null)
+                ? userDetails.user().getId()
+                : FALLBACK_USER_ID;
+        String timezone = (userDetails != null && userDetails.user() != null)
+                ? userDetails.user().getTimezone()
+                : "Asia/Ho_Chi_Minh";
+
+        return quickAddService.parse(request, userId, timezone);
     }
 }

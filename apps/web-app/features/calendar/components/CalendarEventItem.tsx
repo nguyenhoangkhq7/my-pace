@@ -10,6 +10,10 @@ interface CalendarEventItemProps {
 
 export function CalendarEventItem({ eventInfo }: CalendarEventItemProps) {
   const { t } = useTranslation();
+
+  if (eventInfo.event.display === "background") {
+    return null;
+  }
   const { extendedProps, title } = eventInfo.event;
   const isTimeBlock = extendedProps.isTimeBlock;
   const isFree = extendedProps.isFree;

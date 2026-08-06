@@ -50,6 +50,7 @@ export interface TaskTimeBlock {
   dailyPlanId?: string;
   isMit?: boolean;
   availabilityStatus?: 'BUSY' | 'FREE';
+  isLocked?: boolean;
 }
 
 export interface DailyPlanTask {

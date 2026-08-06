@@ -27,6 +27,8 @@ export function CalendarPage() {
     sidebarRef,
     slotMin,
     slotMax,
+    scrollTime,
+    businessHours,
     fcEvents,
     initialView,
     isCalendarMounted,
@@ -111,6 +113,9 @@ export function CalendarPage() {
               firstDay={1}
               slotMinTime={slotMin}
               slotMaxTime={slotMax}
+              scrollTime={scrollTime}
+              scrollTimeReset={false}
+              businessHours={businessHours}
               snapDuration="00:15:00"
               allDaySlot={hasAllDayEvents}
               nowIndicator

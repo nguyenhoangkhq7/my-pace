@@ -34,6 +34,11 @@ class GoalResolver {
             String normTitle = DateResolver.normalizeVietnamese(g.getTitle().toLowerCase());
             if (normTitle.contains(normHint) || normHint.contains(normTitle)) return g.getId();
         }
+        // 5. Acronym / Initials match (e.g. "KLTN" -> "Khóa luận tốt nghiệp")
+        for (Goal g : goals) {
+            String acronym = CategoryResolver.buildAcronym(g.getTitle());
+            if (!acronym.isEmpty() && acronym.equalsIgnoreCase(normHint)) return g.getId();
+        }
 
         return null;
     }

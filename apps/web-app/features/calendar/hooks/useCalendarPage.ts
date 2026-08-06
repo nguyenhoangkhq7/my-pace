@@ -99,6 +99,29 @@ export function useCalendarPage() {
   // Time blocks for focused date only (used for interactions / save)
   const { data: timeBlocks = [] } = useTaskTimeBlocks(focusedDate, focusedDate);
 
+  // ── Modal & UI state ────────────────────────────────────────────────────────
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<ModalMode>("create");
+  const [modalDefaults, setModalDefaults] = useState<{ date?: string; start?: string; end?: string }>({});
+  const [editOccurrence, setEditOccurrence] = useState<FixedEventOccurrence | undefined>();
+
+  // Task Time Block Modal state
+  const [blockModalOpen, setBlockModalOpen] = useState(false);
+  const [selectedBlock, setSelectedBlock] = useState<TaskTimeBlock | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isBlockMit, setIsBlockMit] = useState(false);
+  const [isBlockInPlan, setIsBlockInPlan] = useState(false);
+  const [isUnscheduling, setIsUnscheduling] = useState(false);
+  const [isAutoScheduling, setIsAutoScheduling] = useState(false);
+  
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [fixedEventColor, setFixedEventColor] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("myPaceFixedEventColor") || "#0ea5e9";
+    }
+    return "#0ea5e9";
+  });
+
   const saveTimeBlocksMutation = useMutation({
     mutationFn: (blocks: Omit<TaskTimeBlock, 'id'>[]) => fetchClient.post<TaskTimeBlock[]>('time-blocks/batch', { targetDate: focusedDate, blocks }).then(r => r.data),
     onSuccess: () => {
@@ -141,44 +164,69 @@ export function useCalendarPage() {
     }
   }, [dailyPlanToday, confirmPlanMutation, router]);
 
-  const slotMin = toSlotTime(user?.wakeTime, "05:00:00");
-  
-  let slotMax = "23:00:00";
-  if (user?.sleepTime && user?.wakeTime) {
-    const [sh, sm] = user.sleepTime.split(":").map(Number);
-    const [wh, wm] = user.wakeTime.split(":").map(Number);
-    if (sh < wh || (sh === wh && sm < wm)) {
-      const adjustedHour = sh + 24;
-      slotMax = `${String(adjustedHour).padStart(2, "0")}:${String(sm).padStart(2, "0")}:00`;
-    } else {
-      slotMax = toSlotTime(user.sleepTime, "23:00:00");
-    }
-  } else {
-    slotMax = toSlotTime(user?.sleepTime, "23:00:00");
-  }
+  const slotMin = "00:00:00";
+  const slotMax = "24:00:00";
 
-  // ── Modal state ───────────────────────────────────────────────────────────
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<ModalMode>("create");
-  const [modalDefaults, setModalDefaults] = useState<{ date?: string; start?: string; end?: string }>({});
-  const [editOccurrence, setEditOccurrence] = useState<FixedEventOccurrence | undefined>();
+  const scrollTime = useMemo(() => {
+    return user?.wakeTime ? toSlotTime(user.wakeTime, "06:00:00") : "06:00:00";
+  }, [user]);
 
-  // Task Time Block Modal state
-  const [blockModalOpen, setBlockModalOpen] = useState(false);
-  const [selectedBlock, setSelectedBlock] = useState<TaskTimeBlock | null>(null);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [isBlockMit, setIsBlockMit] = useState(false);
-  const [isBlockInPlan, setIsBlockInPlan] = useState(false);
-  const [isUnscheduling, setIsUnscheduling] = useState(false);
-  const [isAutoScheduling, setIsAutoScheduling] = useState(false);
-  
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [fixedEventColor, setFixedEventColor] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("myPaceFixedEventColor") || "#0ea5e9";
+  const businessHours = useMemo(() => {
+    const wake = user?.wakeTime ? user.wakeTime.substring(0, 5) : "06:00";
+    const sleep = user?.sleepTime ? user.sleepTime.substring(0, 5) : "22:00";
+    if (sleep < wake) {
+      return [
+        { daysOfWeek: [0, 1, 2, 3, 4, 5, 6], startTime: "00:00", endTime: sleep },
+        { daysOfWeek: [0, 1, 2, 3, 4, 5, 6], startTime: wake, endTime: "24:00" },
+      ];
     }
-    return "#0ea5e9";
-  });
+    return {
+      daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+      startTime: wake,
+      endTime: sleep,
+    };
+  }, [user]);
+
+  const wakeSleepLineEvents = useMemo<EventInput[]>(() => {
+    const formatHHMM = (t: string | undefined | null, fallback: string) => {
+      if (!t) return fallback;
+      const parts = t.split(":");
+      if (parts.length < 2) return fallback;
+      const h = String(parts[0]).padStart(2, "0");
+      const m = String(parts[1]).padStart(2, "0");
+      return `${h}:${m}`;
+    };
+
+    const wake = formatHHMM(user?.wakeTime, "08:00");
+    const sleep = formatHHMM(user?.sleepTime, "22:00");
+
+    const add15 = (t: string) => {
+      const [h, m] = t.split(":").map(Number);
+      const totalMins = h * 60 + m + 15;
+      const nh = Math.floor(totalMins / 60) % 24;
+      const nm = totalMins % 60;
+      return `${String(nh).padStart(2, "0")}:${String(nm).padStart(2, "0")}:00`;
+    };
+
+    return [
+      {
+        id: "wake-line-indicator",
+        daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+        startTime: `${wake}:00`,
+        endTime: add15(wake),
+        display: "background",
+        classNames: ["fc-wake-line-event"],
+      },
+      {
+        id: "sleep-line-indicator",
+        daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+        startTime: `${sleep}:00`,
+        endTime: add15(sleep),
+        display: "background",
+        classNames: ["fc-sleep-line-event"],
+      },
+    ];
+  }, [user]);
 
   const handleColorChange = (color: string) => {
     setFixedEventColor(color);
@@ -195,9 +243,9 @@ export function useCalendarPage() {
     const updatedBlocks = timeBlocks
       .filter((b) => b.taskId !== taskId)
       .map((b) => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { id: _, ...rest } = b;
-        return rest as Omit<TaskTimeBlock, "id">;
+        const copy = { ...b } as Partial<TaskTimeBlock>;
+        delete copy.id;
+        return copy as Omit<TaskTimeBlock, "id">;
       });
 
     try {
@@ -212,7 +260,7 @@ export function useCalendarPage() {
     } finally {
       setIsUnscheduling(false);
     }
-  }, [dailyPlanToday, timeBlocks, saveTimeBlocksMutation]);
+  }, [dailyPlanToday, timeBlocks, saveTimeBlocksMutation, setBlockModalOpen]);
 
   const isConfirmed = !plannable || !!dailyPlanToday?.isConfirmed;
 
@@ -263,6 +311,7 @@ export function useCalendarPage() {
     };
 
     const list: EventInput[] = [
+      ...wakeSleepLineEvents,
       ...(events as unknown as FixedEventOccurrence[]).map((occ) => {
         const color = occ.category?.color || fixedEventColor;
         const isAllDay = !!occ.isAllDay;
@@ -376,7 +425,7 @@ export function useCalendarPage() {
     );
 
     return list;
-  }, [events, allTimeBlocks, plansInRange, fixedEventColor, isConfirmed, tasks, focusedDate, today]);
+  }, [events, allTimeBlocks, plansInRange, fixedEventColor, isConfirmed, tasks, focusedDate, today, wakeSleepLineEvents]);
 
   const [initialView] = useState(() => {
     if (typeof window !== "undefined") {
@@ -491,6 +540,8 @@ export function useCalendarPage() {
     sidebarRef,
     slotMin,
     slotMax,
+    scrollTime,
+    businessHours,
     fcEvents,
     initialView,
     isCalendarMounted,

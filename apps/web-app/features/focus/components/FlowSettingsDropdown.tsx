@@ -1,6 +1,6 @@
 "use client";
 
-import { Settings2, RefreshCw, Maximize, Minimize, Headphones } from "lucide-react";
+import { Settings2, RefreshCw, Maximize, Minimize, Headphones, Music } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +21,8 @@ export function FlowSettingsDropdown({ onResetLayout, onEnterZenFull }: FlowSett
   const setIsSettingsOpen = useFocusStore((s) => s.setIsSettingsOpen);
   const isFlowFullscreen = useFocusStore((s) => s.isFlowFullscreen);
   const toggleFlowFullscreen = useFocusStore((s) => s.toggleFlowFullscreen);
+  const isControllerBarVisible = useFocusStore((s) => s.isControllerBarVisible);
+  const toggleControllerBar = useFocusStore((s) => s.toggleControllerBar);
   const isXl = useMediaQuery("(min-width: 1280px)");
 
   const handleToggleFullscreen = () => {
@@ -70,6 +72,12 @@ export function FlowSettingsDropdown({ onResetLayout, onEnterZenFull }: FlowSett
               <Headphones className="w-4 h-4 text-muted-foreground" /> Zen Full Mode
             </DropdownMenuItem>
           )}
+          <DropdownMenuItem
+            onClick={toggleControllerBar}
+            className="hover:bg-muted focus:bg-muted cursor-pointer flex items-center gap-2 text-xs font-semibold py-2 px-3 text-muted-foreground hover:text-foreground"
+          >
+            <Music className="w-4 h-4 text-muted-foreground" /> {isControllerBarVisible ? t.flow.player.hideMusicBar : t.flow.player.showMusicBar}
+          </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => setIsSettingsOpen(true)}
             className="hover:bg-muted focus:bg-muted cursor-pointer flex items-center gap-2 text-xs font-semibold py-2 px-3 text-muted-foreground hover:text-foreground"

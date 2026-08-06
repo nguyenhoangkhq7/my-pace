@@ -10,6 +10,8 @@ import nhk.common.EventNotFoundException;
 import nhk.common.UserNotFoundException;
 import nhk.user.User;
 import nhk.user.UserRepository;
+import nhk.scheduling.event.FixedEventChangedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +30,7 @@ public class FixedEventServiceImpl implements FixedEventService {
     private final UserRepository userRepo;
     private final CategoryRepository categoryRepo;
     private final CategoryMapper categoryMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -102,6 +105,7 @@ public class FixedEventServiceImpl implements FixedEventService {
 
         LocalDate occurrenceDate = request.eventDate() != null
                 ? request.eventDate() : LocalDate.now(java.time.ZoneId.of(user.getTimezone()));
+        eventPublisher.publishEvent(new FixedEventChangedEvent(userId, occurrenceDate));
         return buildResponse(fe, occurrenceDate, null, parseDaysOfWeek(fe.getRecurrenceRule()));
     }
 
@@ -139,6 +143,7 @@ public class FixedEventServiceImpl implements FixedEventService {
 
         LocalDate occurrenceDate = request.eventDate() != null
                 ? request.eventDate() : LocalDate.now(java.time.ZoneId.of(fe.getUser().getTimezone()));
+        eventPublisher.publishEvent(new FixedEventChangedEvent(userId, occurrenceDate));
         return buildResponse(fe, occurrenceDate, null, parseDaysOfWeek(fe.getRecurrenceRule()));
     }
 
@@ -174,6 +179,7 @@ public class FixedEventServiceImpl implements FixedEventService {
         }
 
         exceptionRepo.save(ex);
+        eventPublisher.publishEvent(new FixedEventChangedEvent(userId, occurrenceDate));
         return buildResponse(fe, occurrenceDate, ex, parseDaysOfWeek(fe.getRecurrenceRule()));
     }
 
@@ -182,6 +188,7 @@ public class FixedEventServiceImpl implements FixedEventService {
     public void deleteAllOccurrences(UUID userId, UUID eventId) {
         FixedEvent fe = requireOwnedEvent(userId, eventId);
         eventRepo.delete(fe);
+        eventPublisher.publishEvent(new FixedEventChangedEvent(userId, LocalDate.now()));
     }
 
     @Override
@@ -199,6 +206,7 @@ public class FixedEventServiceImpl implements FixedEventService {
                 });
         ex.setIsDeleted(true);
         exceptionRepo.save(ex);
+        eventPublisher.publishEvent(new FixedEventChangedEvent(userId, occurrenceDate));
     }
 
     @Override
@@ -324,8 +332,8 @@ public class FixedEventServiceImpl implements FixedEventService {
             if (request.startTime() == null || request.endTime() == null) {
                 throw new IllegalArgumentException("startTime and endTime are required when isAllDay is false");
             }
-            if (request.endTime().isBefore(request.startTime()) ||
-                request.endTime().equals(request.startTime())) {
+            boolean isMidnightWrap = LocalTime.MIDNIGHT.equals(request.endTime());
+            if (!isMidnightWrap && (request.endTime().isBefore(request.startTime()) || request.endTime().equals(request.startTime()))) {
                 throw new IllegalArgumentException("endTime must be after startTime");
             }
         }

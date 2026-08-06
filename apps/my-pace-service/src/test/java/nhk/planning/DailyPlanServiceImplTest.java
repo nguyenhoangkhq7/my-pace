@@ -34,6 +34,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+import nhk.scheduling.AutoScheduleService;
+
 class DailyPlanServiceImplTest {
 
     private DailyPlanRepository dailyPlanRepository;
@@ -45,6 +47,7 @@ class DailyPlanServiceImplTest {
     private UserRepository userRepo;
     private GoalRepository goalRepository;
     private FixedEventService eventService;
+    private AutoScheduleService autoScheduleService;
 
     private DailyPlanServiceImpl dailyPlanService;
 
@@ -63,6 +66,7 @@ class DailyPlanServiceImplTest {
         userRepo = mock(UserRepository.class);
         goalRepository = mock(GoalRepository.class);
         eventService = mock(FixedEventService.class);
+        autoScheduleService = mock(AutoScheduleService.class);
 
         dailyPlanService = new DailyPlanServiceImpl(
                 dailyPlanRepository,
@@ -73,7 +77,8 @@ class DailyPlanServiceImplTest {
                 goalService,
                 userRepo,
                 goalRepository,
-                eventService
+                eventService,
+                autoScheduleService
         );
 
         user = new User();
@@ -355,6 +360,7 @@ class DailyPlanServiceImplTest {
         UUID planId = UUID.randomUUID();
         DailyPlan plan = new DailyPlan();
         plan.setId(planId);
+        plan.setPlanDate(planDate);
 
         Task task1 = new Task();
         task1.setStatus("Picked for Today");
@@ -567,6 +573,44 @@ class DailyPlanServiceImplTest {
         verify(dailyPlanTaskRepository).save(any(DailyPlanTask.class));
 
         assertNotNull(result);
+        verify(autoScheduleService).autoScheduleWeek(userId, todayDate, 15, true);
+    }
+
+    @Test
+    @DisplayName("reviewPlan adjusts worked blocks and deletes unworked blocks from yesterday")
+    void testReviewPlan_TimeBlockCleanupAndAdjustment() {
+        UUID planId = UUID.randomUUID();
+        DailyPlan plan = new DailyPlan();
+        plan.setId(planId);
+        plan.setUserId(userId);
+        plan.setPlanDate(planDate);
+
+        when(dailyPlanRepository.findByUserIdAndPlanDate(userId, planDate)).thenReturn(Optional.of(plan));
+
+        TaskTimeBlock workedBlock = new TaskTimeBlock();
+        workedBlock.setId(UUID.randomUUID());
+        workedBlock.setStartTime(planDate.atTime(10, 0));
+        workedBlock.setEndTime(planDate.atTime(11, 0));
+        workedBlock.setActualMinutes(30);
+
+        TaskTimeBlock unworkedBlock = new TaskTimeBlock();
+        unworkedBlock.setId(UUID.randomUUID());
+        unworkedBlock.setStartTime(planDate.atTime(14, 0));
+        unworkedBlock.setEndTime(planDate.atTime(15, 0));
+        unworkedBlock.setActualMinutes(0);
+        unworkedBlock.setIsCompleted(false);
+
+        when(timeBlockRepository.findByUserIdAndDateRange(eq(userId), any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(List.of(workedBlock, unworkedBlock));
+
+        DailyPlanDto baseDto = DailyPlanDto.builder().id(planId).isReviewed(true).build();
+        when(dailyPlanMapper.toDto(plan)).thenReturn(baseDto);
+
+        dailyPlanService.reviewPlan(planDate, new ReviewPlanRequest(planDate.plusDays(1), List.of()), userId);
+
+        assertEquals(planDate.atTime(10, 30), workedBlock.getEndTime());
+        verify(timeBlockRepository).save(workedBlock);
+        verify(timeBlockRepository).delete(unworkedBlock);
     }
 
     @Test

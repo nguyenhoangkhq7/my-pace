@@ -54,6 +54,9 @@ class TaskServiceImplTest {
     @Mock
     private TaskTimeBlockRepository timeBlockRepository;
 
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+
     @InjectMocks
     private TaskServiceImpl taskService;
 

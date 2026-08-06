@@ -122,15 +122,15 @@ public class GlobalExceptionHandler {
       return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Lỗi hệ thống null pointer exception");
    }
 
+   @ExceptionHandler(InvalidTokenException.class)
+   public ResponseEntity<ErrorResponse> handleTokenInvalid(InvalidTokenException ex) {
+      log.error("Token invalid: ", ex);
+      return buildResponse(HttpStatus.UNAUTHORIZED, "Token hết hạn hoặc không hợp lệ");
+   }
+
    @ExceptionHandler({RuntimeException.class, Exception.class})
    public ResponseEntity<ErrorResponse> handleAllExceptions(Exception ex) {
       log.error("System Error: ", ex);
       return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Có lỗi hệ thống xảy ra, vui lòng thử lại sau");
-   }
-
-   @ExceptionHandler({InvalidTokenException.class})
-   public ResponseEntity<ErrorResponse> handleTokenInvalid(Exception ex) {
-      log.error("System Error: ", ex);
-      return buildResponse(HttpStatus.UNAUTHORIZED, "Token hết hạn hoặc không hợp lệ");
    }
 }

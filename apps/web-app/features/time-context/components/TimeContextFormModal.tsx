@@ -6,7 +6,8 @@ import { Plus } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
 import { CategoryMultiSelect } from "./CategoryMultiSelect";
 import { TimeSlotPickerModal } from "./TimeSlotPickerModal";
-import { formatSlotGroups } from "../utils/formatSlots";
+import { TimeContextSlotGroupBadge } from "./TimeContextSlotGroupBadge";
+import { formatSlotGroups, type FormattedSlotGroup } from "../utils/formatSlots";
 import type { TimeContext, TimeContextSlot } from "../types";
 
 interface TimeContextFormModalProps {
@@ -27,6 +28,7 @@ export function TimeContextFormModal({
   const [slots, setSlots] = useState<TimeContextSlot[]>([]);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [isSlotPickerOpen, setIsSlotPickerOpen] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<FormattedSlotGroup | null>(null);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -46,12 +48,34 @@ export function TimeContextFormModal({
         setSlots([]);
         setSelectedCategoryIds([]);
       }
+      setEditingGroup(null);
       setError("");
     }
   }
 
-  const handleAddSlots = (newSlots: TimeContextSlot[]) => {
-    setSlots((prev) => [...prev, ...newSlots]);
+  const handleOpenAddSlot = () => {
+    setEditingGroup(null);
+    setIsSlotPickerOpen(true);
+  };
+
+  const handleEditGroup = (group: FormattedSlotGroup) => {
+    setEditingGroup(group);
+    setIsSlotPickerOpen(true);
+  };
+
+  const handleRemoveGroup = (groupToRemove: FormattedSlotGroup) => {
+    const removeSet = new Set(groupToRemove.slots);
+    setSlots((prev) => prev.filter((s) => !removeSet.has(s)));
+  };
+
+  const handleSaveSlots = (newSlots: TimeContextSlot[]) => {
+    if (editingGroup) {
+      const removeSet = new Set(editingGroup.slots);
+      setSlots((prev) => [...prev.filter((s) => !removeSet.has(s)), ...newSlots]);
+    } else {
+      setSlots((prev) => [...prev, ...newSlots]);
+    }
+    setEditingGroup(null);
   };
 
   const handleClearAllSlots = () => {
@@ -115,7 +139,7 @@ export function TimeContextFormModal({
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => setIsSlotPickerOpen(true)}
+                  onClick={handleOpenAddSlot}
                   className="h-7 text-xs gap-1 cursor-pointer border-border text-foreground"
                 >
                   <Plus className="w-3.5 h-3.5" /> {t.timeContext.addSlot}
@@ -130,13 +154,13 @@ export function TimeContextFormModal({
                   </p>
                 ) : (
                   <>
-                    {slotGroups.map((group, idx) => (
-                      <span
-                        key={idx}
-                        className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-md bg-teal-500/10 text-teal-400 border border-teal-500/30 shadow-2xs"
-                      >
-                        {group.daysLabel}: {group.timeLabel}
-                      </span>
+                    {slotGroups.map((group) => (
+                      <TimeContextSlotGroupBadge
+                        key={group.id}
+                        group={group}
+                        onEdit={handleEditGroup}
+                        onRemove={handleRemoveGroup}
+                      />
                     ))}
                     <button
                       type="button"
@@ -170,8 +194,20 @@ export function TimeContextFormModal({
 
       <TimeSlotPickerModal
         isOpen={isSlotPickerOpen}
-        onClose={() => setIsSlotPickerOpen(false)}
-        onAddSlots={handleAddSlots}
+        onClose={() => {
+          setIsSlotPickerOpen(false);
+          setEditingGroup(null);
+        }}
+        onAddSlots={handleSaveSlots}
+        initialGroup={
+          editingGroup
+            ? {
+                days: editingGroup.days,
+                startTime: editingGroup.startTime,
+                endTime: editingGroup.endTime,
+              }
+            : null
+        }
       />
     </>
   );

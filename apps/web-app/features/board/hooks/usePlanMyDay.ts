@@ -1,11 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchClient } from "@/lib/fetchClient";
 import type { DailyPlan } from "../types";
-import { useAutoSchedule } from "./useAutoSchedule";
-
 export function usePlanMyDay(date: string) {
   const queryClient = useQueryClient();
-  const { triggerAutoSchedule } = useAutoSchedule();
 
   const planMyDayMutation = useMutation({
     mutationFn: ({

@@ -74,8 +74,8 @@ public class QuickAddService {
             - dateExpression: copy EXACTLY as user said ("mai", "thứ 6", "cuối tuần"). null if absent.
             - timeExpression: copy EXACTLY as user said ("3h", "3 giờ chiều", "sáng"). null if absent.
             - durationExpression: copy EXACTLY as user said ("2 tiếng", "30 phút", "1h"). null if absent.
-            - categoryHint: category name ONLY if clearly mentioned by user. null otherwise.
-            - goalHint: goal or project name ONLY if clearly mentioned by user. null otherwise.
+            - categoryHint: category name or abbreviation (e.g. "KLTN" for "Khóa luận tốt nghiệp", "CNTT") ONLY if clearly mentioned by user. Prefer exact category name from Categories list if recognizable. null otherwise.
+            - goalHint: goal or project name or abbreviation ONLY if clearly mentioned by user. Prefer exact goal title from Goals list if recognizable. null otherwise.
             - notes: location, attendees, conditions, or context NOT included in the title. null if absent.
             - checklists: array of strings ONLY when user explicitly lists sub-items. null otherwise.
             - isAllDay: true ONLY when user explicitly says "cả ngày", "all day", "nghỉ lễ", "cả buổi", or similar whole-day markers. false otherwise.
@@ -166,11 +166,20 @@ public class QuickAddService {
             List<Goal> goals,
             ZonedDateTime now
     ) {
-        // 1. Resolve raw expressions → typed values
         Integer   durationMinutes    = durationResolver.resolve(extraction.durationExpression());
         LocalDate resolvedDate       = dateResolver.resolve(extraction.dateExpression(), now);
-        LocalTime resolvedStartTime  = timeResolver.resolve(extraction.timeExpression());
-        LocalTime resolvedEndTime    = timeResolver.resolveEndTime(resolvedStartTime, durationMinutes);
+        if (resolvedDate == null) {
+            // Fallback: users often include day markers inside time phrases, e.g. "8 giờ tối nay".
+            resolvedDate = dateResolver.resolve(extraction.timeExpression(), now);
+        }
+        TimeResolver.TimeRange timeRange = timeResolver.resolveRange(extraction.timeExpression(), extraction.dateExpression());
+        LocalTime resolvedStartTime  = timeRange != null ? timeRange.startTime() : null;
+        if (durationMinutes == null && timeRange != null && timeRange.durationMinutes() != null) {
+            durationMinutes = timeRange.durationMinutes();
+        }
+        LocalTime resolvedEndTime    = (timeRange != null && timeRange.endTime() != null)
+                ? timeRange.endTime()
+                : timeResolver.resolveEndTime(resolvedStartTime, durationMinutes);
         UUID      categoryId         = categoryResolver.resolve(extraction.categoryHint(), categories);
         UUID      goalId             = goalResolver.resolve(extraction.goalHint(), goals);
 

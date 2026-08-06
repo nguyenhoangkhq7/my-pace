@@ -97,7 +97,8 @@ class TaskTimeBlockControllerTest {
                 0,
                 false,
                 null,
-                "FREE"
+                "FREE",
+                false
         );
     }
 
@@ -107,7 +108,7 @@ class TaskTimeBlockControllerTest {
         when(timeBlockService.getTimeBlocks(any(), any(), eq(userId)))
                 .thenReturn(List.of(sampleDto));
 
-        mockMvc.perform(get("/api/time-blocks")
+        mockMvc.perform(get("/api/time-blocks/range")
                         .param("startDate", "2026-08-02")
                         .param("endDate", "2026-08-02"))
                 .andExpect(status().isOk())
@@ -161,7 +162,8 @@ class TaskTimeBlockControllerTest {
                 30,
                 true,
                 null,
-                "BUSY"
+                "BUSY",
+                false
         );
 
         when(timeBlockService.updateTimeBlockProgress(eq(blockId), eq(30), eq(true), eq(userId)))
@@ -226,7 +228,8 @@ class TaskTimeBlockControllerTest {
                 0,
                 false,
                 null,
-                "BUSY"
+                "BUSY",
+                false
         );
 
         when(timeBlockService.toggleTimeBlockLockStatus(eq(blockId), eq("BUSY"), eq(userId)))

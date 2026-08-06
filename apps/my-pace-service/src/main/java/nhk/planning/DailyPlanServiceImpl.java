@@ -17,7 +17,10 @@ import nhk.user.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import nhk.scheduling.AutoScheduleService;
+
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
@@ -36,6 +39,7 @@ public class DailyPlanServiceImpl implements DailyPlanService {
     private final UserRepository userRepo;
     private final GoalRepository goalRepository;
     private final FixedEventService eventService;
+    private final AutoScheduleService autoScheduleService;
 
     @Override
     @Transactional(readOnly = true)
@@ -252,6 +256,26 @@ public class DailyPlanServiceImpl implements DailyPlanService {
         plan.setIsReviewed(true);
         dailyPlanRepository.save(plan);
 
+        // Process time blocks for planDate:
+        // - Worked (actualMinutes > 0): Keep and adjust endTime = startTime + actualMinutes
+        // - Completed (isCompleted == true): Keep as is
+        // - Unworked (actualMinutes == 0 && !isCompleted): Delete block
+        LocalDateTime planStart = planDate.atStartOfDay();
+        LocalDateTime planEnd = planDate.plusDays(1).atStartOfDay().minusNanos(1);
+        List<TaskTimeBlock> pastBlocks = timeBlockRepository.findByUserIdAndDateRange(userId, planStart, planEnd);
+        for (TaskTimeBlock tb : pastBlocks) {
+            int actMins = tb.getActualMinutes() != null ? tb.getActualMinutes() : 0;
+            boolean isComp = Boolean.TRUE.equals(tb.getIsCompleted());
+            if (actMins > 0) {
+                tb.setEndTime(tb.getStartTime().plusMinutes(actMins));
+                timeBlockRepository.save(tb);
+            } else if (!isComp) {
+                timeBlockRepository.delete(tb);
+            }
+        }
+
+        boolean hasMovedToToday = false;
+
         if (request != null && request.taskReviews() != null && !request.taskReviews().isEmpty()) {
             LocalDate today = request.today();
             if (today == null) {
@@ -298,6 +322,7 @@ public class DailyPlanServiceImpl implements DailyPlanService {
                 } else if ("TODAY".equalsIgnoreCase(action)) {
                     task.setStatus("Picked for Today");
                     taskRepository.save(task);
+                    hasMovedToToday = true;
 
                     // Add to todayPlan if not exists
                     boolean exists = dailyPlanTaskRepository.findByDailyPlanIdOrderBySortOrderAsc(todayPlan.getId())
@@ -319,6 +344,12 @@ public class DailyPlanServiceImpl implements DailyPlanService {
                         dailyPlanTaskRepository.save(planTask);
                     }
                 }
+            }
+
+            if (hasMovedToToday) {
+                try {
+                    autoScheduleService.autoScheduleWeek(userId, finalToday, 15, true);
+                } catch (Exception ignored) {}
             }
         }
 
@@ -386,6 +417,7 @@ public class DailyPlanServiceImpl implements DailyPlanService {
                 tb.setEndTime(candidateEnd);
                 tb.setPartIndex(1);
                 tb.setTotalParts(1);
+                tb.setAvailabilityStatus("BUSY");
                 timeBlockRepository.save(tb);
                 existingBlocks.add(tb);
                 break;

@@ -37,6 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 @TestPropertySource(properties = {
     "spring.jpa.hibernate.ddl-auto=create-drop",
+    "spring.flyway.enabled=false",
     "spring.datasource.driver-class-name=org.h2.Driver",
     "spring.datasource.url=jdbc:h2:mem:testauthdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
     "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
@@ -56,8 +57,7 @@ class AuthIntegrationTest {
     @Autowired
     private OtpRepository otpRepository;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private ObjectMapper objectMapper = new ObjectMapper().registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
 
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
@@ -94,7 +94,7 @@ class AuthIntegrationTest {
         }
 
         @Test
-        @DisplayName("Should return 400 Bad Request when email already registered")
+        @DisplayName("Should return 409 Conflict when email already registered")
         void sendOtp_DuplicateEmail_Returns400() throws Exception {
             User existingUser = new User();
             existingUser.setEmail("existing@example.com");
@@ -107,7 +107,7 @@ class AuthIntegrationTest {
             mockMvc.perform(post("/api/auth/send-otp")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isConflict());
         }
     }
 
@@ -201,7 +201,7 @@ class AuthIntegrationTest {
         }
 
         @Test
-        @DisplayName("Should return 400 Bad Request when registering duplicate email")
+        @DisplayName("Should return 409 Conflict when registering duplicate email")
         void register_DuplicateEmail_Returns400() throws Exception {
             User existingUser = new User();
             existingUser.setEmail("duplicate@example.com");
@@ -214,7 +214,7 @@ class AuthIntegrationTest {
             mockMvc.perform(post("/api/auth/register")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isConflict());
         }
     }
 
@@ -284,11 +284,11 @@ class AuthIntegrationTest {
         }
 
         @Test
-        @DisplayName("Should return 400 Bad Request when refreshing with invalid token")
+        @DisplayName("Should return 401 Unauthorized when refreshing with invalid token")
         void refresh_InvalidToken_Returns400() throws Exception {
             mockMvc.perform(get("/api/auth/refresh")
                             .cookie(new Cookie("refreshToken", "invalid.refresh.token")))
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isUnauthorized());
         }
     }
 

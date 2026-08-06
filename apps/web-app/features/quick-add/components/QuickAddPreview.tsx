@@ -56,6 +56,10 @@ export function QuickAddPreview({
   const formatEventDate = (dateStr: string | null) => {
     if (!dateStr) return t.quickAdd.noDueDate;
     try {
+      const parts = dateStr.split("-").map(Number);
+      if (parts.length === 3 && !parts.some(isNaN)) {
+        return format(new Date(parts[0], parts[1] - 1, parts[2]), "EEEE, dd/MM/yyyy", { locale: vi });
+      }
       return format(new Date(dateStr), "EEEE, dd/MM/yyyy", { locale: vi });
     } catch {
       return dateStr;

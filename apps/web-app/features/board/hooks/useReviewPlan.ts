@@ -16,6 +16,7 @@ export function useReviewPlan() {
       queryClient.invalidateQueries({ queryKey: ["dailyPlan"] });
       queryClient.invalidateQueries({ queryKey: ["unreviewedPlan"] });
       queryClient.invalidateQueries({ queryKey: ["goals"] });
+      queryClient.invalidateQueries({ queryKey: ["timeblocks"] });
     },
   });
 

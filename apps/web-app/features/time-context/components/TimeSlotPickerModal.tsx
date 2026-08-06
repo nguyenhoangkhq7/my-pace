@@ -6,13 +6,25 @@ import { useTranslation } from "@/hooks/use-translation";
 import { DayCircleSelector } from "./DayCircleSelector";
 import type { DayOfWeek, TimeContextSlot } from "../types";
 
+interface InitialSlotGroup {
+  days: DayOfWeek[];
+  startTime: string;
+  endTime: string;
+}
+
 interface TimeSlotPickerModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAddSlots: (newSlots: TimeContextSlot[]) => void;
+  initialGroup?: InitialSlotGroup | null;
 }
 
-export function TimeSlotPickerModal({ isOpen, onClose, onAddSlots }: TimeSlotPickerModalProps) {
+export function TimeSlotPickerModal({
+  isOpen,
+  onClose,
+  onAddSlots,
+  initialGroup,
+}: TimeSlotPickerModalProps) {
   const { t } = useTranslation();
   const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>([
     "MONDAY",
@@ -24,6 +36,26 @@ export function TimeSlotPickerModal({ isOpen, onClose, onAddSlots }: TimeSlotPic
   const [startTime, setStartTime] = useState("08:00");
   const [endTime, setEndTime] = useState("22:00");
   const [error, setError] = useState("");
+
+  const [prevGroup, setPrevGroup] = useState<InitialSlotGroup | null | undefined>(undefined);
+  const [prevIsOpen, setPrevIsOpen] = useState(false);
+
+  if (isOpen !== prevIsOpen || initialGroup !== prevGroup) {
+    setPrevIsOpen(isOpen);
+    setPrevGroup(initialGroup);
+    if (isOpen) {
+      if (initialGroup) {
+        setSelectedDays(initialGroup.days);
+        setStartTime(initialGroup.startTime.substring(0, 5));
+        setEndTime(initialGroup.endTime.substring(0, 5));
+      } else {
+        setSelectedDays(["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]);
+        setStartTime("08:00");
+        setEndTime("22:00");
+      }
+      setError("");
+    }
+  }
 
   const handlePresetWeekdays = () => {
     setSelectedDays(["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]);
@@ -73,7 +105,7 @@ export function TimeSlotPickerModal({ isOpen, onClose, onAddSlots }: TimeSlotPic
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="bg-background text-foreground border-border sm:max-w-[420px] p-6">
         <DialogHeader>
-          <DialogTitle>Thêm Khung Giờ</DialogTitle>
+          <DialogTitle>{initialGroup ? "Chỉnh Sửa Khung Giờ" : "Thêm Khung Giờ"}</DialogTitle>
         </DialogHeader>
 
         {error && <p className="text-xs text-destructive">{error}</p>}

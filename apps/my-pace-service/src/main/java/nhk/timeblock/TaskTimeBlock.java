@@ -56,6 +56,10 @@ public class TaskTimeBlock {
     @Column(name = "availability_status", nullable = false)
     private String availabilityStatus = "FREE";
 
+    @NotNull
+    @Column(name = "is_locked", nullable = false)
+    private Boolean isLocked = false;
+
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 

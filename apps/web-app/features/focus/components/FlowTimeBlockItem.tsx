@@ -6,6 +6,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { PlayIcon, Tick01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
 import type { DailyPlanTask, TaskTimeBlock } from "@/features/board/types";
+import { LockTimeBlockButton } from "@/features/board/components/LockTimeBlockButton";
 
 interface FlowTimeBlockItemProps {
   block: TaskTimeBlock;
@@ -67,11 +68,14 @@ export const FlowTimeBlockItem = memo(function FlowTimeBlockItem({ block, planTa
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between text-xs text-indigo-400 font-semibold mb-0.5">
           <span>{startTimeStr} - {endTimeStr}</span>
-          {block.totalParts > 1 && (
-            <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.2 rounded">
-              Part {block.partIndex}/{block.totalParts}
-            </span>
-          )}
+          <div className="flex items-center space-x-1.5">
+            <LockTimeBlockButton blockId={block.id} isLocked={block.isLocked} isInDailyPlan={true} />
+            {block.totalParts > 1 && (
+              <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.2 rounded">
+                Part {block.partIndex}/{block.totalParts}
+              </span>
+            )}
+          </div>
         </div>
 
         <div

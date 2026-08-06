@@ -67,7 +67,10 @@ public class AuthServiceImpl implements AuthService {
             throw new InvalidTokenException("Token is null");
         }
         var jwt = jwtService.parseToken(token);
-        if(jwt.isExpirated()) {
+        if (jwt == null) {
+            throw new InvalidTokenException("Token is invalid");
+        }
+        if (jwt.isExpirated()) {
             throw new InvalidTokenException("Token is expired");
         }
         UUID id = jwt.getUserIdFromToken();

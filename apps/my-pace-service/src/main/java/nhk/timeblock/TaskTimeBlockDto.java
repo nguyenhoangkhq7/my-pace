@@ -14,5 +14,6 @@ public record TaskTimeBlockDto(
     Integer actualMinutes,
     Boolean isCompleted,
     OffsetDateTime completedAt,
-    String availabilityStatus
+    String availabilityStatus,
+    Boolean isLocked
 ) {}

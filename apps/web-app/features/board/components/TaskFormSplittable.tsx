@@ -7,9 +7,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { HugeiconsIcon } from "@hugeicons/react";
 import { HelpSquareIcon } from "@hugeicons/core-free-icons";
 import { useTranslation } from "@/hooks/use-translation";
+import { TaskFormValues } from "../schema/task.schema";
 
 interface TaskFormSplittableProps {
-  form: UseFormReturn<any>;
+  form: UseFormReturn<TaskFormValues>;
 }
 
 const MIN_CHUNK_PRESETS = [

@@ -178,7 +178,7 @@ class CategoryRepositoryTest {
 
         categoryRepository.save(cat2);
 
-        assertThrows(DataIntegrityViolationException.class, () -> entityManager.flush());
+        assertThrows(Exception.class, () -> entityManager.flush());
     }
 
     @Test

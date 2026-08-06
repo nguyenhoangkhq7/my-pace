@@ -39,6 +39,8 @@ export function QuickAddPalette() {
     return () => document.removeEventListener("keydown", handler);
   }, [open]);
 
+  const autoConfirm = useQuickAddUIStore((s) => s.autoConfirm);
+
   const handleClose = useCallback(() => {
     close();
     setIsEditing(false);
@@ -48,26 +50,40 @@ export function QuickAddPalette() {
   const handleSubmit = useCallback(
     async (text: string) => {
       setIsEditing(false);
-      await parseText(text);
+      const data = await parseText(text);
+      if (data && autoConfirm) {
+        const success = await confirmCreate(data);
+        if (success) {
+          toast.success(data.type === "event" ? t.quickAdd.createdEvent : t.quickAdd.created);
+          handleClose();
+        }
+      }
     },
-    [parseText]
+    [parseText, confirmCreate, autoConfirm, handleClose, t]
   );
 
   const handleSuggestionSelect = useCallback(
-    (text: string) => {
+    async (text: string) => {
       setIsEditing(false);
-      parseText(text);
+      const data = await parseText(text);
+      if (data && autoConfirm) {
+        const success = await confirmCreate(data);
+        if (success) {
+          toast.success(data.type === "event" ? t.quickAdd.createdEvent : t.quickAdd.created);
+          handleClose();
+        }
+      }
     },
-    [parseText]
+    [parseText, confirmCreate, autoConfirm, handleClose, t]
   );
 
   const handleConfirm = useCallback(async () => {
     const success = await confirmCreate();
     if (success) {
-      toast.success(t.quickAdd.created);
+      toast.success(result?.type === "event" ? t.quickAdd.createdEvent : t.quickAdd.created);
       handleClose();
     }
-  }, [confirmCreate, handleClose, t]);
+  }, [confirmCreate, handleClose, result, t]);
 
   const isResultVisible = (status === "preview" || status === "creating") && result;
 
@@ -101,7 +117,7 @@ export function QuickAddPalette() {
           <QuickAddForm
             initialData={result}
             onSuccess={() => {
-              toast.success(t.quickAdd.created);
+              toast.success(result?.type === "event" ? t.quickAdd.createdEvent : t.quickAdd.created);
               handleClose();
             }}
             onCancel={() => setIsEditing(false)}

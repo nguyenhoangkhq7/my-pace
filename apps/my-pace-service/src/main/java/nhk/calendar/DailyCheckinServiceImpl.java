@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import nhk.scheduling.AutoScheduleService;
+
 @Service
 @RequiredArgsConstructor
 public class DailyCheckinServiceImpl implements DailyCheckinService {
@@ -36,6 +38,7 @@ public class DailyCheckinServiceImpl implements DailyCheckinService {
     private final TaskTimeBlockRepository taskTimeBlockRepo;
     private final FixedEventService eventService;
     private final AvailableTimeService availableTimeService;
+    private final AutoScheduleService autoScheduleService;
 
     @Override
     @Transactional
@@ -58,6 +61,10 @@ public class DailyCheckinServiceImpl implements DailyCheckinService {
 
             // Auto-generate daily tasks for active goals
             generateDailyTasksForGoals(userId, date);
+
+            try {
+                autoScheduleService.autoScheduleWeek(userId, date, 15, false);
+            } catch (Exception ignored) {}
         }
 
         return availableTimeService.getAvailableTime(userId, date);
@@ -207,6 +214,7 @@ public class DailyCheckinServiceImpl implements DailyCheckinService {
                 tb.setEndTime(candidateEnd);
                 tb.setPartIndex(1);
                 tb.setTotalParts(1);
+                tb.setAvailabilityStatus("BUSY");
                 taskTimeBlockRepo.save(tb);
                 existingBlocks.add(tb);
                 break;

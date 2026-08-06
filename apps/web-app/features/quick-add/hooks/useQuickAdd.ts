@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { format } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { useTasks } from "@/features/board/hooks/useTasks";
 import { useAutoSchedule } from "@/features/board/hooks/useAutoSchedule";
 import { fetchClient, getApiErrorMessage } from "@/lib/fetchClient";
@@ -17,8 +19,8 @@ export function useQuickAdd() {
   const { triggerAutoSchedule } = useAutoSchedule();
   const queryClient = useQueryClient();
 
-  const parseText = async (text: string) => {
-    if (!text.trim()) return;
+  const parseText = async (text: string): Promise<QuickAddResult | null> => {
+    if (!text.trim()) return null;
 
     setStatus("loading");
     setError(null);
@@ -29,35 +31,37 @@ export function useQuickAdd() {
 
       setResult(res.data);
       setStatus("preview");
+      return res.data;
     } catch (err) {
       setError(getApiErrorMessage(err, "Network error"));
       setStatus("error");
+      return null;
     }
   };
 
-  const confirmCreate = async () => {
-    if (!result) return;
+  const confirmCreate = async (targetResult?: QuickAddResult) => {
+    const data = targetResult || result;
+    if (!data) return false;
 
     setStatus("creating");
 
     try {
-      if (result.type === "event") {
-        const isAllDay = result.isAllDay ?? !result.startTime;
-        const inferredEndTime = result.startTime
-          ? result.endTime ?? addMinutes(result.startTime, 60)
-          : undefined;
+      if (data.type === "event") {
+        const isAllDay = Boolean(data.isAllDay);
+        const startTimeStr = data.startTime || "09:00";
+        const inferredEndTime = data.endTime || addMinutes(startTimeStr, 60);
 
         const payload: CreateEventPayload = {
-          title: result.title,
-          notes: result.notes ?? undefined,
-          startTime: isAllDay ? undefined : (result.startTime ? `${result.startTime}:00` : undefined),
-          endTime: isAllDay ? undefined : (inferredEndTime ? `${inferredEndTime}:00` : undefined),
-          eventDate: result.eventDate ?? new Date().toISOString().split("T")[0],
+          title: data.title,
+          notes: data.notes ?? undefined,
+          startTime: isAllDay ? undefined : `${startTimeStr}:00`,
+          endTime: isAllDay ? undefined : `${inferredEndTime}:00`,
+          eventDate: data.eventDate ?? format(new Date(), "yyyy-MM-dd"),
           isAllDay,
-          recurrenceType: (result.recurrenceType as CreateEventPayload["recurrenceType"]) || "NONE",
-          recurrenceDaysOfWeek: result.recurrenceDaysOfWeek ?? undefined,
-          recurrenceEndDate: result.recurrenceEndDate ?? undefined,
-          categoryId: result.categoryId ?? undefined,
+          recurrenceType: (data.recurrenceType as CreateEventPayload["recurrenceType"]) || "NONE",
+          recurrenceDaysOfWeek: data.recurrenceDaysOfWeek ?? undefined,
+          recurrenceEndDate: data.recurrenceEndDate ?? undefined,
+          categoryId: data.categoryId ?? undefined,
         };
         await fetchClient.post("calendar/events", payload);
         queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
@@ -66,23 +70,25 @@ export function useQuickAdd() {
         triggerAutoSchedule();
       } else {
         await createTask({
-          title: result.title,
-          estimatedMinutes: result.estimatedMinutes ?? undefined,
-          isUrgent: result.isUrgent,
-          isImportant: result.isImportant,
-          dueDate: result.dueDate ?? undefined,
-          categoryId: result.categoryId ?? undefined,
-          goalId: result.goalId ?? undefined,
-          notes: result.notes ?? undefined,
-          checklists: result.checklists ?? undefined,
+          title: data.title,
+          estimatedMinutes: data.estimatedMinutes ?? undefined,
+          isUrgent: data.isUrgent,
+          isImportant: data.isImportant,
+          dueDate: data.dueDate ?? undefined,
+          categoryId: data.categoryId ?? undefined,
+          goalId: data.goalId ?? undefined,
+          notes: data.notes ?? undefined,
+          checklists: data.checklists ?? undefined,
         } as Parameters<typeof createTask>[0]);
       }
 
       setStatus("idle");
       setResult(null);
       return true;
-    } catch {
-      setError(result.type === "event" ? "Failed to create event" : "Failed to create task");
+    } catch (err) {
+      const msg = getApiErrorMessage(err, data.type === "event" ? "Failed to create event" : "Failed to create task");
+      setError(msg);
+      toast.error(msg);
       setStatus("error");
       return false;
     }
@@ -90,24 +96,43 @@ export function useQuickAdd() {
 
   const toggleType = () => {
     if (!result) return;
+    const todayStr = format(new Date(), "yyyy-MM-dd");
+
     if (result.type === "task") {
+      const eventDate = result.dueDate ? result.dueDate.split("T")[0] : todayStr;
+      const startTime = result.dueDate && result.dueDate.includes("T") ? result.dueDate.split("T")[1].slice(0, 5) : "09:00";
+      const duration = result.estimatedMinutes || 60;
+      const endTime = addMinutes(startTime, duration);
+
       setResult({
         type: "event",
         title: result.title,
-        eventDate: result.dueDate ? result.dueDate.split("T")[0] : new Date().toISOString().split("T")[0],
-        startTime: result.dueDate && result.dueDate.includes("T") ? result.dueDate.split("T")[1].slice(0, 5) : "09:00",
-        endTime: "10:00",
+        eventDate,
+        startTime,
+        endTime,
         categoryId: result.categoryId,
         notes: result.notes,
+        estimatedMinutes: duration,
       });
     } else {
+      let duration = result.estimatedMinutes;
+      if (!duration && result.startTime && result.endTime) {
+        duration = diffMinutes(result.startTime, result.endTime);
+      }
+      if (!duration || duration <= 0) {
+        duration = 60;
+      }
+
+      const timePart = result.startTime || "09:00";
+      const dueDate = result.eventDate ? `${result.eventDate}T${timePart}:00` : null;
+
       setResult({
         type: "task",
         title: result.title,
-        estimatedMinutes: 60,
+        estimatedMinutes: duration,
         isUrgent: false,
         isImportant: true,
-        dueDate: result.eventDate ? `${result.eventDate}T${result.startTime || "09:00"}:00` : null,
+        dueDate,
         categoryId: result.categoryId,
         goalId: null,
         notes: result.notes,
@@ -148,5 +173,15 @@ function addMinutes(time: string, minutes: number) {
   const nextMinutes = (normalizedMinutes % 60).toString().padStart(2, "0");
 
   return `${nextHours}:${nextMinutes}`;
+}
+
+function diffMinutes(startTime: string, endTime: string): number {
+  const [h1, m1] = startTime.split(":").map(Number);
+  const [h2, m2] = endTime.split(":").map(Number);
+  if (isNaN(h1) || isNaN(m1) || isNaN(h2) || isNaN(m2)) return 60;
+  const startMins = h1 * 60 + m1;
+  const endMins = h2 * 60 + m2;
+  const diff = endMins - startMins;
+  return diff > 0 ? diff : diff + 1440;
 }
 

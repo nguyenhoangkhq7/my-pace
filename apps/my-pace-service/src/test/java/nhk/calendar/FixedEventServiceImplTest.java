@@ -50,6 +50,9 @@ class FixedEventServiceImplTest {
     @Mock
     private CategoryMapper categoryMapper;
 
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+
     @InjectMocks
     private FixedEventServiceImpl service;
 

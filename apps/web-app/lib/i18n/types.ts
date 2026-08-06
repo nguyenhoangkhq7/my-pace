@@ -32,6 +32,9 @@ export interface Translations {
     productiveCalm: string;
   };
   sidebar: {
+    account: string;
+    general: string;
+    support: string;
     todayStartedAt: string;
     philosophy: string;
     feedback: string;
@@ -39,6 +42,24 @@ export interface Translations {
     chooseTheme: string;
     language: string;
     settings: string;
+  };
+  settingsModal: {
+    accountTitle: string;
+    accountDesc: string;
+    editProfileBtn: string;
+    generalTitle: string;
+    generalDesc: string;
+    quickAddTitle: string;
+    autoConfirmDesc: string;
+    toggleOn: string;
+    toggleOff: string;
+    appearanceTitle: string;
+    appearanceDesc: string;
+    timeContextsDesc: string;
+    supportTitle: string;
+    supportDesc: string;
+    philosophySub: string;
+    feedbackSub: string;
   };
   board: {
     today: string;
@@ -652,6 +673,37 @@ export interface Translations {
       repeat: string;
       expandZen: string;
       volume: string;
+      bgOn: string;
+      bgOff: string;
+      videoBgTitle: string;
+      videoBgHeader: string;
+      on: string;
+      off: string;
+      bgOpacity: string;
+      bgBlur: string;
+      videoQuality: string;
+      qualityAuto: string;
+      quality1080: string;
+      quality720: string;
+      quality480: string;
+      quality360: string;
+      videoBgHint: string;
+      hideBar: string;
+      showMusicBar: string;
+      hideMusicBar: string;
+      addManual: string;
+      switchToGrid: string;
+      switchToList: string;
+      hideZenZone: string;
+      settingsAndOptions: string;
+      exitZenFull: string;
+      exitZenFullEsc: string;
+      showPomodoroUi: string;
+      hidePomodoroUi: string;
+      stopTask: string;
+      subtaskList: string;
+      start: string;
+      completeTask: string;
     };
   };
   feedback: {
@@ -719,7 +771,9 @@ export interface Translations {
     hint: string;
     creating: string;
     created: string;
+    createdEvent: string;
     createTask: string;
+    autoConfirm: string;
     openFullForm: string;
     retry: string;
     errorTitle: string;

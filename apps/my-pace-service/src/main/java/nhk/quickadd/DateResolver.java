@@ -21,6 +21,14 @@ import java.time.temporal.TemporalAdjusters;
 class DateResolver {
 
     private static final DateTimeFormatter ISO_DATE = DateTimeFormatter.ISO_LOCAL_DATE;
+        private static final String[] TODAY_CANDIDATES = {
+            "hom nay", "today", "toi nay", "sang nay", "chieu nay", "trua nay", "dem nay",
+            "tonight", "this evening", "this morning", "this afternoon"
+        };
+        private static final String[] TOMORROW_CANDIDATES = {
+            "mai", "ngay mai", "tomorrow", "toi mai", "sang mai", "chieu mai", "trua mai", "dem mai",
+            "tomorrow night", "tomorrow morning", "tomorrow afternoon"
+        };
 
     LocalDate resolve(String expression, ZonedDateTime now) {
         if (expression == null || expression.isBlank()) return null;
@@ -28,9 +36,9 @@ class DateResolver {
         LocalDate today = now.toLocalDate();
         String norm = normalizeVietnamese(expression.trim().toLowerCase()).replaceAll("\\s+", " ");
 
-        // Relative day keywords
-        if (matches(norm, "hom nay", "today")) return today;
-        if (matches(norm, "mai", "ngay mai", "tomorrow")) return today.plusDays(1);
+        // Relative day keywords (including phrases embedded in longer time expressions)
+        if (matchesAny(norm, TODAY_CANDIDATES)) return today;
+        if (matchesAny(norm, TOMORROW_CANDIDATES)) return today.plusDays(1);
         if (matches(norm, "ngay kia", "mot", "ngay moc")) return today.plusDays(2);
 
         // Days of week — always returns NEXT occurrence (never today)

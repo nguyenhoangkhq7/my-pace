@@ -188,22 +188,45 @@ export function CalendarStyles({ fixedEventColor }: CalendarStylesProps) {
       /* 1. Month View Day Cell */
       .calendar-wrapper .fc-day-has-plan {
         background: linear-gradient(180deg, rgba(99, 102, 241, 0.08) 0%, rgba(99, 102, 241, 0.02) 100%) !important;
-        box-shadow: inset 0 3px 0 0 hsl(var(--primary)) !important;
+        box-shadow: inset 0 3px 0 0 var(--primary) !important;
       }
       .calendar-wrapper .fc-day-has-plan .fc-daygrid-day-number {
         font-weight: 700 !important;
-        color: hsl(var(--primary)) !important;
+        color: var(--primary) !important;
       }
 
       /* 2. Week/Day View Column Header */
       .calendar-wrapper .fc-col-header-has-plan {
-        background-color: hsl(var(--primary) / 0.12) !important;
-        border-bottom: 2px solid hsl(var(--primary)) !important;
+        background-color: rgba(59, 130, 246, 0.12) !important;
+        border-bottom: 2px solid var(--primary) !important;
       }
       .calendar-wrapper .fc-col-header-has-plan .fc-col-header-cell-cushion {
-        color: hsl(var(--primary)) !important;
+        color: var(--primary) !important;
         font-weight: 700 !important;
         opacity: 1 !important;
+      }
+
+      /* ── Boundary Dashed Lines (Ranh giới nét đứt Wake Time & Sleep Time) ── */
+      .calendar-wrapper .fc-timegrid-bg-harness,
+      .calendar-wrapper .fc-timegrid-col-bg {
+        z-index: 3 !important;
+      }
+      .calendar-wrapper .fc-non-business {
+        background: transparent !important;
+      }
+      .calendar-wrapper .fc-sleep-line-event {
+        background: transparent !important;
+        border-top: 2px dashed #f59e0b !important; /* 🌙 Sleep Time line (Cam Amber) */
+        opacity: 1 !important;
+        pointer-events: none !important;
+        z-index: 5 !important;
+      }
+      .calendar-wrapper .fc-wake-line-event {
+        background: transparent !important;
+        border-top: 2px dashed #3b82f6 !important; /* ☀️ Wake Time line (Xanh Primary #3b82f6) */
+        opacity: 1 !important;
+        pointer-events: none !important;
+        z-index: 5 !important;
       }
     `}</style>
   );

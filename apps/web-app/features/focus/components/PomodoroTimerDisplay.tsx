@@ -20,6 +20,8 @@ export const PomodoroTimerDisplay = memo(function PomodoroTimerDisplay({
   const maxTime = pomodoroState === "breaking" ? breakMinutes * 60 : focusMinutes * 60;
   const progressPct = maxTime > 0 ? Math.min(100, Math.max(0, ((maxTime - timeLeft) / maxTime) * 100)) : 0;
 
+  const activeTimeBlockInfo = useFocusStore((s) => s.activeTimeBlockInfo);
+
   const hours = Math.floor(timeLeft / 3600);
   const minutes = Math.floor((timeLeft % 3600) / 60);
   const seconds = timeLeft % 60;
@@ -37,6 +39,26 @@ export const PomodoroTimerDisplay = memo(function PomodoroTimerDisplay({
 
   const status = renderStatusBadge();
 
+  const hasHours = hours > 0;
+
+  const cardClasses = hasHours
+    ? "min-w-[62px] sm:min-w-[82px] md:min-w-[105px] lg:min-w-[130px] xl:min-w-[150px] 2xl:min-w-[170px] h-[70px] sm:h-[92px] md:h-[115px] lg:h-[140px] xl:h-[160px] 2xl:h-[180px] rounded-xl sm:rounded-2xl lg:rounded-3xl"
+    : "min-w-[78px] sm:min-w-[98px] md:min-w-[120px] lg:min-w-[145px] xl:min-w-[170px] 2xl:min-w-[195px] h-[84px] sm:h-[108px] md:h-[130px] lg:h-[155px] xl:h-[180px] 2xl:h-[205px] rounded-2xl sm:rounded-3xl";
+
+  const numberClasses = "text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-black font-mono tracking-tighter transition-colors duration-300 drop-shadow-md";
+
+  const labelClasses = hasHours
+    ? "text-[9px] sm:text-[10px] lg:text-xs font-bold tracking-[0.2em] uppercase mt-1.5 lg:mt-2.5"
+    : "text-[10px] sm:text-xs lg:text-sm font-bold tracking-[0.25em] uppercase mt-2 lg:mt-3";
+
+  const colonClasses = hasHours
+    ? "text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-black pb-5 lg:pb-7"
+    : "text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black pb-6 lg:pb-8";
+
+  const gapClasses = hasHours
+    ? "gap-1.5 sm:gap-2.5 md:gap-3.5 lg:gap-4 xl:gap-5"
+    : "gap-2 sm:gap-3.5 md:gap-5 lg:gap-6 xl:gap-7";
+
   return (
     <div className="w-full flex flex-col items-center shrink-0 py-1">
       <div className={cn(
@@ -46,7 +68,7 @@ export const PomodoroTimerDisplay = memo(function PomodoroTimerDisplay({
           : ""
       )}>
         {/* Top Bar: Status Badge & Session Count */}
-        <div className="flex items-center justify-between w-full px-1 mb-4 sm:mb-6 lg:mb-8">
+        <div className="flex items-center justify-between w-full px-1 mb-3 sm:mb-5 lg:mb-6">
           <div className={cn(
             "inline-flex items-center space-x-2 px-3.5 sm:px-4 py-1.5 lg:py-2 rounded-full border text-[10px] sm:text-xs lg:text-sm font-bold uppercase tracking-[0.2em]",
             isVideoBackground ? "bg-black/45 backdrop-blur-md border-white/20 text-white shadow-xl" : "",
@@ -82,50 +104,73 @@ export const PomodoroTimerDisplay = memo(function PomodoroTimerDisplay({
           </div>
         </div>
 
-        {/* Task Title */}
-        <div className="text-center mb-4 sm:mb-6 lg:mb-8 px-4 max-w-lg lg:max-w-2xl xl:max-w-3xl">
+        {/* Task Title & TimeBlock Context Badge */}
+        <div className="text-center mb-2 sm:mb-4 lg:mb-6 px-4 max-w-lg lg:max-w-2xl xl:max-w-3xl flex flex-col items-center">
           <h2 className={cn(
-            "text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black tracking-tight uppercase leading-tight",
+            "text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-black tracking-tight uppercase leading-tight",
             isVideoBackground ? "text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)] [text-shadow:_0_2px_10px_rgba(0,0,0,0.8)]" : "text-foreground drop-shadow-xs"
           )}>
             {activeTask.title}
           </h2>
+          {activeTimeBlockInfo && (
+            <div className={cn(
+              "mt-2.5 inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-semibold tracking-wide border shadow-sm transition-all animate-in fade-in slide-in-from-top-1 duration-300",
+              isVideoBackground
+                ? "bg-indigo-950/30 border-indigo-400/30 text-indigo-200 backdrop-blur-md shadow-sm"
+                : "bg-indigo-50/70 dark:bg-indigo-950/30 border-indigo-200/60 dark:border-indigo-800/40 text-indigo-700 dark:text-indigo-300 backdrop-blur-sm"
+            )}>
+              <span className="text-indigo-400">🕒</span>
+              <span>
+                Đang thực thi: Khối {activeTimeBlockInfo.partIndex}/{activeTimeBlockInfo.totalParts} ({activeTimeBlockInfo.startTime} - {activeTimeBlockInfo.endTime} · {activeTimeBlockInfo.durationMinutes}m)
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Timer Cards Container */}
-        <div className="relative flex items-center justify-center gap-2 sm:gap-4 md:gap-5 lg:gap-7 xl:gap-8 my-2 sm:my-3 lg:my-5 select-none">
+        <div className={cn("relative flex items-center justify-center my-2 sm:my-3 lg:my-4 select-none w-full", gapClasses)}>
           {/* Hours card if > 0 */}
-          {hours > 0 && (
+          {hasHours && (
             <>
               <div className="flex flex-col items-center">
                 <div className={cn(
-                  "relative group min-w-[85px] sm:min-w-[105px] md:min-w-[130px] lg:min-w-[160px] xl:min-w-[190px] 2xl:min-w-[220px] h-[90px] sm:h-[115px] md:h-[140px] lg:h-[170px] xl:h-[200px] 2xl:h-[230px] border rounded-2xl sm:rounded-3xl flex items-center justify-center shadow-2xl overflow-hidden transition-all duration-300",
+                  "relative group border flex items-center justify-center shadow-2xl overflow-hidden transition-all duration-300",
+                  cardClasses,
                   isVideoBackground ? "bg-black/45 backdrop-blur-2xl border-white/20 shadow-[0_12px_40px_rgba(0,0,0,0.6)]" : "bg-card/90 backdrop-blur-xl border-border"
                 )}>
                   <div className="absolute top-0 inset-x-0 h-1 lg:h-1.5 bg-gradient-to-r from-indigo-400 via-cyan-400 to-emerald-400 opacity-90" />
                   <span className={cn(
-                    "text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl 2xl:text-9xl font-black font-mono tracking-tighter drop-shadow-md",
+                    numberClasses,
                     isVideoBackground ? (pomodoroState === "paused" ? "text-amber-400 drop-shadow-[0_0_12px_rgba(245,158,11,0.6)]" : "text-white") : (pomodoroState === "paused" ? "text-amber-500 dark:text-amber-400" : "text-foreground")
                   )}>
                     {pad(hours)}
                   </span>
                 </div>
                 <span className={cn(
-                  "text-[10px] sm:text-xs lg:text-sm font-bold tracking-[0.25em] uppercase mt-2 lg:mt-3",
+                  labelClasses,
                   isVideoBackground ? "text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]" : "text-muted-foreground"
                 )}>
                   HOURS
                 </span>
               </div>
 
-              <span className="text-2xl sm:text-3xl lg:text-4xl font-bold text-cyan-500 dark:text-cyan-300 drop-shadow-[0_0_12px_rgba(34,211,238,0.8)] pb-6 lg:pb-8 animate-pulse">:</span>
+              {/* Hours - Minutes Colon Separator */}
+              <div className="flex flex-col items-center">
+                <span className={cn(
+                  colonClasses,
+                  "text-cyan-500 dark:text-cyan-300 drop-shadow-[0_0_12px_rgba(34,211,238,0.8)] animate-pulse"
+                )}>
+                  :
+                </span>
+              </div>
             </>
           )}
 
           {/* Minutes Card */}
           <div className="flex flex-col items-center">
             <div className={cn(
-              "relative group min-w-[85px] sm:min-w-[105px] md:min-w-[130px] lg:min-w-[160px] xl:min-w-[190px] 2xl:min-w-[220px] h-[90px] sm:h-[115px] md:h-[140px] lg:h-[170px] xl:h-[200px] 2xl:h-[230px] border rounded-2xl sm:rounded-3xl flex items-center justify-center shadow-2xl overflow-hidden transition-all duration-300",
+              "relative group border flex items-center justify-center shadow-2xl overflow-hidden transition-all duration-300",
+              cardClasses,
               isVideoBackground ? "bg-black/45 backdrop-blur-2xl border-white/20 shadow-[0_12px_40px_rgba(0,0,0,0.6)]" : "bg-card/90 backdrop-blur-xl border-border"
             )}>
               <div className={cn(
@@ -137,24 +182,25 @@ export const PomodoroTimerDisplay = memo(function PomodoroTimerDisplay({
                   : "from-cyan-400 via-indigo-400 to-purple-400"
               )} />
               <span className={cn(
-                "text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl 2xl:text-9xl font-black font-mono tracking-tighter transition-colors duration-300 drop-shadow-md",
+                numberClasses,
                 isVideoBackground ? (pomodoroState === "paused" ? "text-amber-400 drop-shadow-[0_0_12px_rgba(245,158,11,0.6)]" : "text-white") : (pomodoroState === "paused" ? "text-amber-500 dark:text-amber-400" : "text-foreground")
               )}>
                 {pad(minutes)}
               </span>
             </div>
             <span className={cn(
-              "text-[10px] sm:text-xs lg:text-sm font-bold tracking-[0.25em] uppercase mt-2 lg:mt-3",
+              labelClasses,
               isVideoBackground ? "text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]" : "text-muted-foreground"
             )}>
               MINUTES
             </span>
           </div>
 
-          {/* Colon Separator */}
-          <div className="flex flex-col items-center pb-6 lg:pb-8">
+          {/* Minutes - Seconds Colon Separator */}
+          <div className="flex flex-col items-center">
             <span className={cn(
-              "text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black transition-opacity duration-500",
+              colonClasses,
+              "transition-opacity duration-500",
               pomodoroState === "focusing" || pomodoroState === "breaking"
                 ? "text-cyan-500 dark:text-cyan-300 drop-shadow-[0_0_12px_rgba(34,211,238,0.8)] animate-pulse"
                 : isVideoBackground
@@ -168,7 +214,8 @@ export const PomodoroTimerDisplay = memo(function PomodoroTimerDisplay({
           {/* Seconds Card */}
           <div className="flex flex-col items-center">
             <div className={cn(
-              "relative group min-w-[85px] sm:min-w-[105px] md:min-w-[130px] lg:min-w-[160px] xl:min-w-[190px] 2xl:min-w-[220px] h-[90px] sm:h-[115px] md:h-[140px] lg:h-[170px] xl:h-[200px] 2xl:h-[230px] border rounded-2xl sm:rounded-3xl flex items-center justify-center shadow-2xl overflow-hidden transition-all duration-300",
+              "relative group border flex items-center justify-center shadow-2xl overflow-hidden transition-all duration-300",
+              cardClasses,
               isVideoBackground ? "bg-black/45 backdrop-blur-2xl border-white/20 shadow-[0_12px_40px_rgba(0,0,0,0.6)]" : "bg-card/90 backdrop-blur-xl border-border"
             )}>
               <div className={cn(
@@ -180,14 +227,14 @@ export const PomodoroTimerDisplay = memo(function PomodoroTimerDisplay({
                   : "from-indigo-400 via-purple-400 to-cyan-400"
               )} />
               <span className={cn(
-                "text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl 2xl:text-9xl font-black font-mono tracking-tighter transition-colors duration-300 drop-shadow-md",
+                numberClasses,
                 isVideoBackground ? (pomodoroState === "paused" ? "text-amber-400 drop-shadow-[0_0_12px_rgba(245,158,11,0.6)]" : "text-white") : (pomodoroState === "paused" ? "text-amber-500 dark:text-amber-400" : "text-foreground")
               )}>
                 {pad(seconds)}
               </span>
             </div>
             <span className={cn(
-              "text-[10px] sm:text-xs lg:text-sm font-bold tracking-[0.25em] uppercase mt-2 lg:mt-3",
+              labelClasses,
               isVideoBackground ? "text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]" : "text-muted-foreground"
             )}>
               SECONDS
@@ -197,7 +244,7 @@ export const PomodoroTimerDisplay = memo(function PomodoroTimerDisplay({
 
         {/* Progress Bar under Cards */}
         <div className={cn(
-          "w-full max-w-md lg:max-w-lg xl:max-w-xl h-1.5 lg:h-2 rounded-full overflow-hidden border mt-4 sm:mt-5 lg:mt-7 mb-1",
+          "w-full max-w-md lg:max-w-lg xl:max-w-xl h-1.5 lg:h-2 rounded-full overflow-hidden border mt-3 sm:mt-4 lg:mt-5 mb-1",
           isVideoBackground ? "bg-white/15 backdrop-blur-md border-white/20" : "bg-muted/60 border-border/50"
         )}>
           <div

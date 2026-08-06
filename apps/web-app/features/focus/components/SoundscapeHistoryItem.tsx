@@ -76,7 +76,7 @@ export const SoundscapeHistoryItem = memo(function SoundscapeHistoryItem({
             </div>
           )}
         </div>
-        <div className="flex-1 p-2.5 bg-card flex flex-col justify-center relative group/title min-w-0">
+        <div className={cn("flex-1 p-2.5 flex flex-col justify-center relative group/title min-w-0 transition-colors", isVideoBackground ? "bg-card/60 backdrop-blur-xs" : "bg-card")}>
           {isEditing ? (
             <input 
               autoFocus 

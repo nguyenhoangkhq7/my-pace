@@ -18,7 +18,6 @@ import { RecurrenceSelector } from "./RecurrenceSelector";
 import { FixedEventCategorySelector } from "./FixedEventCategorySelector";
 import { useEventForm, UseEventFormProps } from "../hooks/useEventForm";
 import { useTranslation } from "@/hooks/use-translation";
-import type { FixedEventOccurrence } from "../types";
 
 export function EventModal(props: UseEventFormProps) {
   const {

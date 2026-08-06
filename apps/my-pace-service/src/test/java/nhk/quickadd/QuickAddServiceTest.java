@@ -12,6 +12,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -130,6 +132,64 @@ class QuickAddServiceTest {
         assertThat(r.endTime()).isEqualTo("16:00");
     }
 
+    @Test
+    @DisplayName("time_block with English 3pm timeExpression → startTime=15:00, endTime=16:00")
+    void parseTimeBlock_EnglishPM_CorrectHour() {
+        mockGroqResponse(json("time_block", "team meeting", "tomorrow", "3pm", null, null, null, null, null, false, null));
+        stubRepositories();
+
+        QuickAddResponse r = quickAddService.parse(new QuickAddRequest("team meeting at 3pm tomorrow"), USER_ID, "Asia/Ho_Chi_Minh");
+
+        assertThat(r.type()).isEqualTo("event");
+        assertThat(r.startTime()).isEqualTo("15:00");
+        assertThat(r.endTime()).isEqualTo("16:00");
+    }
+
+    @Test
+    @DisplayName("time_block with English 6am - 7am range → startTime=06:00, endTime=07:00")
+    void parseTimeBlock_EnglishAMRange_CorrectHours() {
+        mockGroqResponse(json("time_block", "run", "tomorrow", "6am - 7am", null, "health", null, null, null, false, null));
+        stubRepositories();
+
+        QuickAddResponse r = quickAddService.parse(new QuickAddRequest("run 6am - 7am tomorrow #health"), USER_ID, "Asia/Ho_Chi_Minh");
+
+        assertThat(r.type()).isEqualTo("event");
+        assertThat(r.startTime()).isEqualTo("06:00");
+        assertThat(r.endTime()).isEqualTo("07:00");
+    }
+
+    @Test
+    @DisplayName("time_block with 'tối nay' in timeExpression and null dateExpression → eventDate=today")
+    void parseTimeBlock_TonightInTimeExpression_ResolvesEventDateFromTimeExpression() {
+        mockGroqResponse(json("time_block", "Xem phim", null, "8 giờ tối nay", "2 tiếng", null, null, null, null, false, null));
+        stubRepositories();
+
+        QuickAddResponse r = quickAddService.parse(new QuickAddRequest("xem phim tốn 2 tiếng lúc 8 giờ tối nay"), USER_ID, "Asia/Ho_Chi_Minh");
+        String expectedToday = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")).toString();
+
+        assertThat(r.type()).isEqualTo("event");
+        assertThat(r.eventDate()).isEqualTo(expectedToday);
+        assertThat(r.startTime()).isEqualTo("20:00");
+        assertThat(r.endTime()).isEqualTo("22:00");
+        assertThat(r.dueDate()).isNull();
+    }
+
+    @Test
+    @DisplayName("time_block with '8 giờ' in timeExpression and 'tối nay' in dateExpression → startTime=20:00, endTime=22:00")
+    void parseTimeBlock_BareHourWithTonightInDateExpression_ResolvesEveningTime() {
+        mockGroqResponse(json("time_block", "Xem phim", "tối nay", "8 giờ", "2 tiếng", null, null, null, null, false, null));
+        stubRepositories();
+
+        QuickAddResponse r = quickAddService.parse(new QuickAddRequest("xem phim tối nay 8 giờ tốn 2 tiếng"), USER_ID, "Asia/Ho_Chi_Minh");
+        String expectedToday = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")).toString();
+
+        assertThat(r.type()).isEqualTo("event");
+        assertThat(r.eventDate()).isEqualTo(expectedToday);
+        assertThat(r.startTime()).isEqualTo("20:00");
+        assertThat(r.endTime()).isEqualTo("22:00");
+        assertThat(r.estimatedMinutes()).isEqualTo(120);
+    }
+
     // ── All-day event ─────────────────────────────────────────────────────────────
 
     @Test
@@ -218,6 +278,20 @@ class QuickAddServiceTest {
         assertThat(r.recurrenceEndDate()).isNull();
     }
 
+    @Test
+    @DisplayName("timeExpression range '9-11 giờ tối' → startTime=21:00, endTime=23:00, durationMinutes=120")
+    void parseTimeRange_Night() {
+        mockGroqResponse(json("time_block", "Xem phim", null, "9-11 giờ tối", null, null, null, null, null, false, null));
+        stubRepositories();
+
+        QuickAddResponse r = quickAddService.parse(new QuickAddRequest("Xem phim 9-11 giờ tối"), USER_ID, "Asia/Ho_Chi_Minh");
+
+        assertThat(r.type()).isEqualTo("event");
+        assertThat(r.startTime()).isEqualTo("21:00");
+        assertThat(r.endTime()).isEqualTo("23:00");
+        assertThat(r.estimatedMinutes()).isEqualTo(120);
+    }
+
     // ── Urgency & Importance ──────────────────────────────────────────────────────
 
     @Test
@@ -240,6 +314,23 @@ class QuickAddServiceTest {
         QuickAddResponse r = quickAddService.parse(new QuickAddRequest("mai 7h tập thể dục 1 tiếng"), USER_ID, "Asia/Ho_Chi_Minh");
 
         assertThat(r.isImportant()).isTrue();
+    }
+
+    @Test
+    @DisplayName("category acronym KLTN → resolves to Khóa luận tốt nghiệp")
+    void categoryResolver_AcronymMatching_ReturnsCategoryId() {
+        UUID catId = UUID.randomUUID();
+        nhk.category.Category cat = new nhk.category.Category();
+        cat.setId(catId);
+        cat.setName("Khóa luận tốt nghiệp");
+
+        when(categoryRepository.findByUserIdOrderByNameAsc(USER_ID)).thenReturn(List.of(cat));
+        when(goalRepository.findByUserIdAndStatus(USER_ID, "In Progress")).thenReturn(List.of());
+        mockGroqResponse(json("open_task", "Nộp báo cáo", "thứ 6", null, null, "KLTN", null, null, null, false, null));
+
+        QuickAddResponse r = quickAddService.parse(new QuickAddRequest("Nộp báo cáo KLTN thứ 6"), USER_ID, "Asia/Ho_Chi_Minh");
+
+        assertThat(r.categoryId()).isEqualTo(catId);
     }
 
     // ── Retry behavior ────────────────────────────────────────────────────────────
@@ -305,6 +396,300 @@ class QuickAddServiceTest {
         assertThatThrownBy(() -> noKey.parse(new QuickAddRequest("test"), USER_ID, "Asia/Ho_Chi_Minh"))
                 .isInstanceOf(QuickAddExternalServiceException.class)
                 .hasMessageContaining("GROQ_API_KEY");
+    }
+
+    // ── 10 UI Suggestions Tests (EN & VI) ──────────────────────────────────────────
+
+    @Test
+    @DisplayName("Task Suggestion 1: team meeting 1 hour tomorrow afternoon")
+    void parseTaskSuggestion1() {
+        mockGroqResponse(json("deadline", "Team meeting", "tomorrow afternoon", null, "1 hour", null, null, null, null, false, null));
+        stubRepositories();
+
+        QuickAddResponse r = quickAddService.parse(new QuickAddRequest("team meeting 1 hour tomorrow afternoon"), USER_ID, "Asia/Ho_Chi_Minh");
+
+        assertThat(r.type()).isEqualTo("task");
+        assertThat(r.title()).isEqualTo("Team meeting");
+        assertThat(r.estimatedMinutes()).isEqualTo(60);
+        assertThat(r.dueDate()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Task Suggestion 1 (VI): họp team 1 tiếng chiều mai")
+    void parseTaskSuggestion1_VI() {
+        mockGroqResponse(json("deadline", "Họp team", "chiều mai", null, "1 tiếng", null, null, null, null, false, null));
+        stubRepositories();
+
+        QuickAddResponse r = quickAddService.parse(new QuickAddRequest("họp team 1 tiếng chiều mai"), USER_ID, "Asia/Ho_Chi_Minh");
+
+        assertThat(r.type()).isEqualTo("task");
+        assertThat(r.title()).isEqualTo("Họp team");
+        assertThat(r.estimatedMinutes()).isEqualTo(60);
+        assertThat(r.dueDate()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Task Suggestion 2: read a book 30 minutes tonight")
+    void parseTaskSuggestion2() {
+        mockGroqResponse(json("deadline", "Read a book", "tonight", null, "30 minutes", null, null, null, null, false, null));
+        stubRepositories();
+
+        QuickAddResponse r = quickAddService.parse(new QuickAddRequest("read a book 30 minutes tonight"), USER_ID, "Asia/Ho_Chi_Minh");
+
+        assertThat(r.type()).isEqualTo("task");
+        assertThat(r.title()).isEqualTo("Read a book");
+        assertThat(r.estimatedMinutes()).isEqualTo(30);
+        assertThat(r.dueDate()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Task Suggestion 2 (VI): đọc sách 30 phút tối nay")
+    void parseTaskSuggestion2_VI() {
+        mockGroqResponse(json("deadline", "Đọc sách", "tối nay", null, "30 phút", null, null, null, null, false, null));
+        stubRepositories();
+
+        QuickAddResponse r = quickAddService.parse(new QuickAddRequest("đọc sách 30 phút tối nay"), USER_ID, "Asia/Ho_Chi_Minh");
+
+        assertThat(r.type()).isEqualTo("task");
+        assertThat(r.title()).isEqualTo("Đọc sách");
+        assertThat(r.estimatedMinutes()).isEqualTo(30);
+        assertThat(r.dueDate()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Task Suggestion 3: submit report by Friday urgent")
+    void parseTaskSuggestion3() {
+        mockGroqResponse(json("deadline", "Submit report", "Friday", null, null, null, null, null, null, false, null));
+        stubRepositories();
+
+        QuickAddResponse r = quickAddService.parse(new QuickAddRequest("submit report by Friday urgent"), USER_ID, "Asia/Ho_Chi_Minh");
+
+        assertThat(r.type()).isEqualTo("task");
+        assertThat(r.title()).isEqualTo("Submit report");
+        assertThat(r.isUrgent()).isTrue();
+        assertThat(r.dueDate()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Task Suggestion 3 (VI): nộp báo cáo trước thứ 6 gấp")
+    void parseTaskSuggestion3_VI() {
+        mockGroqResponse(json("deadline", "Nộp báo cáo", "thứ 6", null, null, null, null, null, null, false, null));
+        stubRepositories();
+
+        QuickAddResponse r = quickAddService.parse(new QuickAddRequest("nộp báo cáo trước thứ 6 gấp"), USER_ID, "Asia/Ho_Chi_Minh");
+
+        assertThat(r.type()).isEqualTo("task");
+        assertThat(r.title()).isEqualTo("Nộp báo cáo");
+        assertThat(r.isUrgent()).isTrue();
+        assertThat(r.dueDate()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Task Suggestion 4: buy groceries: eggs, milk, vegetables")
+    void parseTaskSuggestion4() {
+        mockGroqResponse("""
+                {"intent":"open_task","title":"Buy groceries","dateExpression":null,"timeExpression":null,
+                 "durationExpression":null,"categoryHint":null,"goalHint":null,"notes":null,
+                 "checklists":["eggs","milk","vegetables"],"isAllDay":false,"recurrenceExpression":null}""");
+        stubRepositories();
+
+        QuickAddResponse r = quickAddService.parse(new QuickAddRequest("buy groceries: eggs, milk, vegetables"), USER_ID, "Asia/Ho_Chi_Minh");
+
+        assertThat(r.type()).isEqualTo("task");
+        assertThat(r.title()).isEqualTo("Buy groceries");
+        assertThat(r.checklists()).hasSize(3);
+        assertThat(r.checklists().get(0).title()).isEqualTo("eggs");
+    }
+
+    @Test
+    @DisplayName("Task Suggestion 4 (VI): mua đồ: trứng, sữa, rau")
+    void parseTaskSuggestion4_VI() {
+        mockGroqResponse("""
+                {"intent":"open_task","title":"Mua đồ","dateExpression":null,"timeExpression":null,
+                 "durationExpression":null,"categoryHint":null,"goalHint":null,"notes":null,
+                 "checklists":["trứng","sữa","rau"],"isAllDay":false,"recurrenceExpression":null}""");
+        stubRepositories();
+
+        QuickAddResponse r = quickAddService.parse(new QuickAddRequest("mua đồ: trứng, sữa, rau"), USER_ID, "Asia/Ho_Chi_Minh");
+
+        assertThat(r.type()).isEqualTo("task");
+        assertThat(r.title()).isEqualTo("Mua đồ");
+        assertThat(r.checklists()).hasSize(3);
+        assertThat(r.checklists().get(0).title()).isEqualTo("trứng");
+    }
+
+    @Test
+    @DisplayName("Task Suggestion 5: plan Q3 2 hours #work goal: increase revenue note: room B2")
+    void parseTaskSuggestion5() {
+        mockGroqResponse(json("open_task", "Plan Q3", null, null, "2 hours", "work", "increase revenue", "room B2", null, false, null));
+        stubRepositories();
+
+        QuickAddResponse r = quickAddService.parse(new QuickAddRequest("plan Q3 2 hours #work goal: increase revenue note: room B2"), USER_ID, "Asia/Ho_Chi_Minh");
+
+        assertThat(r.type()).isEqualTo("task");
+        assertThat(r.title()).isEqualTo("Plan Q3");
+        assertThat(r.estimatedMinutes()).isEqualTo(120);
+        assertThat(r.notes()).isEqualTo("room B2");
+    }
+
+    @Test
+    @DisplayName("Task Suggestion 5 (VI): lập kế hoạch Q3 2 tiếng #work mục tiêu: tăng doanh thu ghi chú: phòng B2")
+    void parseTaskSuggestion5_VI() {
+        mockGroqResponse(json("open_task", "Lập kế hoạch Q3", null, null, "2 tiếng", "work", "tăng doanh thu", "phòng B2", null, false, null));
+        stubRepositories();
+
+        QuickAddResponse r = quickAddService.parse(new QuickAddRequest("lập kế hoạch Q3 2 tiếng #work mục tiêu: tăng doanh thu ghi chú: phòng B2"), USER_ID, "Asia/Ho_Chi_Minh");
+
+        assertThat(r.type()).isEqualTo("task");
+        assertThat(r.title()).isEqualTo("Lập kế hoạch Q3");
+        assertThat(r.estimatedMinutes()).isEqualTo(120);
+        assertThat(r.notes()).isEqualTo("phòng B2");
+    }
+
+    @Test
+    @DisplayName("Task Suggestion 6: clean up email 15 minutes tomorrow morning checklist: inbox, spam, follow-up")
+    void parseTaskSuggestion6() {
+        mockGroqResponse("""
+                {"intent":"deadline","title":"Clean up email","dateExpression":"tomorrow morning","timeExpression":null,
+                 "durationExpression":"15 minutes","categoryHint":null,"goalHint":null,"notes":null,
+                 "checklists":["inbox","spam","follow-up"],"isAllDay":false,"recurrenceExpression":null}""");
+        stubRepositories();
+
+        QuickAddResponse r = quickAddService.parse(new QuickAddRequest("clean up email 15 minutes tomorrow morning checklist: inbox, spam, follow-up"), USER_ID, "Asia/Ho_Chi_Minh");
+
+        assertThat(r.type()).isEqualTo("task");
+        assertThat(r.title()).isEqualTo("Clean up email");
+        assertThat(r.estimatedMinutes()).isEqualTo(15);
+        assertThat(r.checklists()).hasSize(3);
+    }
+
+    @Test
+    @DisplayName("Task Suggestion 6 (VI): dọn dẹp email 15 phút sáng mai danh sách: inbox, spam, follow-up")
+    void parseTaskSuggestion6_VI() {
+        mockGroqResponse("""
+                {"intent":"deadline","title":"Dọn dẹp email","dateExpression":"sáng mai","timeExpression":null,
+                 "durationExpression":"15 phút","categoryHint":null,"goalHint":null,"notes":null,
+                 "checklists":["inbox","spam","follow-up"],"isAllDay":false,"recurrenceExpression":null}""");
+        stubRepositories();
+
+        QuickAddResponse r = quickAddService.parse(new QuickAddRequest("dọn dẹp email 15 phút sáng mai danh sách: inbox, spam, follow-up"), USER_ID, "Asia/Ho_Chi_Minh");
+
+        assertThat(r.type()).isEqualTo("task");
+        assertThat(r.title()).isEqualTo("Dọn dẹp email");
+        assertThat(r.estimatedMinutes()).isEqualTo(15);
+        assertThat(r.checklists()).hasSize(3);
+    }
+
+    @Test
+    @DisplayName("Event Suggestion 1: team meeting at 3pm tomorrow")
+    void parseEventSuggestion1() {
+        mockGroqResponse(json("time_block", "Team meeting", "tomorrow", "3pm", null, null, null, null, null, false, null));
+        stubRepositories();
+
+        QuickAddResponse r = quickAddService.parse(new QuickAddRequest("team meeting at 3pm tomorrow"), USER_ID, "Asia/Ho_Chi_Minh");
+
+        assertThat(r.type()).isEqualTo("event");
+        assertThat(r.title()).isEqualTo("Team meeting");
+        assertThat(r.startTime()).isEqualTo("15:00");
+        assertThat(r.endTime()).isEqualTo("16:00");
+    }
+
+    @Test
+    @DisplayName("Event Suggestion 1 (VI): họp team lúc 3h chiều mai")
+    void parseEventSuggestion1_VI() {
+        mockGroqResponse(json("time_block", "Họp team", "mai", "3h chiều", null, null, null, null, null, false, null));
+        stubRepositories();
+
+        QuickAddResponse r = quickAddService.parse(new QuickAddRequest("họp team lúc 3h chiều mai"), USER_ID, "Asia/Ho_Chi_Minh");
+
+        assertThat(r.type()).isEqualTo("event");
+        assertThat(r.title()).isEqualTo("Họp team");
+        assertThat(r.startTime()).isEqualTo("15:00");
+        assertThat(r.endTime()).isEqualTo("16:00");
+    }
+
+    @Test
+    @DisplayName("Event Suggestion 2: interview Tuesday 10am")
+    void parseEventSuggestion2() {
+        mockGroqResponse(json("time_block", "Interview", "Tuesday", "10am", null, null, null, null, null, false, null));
+        stubRepositories();
+
+        QuickAddResponse r = quickAddService.parse(new QuickAddRequest("interview Tuesday 10am"), USER_ID, "Asia/Ho_Chi_Minh");
+
+        assertThat(r.type()).isEqualTo("event");
+        assertThat(r.title()).isEqualTo("Interview");
+        assertThat(r.startTime()).isEqualTo("10:00");
+        assertThat(r.endTime()).isEqualTo("11:00");
+    }
+
+    @Test
+    @DisplayName("Event Suggestion 2 (VI): phỏng vấn thứ 3 lúc 10h")
+    void parseEventSuggestion2_VI() {
+        mockGroqResponse(json("time_block", "Phỏng vấn", "thứ 3", "10h", null, null, null, null, null, false, null));
+        stubRepositories();
+
+        QuickAddResponse r = quickAddService.parse(new QuickAddRequest("phỏng vấn thứ 3 lúc 10h"), USER_ID, "Asia/Ho_Chi_Minh");
+
+        assertThat(r.type()).isEqualTo("event");
+        assertThat(r.title()).isEqualTo("Phỏng vấn");
+        assertThat(r.startTime()).isEqualTo("10:00");
+        assertThat(r.endTime()).isEqualTo("11:00");
+    }
+
+    @Test
+    @DisplayName("Event Suggestion 3: run 6am - 7am tomorrow #health")
+    void parseEventSuggestion3() {
+        mockGroqResponse(json("time_block", "Run", "tomorrow", "6am - 7am", null, "health", null, null, null, false, null));
+        stubRepositories();
+
+        QuickAddResponse r = quickAddService.parse(new QuickAddRequest("run 6am - 7am tomorrow #health"), USER_ID, "Asia/Ho_Chi_Minh");
+
+        assertThat(r.type()).isEqualTo("event");
+        assertThat(r.title()).isEqualTo("Run");
+        assertThat(r.startTime()).isEqualTo("06:00");
+        assertThat(r.endTime()).isEqualTo("07:00");
+    }
+
+    @Test
+    @DisplayName("Event Suggestion 3 (VI): chạy bộ 6h - 7h sáng mai #health")
+    void parseEventSuggestion3_VI() {
+        mockGroqResponse(json("time_block", "Chạy bộ", "sáng mai", "6h - 7h", null, "health", null, null, null, false, null));
+        stubRepositories();
+
+        QuickAddResponse r = quickAddService.parse(new QuickAddRequest("chạy bộ 6h - 7h sáng mai #health"), USER_ID, "Asia/Ho_Chi_Minh");
+
+        assertThat(r.type()).isEqualTo("event");
+        assertThat(r.title()).isEqualTo("Chạy bộ");
+        assertThat(r.startTime()).isEqualTo("06:00");
+        assertThat(r.endTime()).isEqualTo("07:00");
+    }
+
+    @Test
+    @DisplayName("Event Suggestion 4: mom's birthday all day Sunday note: call in the evening")
+    void parseEventSuggestion4() {
+        mockGroqResponse(json("open_task", "Mom's birthday", "Sunday", null, null, null, null, "call in the evening", null, true, null));
+        stubRepositories();
+
+        QuickAddResponse r = quickAddService.parse(new QuickAddRequest("mom's birthday all day Sunday note: call in the evening"), USER_ID, "Asia/Ho_Chi_Minh");
+
+        assertThat(r.type()).isEqualTo("event");
+        assertThat(r.title()).isEqualTo("Mom's birthday");
+        assertThat(r.isAllDay()).isTrue();
+        assertThat(r.notes()).isEqualTo("call in the evening");
+    }
+
+    @Test
+    @DisplayName("Event Suggestion 4 (VI): sinh nhật mẹ cả ngày chủ nhật ghi chú: gọi điện vào buổi tối")
+    void parseEventSuggestion4_VI() {
+        mockGroqResponse(json("open_task", "Sinh nhật mẹ", "chủ nhật", null, null, null, null, "gọi điện vào buổi tối", null, true, null));
+        stubRepositories();
+
+        QuickAddResponse r = quickAddService.parse(new QuickAddRequest("sinh nhật mẹ cả ngày chủ nhật ghi chú: gọi điện vào buổi tối"), USER_ID, "Asia/Ho_Chi_Minh");
+
+        assertThat(r.type()).isEqualTo("event");
+        assertThat(r.title()).isEqualTo("Sinh nhật mẹ");
+        assertThat(r.isAllDay()).isTrue();
+        assertThat(r.notes()).isEqualTo("gọi điện vào buổi tối");
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────────

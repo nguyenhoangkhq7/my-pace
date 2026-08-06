@@ -63,6 +63,13 @@ public class TaskTimeBlockController {
         return timeBlockService.toggleTimeBlockLockStatus(id, request.availabilityStatus(), userDetails.user().getId());
     }
 
+    @PatchMapping("/{id}/toggle-lock")
+    public TaskTimeBlockDto toggleLock(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UserDetailsCustom userDetails) {
+        return timeBlockService.toggleLock(id, userDetails.user().getId());
+    }
+
     public record UpdateTimeBlockRequest(java.time.LocalDateTime startTime, java.time.LocalDateTime endTime, String availabilityStatus) {}
 
     @PatchMapping("/{id}")

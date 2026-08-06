@@ -213,15 +213,21 @@ export function FlowZenZone({ onExit, onCollapse }: FlowZenZoneProps) {
               <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => setIsAdding(!isAdding)}
-                  className="text-muted-foreground hover:text-foreground bg-card hover:bg-muted border border-border p-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-center"
-                  title="Thêm thủ công"
+                  className={cn(
+                    "text-muted-foreground hover:text-foreground border border-border p-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-center",
+                    isVideoBackground ? "bg-card/60 backdrop-blur-xs hover:bg-card/80" : "bg-card hover:bg-muted"
+                  )}
+                  title={t.flow.player.addManual}
                 >
                   <HugeiconsIcon icon={PlusSignIcon} size={14} />
                 </button>
                 <button
                   onClick={() => setLayoutMode(prev => prev === "list" ? "grid" : "list")}
-                  className="text-muted-foreground hover:text-foreground bg-card hover:bg-muted border border-border p-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-center"
-                  title={layoutMode === "list" ? "Chuyển sang dạng lưới (Grid)" : "Chuyển sang dạng danh sách (List)"}
+                  className={cn(
+                    "text-muted-foreground hover:text-foreground border border-border p-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-center",
+                    isVideoBackground ? "bg-card/60 backdrop-blur-xs hover:bg-card/80" : "bg-card hover:bg-muted"
+                  )}
+                  title={layoutMode === "list" ? t.flow.player.switchToGrid : t.flow.player.switchToList}
                 >
                   {layoutMode === "list" ? <LayoutGrid size={14} /> : <List size={14} />}
                 </button>
@@ -229,8 +235,11 @@ export function FlowZenZone({ onExit, onCollapse }: FlowZenZoneProps) {
                 {!isZenFull && onCollapse && (
                   <button
                     onClick={onCollapse}
-                    className="text-muted-foreground hover:text-rose-400 bg-card hover:bg-rose-500/10 border border-border p-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-center"
-                    title="Ẩn nhanh Zen Zone"
+                    className={cn(
+                      "text-muted-foreground hover:text-rose-400 border border-border p-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-center",
+                      isVideoBackground ? "bg-card/60 backdrop-blur-xs hover:bg-rose-500/20" : "bg-card hover:bg-rose-500/10"
+                    )}
+                    title={t.flow.player.hideZenZone}
                   >
                     <PanelRightClose size={14} />
                   </button>
@@ -242,8 +251,11 @@ export function FlowZenZone({ onExit, onCollapse }: FlowZenZoneProps) {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button
-                          className="text-muted-foreground hover:text-foreground bg-card hover:bg-muted border border-border p-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-center"
-                          title="Cài đặt & Tuỳ chọn"
+                          className={cn(
+                            "text-muted-foreground hover:text-foreground border border-border p-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-center",
+                            isVideoBackground ? "bg-card/60 backdrop-blur-xs hover:bg-card/80" : "bg-card hover:bg-muted"
+                          )}
+                          title={t.flow.player.settingsAndOptions}
                         >
                           <Settings2 size={14} />
                         </button>
@@ -259,15 +271,18 @@ export function FlowZenZone({ onExit, onCollapse }: FlowZenZoneProps) {
                           onClick={handleExit}
                           className="hover:bg-muted focus:bg-muted cursor-pointer flex items-center gap-2 text-xs font-semibold py-2 px-3 text-rose-400 hover:text-rose-300"
                         >
-                          <LogOut className="w-4 h-4 text-rose-400" /> Thoát Zen Full Mode
+                          <LogOut className="w-4 h-4 text-rose-400" /> {t.flow.player.exitZenFull}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
 
                     <button
                       onClick={handleExit}
-                      className="text-muted-foreground hover:text-rose-400 bg-card hover:bg-rose-500/10 border border-border p-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-center"
-                      title="Thoát Zen Full Mode (Esc)"
+                      className={cn(
+                        "text-muted-foreground hover:text-rose-400 border border-border p-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-center",
+                        isVideoBackground ? "bg-card/60 backdrop-blur-xs hover:bg-rose-500/20" : "bg-card hover:bg-rose-500/10"
+                      )}
+                      title={t.flow.player.exitZenFullEsc}
                     >
                       <HugeiconsIcon icon={Cancel01Icon} size={14} />
                     </button>

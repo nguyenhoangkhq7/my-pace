@@ -66,6 +66,9 @@ class DailyCheckinServiceImplTest {
     @Mock
     private AvailableTimeService availableTimeService;
 
+    @Mock
+    private nhk.scheduling.AutoScheduleService autoScheduleService;
+
     @InjectMocks
     private DailyCheckinServiceImpl service;
 

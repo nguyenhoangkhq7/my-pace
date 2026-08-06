@@ -82,7 +82,7 @@ class AutoScheduleControllerTest {
 
         when(autoScheduleService.autoScheduleWeek(userId, today, 15, true)).thenReturn(response);
 
-        mockMvc.perform(post("/api/auto-schedule/week")
+        mockMvc.perform(post("/api/auto-schedule")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk());
@@ -91,13 +91,13 @@ class AutoScheduleControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/auto-schedule/week with null request uses default values")
+    @DisplayName("POST /api/auto-schedule with null request uses default values")
     void autoScheduleWeek_NullRequest() throws Exception {
         AutoScheduleResponse response = new AutoScheduleResponse(today, today.plusDays(7), Map.of(), 0, false);
 
         when(autoScheduleService.autoScheduleWeek(userId, null, 10, false)).thenReturn(response);
 
-        mockMvc.perform(post("/api/auto-schedule/week"))
+        mockMvc.perform(post("/api/auto-schedule"))
                 .andExpect(status().isOk());
 
         verify(autoScheduleService).autoScheduleWeek(userId, null, 10, false);

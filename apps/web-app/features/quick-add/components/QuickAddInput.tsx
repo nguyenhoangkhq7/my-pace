@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Loading03Icon, SparklesIcon } from "@hugeicons/core-free-icons";
 import { useTranslation } from "@/hooks/use-translation";
+import { useQuickAddUIStore } from "../store/quickAddUI.store";
 
 interface QuickAddInputProps {
   onSubmit: (text: string) => void;
@@ -14,6 +15,7 @@ export function QuickAddInput({ onSubmit, isLoading }: QuickAddInputProps) {
   const [value, setValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const { t } = useTranslation();
+  const { autoConfirm, toggleAutoConfirm } = useQuickAddUIStore();
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -50,9 +52,20 @@ export function QuickAddInput({ onSubmit, isLoading }: QuickAddInputProps) {
           </span>
         )}
       </div>
-      <p className="text-[11px] text-muted-foreground leading-relaxed">
-        {t.quickAdd.hint}
-      </p>
+      <div className="flex items-center justify-between text-[11px] text-muted-foreground leading-relaxed">
+        <span>{t.quickAdd.hint}</span>
+        <button
+          type="button"
+          onClick={toggleAutoConfirm}
+          className={`px-2 py-0.5 rounded transition-colors text-[11px] font-medium cursor-pointer border ${
+            autoConfirm
+              ? "bg-primary/10 text-primary border-primary/30"
+              : "bg-muted/40 text-muted-foreground border-border/50 hover:text-foreground"
+          }`}
+        >
+          {t.quickAdd.autoConfirm}
+        </button>
+      </div>
     </div>
   );
 }

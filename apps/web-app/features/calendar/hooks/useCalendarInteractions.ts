@@ -74,7 +74,11 @@ export function useCalendarInteractions({
       };
 
       const updatedBlocks: Omit<TaskTimeBlock, 'id'>[] = [
-        ...timeBlocks.map(({ id: _, ...b }) => b),
+        ...timeBlocks.map((b) => {
+          const copy = { ...b } as Partial<TaskTimeBlock>;
+          delete copy.id;
+          return copy as Omit<TaskTimeBlock, 'id'>;
+        }),
         newBlock,
       ];
 
@@ -299,7 +303,7 @@ export function useCalendarInteractions({
         }
       }
     },
-    [updateTimeBlock, updateAllOccurrences, updateSingleOccurrence, isConfirmed, triggerAutoSchedule, queryClient]
+    [dailyPlanToday, updateTimeBlock, updateAllOccurrences, updateSingleOccurrence, isConfirmed, triggerAutoSchedule, queryClient]
   );
 
   const handleEventDragStop = useCallback(

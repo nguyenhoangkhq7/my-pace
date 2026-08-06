@@ -22,46 +22,141 @@ import java.util.regex.Pattern;
  */
 class TimeResolver {
 
-    // Matches: "3h", "3:00", "3h30", "3:30", "03:30", "7h30", "15h", "15:30"
-    // Run against normalized (diacritic-stripped) expression
+    public record TimeRange(LocalTime startTime, LocalTime endTime, Integer durationMinutes) {}
+
+    // Matches: "9-11 giờ tối", "9 - 11h", "9h30 - 11h tối", "14:00 - 16:30", "9-11 gio toi", "6am - 7am"
+    private static final Pattern RANGE_PATTERN = Pattern.compile(
+            "(\\d{1,2})(?:[h:](\\d{2}))?\\s*(?:[h:]|gio|g|am|pm)?\\s*[-–—]\\s*(\\d{1,2})(?:[h:](\\d{2}))?\\s*(?:[h:]|gio|g|am|pm)?\\s*(sang|chieu|toi|trua|dem|am|pm)?",
+            Pattern.CASE_INSENSITIVE
+    );
+
+    // Matches: "3h", "3:00", "3h30", "3:30", "03:30", "7h30", "15h", "15:30", "8 giờ", "8gio", "8g", "3pm", "10am", "3 pm"
     private static final Pattern TIME_PATTERN = Pattern.compile(
-            "(\\d{1,2})[h:](\\d{2})?\\s*(sang|chieu|toi|trua|dem)?",
+            "(\\d{1,2})\\s*(?:[h:]|gio|g)?\\s*(\\d{2})?\\s*(sang|chieu|toi|trua|dem|am|pm)?",
             Pattern.CASE_INSENSITIVE
     );
 
-    // Matches: "3 gio chieu", "7 gio toi", "8 gio sang" (after normalization)
+    // Matches: "3 gio chieu", "7 gio toi", "8 gio sang", "3pm", "10am"
     private static final Pattern HOUR_PERIOD_PATTERN = Pattern.compile(
-            "(\\d{1,2})\\s*gio\\s*(sang|chieu|toi|trua|dem)",
+            "(\\d{1,2})\\s*(?:gio|g|h)?\\s*(sang|chieu|toi|trua|dem|am|pm)",
             Pattern.CASE_INSENSITIVE
     );
 
-    LocalTime resolve(String expression) {
-        if (expression == null || expression.isBlank()) return null;
+    private static final Pattern BARE_HOUR_PATTERN = Pattern.compile(
+            "\\b(\\d{1,2})\\b"
+    );
 
-        // Normalize once — removes all Vietnamese diacritics for consistent matching
-        String norm = DateResolver.normalizeVietnamese(expression.trim().toLowerCase());
-
-        // 1. Period-only shorthand ("sang", "chieu", "toi", "trua")
-        LocalTime periodOnly = resolvePeriodOnly(norm);
-        if (periodOnly != null) return periodOnly;
-
-        // 2. "X gio chieu" pattern — highest priority for period clarity
-        Matcher hourPeriod = HOUR_PERIOD_PATTERN.matcher(norm);
-        if (hourPeriod.find()) {
-            int hour = Integer.parseInt(hourPeriod.group(1));
-            String period = hourPeriod.group(2).toLowerCase();
-            hour = applyPeriod(hour, period);
-            return safeTime(hour, 0);
+    public TimeRange resolveRange(String expression, String contextExpression) {
+        if ((expression == null || expression.isBlank()) && (contextExpression == null || contextExpression.isBlank())) {
+            return null;
         }
 
-        // 3. Standard time pattern: "3h", "15:30", "3h30" (also on normalized string)
-        Matcher timeMatcher = TIME_PATTERN.matcher(norm);
-        if (timeMatcher.find()) {
-            int hour = Integer.parseInt(timeMatcher.group(1));
-            int minute = timeMatcher.group(2) != null ? Integer.parseInt(timeMatcher.group(2)) : 0;
-            String period = timeMatcher.group(3);
-            hour = period != null ? applyPeriod(hour, period) : applyAmbiguousHeuristic(hour);
-            return safeTime(hour, minute);
+        String mainText = expression != null ? expression.trim() : "";
+        String contextText = contextExpression != null ? contextExpression.trim() : "";
+        String combined = (mainText + " " + contextText).trim();
+
+        if (combined.isBlank()) return null;
+
+        String normMain = DateResolver.normalizeVietnamese(mainText.toLowerCase());
+        String normCombined = DateResolver.normalizeVietnamese(combined.toLowerCase());
+
+        String extractedPeriod = extractPeriod(normCombined);
+
+        Matcher rangeMatcher = RANGE_PATTERN.matcher(normMain);
+        if (rangeMatcher.find()) {
+            int startH = Integer.parseInt(rangeMatcher.group(1));
+            int startM = rangeMatcher.group(2) != null ? Integer.parseInt(rangeMatcher.group(2)) : 0;
+            int endH = Integer.parseInt(rangeMatcher.group(3));
+            int endM = rangeMatcher.group(4) != null ? Integer.parseInt(rangeMatcher.group(4)) : 0;
+
+            String period = rangeMatcher.group(5) != null ? rangeMatcher.group(5).toLowerCase() : extractedPeriod;
+
+            if (period != null) {
+                startH = applyPeriod(startH, period);
+                endH = applyPeriod(endH, period);
+            } else {
+                startH = applyAmbiguousHeuristic(startH);
+                endH = applyAmbiguousHeuristic(endH);
+            }
+
+            LocalTime start = safeTime(startH, startM);
+            LocalTime end = safeTime(endH, endM);
+
+            if (start != null && end != null) {
+                long duration = java.time.Duration.between(start, end).toMinutes();
+                if (duration <= 0) {
+                    duration = 60;
+                    end = start.plusMinutes(60);
+                }
+                return new TimeRange(start, end, (int) duration);
+            }
+        }
+
+        LocalTime singleStart = resolve(expression, contextExpression);
+        if (singleStart == null) return null;
+        return new TimeRange(singleStart, null, null);
+    }
+
+    LocalTime resolve(String expression) {
+        return resolve(expression, null);
+    }
+
+    LocalTime resolve(String expression, String contextExpression) {
+        if ((expression == null || expression.isBlank()) && (contextExpression == null || contextExpression.isBlank())) {
+            return null;
+        }
+
+        String mainText = expression != null ? expression.trim() : "";
+        String contextText = contextExpression != null ? contextExpression.trim() : "";
+        String combined = (mainText + " " + contextText).trim();
+
+        if (combined.isBlank()) return null;
+
+        String normMain = DateResolver.normalizeVietnamese(mainText.toLowerCase());
+        String normCombined = DateResolver.normalizeVietnamese(combined.toLowerCase());
+
+        // 1. Period-only shorthand ("sang", "chieu", "toi", "trua", "dem")
+        if (!normMain.isBlank()) {
+            LocalTime periodOnly = resolvePeriodOnly(normMain);
+            if (periodOnly != null) return periodOnly;
+        }
+
+        // Extract period keyword if present in main text or context
+        String extractedPeriod = extractPeriod(normCombined);
+
+        // 2. Pattern 1: "8 gio toi", "3 gio chieu", "3pm"
+        if (!normMain.isBlank()) {
+            Matcher hourPeriod = HOUR_PERIOD_PATTERN.matcher(normMain);
+            if (hourPeriod.find()) {
+                int hour = Integer.parseInt(hourPeriod.group(1));
+                String period = hourPeriod.group(2).toLowerCase();
+                hour = applyPeriod(hour, period);
+                return safeTime(hour, 0);
+            }
+        }
+
+        // 3. Pattern 2: Standard / Flexible time pattern: "3h", "15:30", "3h30", "8 giờ", "8g", "3pm"
+        if (!normMain.isBlank()) {
+            Matcher timeMatcher = TIME_PATTERN.matcher(normMain);
+            if (timeMatcher.find()) {
+                int hour = Integer.parseInt(timeMatcher.group(1));
+                int minute = timeMatcher.group(2) != null ? Integer.parseInt(timeMatcher.group(2)) : 0;
+                String trailingPeriod = timeMatcher.group(3);
+                String period = trailingPeriod != null ? trailingPeriod.toLowerCase() : extractedPeriod;
+
+                hour = period != null ? applyPeriod(hour, period) : applyAmbiguousHeuristic(hour);
+                return safeTime(hour, minute);
+            }
+        }
+
+        // 4. Fallback: If timeExpression only has bare hour (e.g. "8") and extractedPeriod is present
+        if (!normMain.isBlank() && extractedPeriod != null) {
+            Matcher bareMatcher = BARE_HOUR_PATTERN.matcher(normMain);
+            if (bareMatcher.find()) {
+                int hour = Integer.parseInt(bareMatcher.group(1));
+                hour = applyPeriod(hour, extractedPeriod);
+                return safeTime(hour, 0);
+            }
         }
 
         return null;
@@ -72,6 +167,15 @@ class TimeResolver {
         if (startTime == null) return null;
         int duration = (durationMinutes != null && durationMinutes > 0) ? durationMinutes : 60;
         return startTime.plusMinutes(duration);
+    }
+
+    private String extractPeriod(String normText) {
+        if (normText.contains("sang") || normText.matches(".*\\bam\\b.*")) return "sang";
+        if (normText.contains("chieu") || normText.contains("xe") || normText.matches(".*\\bpm\\b.*")) return "chieu";
+        if (normText.contains("toi")) return "toi";
+        if (normText.contains("dem")) return "dem";
+        if (normText.contains("trua")) return "trua";
+        return null;
     }
 
     private LocalTime resolvePeriodOnly(String normExpr) {
@@ -86,15 +190,15 @@ class TimeResolver {
     }
 
     /**
-     * Applies period (sáng/chiều/tối/trưa) to disambiguate 12h vs 24h.
-     * "3 giờ chiều" → hour=3, period=chiều → 15
+     * Applies period (sáng/chiều/tối/trưa/am/pm) to disambiguate 12h vs 24h.
+     * "3 giờ chiều", "3pm" → hour=3, period=chiều/pm → 15
      */
     private int applyPeriod(int hour, String normPeriod) {
         return switch (normPeriod) {
-            case "sang" -> hour; // morning: keep
-            case "trua" -> (hour == 12) ? 12 : hour; // noon
-            case "chieu", "xe" -> (hour > 0 && hour < 12) ? hour + 12 : hour; // afternoon
-            case "toi", "dem" -> (hour > 0 && hour < 12) ? hour + 12 : hour; // evening
+            case "sang", "am" -> (hour == 12) ? 0 : hour;
+            case "trua" -> (hour == 12) ? 12 : hour;
+            case "chieu", "xe", "pm" -> (hour > 0 && hour < 12) ? hour + 12 : hour;
+            case "toi", "dem" -> (hour > 0 && hour < 12) ? hour + 12 : hour;
             default -> hour;
         };
     }

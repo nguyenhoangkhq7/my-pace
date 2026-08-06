@@ -72,9 +72,9 @@ export function Sidebar() {
 
   const NAV_ITEMS: NavItem[] = [
     { id: "dashboard", label: t.nav.planYourDay, href: "/", icon: Grid02Icon },
-    { id: "goals", label: t.nav.goals, href: "/goals", icon: Target02Icon },
     { id: "calendar", label: t.nav.calendar, href: "/calendar", icon: Calendar03Icon },
     { id: "flow", label: t.nav.flow, href: "/flow", icon: Time02Icon },
+    { id: "goals", label: t.nav.goals, href: "/goals", icon: Target02Icon },
     { id: "stats", label: t.nav.analytics, href: "/stats", icon: Analytics01Icon },
   ];
 
