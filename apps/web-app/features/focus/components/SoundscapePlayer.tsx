@@ -566,6 +566,17 @@ export function SoundscapePlayer() {
   }, [isBgModeActive, isZenFull]);
 
   const computePortalStyle = (): React.CSSProperties => {
+    if (isBgModeActive) {
+      return {
+        top: 0,
+        left: 0,
+        width: "100vw",
+        height: "100vh",
+        opacity: 1,
+        pointerEvents: "none",
+      };
+    }
+
     if (!cardRect) {
       return { top: 0, left: 0, width: 0, height: 0, opacity: 0, pointerEvents: "none" };
     }

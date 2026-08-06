@@ -70,6 +70,22 @@ export function useStatsPage() {
       .sort((a, b) => b.value - a.value); // Sort descending
   }, [overview]);
 
+  const planVsActualData = useMemo(() => {
+    if (!overview?.dailyTimeStats) return [];
+    return overview.dailyTimeStats.map(item => {
+      const dateParts = item.date.split("-");
+      const label = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}` : item.date;
+      return {
+        date: label,
+        fullDate: item.date,
+        plannedHours: Math.round((item.plannedMinutes / 60) * 10) / 10,
+        actualHours: Math.round((item.actualMinutes / 60) * 10) / 10,
+        plannedMinutes: item.plannedMinutes,
+        actualMinutes: item.actualMinutes,
+      };
+    });
+  }, [overview]);
+
   return {
     overview,
     isLoading,
@@ -84,5 +100,6 @@ export function useStatsPage() {
     handleNext,
     matrixData,
     categoryData,
+    planVsActualData,
   };
 }
