@@ -39,6 +39,12 @@ class StatsServiceImplTest {
     private UserRepository userRepository;
 
     @Mock
+    private TypedQuery<Object[]> dailyPlanTimeTypedQuery;
+
+    @Mock
+    private TypedQuery<Object[]> taskTimeTypedQuery;
+
+    @Mock
     private FixedEventService fixedEventService;
 
     @Mock
@@ -112,6 +118,17 @@ class StatsServiceImplTest {
                 .thenReturn(checkinTypedQuery);
         when(checkinTypedQuery.setParameter(anyString(), any())).thenReturn(checkinTypedQuery);
         when(checkinTypedQuery.getResultList()).thenReturn(Collections.emptyList());
+
+        // 5. Daily Time stats queries
+        when(entityManager.createQuery(contains("dp.planDate"), eq(Object[].class)))
+                .thenReturn(dailyPlanTimeTypedQuery);
+        when(dailyPlanTimeTypedQuery.setParameter(anyString(), any())).thenReturn(dailyPlanTimeTypedQuery);
+        when(dailyPlanTimeTypedQuery.getResultList()).thenReturn(Collections.emptyList());
+
+        when(entityManager.createQuery(contains("COALESCE(t.doneAt, t.updatedAt),"), eq(Object[].class)))
+                .thenReturn(taskTimeTypedQuery);
+        when(taskTimeTypedQuery.setParameter(anyString(), any())).thenReturn(taskTimeTypedQuery);
+        when(taskTimeTypedQuery.getResultList()).thenReturn(Collections.emptyList());
 
         // Fixed events service default empty
         when(fixedEventService.getEventsInRange(any(), any(), any())).thenReturn(Collections.emptyList());
