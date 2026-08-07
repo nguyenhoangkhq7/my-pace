@@ -97,7 +97,8 @@ jobs:
             # 2. Cập nhật source code chứa docker-compose mới nhất
             if [ -d "$PROJECT_DIR" ]; then
               cd $PROJECT_DIR
-              git pull origin main || true
+              git fetch origin main
+              git reset --hard origin/main
             else
               git clone https://github.com/nguyenhoangkhq7/my-pace.git $PROJECT_DIR
               cd $PROJECT_DIR
