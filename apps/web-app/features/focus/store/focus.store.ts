@@ -128,7 +128,8 @@ interface FocusState {
     planTaskId: string,
     estimatedMinutes: number,
     alreadyWorkedMinutes?: number,
-    timeBlockInfo?: ActiveTimeBlockInfo | null
+    timeBlockInfo?: ActiveTimeBlockInfo | null,
+    keepTimer?: boolean
   ) => void;
   closeFocusMode: () => void;
 
@@ -302,24 +303,27 @@ export const useFocusStore = create<FocusState>()(
         )
       })),
       
-      openFocusMode: (taskId, planTaskId, estimatedMinutes, alreadyWorkedMinutes = 0, timeBlockInfo = null) => {
+      openFocusMode: (taskId, planTaskId, estimatedMinutes, alreadyWorkedMinutes = 0, timeBlockInfo = null, keepTimer = false) => {
         const { focusMinutes } = get();
         // Calculate total sessions and current session index based on total estimated time
         const totalSessions = Math.max(1, Math.ceil(estimatedMinutes / focusMinutes));
         const currentSession = Math.min(totalSessions, Math.floor(alreadyWorkedMinutes / focusMinutes) + 1);
         
-        set({
+        set(() => ({
           activeTaskId: taskId,
           activePlanTaskId: planTaskId,
           activeTaskEstimatedMinutes: estimatedMinutes,
           activeTimeBlockInfo: timeBlockInfo ?? null,
-          pomodoroState: "idle",
           currentSession,
           totalSessions,
-          timeLeft: focusMinutes * 60,
           accumulatedFocusTime: alreadyWorkedMinutes * 60,
-          lastActiveTimestamp: Date.now()
-        });
+          
+          ...(keepTimer ? {} : {
+            pomodoroState: "idle",
+            timeLeft: focusMinutes * 60,
+            lastActiveTimestamp: Date.now()
+          })
+        }));
       },
 
       closeFocusMode: () => {

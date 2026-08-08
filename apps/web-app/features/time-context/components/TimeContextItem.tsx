@@ -61,7 +61,7 @@ export function TimeContextItem({ context, onEdit, onDelete }: TimeContextItemPr
       {/* Categories assigned */}
       {context.categories && context.categories.length > 0 && (
         <div className="flex flex-wrap gap-1 items-center pt-1 border-t border-border/40">
-          <span className="text-[10px] uppercase font-bold text-muted-foreground mr-1">Categories:</span>
+          <span className="text-[10px] uppercase font-bold text-muted-foreground mr-1">{t.categories.title}:</span>
           {context.categories.map((cat) => (
             <span
               key={cat.id}

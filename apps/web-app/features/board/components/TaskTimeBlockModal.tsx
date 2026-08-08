@@ -56,7 +56,7 @@ export function TaskTimeBlockModal({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-md bg-slate-950 text-slate-50 border-slate-800">
+      <DialogContent className="sm:max-w-md bg-card text-card-foreground border-border">
         <DialogHeader>
           <div className="flex items-center gap-2 mb-2 flex-wrap">
             {isMit && (
@@ -82,7 +82,7 @@ export function TaskTimeBlockModal({
               </Badge>
             ) : null}
             {isChunked && (
-              <Badge variant="secondary" className="bg-slate-800 text-slate-300 text-[10px]">
+              <Badge variant="secondary" className="text-[10px]">
                 {t.timeblock.part(block.partIndex, block.totalParts)}
               </Badge>
             )}
@@ -95,15 +95,15 @@ export function TaskTimeBlockModal({
 
         <div className="flex flex-col gap-4 py-3 w-full min-w-0 overflow-hidden">
           {/* Thời gian */}
-          <div className="flex items-start gap-3 p-3 bg-slate-900/60 rounded-xl border border-slate-800">
+          <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-xl border border-border">
             <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
               <HugeiconsIcon icon={Clock01Icon} size={18} />
             </div>
             <div>
-              <div className="font-semibold text-slate-200">
+              <div className="font-semibold text-foreground">
                 {startTimeStr} - {endTimeStr}
               </div>
-              <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
+              <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
                 <HugeiconsIcon icon={Calendar01Icon} size={12} />
                 {dateStr}
               </div>
@@ -114,20 +114,20 @@ export function TaskTimeBlockModal({
           <div className="space-y-3">
             <div className="text-sm">
               <span className="text-xs font-medium text-muted-foreground">{t.timeblock.estimatedTime}</span>
-              <span className="text-slate-200">{task.estimatedMinutes || 0} phút</span>
+              <span className="text-foreground">{task.estimatedMinutes || 0} phút</span>
             </div>
 
             {task.notes && (
               <div className="flex flex-col gap-1 w-full min-w-0 overflow-hidden">
-                <span className="text-sm text-slate-400 font-medium">{t.timeblock.notes}</span>
-                <p className="text-sm text-slate-300 bg-slate-900/40 p-3 rounded-lg border border-slate-800 whitespace-pre-wrap break-all">
+                <span className="text-sm text-muted-foreground font-medium">{t.timeblock.notes}</span>
+                <p className="text-sm text-foreground/90 bg-muted/40 p-3 rounded-lg border border-border whitespace-pre-wrap break-all">
                   {task.notes}
                 </p>
               </div>
             )}
 
             {isChunked && (
-              <p className="text-xs text-amber-400/90 bg-amber-400/5 border border-amber-400/20 rounded-xl px-3 py-2.5 leading-relaxed">
+              <p className="text-xs text-amber-600 dark:text-amber-400/90 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2.5 leading-relaxed">
                 {t.timeblock.chunkedWarning}
               </p>
             )}
@@ -157,7 +157,7 @@ export function TaskTimeBlockModal({
               {isSubmitting ? t.timeblock.unscheduling : t.timeblock.unschedule}
             </Button>
           )}
-          <Button variant="ghost" size="sm" onClick={onClose} disabled={isSubmitting} className="w-full sm:w-auto text-slate-400">
+          <Button variant="ghost" size="sm" onClick={onClose} disabled={isSubmitting} className="w-full sm:w-auto text-muted-foreground hover:text-foreground">
             {t.timeblock.close}
           </Button>
         </DialogFooter>

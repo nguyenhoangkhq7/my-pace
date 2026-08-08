@@ -43,7 +43,6 @@ export function FlowPage() {
   const startTimer = useFocusStore((s) => s.startTimer);
   const pauseTimer = useFocusStore((s) => s.pauseTimer);
   const resumeTimer = useFocusStore((s) => s.resumeTimer);
-  const closeFocusMode = useFocusStore((s) => s.closeFocusMode);
   const isZenFull = useFocusStore((s) => s.isZenFull);
   const isVideoBackground = useFocusStore((s) => s.isVideoBackground);
   const isControllerBarVisible = useFocusStore((s) => s.isControllerBarVisible);
@@ -120,7 +119,7 @@ export function FlowPage() {
     };
   };
 
-  const doSwitch = (task: DailyPlanTask, block?: TaskTimeBlock) => {
+  const doSwitch = (task: DailyPlanTask, block?: TaskTimeBlock, keepTimer = false) => {
     const timeBlockInfo = createTimeBlockInfo(block);
     const estMinutes = timeBlockInfo ? timeBlockInfo.durationMinutes : (task.task.estimatedMinutes || 25);
     openFocusMode(
@@ -128,7 +127,8 @@ export function FlowPage() {
       task.id,
       estMinutes,
       task.task.actualMinutes || 0,
-      timeBlockInfo
+      timeBlockInfo,
+      keepTimer
     );
   };
 
@@ -191,8 +191,11 @@ export function FlowPage() {
     const nextBlock = pendingSwitchBlock;
     setPendingSwitchTask(null);
     setPendingSwitchBlock(undefined);
-    closeFocusMode();
-    doSwitch(next, nextBlock);
+    doSwitch(next, nextBlock, true);
+    if (prevPomodoroState) {
+      resumeTimer(prevPomodoroState);
+    }
+    setPrevPomodoroState(null);
   };
 
   const handleSwitchSaveAndSwitch = async () => {
@@ -209,8 +212,11 @@ export function FlowPage() {
       const nextBlock = pendingSwitchBlock;
       setPendingSwitchTask(null);
       setPendingSwitchBlock(undefined);
-      closeFocusMode();
-      doSwitch(next, nextBlock);
+      doSwitch(next, nextBlock, true);
+      if (prevPomodoroState) {
+        resumeTimer(prevPomodoroState);
+      }
+      setPrevPomodoroState(null);
     } catch (err) {
       console.error(err);
       toast.error("Không thể lưu tiến trình.");

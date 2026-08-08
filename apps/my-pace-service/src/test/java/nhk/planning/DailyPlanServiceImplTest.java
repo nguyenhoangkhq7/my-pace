@@ -23,8 +23,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -573,7 +571,7 @@ class DailyPlanServiceImplTest {
         verify(dailyPlanTaskRepository).save(any(DailyPlanTask.class));
 
         assertNotNull(result);
-        verify(autoScheduleService).autoScheduleWeek(userId, todayDate, 15, true);
+        verify(autoScheduleService).autoSchedule(userId, 15);
     }
 
     @Test

@@ -13,7 +13,8 @@ public record AvailableTimeResponse(
     String checkinTime,
     int streak,
     List<TimeInterval> blockedIntervals,
-    boolean isPlanConfirmed
+    boolean isPlanConfirmed,
+    List<String> decayedTaskTitles
 ) {
     @Builder
     public record TimeInterval(

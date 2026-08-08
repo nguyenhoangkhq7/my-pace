@@ -2,6 +2,7 @@ import React, { memo } from "react";
 import { cn } from "@/lib/utils";
 import type { Task } from "@/features/board/types";
 import { useFocusStore } from "@/features/focus/store/focus.store";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface PomodoroTimerDisplayProps {
   activeTask: Task;
@@ -10,6 +11,7 @@ interface PomodoroTimerDisplayProps {
 export const PomodoroTimerDisplay = memo(function PomodoroTimerDisplay({
   activeTask,
 }: PomodoroTimerDisplayProps) {
+  const { t } = useTranslation();
   const isVideoBackground = useFocusStore((s) => s.isVideoBackground);
   const pomodoroState = useFocusStore((s) => s.pomodoroState);
   const timeLeft = useFocusStore((s) => s.timeLeft);
@@ -29,11 +31,11 @@ export const PomodoroTimerDisplay = memo(function PomodoroTimerDisplay({
   const pad = (num: number) => num.toString().padStart(2, "0");
 
   const renderStatusBadge = () => {
-    if (pomodoroState === "idle") return { text: "READY TO FOCUS", color: "text-muted-foreground border-border bg-muted/50", dot: "bg-muted-foreground" };
-    if (pomodoroState === "focusing") return { text: "DEEP WORK", color: "text-cyan-600 dark:text-cyan-400 border-cyan-500/30 bg-cyan-500/10", dot: "bg-cyan-500 dark:bg-cyan-400 animate-pulse" };
-    if (pomodoroState === "breaking") return { text: "TAKE A BREAK", color: "text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10", dot: "bg-emerald-500 dark:bg-emerald-400 animate-pulse" };
-    if (pomodoroState === "finished") return { text: "SESSION COMPLETED", color: "text-indigo-600 dark:text-indigo-400 border-indigo-500/30 bg-indigo-500/10", dot: "bg-indigo-500 dark:bg-indigo-400" };
-    if (pomodoroState === "paused") return { text: "PAUSED", color: "text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/10", dot: "bg-amber-500 dark:bg-amber-400" };
+    if (pomodoroState === "idle") return { text: t.flow.statusIdle, color: "text-muted-foreground border-border bg-muted/50", dot: "bg-muted-foreground" };
+    if (pomodoroState === "focusing") return { text: t.flow.statusFocusing, color: "text-cyan-600 dark:text-cyan-400 border-cyan-500/30 bg-cyan-500/10", dot: "bg-cyan-500 dark:bg-cyan-400 animate-pulse" };
+    if (pomodoroState === "breaking") return { text: t.flow.statusBreaking, color: "text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10", dot: "bg-emerald-500 dark:bg-emerald-400 animate-pulse" };
+    if (pomodoroState === "finished") return { text: t.flow.statusFinished, color: "text-indigo-600 dark:text-indigo-400 border-indigo-500/30 bg-indigo-500/10", dot: "bg-indigo-500 dark:bg-indigo-400" };
+    if (pomodoroState === "paused") return { text: t.flow.statusPaused, color: "text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/10", dot: "bg-amber-500 dark:bg-amber-400" };
     return { text: "", color: "", dot: "" };
   };
 
@@ -84,7 +86,7 @@ export const PomodoroTimerDisplay = memo(function PomodoroTimerDisplay({
             isVideoBackground ? "bg-black/45 backdrop-blur-md border-white/20 text-white shadow-xl" : "bg-card/80 backdrop-blur-md border-border"
           )}>
             <span>
-              SESSION {currentSession}/{totalSessions}
+              {t.flow.sessionCount(currentSession, totalSessions)}
             </span>
             <div className="flex items-center space-x-1 ml-1">
               {Array.from({ length: totalSessions }).map((_, i) => (
@@ -121,7 +123,7 @@ export const PomodoroTimerDisplay = memo(function PomodoroTimerDisplay({
             )}>
               <span className="text-indigo-400">🕒</span>
               <span>
-                Đang thực thi: Khối {activeTimeBlockInfo.partIndex}/{activeTimeBlockInfo.totalParts} ({activeTimeBlockInfo.startTime} - {activeTimeBlockInfo.endTime} · {activeTimeBlockInfo.durationMinutes}m)
+                {t.flow.executingBlock(activeTimeBlockInfo.partIndex, activeTimeBlockInfo.totalParts, activeTimeBlockInfo.startTime, activeTimeBlockInfo.endTime, activeTimeBlockInfo.durationMinutes)}
               </span>
             </div>
           )}
@@ -150,7 +152,7 @@ export const PomodoroTimerDisplay = memo(function PomodoroTimerDisplay({
                   labelClasses,
                   isVideoBackground ? "text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]" : "text-muted-foreground"
                 )}>
-                  HOURS
+                  {t.flow.timerHours}
                 </span>
               </div>
 
@@ -192,7 +194,7 @@ export const PomodoroTimerDisplay = memo(function PomodoroTimerDisplay({
               labelClasses,
               isVideoBackground ? "text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]" : "text-muted-foreground"
             )}>
-              MINUTES
+              {t.flow.timerMinutes}
             </span>
           </div>
 
@@ -237,7 +239,7 @@ export const PomodoroTimerDisplay = memo(function PomodoroTimerDisplay({
               labelClasses,
               isVideoBackground ? "text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]" : "text-muted-foreground"
             )}>
-              SECONDS
+              {t.flow.timerSeconds}
             </span>
           </div>
         </div>

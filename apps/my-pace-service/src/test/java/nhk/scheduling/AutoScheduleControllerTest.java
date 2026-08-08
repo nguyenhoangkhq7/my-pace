@@ -75,31 +75,31 @@ class AutoScheduleControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/auto-schedule/week should invoke autoScheduleService")
+    @DisplayName("POST /api/auto-schedule should invoke autoScheduleService with bufferMinutes")
     void autoScheduleWeek_WithRequest() throws Exception {
-        AutoScheduleWeekRequest req = new AutoScheduleWeekRequest(today, 15, true);
+        AutoScheduleWeekRequest req = new AutoScheduleWeekRequest(15);
         AutoScheduleResponse response = new AutoScheduleResponse(today, today.plusDays(7), Map.of(), 0, false);
 
-        when(autoScheduleService.autoScheduleWeek(userId, today, 15, true)).thenReturn(response);
+        when(autoScheduleService.autoSchedule(userId, 15)).thenReturn(response);
 
         mockMvc.perform(post("/api/auto-schedule")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk());
 
-        verify(autoScheduleService).autoScheduleWeek(userId, today, 15, true);
+        verify(autoScheduleService).autoSchedule(userId, 15);
     }
 
     @Test
-    @DisplayName("POST /api/auto-schedule with null request uses default values")
+    @DisplayName("POST /api/auto-schedule with null request uses default bufferMinutes (10)")
     void autoScheduleWeek_NullRequest() throws Exception {
         AutoScheduleResponse response = new AutoScheduleResponse(today, today.plusDays(7), Map.of(), 0, false);
 
-        when(autoScheduleService.autoScheduleWeek(userId, null, 10, false)).thenReturn(response);
+        when(autoScheduleService.autoSchedule(userId, 10)).thenReturn(response);
 
         mockMvc.perform(post("/api/auto-schedule"))
                 .andExpect(status().isOk());
 
-        verify(autoScheduleService).autoScheduleWeek(userId, null, 10, false);
+        verify(autoScheduleService).autoSchedule(userId, 10);
     }
 }

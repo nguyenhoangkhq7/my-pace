@@ -117,4 +117,5 @@ public class TimeContextServiceImpl implements TimeContextService {
         categoryRepository.saveAll(categories);
         context.setCategories(categories);
     }
+
 }

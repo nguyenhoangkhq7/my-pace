@@ -146,6 +146,8 @@ export function useCalendarPage() {
     mutationFn: (date: string) => fetchClient.post<DailyPlan>(`daily-plans/${date}/confirm`, {}).then(r => r.data),
     onSuccess: (data, variables) => {
       queryClient.setQueryData(['dailyPlan', variables], data);
+      queryClient.invalidateQueries({ queryKey: ['dailyPlans'] });
+      queryClient.invalidateQueries({ queryKey: ['timeBlocks'] });
       if (variables === today) {
         useBoardStore.setState({ isStarted: true });
       }

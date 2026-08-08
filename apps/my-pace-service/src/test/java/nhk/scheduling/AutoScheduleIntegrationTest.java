@@ -1,8 +1,9 @@
 package nhk.scheduling;
 
 import nhk.calendar.FixedEventService;
+import nhk.goal.Goal;
+import nhk.goal.GoalRepository;
 import nhk.mail.SendOtpMailService;
-import nhk.planning.DailyPlan;
 import nhk.planning.DailyPlanRepository;
 import nhk.task.Task;
 import nhk.task.TaskRepository;
@@ -49,6 +50,9 @@ class AutoScheduleIntegrationTest {
     private DailyPlanRepository dailyPlanRepository;
 
     @Autowired
+    private GoalRepository goalRepository;
+
+    @Autowired
     private TaskTimeBlockRepository timeBlockRepository;
 
     @MockitoBean
@@ -84,17 +88,89 @@ class AutoScheduleIntegrationTest {
         backlogTask.setIsUrgent(true);
         taskRepository.save(backlogTask);
 
-        AutoScheduleResponse response = autoScheduleService.autoScheduleWeek(
-                testUser.getId(), today, 10, false
+        AutoScheduleResponse response = autoScheduleService.autoSchedule(
+                testUser.getId(), 10
         );
 
         assertThat(response).isNotNull();
         assertThat(response.schedule()).isNotNull();
-        assertThat(response.schedule()).containsKey(today);
+        LocalDate now = LocalDate.now(java.time.ZoneId.of(testUser.getTimezone()));
+        assertThat(response.schedule()).containsKey(now);
 
         List<TaskTimeBlock> savedBlocks = timeBlockRepository.findByUserIdAndDateRange(
-                testUser.getId(), today.atStartOfDay(), today.plusDays(7).atStartOfDay()
+                testUser.getId(), now.atStartOfDay(), now.plusDays(7).atStartOfDay()
         );
         assertThat(savedBlocks).isNotEmpty();
+    }
+
+    @Test
+    @DisplayName("Integration Test: Smart Spillover Visa (Time-boxed vs Milestone)")
+    void testSmartSpilloverVisa() {
+        // Create Time-boxed Goal
+        Goal timeBoxedGoal = new Goal();
+        timeBoxedGoal.setUserId(testUser.getId());
+        timeBoxedGoal.setTitle("Học Tiếng Anh");
+        timeBoxedGoal.setGoalType("Time-boxed");
+        timeBoxedGoal = goalRepository.save(timeBoxedGoal);
+
+        // Create a 24-hour Task for Time-boxed (Will definitely spillover if allowed)
+        Task tbTask = new Task();
+        tbTask.setUserId(testUser.getId());
+        tbTask.setGoalId(timeBoxedGoal.getId());
+        tbTask.setTitle("Học tiếng Anh hôm nay");
+        tbTask.setEstimatedMinutes(1440); // 24 hours
+        tbTask.setStatus("Backlog");
+        taskRepository.save(tbTask);
+
+        // Create Milestone Goal
+        Goal milestoneGoal = new Goal();
+        milestoneGoal.setUserId(testUser.getId());
+        milestoneGoal.setTitle("Code tính năng mới");
+        milestoneGoal.setGoalType("Milestone");
+        milestoneGoal = goalRepository.save(milestoneGoal);
+
+        // Create a 24-hour Task for Milestone (Will spillover)
+        Task mTask = new Task();
+        mTask.setUserId(testUser.getId());
+        mTask.setGoalId(milestoneGoal.getId());
+        mTask.setTitle("Làm backend");
+        mTask.setEstimatedMinutes(1440); // 24 hours
+        mTask.setStatus("Backlog");
+        taskRepository.save(mTask);
+
+        // Run auto schedule
+        autoScheduleService.autoSchedule(testUser.getId(), 0);
+
+        LocalDate now = LocalDate.now(java.time.ZoneId.of(testUser.getTimezone()));
+        LocalDate tomorrow = now.plusDays(1);
+
+        // Verify Time-boxed task is scheduled today, but NOT tomorrow (Visa denied)
+        List<TaskTimeBlock> tbBlocksToday = timeBlockRepository.findByUserIdAndDateRange(
+                testUser.getId(), now.atStartOfDay(), tomorrow.atStartOfDay()
+        ).stream().filter(b -> b.getTaskId().equals(tbTask.getId())).toList();
+        
+        List<TaskTimeBlock> tbBlocksTomorrow = timeBlockRepository.findByUserIdAndDateRange(
+                testUser.getId(), tomorrow.atStartOfDay(), tomorrow.plusDays(1).atStartOfDay()
+        ).stream().filter(b -> b.getTaskId().equals(tbTask.getId())).toList();
+
+        System.out.println("DEBUG tbBlocksToday: " + tbBlocksToday);
+        System.out.println("DEBUG tbBlocksTomorrow: " + tbBlocksTomorrow);
+        assertThat(tbBlocksToday).isNotEmpty();
+        assertThat(tbBlocksTomorrow).isEmpty(); // Drop phần thừa!
+
+        // Verify Milestone task is scheduled today AND tomorrow (Visa granted)
+        List<TaskTimeBlock> mBlocksToday = timeBlockRepository.findByUserIdAndDateRange(
+                testUser.getId(), now.atStartOfDay(), tomorrow.atStartOfDay()
+        ).stream().filter(b -> b.getTaskId().equals(mTask.getId())).toList();
+        
+        List<TaskTimeBlock> mBlocksTomorrow = timeBlockRepository.findByUserIdAndDateRange(
+                testUser.getId(), tomorrow.atStartOfDay(), tomorrow.plusDays(1).atStartOfDay()
+        ).stream().filter(b -> b.getTaskId().equals(mTask.getId())).toList();
+
+        System.out.println("DEBUG mBlocksToday: " + mBlocksToday);
+        System.out.println("DEBUG mBlocksTomorrow: " + mBlocksTomorrow);
+
+        assertThat(mBlocksToday).isEmpty(); // Bị tbTask chiếm hết giờ hôm nay!
+        assertThat(mBlocksTomorrow).isNotEmpty(); // Được vắt sang ngày mai!
     }
 }
