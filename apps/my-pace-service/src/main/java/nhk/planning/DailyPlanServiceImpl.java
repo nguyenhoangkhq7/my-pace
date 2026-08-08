@@ -348,7 +348,7 @@ public class DailyPlanServiceImpl implements DailyPlanService {
 
             if (hasMovedToToday) {
                 try {
-                    autoScheduleService.autoScheduleWeek(userId, finalToday, 15, true);
+                    autoScheduleService.autoSchedule(userId, 15);
                 } catch (Exception ignored) {}
             }
         }

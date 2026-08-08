@@ -43,6 +43,13 @@ public class InMemoryBitmapScheduler {
         store.remove(key);
     }
 
+    public boolean isBusy(UUID userId, LocalDate date, int min) {
+        if (min < 0 || min >= 1440) return true;
+        String key = buildKey(userId, date);
+        BitSet bitSet = store.get(key);
+        return bitSet != null && bitSet.get(min);
+    }
+
     /**
      * Scans bitmap for available free gaps >= minChunkMinutes between windowStartMin and windowEndMin.
      */

@@ -111,6 +111,7 @@ class DailyCheckinServiceImplTest {
                     .availableMinutes(400)
                     .checkedIn(true)
                     .checkinTime("08:30")
+                    .decayedTaskTitles(Collections.emptyList())
                     .build();
             when(availableTimeService.getAvailableTime(userId, date)).thenReturn(expectedResp);
 
@@ -151,6 +152,67 @@ class DailyCheckinServiceImplTest {
             verify(goalRepo, never()).findByUserIdAndStatus(any(), any());
             assertThat(existingCheckin.getCheckinTime()).isEqualTo(originalTime);
         }
+
+        @Test
+        @DisplayName("Should cleanup past unconfirmed plans by moving tasks to backlog and deleting blocks/plan tasks/plan")
+        void checkin_CleanupPastUnconfirmedPlans() {
+            LocalDate date = LocalDate.of(2026, 8, 3);
+            LocalTime checkinTime = LocalTime.of(8, 30);
+
+            when(userRepo.findById(userId)).thenReturn(Optional.of(sampleUser));
+            when(checkinRepo.findByUserIdAndCheckinDate(userId, date)).thenReturn(Optional.empty());
+            when(goalRepo.findByUserIdAndStatus(userId, "In Progress")).thenReturn(Collections.emptyList());
+
+            AvailableTimeResponse expectedResp = AvailableTimeResponse.builder().build();
+            when(availableTimeService.getAvailableTime(userId, date)).thenReturn(expectedResp);
+
+            // Mock past unconfirmed plan
+            DailyPlan pastPlan = new DailyPlan();
+            pastPlan.setId(UUID.randomUUID());
+            pastPlan.setUserId(userId);
+            pastPlan.setPlanDate(LocalDate.of(2026, 8, 1));
+            pastPlan.setIsConfirmed(false);
+
+            when(dailyPlanRepo.findByUserIdAndPlanDateBeforeAndIsConfirmedFalse(userId, date))
+                    .thenReturn(List.of(pastPlan));
+
+            // Mock tasks in past plan
+            Task task1 = new Task();
+            task1.setId(UUID.randomUUID());
+            task1.setStatus("Picked for Today");
+
+            Task task2 = new Task();
+            task2.setId(UUID.randomUUID());
+            task2.setStatus("Done"); // Should not be moved to backlog
+
+            DailyPlanTask planTask1 = new DailyPlanTask();
+            planTask1.setDailyPlanId(pastPlan.getId());
+            planTask1.setTask(task1);
+
+            DailyPlanTask planTask2 = new DailyPlanTask();
+            planTask2.setDailyPlanId(pastPlan.getId());
+            planTask2.setTask(task2);
+
+            when(dailyPlanTaskRepo.findByDailyPlanIdOrderBySortOrderAsc(pastPlan.getId()))
+                    .thenReturn(List.of(planTask1, planTask2));
+
+            service.checkin(userId, date, checkinTime);
+
+            // Verify task1 status changed to Backlog and saved
+            assertThat(task1.getStatus()).isEqualTo("Backlog");
+            verify(taskRepo).save(task1);
+
+            // Verify task2 status unchanged and NOT saved
+            assertThat(task2.getStatus()).isEqualTo("Done");
+            verify(taskRepo, never()).save(task2);
+
+            // Verify deletions
+            LocalDateTime startOfDay = pastPlan.getPlanDate().atStartOfDay();
+            LocalDateTime endOfDay = pastPlan.getPlanDate().plusDays(1).atStartOfDay();
+            verify(taskTimeBlockRepo).deleteByUserIdAndDate(userId, startOfDay, endOfDay);
+            verify(dailyPlanTaskRepo).deleteByDailyPlanId(pastPlan.getId());
+            verify(dailyPlanRepo).delete(pastPlan);
+        }
     }
 
     @Nested
@@ -179,6 +241,7 @@ class DailyCheckinServiceImplTest {
             when(goalRepo.findByUserIdAndStatus(userId, "In Progress")).thenReturn(List.of(goal));
             when(taskRepo.existsByGoalIdAndDueDate(eq(goal.getId()), any(LocalDateTime.class), any(LocalDateTime.class)))
                     .thenReturn(false);
+            when(availableTimeService.getAvailableTime(userId, date)).thenReturn(AvailableTimeResponse.builder().build());
 
             when(taskRepo.save(any(Task.class))).thenAnswer(invocation -> {
                 Task t = invocation.getArgument(0);
@@ -235,8 +298,9 @@ class DailyCheckinServiceImplTest {
             when(userRepo.findById(userId)).thenReturn(Optional.of(sampleUser));
             when(checkinRepo.findByUserIdAndCheckinDate(userId, date)).thenReturn(Optional.empty());
             when(goalRepo.findByUserIdAndStatus(userId, "In Progress")).thenReturn(List.of(goal));
-            when(taskRepo.existsByGoalIdAndDueDate(eq(goal.getId()), any(LocalDateTime.class), any(LocalDateTime.class)))
-                    .thenReturn(true); // task exists!
+            when(taskRepo.existsByGoalIdAndDueDate(goal.getId(), date.atStartOfDay(), date.plusDays(1).atStartOfDay()))
+                    .thenReturn(true);
+            when(availableTimeService.getAvailableTime(userId, date)).thenReturn(AvailableTimeResponse.builder().build());
 
             service.checkin(userId, date, checkinTime);
 
@@ -259,6 +323,7 @@ class DailyCheckinServiceImplTest {
             when(userRepo.findById(userId)).thenReturn(Optional.of(sampleUser));
             when(checkinRepo.findByUserIdAndCheckinDate(userId, sundayDate)).thenReturn(Optional.empty());
             when(goalRepo.findByUserIdAndStatus(userId, "In Progress")).thenReturn(List.of(goal));
+            when(availableTimeService.getAvailableTime(userId, sundayDate)).thenReturn(AvailableTimeResponse.builder().build());
 
             service.checkin(userId, sundayDate, checkinTime);
 

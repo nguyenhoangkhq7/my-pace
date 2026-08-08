@@ -15,6 +15,8 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     List<Task> findByUserId(UUID userId);
     @EntityGraph(value = "Task.withChecklists", type = EntityGraph.EntityGraphType.LOAD)
     List<Task> findByUserIdAndStatus(UUID userId, String status);
+    @EntityGraph(value = "Task.withChecklists", type = EntityGraph.EntityGraphType.LOAD)
+    List<Task> findByUserIdAndStatusNot(UUID userId, String status);
     boolean existsByGoalId(UUID goalId);
     @Query("SELECT COUNT(t) > 0 FROM Task t WHERE t.goalId = :goalId AND t.dueDate >= :start AND t.dueDate < :end")
     boolean existsByGoalIdAndDueDate(@Param("goalId") UUID goalId, @Param("start") java.time.LocalDateTime start, @Param("end") java.time.LocalDateTime end);

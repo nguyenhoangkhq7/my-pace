@@ -59,12 +59,29 @@ public class DailyCheckinServiceImpl implements DailyCheckinService {
             )));
             checkinRepo.save(checkin);
 
+            cleanupPastUnconfirmedPlans(userId, date);
+
             // Auto-generate daily tasks for active goals
             generateDailyTasksForGoals(userId, date);
 
             try {
-                autoScheduleService.autoScheduleWeek(userId, date, 15, false);
+                autoScheduleService.autoSchedule(userId, 15);
             } catch (Exception ignored) {}
+            
+            List<String> decayedTaskTitles = cleanupStaleUrgentTasks(userId);
+            AvailableTimeResponse response = availableTimeService.getAvailableTime(userId, date);
+            return AvailableTimeResponse.builder()
+                .availableMinutes(response.availableMinutes())
+                .blockedMinutes(response.blockedMinutes())
+                .bufferPct(response.bufferPct())
+                .workingWindowMinutes(response.workingWindowMinutes())
+                .checkedIn(response.checkedIn())
+                .checkinTime(response.checkinTime())
+                .streak(response.streak())
+                .blockedIntervals(response.blockedIntervals())
+                .isPlanConfirmed(response.isPlanConfirmed())
+                .decayedTaskTitles(decayedTaskTitles)
+                .build();
         }
 
         return availableTimeService.getAvailableTime(userId, date);
@@ -220,5 +237,41 @@ public class DailyCheckinServiceImpl implements DailyCheckinService {
                 break;
             }
         }
+    }
+
+    private void cleanupPastUnconfirmedPlans(UUID userId, LocalDate date) {
+        List<DailyPlan> pastUnconfirmed = dailyPlanRepo.findByUserIdAndPlanDateBeforeAndIsConfirmedFalse(userId, date);
+        for (DailyPlan plan : pastUnconfirmed) {
+            List<DailyPlanTask> planTasks = dailyPlanTaskRepo.findByDailyPlanIdOrderBySortOrderAsc(plan.getId());
+            for (DailyPlanTask pt : planTasks) {
+                Task task = pt.getTask();
+                if (!"Done".equals(task.getStatus())) {
+                    task.setStatus("Backlog");
+                    taskRepo.save(task);
+                }
+            }
+            java.time.LocalDateTime startOfDay = plan.getPlanDate().atStartOfDay();
+            java.time.LocalDateTime endOfDay = plan.getPlanDate().plusDays(1).atStartOfDay();
+            taskTimeBlockRepo.deleteByUserIdAndDate(userId, startOfDay, endOfDay);
+            dailyPlanTaskRepo.deleteByDailyPlanId(plan.getId());
+            dailyPlanRepo.delete(plan);
+        }
+    }
+
+    private List<String> cleanupStaleUrgentTasks(UUID userId) {
+        List<String> decayedTaskTitles = new ArrayList<>();
+        java.time.OffsetDateTime threeDaysAgo = java.time.OffsetDateTime.now().minusDays(3);
+        
+        List<Task> backlogTasks = taskRepo.findByUserIdAndStatus(userId, "Backlog");
+        for (Task task : backlogTasks) {
+            if (Boolean.TRUE.equals(task.getIsUrgent()) && task.getDueDate() == null) {
+                if (task.getUpdatedAt() != null && task.getUpdatedAt().isBefore(threeDaysAgo)) {
+                    task.setIsUrgent(false);
+                    taskRepo.save(task);
+                    decayedTaskTitles.add(task.getTitle());
+                }
+            }
+        }
+        return decayedTaskTitles;
     }
 }

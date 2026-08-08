@@ -288,6 +288,8 @@ export function TaskFormContent({
   const watchGoalId = useWatch({ control, name: "goalId" });
   const watchTitle = useWatch({ control, name: "title" });
   const watchEstimatedMinutes = useWatch({ control, name: "estimatedMinutes" });
+  const watchIsUrgent = useWatch({ control, name: "isUrgent" });
+  const watchDueDate = useWatch({ control, name: "dueDate" });
 
   useEffect(() => {
     if (watchGoalId && watchGoalId !== "none") {
@@ -550,20 +552,25 @@ export function TaskFormContent({
             
             {!requireDuration && !prefilledGoalId && (
               <div className="grid grid-cols-2 gap-4 mt-2">
-                <div className="flex items-center space-x-2">
-                  <Controller
-                    name="isUrgent"
-                    control={control}
-                    render={({ field }) => (
-                      <Checkbox 
-                        id={urgentId} 
-                        checked={!!field.value}
-                        onCheckedChange={(checked) => field.onChange(checked === true)}
-                        className="border-border cursor-pointer"
-                      />
-                    )}
-                  />
-                  <Label htmlFor={urgentId} className="cursor-pointer font-normal text-sm select-none">{t.taskForm.urgentLabel}</Label>
+                <div className="flex flex-col space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <Controller
+                      name="isUrgent"
+                      control={control}
+                      render={({ field }) => (
+                        <Checkbox 
+                          id={urgentId} 
+                          checked={!!field.value}
+                          onCheckedChange={(checked) => field.onChange(checked === true)}
+                          className="border-border cursor-pointer"
+                        />
+                      )}
+                    />
+                    <Label htmlFor={urgentId} className="cursor-pointer font-normal text-sm select-none">{t.taskForm.urgentLabel}</Label>
+                  </div>
+                  {watchIsUrgent && !watchDueDate && (
+                    <p className="text-xs text-amber-500 font-medium leading-tight">💡 Hãy chọn Hạn chót để tối ưu lịch</p>
+                  )}
                 </div>
                 <div className="flex items-center space-x-2">
                   <Controller

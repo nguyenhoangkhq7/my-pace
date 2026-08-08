@@ -43,6 +43,7 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
                     .checkedIn(false).checkinTime(null)
                     .streak(getStreakForUser(userId, zoneId))
                     .isPlanConfirmed(false)
+                    .decayedTaskTitles(java.util.Collections.emptyList())
                     .build();
         }
 
@@ -85,6 +86,7 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
                         .checkinTime(checkinTime != null ? checkinTime.toString().substring(0, 5) : null)
                         .streak(getStreakForUser(userId, zoneId))
                         .isPlanConfirmed(isPlanConfirmed)
+                        .decayedTaskTitles(java.util.Collections.emptyList())
                         .build();
             }
             
@@ -122,6 +124,7 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
                     .checkinTime(checkinTime != null ? checkinTime.toString().substring(0, 5) : null)
                     .streak(getStreakForUser(userId, zoneId))
                     .isPlanConfirmed(isPlanConfirmed)
+                    .decayedTaskTitles(java.util.Collections.emptyList())
                     .build();
         }
 
@@ -147,6 +150,7 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
                 .streak(getStreakForUser(userId, zoneId))
                 .blockedIntervals(unionResult.blockedIntervals)
                 .isPlanConfirmed(isPlanConfirmed)
+                .decayedTaskTitles(java.util.Collections.emptyList())
                 .build();
     }
 
