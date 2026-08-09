@@ -10,6 +10,8 @@ import { fetchClient } from "@/lib/fetchClient";
 import { useTasks } from "./useTasks";
 import { useDailyPlan } from "./useDailyPlan";
 import { useTaskTimeBlocks } from "./useTaskTimeBlocks";
+import { useBatchSlack } from "./useAutoScheduleSlack";
+import { useEffect } from "react";
 
 interface UseExecutionBoardProps {
   currentDate: string;
@@ -93,6 +95,17 @@ export function useExecutionBoard({ currentDate, tomorrowDate }: UseExecutionBoa
     }
     return baseAvailable - usedTime;
   }, [isPlanningMode, baseAvailable, plannedTaskIds, tasks, currentPlan]);
+
+  const { batchSlack } = useBatchSlack();
+  const [slackTimes, setSlackTimes] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (isPlanningMode && plannedTaskIds.length > 0) {
+      batchSlack(plannedTaskIds).then(res => {
+        if (res) setSlackTimes(res);
+      });
+    }
+  }, [isPlanningMode, plannedTaskIds, batchSlack]);
 
   const doSavePlan = async () => {
     try {
@@ -228,6 +241,7 @@ export function useExecutionBoard({ currentDate, tomorrowDate }: UseExecutionBoa
     currentAvailable,
     totalAvailable: baseAvailable,
     availableData,
+    slackTimes,
     handleSavePlan,
     doSavePlan,
     handleCancelPlan,

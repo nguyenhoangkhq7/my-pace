@@ -8,5 +8,6 @@ public record DailyPlanTaskDto(
     UUID dailyPlanId,
     TaskDto task,
     Boolean isMit,
-    Integer sortOrder
+    Integer sortOrder,
+    String escalationReason
 ) {}

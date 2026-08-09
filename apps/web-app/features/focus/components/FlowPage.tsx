@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import { useAuthStore } from "@/features/auth";
@@ -35,7 +35,6 @@ export function FlowPage() {
   useAppVisibility();
   const { t } = useTranslation();
   usePomodoro();
-  const user = useAuthStore((s) => s.user);
   const pomodoroState = useFocusStore((s) => s.pomodoroState);
   const openFocusMode = useFocusStore((s) => s.openFocusMode);
   const activeTaskId = useFocusStore((s) => s.activeTaskId);
@@ -86,9 +85,7 @@ export function FlowPage() {
   // Remember the exact pomodoroState before we paused it for the dialog
   const [prevPomodoroState, setPrevPomodoroState] = useState<"focusing" | "breaking" | null>(null);
 
-  useEffect(() => {
-    // Only kept for the dependencies if needed
-  }, [user]);
+
 
   useEffect(() => {
     return () => {
@@ -131,6 +128,19 @@ export function FlowPage() {
       keepTimer
     );
   };
+
+  const hasAutoFocusedRef = useRef(false);
+  useEffect(() => {
+    if (hasAutoFocusedRef.current || !dailyPlanToday || !tasks) return;
+    hasAutoFocusedRef.current = true;
+
+    if (dailyPlanToday.isConfirmed && !activeTaskId && dailyPlanToday.tasks.length > 0) {
+      const firstPlanTask = dailyPlanToday.tasks[0];
+      const firstBlock = dailyPlanToday.timeBlocks?.find(b => b.taskId === firstPlanTask.task.id);
+      doSwitch(firstPlanTask, firstBlock);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dailyPlanToday, activeTaskId, tasks]);
 
   const handleTaskSelect = (task: DailyPlanTask, block?: TaskTimeBlock) => {
     const isSameTask = task.task.id === activeTaskId;

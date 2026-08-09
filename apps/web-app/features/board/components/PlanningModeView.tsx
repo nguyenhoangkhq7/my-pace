@@ -14,6 +14,7 @@ interface PlanningModeViewProps {
   availableData: AvailableTimeData | null;
   plannedTaskIds: string[];
   tasks: Task[];
+  slackTimes?: Record<string, number>;
   onCancel: () => void;
   onSave: () => void;
   onRemoveTask: (taskId: string) => void;
@@ -24,6 +25,7 @@ export function PlanningModeView({
   availableData,
   plannedTaskIds,
   tasks,
+  slackTimes,
   onCancel,
   onSave,
   onRemoveTask,
@@ -124,7 +126,7 @@ export function PlanningModeView({
           <div className="space-y-3">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t.planning.mits}</h3>
             {mits.map(task => (
-              <PlanningTaskItem key={task.id} task={task} onRemove={onRemoveTask} />
+              <PlanningTaskItem key={task.id} task={task} slackTime={slackTimes?.[task.id]} onRemove={onRemoveTask} />
             ))}
           </div>
         )}
@@ -133,7 +135,7 @@ export function PlanningModeView({
           <div className="space-y-3">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t.planning.otherTasks}</h3>
             {regularTasks.map(task => (
-              <PlanningTaskItem key={task.id} task={task} onRemove={onRemoveTask} />
+              <PlanningTaskItem key={task.id} task={task} slackTime={slackTimes?.[task.id]} onRemove={onRemoveTask} />
             ))}
           </div>
         )}

@@ -286,7 +286,8 @@ public class TaskTimeBlockServiceImpl implements TaskTimeBlockService {
                 block.getIsCompleted() != null ? block.getIsCompleted() : false,
                 block.getCompletedAt(),
                 block.getAvailabilityStatus() != null ? block.getAvailabilityStatus() : "FREE",
-                Boolean.TRUE.equals(block.getIsLocked())
+                Boolean.TRUE.equals(block.getIsLocked()),
+                block.getStatusWarning()
         );
     }
 }

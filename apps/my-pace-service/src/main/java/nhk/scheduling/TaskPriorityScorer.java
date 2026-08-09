@@ -40,22 +40,8 @@ public class TaskPriorityScorer {
             }
         }
 
-        Map<LocalDate, Integer> cumulativeFreeTimeMap = new HashMap<>();
-        int totalFreeSoFar = 0;
-        
-        java.time.LocalTime now = java.time.LocalTime.now(ctx.zoneId());
-        int nowMin = now.getHour() * 60 + now.getMinute();
-
-        for (LocalDate d : ctx.dateRange()) {
-            int freeToday = 0;
-            int startMin = d.equals(ctx.startDate()) ? nowMin : 0;
-            List<InMemoryBitmapScheduler.ScheduleGap> gaps = bitmapScheduler.findFreeGaps(ctx.userId(), d, startMin, 1440, 1);
-            for (InMemoryBitmapScheduler.ScheduleGap gap : gaps) {
-                freeToday += gap.durationMin();
-            }
-            totalFreeSoFar += freeToday;
-            cumulativeFreeTimeMap.put(d, totalFreeSoFar);
-        }
+        Map<LocalDate, Integer> cumulativeFreeTimeMap = calculateCumulativeFreeTimeMap(ctx);
+        int totalFreeSoFar = cumulativeFreeTimeMap.values().stream().max(Integer::compareTo).orElse(0);
 
         Map<LocalDate, List<TaskQueueItem>> dateTaskQueues = new HashMap<>();
         List<TaskQueueItem> backlogQueue = new ArrayList<>();
@@ -79,32 +65,23 @@ public class TaskPriorityScorer {
             boolean isUrgent = Boolean.TRUE.equals(t.getIsUrgent());
             boolean isImportant = Boolean.TRUE.equals(t.getIsImportant());
 
-            int availableToDue = Integer.MAX_VALUE;
-            if (t.getDueDate() != null) {
-                LocalDate dueLocalDate = t.getDueDate().toLocalDate();
-                if (dueLocalDate.isBefore(ctx.startDate())) {
-                    availableToDue = 0;
-                } else if (cumulativeFreeTimeMap.containsKey(dueLocalDate)) {
-                    availableToDue = cumulativeFreeTimeMap.get(dueLocalDate);
-                } else {
-                    availableToDue = totalFreeSoFar + 1440;
-                }
-            }
-            
-            int trueSlackTime = availableToDue - rem;
+            int trueSlackTime = calculateTrueSlackTime(t, ctx, cumulativeFreeTimeMap, totalFreeSoFar, rem);
             boolean isDueToday = t.getDueDate() != null && t.getDueDate().toLocalDate().equals(ctx.startDate());
             boolean isHighRisk = isDueToday || (trueSlackTime < 720);
 
             int priorityRank;
+            String escalationReason = null;
             if (isUrgent && isImportant) {
                 // Rank 0: High Risk Q1, Rank 2: Low Risk Q1
                 priorityRank = isHighRisk ? 0 : 2;
+                if (isHighRisk) escalationReason = "⏫ Ưu tiên tạm thời vì sắp hết hạn (Q1)";
             } else if (!isUrgent && isImportant) {
                 // Rank 1: Standard Q2
                 priorityRank = 1;
             } else if (isUrgent && !isImportant) {
                 if (isHighRisk) {
                     priorityRank = 0; // Rank 0: Escalated Q3
+                    escalationReason = "⏫ Ưu tiên tạm thời vì sắp hết hạn";
                 } else if (t.getDueDate() != null) {
                     priorityRank = 4; // Rank 4: Demoted Q3 (Low Risk)
                 } else {
@@ -113,8 +90,15 @@ public class TaskPriorityScorer {
             } else {
                 priorityRank = 4; // Rank 4: Q4
             }
+            
+            String statusWarning = "SAFE";
+            if (trueSlackTime < 0) {
+                statusWarning = "INFEASIBLE";
+            } else if (trueSlackTime < 720) {
+                statusWarning = "HIGH_RISK";
+            }
 
-            TaskQueueItem item = new TaskQueueItem(t, rem, priorityRank);
+            TaskQueueItem item = new TaskQueueItem(t, rem, priorityRank, statusWarning, escalationReason);
             LocalDate pickedDate = taskIdToPickedDateMap.get(t.getId());
 
             if (pickedDate != null) {
@@ -150,5 +134,62 @@ public class TaskPriorityScorer {
         backlogQueue.sort(queueComparator);
 
         return new TaskQueueResult(dateTaskQueues, backlogQueue, datesWithDailyPlan, userTaskMap);
+    }
+
+    public Map<LocalDate, Integer> calculateCumulativeFreeTimeMap(ScheduleContext ctx) {
+        Map<LocalDate, Integer> cumulativeFreeTimeMap = new HashMap<>();
+        int totalFreeSoFar = 0;
+        
+        java.time.LocalTime now = java.time.LocalTime.now(ctx.zoneId());
+        int nowMin = now.getHour() * 60 + now.getMinute();
+
+        for (LocalDate d : ctx.dateRange()) {
+            int freeToday = 0;
+            int startMin = d.equals(ctx.startDate()) ? nowMin : 0;
+            List<InMemoryBitmapScheduler.ScheduleGap> gaps = bitmapScheduler.findFreeGaps(ctx.userId(), d, startMin, 1440, 1);
+            for (InMemoryBitmapScheduler.ScheduleGap gap : gaps) {
+                freeToday += gap.durationMin();
+            }
+            totalFreeSoFar += freeToday;
+            cumulativeFreeTimeMap.put(d, totalFreeSoFar);
+        }
+        return cumulativeFreeTimeMap;
+    }
+
+    public int calculateTrueSlackTime(Task t, ScheduleContext ctx, Map<LocalDate, Integer> cumulativeFreeTimeMap, int totalFreeSoFar, int rem) {
+        int availableToDue = Integer.MAX_VALUE;
+        if (t.getDueDate() != null) {
+            LocalDateTime nowLdt = LocalDateTime.now(ctx.zoneId());
+            if (t.getDueDate().isBefore(nowLdt)) {
+                availableToDue = 0;
+            } else {
+                LocalDate dueLocalDate = t.getDueDate().toLocalDate();
+                if (dueLocalDate.isBefore(ctx.startDate())) {
+                    availableToDue = 0;
+                } else if (cumulativeFreeTimeMap.containsKey(dueLocalDate)) {
+                    int prevTotal = 0;
+                    if (!dueLocalDate.equals(ctx.startDate())) {
+                        prevTotal = cumulativeFreeTimeMap.getOrDefault(dueLocalDate.minusDays(1), 0);
+                    }
+                    
+                    int startMin = dueLocalDate.equals(ctx.startDate()) ? nowLdt.getHour() * 60 + nowLdt.getMinute() : 0;
+                    int dueMin = t.getDueDate().getHour() * 60 + t.getDueDate().getMinute();
+                    
+                    if (dueMin <= startMin) {
+                        availableToDue = prevTotal;
+                    } else {
+                        int freeOnDueDate = 0;
+                        List<InMemoryBitmapScheduler.ScheduleGap> gaps = bitmapScheduler.findFreeGaps(ctx.userId(), dueLocalDate, startMin, dueMin, 1);
+                        for (InMemoryBitmapScheduler.ScheduleGap gap : gaps) {
+                            freeOnDueDate += gap.durationMin();
+                        }
+                        availableToDue = prevTotal + freeOnDueDate;
+                    }
+                } else {
+                    availableToDue = totalFreeSoFar + 1440;
+                }
+            }
+        }
+        return availableToDue - rem;
     }
 }

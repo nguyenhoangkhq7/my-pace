@@ -29,6 +29,7 @@ export function BacklogMatrix({
     selectedFilterId,
     setFilter,
     categories,
+    slackTimes,
 
     // Handlers
     handleCreateTask,
@@ -61,6 +62,7 @@ export function BacklogMatrix({
           plannedTaskIds={plannedTaskIds}
           isPlanningMode={isPlanningMode}
           selectedFilterId={selectedFilterId}
+          slackTimes={slackTimes}
           onTaskClick={handleTaskClick}
           onTaskDrop={handleTaskDrop}
         />
@@ -73,6 +75,7 @@ export function BacklogMatrix({
           plannedTaskIds={plannedTaskIds}
           isPlanningMode={isPlanningMode}
           selectedFilterId={selectedFilterId}
+          slackTimes={slackTimes}
           onTaskClick={handleTaskClick}
           onTaskDrop={handleTaskDrop}
         />
@@ -85,6 +88,7 @@ export function BacklogMatrix({
           plannedTaskIds={plannedTaskIds}
           isPlanningMode={isPlanningMode}
           selectedFilterId={selectedFilterId}
+          slackTimes={slackTimes}
           onTaskClick={handleTaskClick}
           onTaskDrop={handleTaskDrop}
         />
@@ -97,6 +101,7 @@ export function BacklogMatrix({
           plannedTaskIds={plannedTaskIds}
           isPlanningMode={isPlanningMode}
           selectedFilterId={selectedFilterId}
+          slackTimes={slackTimes}
           onTaskClick={handleTaskClick}
           onTaskDrop={handleTaskDrop}
         />

@@ -42,6 +42,69 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
         }
     }
 
+    @Override
+    public PreviewSlackResponse previewSlack(UUID userId, PreviewSlackRequest request, Integer bufferMinutesInput) {
+        ReentrantLock lock = userLocks.computeIfAbsent(userId, k -> new ReentrantLock());
+        lock.lock();
+        try {
+            ScheduleContext ctx = dataLoader.loadContext(userId, bufferMinutesInput);
+            prepareBitmaps(ctx);
+            Map<LocalDate, Integer> cumulativeFreeTimeMap = priorityScorer.calculateCumulativeFreeTimeMap(ctx);
+            int totalFreeSoFar = cumulativeFreeTimeMap.values().stream().max(Integer::compareTo).orElse(0);
+
+            nhk.task.Task mockTask = new nhk.task.Task();
+            mockTask.setDueDate(request.dueDate() != null ? request.dueDate().atTime(23, 59) : null);
+            
+            int est = request.estimatedMinutes() != null ? request.estimatedMinutes() : 0;
+            int act = request.actualMinutes() != null ? request.actualMinutes() : 0;
+            int rem = Math.max(0, est - act);
+
+            int trueSlackTime = priorityScorer.calculateTrueSlackTime(mockTask, ctx, cumulativeFreeTimeMap, totalFreeSoFar, rem);
+            return new PreviewSlackResponse(trueSlackTime);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public BatchSlackResponse batchSlack(UUID userId, BatchSlackRequest request, Integer bufferMinutesInput) {
+        ReentrantLock lock = userLocks.computeIfAbsent(userId, k -> new ReentrantLock());
+        lock.lock();
+        try {
+            ScheduleContext ctx = dataLoader.loadContext(userId, bufferMinutesInput);
+            prepareBitmaps(ctx);
+            Map<LocalDate, Integer> cumulativeFreeTimeMap = priorityScorer.calculateCumulativeFreeTimeMap(ctx);
+            int totalFreeSoFar = cumulativeFreeTimeMap.values().stream().max(Integer::compareTo).orElse(0);
+
+            Map<UUID, Integer> slackTimes = new HashMap<>();
+            Map<UUID, nhk.task.Task> taskMap = ctx.activeTasks().stream()
+                    .collect(java.util.stream.Collectors.toMap(nhk.task.Task::getId, t -> t, (a, b) -> a));
+
+            for (UUID taskId : request.taskIds()) {
+                nhk.task.Task t = taskMap.get(taskId);
+                if (t != null) {
+                    int est = t.getEstimatedMinutes() != null ? t.getEstimatedMinutes() : 0;
+                    int act = t.getActualMinutes() != null ? t.getActualMinutes() : 0;
+                    
+                    List<TaskTimeBlock> existingTaskBlocks = ctx.taskTimeBlocksByTaskId().getOrDefault(t.getId(), Collections.emptyList());
+                    int busyMinutes = 0;
+                    for (TaskTimeBlock b : existingTaskBlocks) {
+                        if ("BUSY".equalsIgnoreCase(b.getAvailabilityStatus()) && !b.getStartTime().toLocalDate().isBefore(ctx.startDate())) {
+                            busyMinutes += (int) java.time.Duration.between(b.getStartTime(), b.getEndTime()).toMinutes();
+                        }
+                    }
+                    int rem = Math.max(0, est - act - busyMinutes);
+
+                    int trueSlackTime = priorityScorer.calculateTrueSlackTime(t, ctx, cumulativeFreeTimeMap, totalFreeSoFar, rem);
+                    slackTimes.put(taskId, trueSlackTime);
+                }
+            }
+            return new BatchSlackResponse(slackTimes);
+        } finally {
+            lock.unlock();
+        }
+    }
+
     private AutoScheduleResponse doAutoSchedule(UUID userId, Integer bufferMinutesInput) {
         // 1. Data Loading Phase
         ScheduleContext ctx = dataLoader.loadContext(userId, bufferMinutesInput);
@@ -147,126 +210,22 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
 
             if (activeQueue.isEmpty()) continue;
 
-            int cursorMin;
+            int startOfDayMin;
             if (date.equals(today)) {
                 int nowMin = currentTime.getHour() * 60 + currentTime.getMinute();
                 int baseMin = Math.max(ctx.wakeMin(), nowMin);
-                cursorMin = ((baseMin + 14) / 15) * 15;
+                startOfDayMin = ((baseMin + 14) / 15) * 15;
             } else {
-                cursorMin = ctx.wakeMin();
+                startOfDayMin = ctx.wakeMin();
             }
-
             int endOfDayMin = ctx.sleepMin();
-            
-            // Linear Timeline Allocation (Greedy Edge-Packing)
-            while (cursorMin < endOfDayMin && !activeQueue.isEmpty()) {
-                // Move cursor forward to next free slot
-                while (cursorMin < endOfDayMin && bitmapScheduler.isBusy(ctx.userId(), date, cursorMin)) {
-                    cursorMin += 5;
-                }
-                
-                if (cursorMin >= endOfDayMin) break;
 
-                // Find contiguous free time from cursorMin
-                int freeLength = 0;
-                while (cursorMin + freeLength < endOfDayMin && !bitmapScheduler.isBusy(ctx.userId(), date, cursorMin + freeLength)) {
-                    freeLength += 5;
-                }
+            // Pass 1: Strict Time Context
+            runTimelineAllocation(activeQueue, date, ctx, generatedBlocksPerDate, true, startOfDayMin, endOfDayMin);
 
-                int minChunk = 30; // Base rule: min chunk 30 minutes
-                if (freeLength < minChunk) {
-                    cursorMin += freeLength; // Skip small gaps
-                    continue;
-                }
-
-                TaskQueueItem selectedItem = null;
-                int maxAvailableForItem = 0;
-                
-                for (int i = 0; i < activeQueue.size(); i++) {
-                    TaskQueueItem item = activeQueue.get(i);
-                    LocalDateTime due = item.task.getDueDate();
-                    if (due != null && date.isAfter(due.toLocalDate())) {
-                        continue; // Skip past-due tasks
-                    }
-                    
-                    int availableFromContext = getValidAvailableMinutes(item, date, cursorMin, ctx);
-                    
-                    int requiredMinChunk = 30;
-                    if (item.task.getMinChunkMinutes() != null && item.task.getMinChunkMinutes() > 0) {
-                        requiredMinChunk = item.task.getMinChunkMinutes();
-                    }
-                    if (Boolean.FALSE.equals(item.task.getIsSplittable())) {
-                        requiredMinChunk = item.remainingMinutes;
-                    }
-                    
-                    requiredMinChunk = Math.min(requiredMinChunk, item.remainingMinutes);
-
-                    if (freeLength >= requiredMinChunk && availableFromContext >= requiredMinChunk) {
-                        selectedItem = item;
-                        maxAvailableForItem = availableFromContext;
-                        break;
-                    }
-                }
-                
-                if (selectedItem == null) {
-                    // No task can be scheduled at this time. Advance cursor.
-                    cursorMin += 5;
-                    continue;
-                }
-
-                // Greedy allocation
-                int maxChunk = 120; // 2 hours hard limit for single sitting
-                if (Boolean.FALSE.equals(selectedItem.task.getIsSplittable())) {
-                    maxChunk = selectedItem.remainingMinutes; // Bypass hard limit for non-splittable tasks
-                }
-
-                int allocateSize = Math.min(selectedItem.remainingMinutes, Math.min(freeLength, maxChunk));
-                allocateSize = Math.min(allocateSize, maxAvailableForItem);
-                
-                // Align to 15m chunks ONLY if we are splitting the task (not the final chunk)
-                if (allocateSize < selectedItem.remainingMinutes) {
-                    allocateSize = (allocateSize / 15) * 15;
-                }
-                
-                int requiredMinChunkForSelected = 30;
-                if (selectedItem.task.getMinChunkMinutes() != null && selectedItem.task.getMinChunkMinutes() > 0) {
-                    requiredMinChunkForSelected = selectedItem.task.getMinChunkMinutes();
-                }
-                if (Boolean.FALSE.equals(selectedItem.task.getIsSplittable())) {
-                    requiredMinChunkForSelected = selectedItem.remainingMinutes; // The initial remaining before this allocation
-                }
-                
-                // Cap the required min chunk so we don't demand a 30m gap for a 10m task
-                requiredMinChunkForSelected = Math.min(requiredMinChunkForSelected, selectedItem.remainingMinutes);
-
-                if (allocateSize < requiredMinChunkForSelected) {
-                    cursorMin += 5;
-                    continue;
-                }
-
-                // Schedule block
-                selectedItem.partsFilled++;
-                LocalDateTime blockStartLdt = date.atStartOfDay().plusMinutes(cursorMin);
-                LocalDateTime blockEndLdt = date.atStartOfDay().plusMinutes(cursorMin + allocateSize);
-
-                TaskTimeBlock block = new TaskTimeBlock();
-                block.setTaskId(selectedItem.task.getId());
-                block.setStartTime(blockStartLdt);
-                block.setEndTime(blockEndLdt);
-                block.setPartIndex(selectedItem.partsFilled);
-                block.setAvailabilityStatus("FREE");
-
-                generatedBlocksPerDate.get(date).add(block);
-                bitmapScheduler.markRangeBusy(ctx.userId(), date, cursorMin, cursorMin + allocateSize + ctx.bufferMinutes());
-
-                selectedItem.remainingMinutes -= allocateSize;
-                
-                if (selectedItem.remainingMinutes <= 0) {
-                    activeQueue.remove(selectedItem);
-                }
-                
-                // Cursor moves to end of block
-                cursorMin += allocateSize;
+            // Pass 2: Relaxed Time Context (Fallback)
+            if (!activeQueue.isEmpty()) {
+                runTimelineAllocation(activeQueue, date, ctx, generatedBlocksPerDate, false, startOfDayMin, endOfDayMin);
             }
 
             // Cleanup active queues
@@ -304,7 +263,130 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
         return generatedBlocksPerDate;
     }
 
-    private Integer getValidAvailableMinutes(TaskQueueItem item, LocalDate date, int cursorMin, ScheduleContext ctx) {
+    private void runTimelineAllocation(
+            List<TaskQueueItem> activeQueue,
+            LocalDate date,
+            ScheduleContext ctx,
+            Map<LocalDate, List<TaskTimeBlock>> generatedBlocksPerDate,
+            boolean strictTimeContext,
+            int startOfDayMin,
+            int endOfDayMin
+    ) {
+        int cursorMin = startOfDayMin;
+        while (cursorMin < endOfDayMin && !activeQueue.isEmpty()) {
+            // Move cursor forward to next free slot
+            while (cursorMin < endOfDayMin && bitmapScheduler.isBusy(ctx.userId(), date, cursorMin)) {
+                cursorMin += 5;
+            }
+            
+            if (cursorMin >= endOfDayMin) break;
+
+            // Find contiguous free time from cursorMin
+            int freeLength = 0;
+            while (cursorMin + freeLength < endOfDayMin && !bitmapScheduler.isBusy(ctx.userId(), date, cursorMin + freeLength)) {
+                freeLength += 5;
+            }
+
+            int minChunk = 30; // Base rule: min chunk 30 minutes
+            if (freeLength < minChunk) {
+                cursorMin += freeLength; // Skip small gaps
+                continue;
+            }
+
+            TaskQueueItem selectedItem = null;
+            int maxAvailableForItem = 0;
+            
+            for (int i = 0; i < activeQueue.size(); i++) {
+                TaskQueueItem item = activeQueue.get(i);
+                LocalDateTime due = item.task.getDueDate();
+                if (due != null && date.isAfter(due.toLocalDate())) {
+                    continue; // Skip past-due tasks
+                }
+                
+                int availableFromContext = getValidAvailableMinutes(item, date, cursorMin, ctx, strictTimeContext);
+                
+                int requiredMinChunk = 30;
+                if (item.task.getMinChunkMinutes() != null && item.task.getMinChunkMinutes() > 0) {
+                    requiredMinChunk = item.task.getMinChunkMinutes();
+                }
+                if (Boolean.FALSE.equals(item.task.getIsSplittable())) {
+                    requiredMinChunk = item.remainingMinutes;
+                }
+                
+                requiredMinChunk = Math.min(requiredMinChunk, item.remainingMinutes);
+
+                if (freeLength >= requiredMinChunk && availableFromContext >= requiredMinChunk) {
+                    selectedItem = item;
+                    maxAvailableForItem = availableFromContext;
+                    break;
+                }
+            }
+            
+            if (selectedItem == null) {
+                // No task can be scheduled at this time. Advance cursor.
+                cursorMin += 5;
+                continue;
+            }
+
+            // Greedy allocation
+            int maxChunk = 120; // 2 hours hard limit for single sitting
+            if (Boolean.FALSE.equals(selectedItem.task.getIsSplittable())) {
+                maxChunk = selectedItem.remainingMinutes; // Bypass hard limit for non-splittable tasks
+            }
+
+            int allocateSize = Math.min(selectedItem.remainingMinutes, Math.min(freeLength, maxChunk));
+            allocateSize = Math.min(allocateSize, maxAvailableForItem);
+            
+            // Align to 15m chunks ONLY if we are splitting the task (not the final chunk)
+            if (allocateSize < selectedItem.remainingMinutes) {
+                allocateSize = (allocateSize / 15) * 15;
+            }
+            
+            int requiredMinChunkForSelected = 30;
+            if (selectedItem.task.getMinChunkMinutes() != null && selectedItem.task.getMinChunkMinutes() > 0) {
+                requiredMinChunkForSelected = selectedItem.task.getMinChunkMinutes();
+            }
+            if (Boolean.FALSE.equals(selectedItem.task.getIsSplittable())) {
+                requiredMinChunkForSelected = selectedItem.remainingMinutes; // The initial remaining before this allocation
+            }
+            
+            // Cap the required min chunk so we don't demand a 30m gap for a 10m task
+            requiredMinChunkForSelected = Math.min(requiredMinChunkForSelected, selectedItem.remainingMinutes);
+
+            if (allocateSize < requiredMinChunkForSelected) {
+                cursorMin += 5;
+                continue;
+            }
+
+            // Schedule block
+            selectedItem.partsFilled++;
+            LocalDateTime blockStartLdt = date.atStartOfDay().plusMinutes(cursorMin);
+            LocalDateTime blockEndLdt = date.atStartOfDay().plusMinutes(cursorMin + allocateSize);
+
+            TaskTimeBlock block = new TaskTimeBlock();
+            block.setTaskId(selectedItem.task.getId());
+            block.setStartTime(blockStartLdt);
+            block.setEndTime(blockEndLdt);
+            block.setPartIndex(selectedItem.partsFilled);
+            block.setAvailabilityStatus("FREE");
+            block.setStatusWarning(selectedItem.statusWarning);
+
+            generatedBlocksPerDate.get(date).add(block);
+            bitmapScheduler.markRangeBusy(ctx.userId(), date, cursorMin, cursorMin + allocateSize + ctx.bufferMinutes());
+
+            selectedItem.remainingMinutes -= allocateSize;
+            
+            if (selectedItem.remainingMinutes <= 0) {
+                activeQueue.remove(selectedItem);
+            }
+            
+            // Cursor moves to end of block
+            cursorMin += allocateSize;
+        }
+    }
+
+    private Integer getValidAvailableMinutes(TaskQueueItem item, LocalDate date, int cursorMin, ScheduleContext ctx, boolean strictTimeContext) {
+        if (!strictTimeContext) return 1440; // Pass 2: Ignore Time Context
         if (item.priorityRank == 0) return 1440; // Hybrid Time Context: Rank 0 ignores Time Context
         if (item.task.getCategoryId() == null) return 1440;
         nhk.category.Category cat = ctx.categoryMap().get(item.task.getCategoryId());

@@ -4,19 +4,49 @@ import { Task } from "../types";
 import { TaskCardChecklist } from "./TaskCardChecklist";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { AlertCircle } from "lucide-react";
 
 interface TaskBacklogCardProps {
   task: Task;
   onClick: () => void;
   isPlanned: boolean;
+  slackTime?: number;
 }
 
 export function TaskBacklogCard({
   task,
   onClick,
   isPlanned,
+  slackTime,
 }: TaskBacklogCardProps) {
   const { t } = useTranslation();
+
+  const formatDuration = (minutes: number) => {
+    const m = Math.abs(minutes);
+    const h = Math.floor(m / 60);
+    const min = m % 60;
+    if (h > 0 && min > 0) return `${h} giờ ${min} phút`;
+    if (h > 0) return `${h} giờ`;
+    return `${min} phút`;
+  };
+
+  const getTooltipText = () => {
+    if (slackTime === undefined) return "";
+    
+    const now = new Date();
+    const dueDate = task.dueDate ? new Date(task.dueDate) : null;
+    const isPastDue = dueDate && dueDate < now;
+
+    if (slackTime < 0) {
+      if (isPastDue) {
+        const diffMins = Math.floor((now.getTime() - dueDate.getTime()) / 60000);
+        return `Đã quá hạn ${formatDuration(diffMins)}!`;
+      }
+      return `Không đủ thời gian trống! Bạn còn thiếu ${formatDuration(Math.abs(slackTime))} để hoàn thành đúng hạn.`;
+    }
+    return `Lưu ý: Nếu bạn trì hoãn thêm ${formatDuration(slackTime)} nữa, task này chắc chắn sẽ trễ hạn.`;
+  };
 
   return (
     <div 
@@ -37,8 +67,30 @@ export function TaskBacklogCard({
           : "border-border bg-card hover:border-border/80 hover:bg-muted text-foreground"
       )}
     >
-      <div className="font-semibold text-foreground break-words text-sm mb-1 leading-snug">
-        {task.title}
+      <div className="flex gap-2 items-start justify-between">
+        <div className="font-semibold text-foreground break-words text-sm mb-1 leading-snug">
+          {task.title}
+        </div>
+        
+        {slackTime !== undefined && slackTime < 720 && (
+          <TooltipProvider>
+            <Tooltip delayDuration={300}>
+              <TooltipTrigger asChild>
+                <div onClick={(e) => e.stopPropagation()} className="shrink-0 mt-0.5">
+                  <AlertCircle 
+                    className={cn(
+                      "w-4 h-4",
+                      slackTime < 0 ? "text-red-500" : "text-yellow-500"
+                    )} 
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[200px] text-xs">
+                {getTooltipText()}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
       </div>
       
       <div className="flex items-center gap-2 mt-2 flex-wrap">

@@ -1,0 +1,248 @@
+  # ── 7. Sự kiện cả ngày ────────────────────────────────────────────────
+  - vars:
+      text: "Ngày mai nghỉ lễ cả ngày"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "isAllDay"
+        expected: true
+      - type: select-json
+        value: "startTime"
+        expected: null
+
+
+  # ── 8. Task có danh sách sub-items (Checklist) ─────────────────────────
+  - vars:
+      text: "đi siêu thị mua sữa, trứng, rau cải"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "task"
+      - type: select-json
+        value: "checklists[0].title"
+        expected: "Mua sữa"
+      - type: select-json
+        value: "checklists[1].title"
+        expected: "Mua trứng"
+
+
+  # ── 71. Tự điều chỉnh ý định (Self-Correction) ────────────────────────
+  - vars:
+      text: "Họp với sếp lúc 3h chiều mai, à không đổi sang 4h đi"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "16:00"
+
+
+  # ── 72. Thời gian mập mờ (Fuzzy bounds) ────────────────────────────────
+  - vars:
+      text: "Dọn dẹp nhà cửa từ sáng sớm đến chiều tối"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "06:00" # Có thể LLM không xuất ra chính xác 6h nhưng cần đảm bảo là event
+      - type: select-json
+        value: "isAllDay"
+        expected: true # Hoặc có thể hiểu là cả ngày
+
+
+  # ── 73. Yếu tố phủ định (Negation) ────────────────────────────────────
+  - vars:
+      text: "Đừng quên nộp báo cáo trước 5h chiều nay"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "task"
+      - type: select-json
+        value: "dueDate"
+        expected: ".*T17:00:00"
+
+
+  # ── 75. Thời gian tương đối tính từ hiện tại ─────────────────────────
+  - vars:
+      text: "Nộp quỹ lớp chậm nhất là 3 ngày nữa"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "task"
+
+
+  # ── 76. Sự kiện vắt qua ngày hôm sau (Spanning midnight) ──────────────
+  - vars:
+      text: "Trực đêm từ 10h tối đến 6h sáng mai"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "22:00"
+      - type: select-json
+        value: "endTime"
+        expected: "06:00"
+
+
+  # ── 77. Hai công việc trong 1 câu (Multi-intent) ─────────────────────
+  - vars:
+      text: "sáng mai viết báo cáo xong chiều gửi sếp"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "task" # QuickAdd nên gom thành 1 task chung hoặc lấy ý chính
+      
+
+  # ── 78. Thời lượng dùng chữ số thập phân/phân số ────────────────────
+  - vars:
+      text: "ngủ trưa nửa tiếng"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "task"
+      - type: select-json
+        value: "estimatedMinutes"
+        expected: 30
+
+
+  # ── 79. Thời lượng kết hợp "rưỡi" ─────────────────────────────────────
+  - vars:
+      text: "họp team một tiếng rưỡi"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "estimatedMinutes"
+        expected: 90
+
+
+  # ── 80. Số đếm bằng chữ (Text numbers) ────────────────────────────────
+  - vars:
+      text: "gọi lại cho khách hàng sau mười lăm phút"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "task"
+      - type: select-json
+        value: "estimatedMinutes"
+        expected: 15
+
+
+  # ── 81. Thời gian tương đối mập mờ (Vague relative time) ──────────────
+  - vars:
+      text: "Lát nữa mua đồ ăn"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "task"
+      
+
+  # ── 82. Thời gian ước chừng (Approximate time) ────────────────────────
+  - vars:
+      text: "Chiều chiều tầm 5h đi đá bóng 2 tiếng"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "17:00"
+      - type: select-json
+        value: "estimatedMinutes"
+        expected: 120
+
+
+  # ── 83. Cấu trúc câu điều kiện (Conditional) ──────────────────────────
+  - vars:
+      text: "nếu chiều mai không mưa thì đi chạy bộ lúc 5h"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "17:00"
+
+
+  # ── 84. Ngày lễ / Mốc lịch đặc biệt (Holidays) ────────────────────────
+  - vars:
+      text: "Tết dương lịch đi chơi với gia đình"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+
+
+  # ── 86. Deadline rất gấp nhưng không có từ khóa "gấp" ──────────────────
+  - vars:
+      text: "phải hoàn thành bản thuyết trình ngay lập tức"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "task"
+      - type: select-json
+        value: "isUrgent"
+        expected: true
+
+
+  # ── 87. Yêu cầu tạo Lịch trình dài ngày (Multi-day event) ──────────────
+  - vars:
+      text: "đi công tác Đà Nẵng từ thứ 2 đến thứ 5 tuần sau"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "isAllDay"
+        expected: true
+
+
+  # ── 88. Chỉ có giờ kết thúc (Deadline implicitly modeled as Event) ────
+  - vars:
+      text: "Họp đến 11h trưa là nghỉ"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "endTime"
+        expected: "11:00"
+
+
+  # ── 89. Nhập nhiều thông tin hỗn tạp (Noisy context) ──────────────────
+  - vars:
+      text: "alo mai rảnh không, rảnh thì 9h sáng lên cty họp chừng 45p nhé phòng họp 3"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "09:00"
+      - type: select-json
+        value: "estimatedMinutes"
+        expected: 45
+      - type: select-json
+        value: "notes"
+        expected: "phòng họp 3"
+
+
+  # ── 90. Trích xuất Category/Goal bị dính vào câu lệnh ──────────────────
+  - vars:
+      text: "Làm bài tập lớn môn CNTT thuộc danh mục Học Tập"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "task"
+      - type: select-json
+        value: "title"
+        expected: "Làm bài tập lớn môn CNTT"
+

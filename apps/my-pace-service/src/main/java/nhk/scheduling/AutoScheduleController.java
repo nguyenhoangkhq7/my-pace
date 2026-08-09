@@ -22,5 +22,23 @@ public class AutoScheduleController {
         return autoScheduleService.autoSchedule(
                 userDetails.user().getId(), bufferMinutes);
     }
+
+    @PostMapping("/preview-slack")
+    public PreviewSlackResponse previewSlack(
+            @RequestBody PreviewSlackRequest request,
+            @RequestParam(required = false) Integer bufferMinutes,
+            @AuthenticationPrincipal UserDetailsCustom userDetails) {
+        Integer buffer = bufferMinutes != null ? bufferMinutes : userDetails.user().getBufferMinutes();
+        return autoScheduleService.previewSlack(userDetails.user().getId(), request, buffer);
+    }
+
+    @PostMapping("/batch-slack")
+    public BatchSlackResponse batchSlack(
+            @RequestBody BatchSlackRequest request,
+            @RequestParam(required = false) Integer bufferMinutes,
+            @AuthenticationPrincipal UserDetailsCustom userDetails) {
+        Integer buffer = bufferMinutes != null ? bufferMinutes : userDetails.user().getBufferMinutes();
+        return autoScheduleService.batchSlack(userDetails.user().getId(), request, buffer);
+    }
 }
 
