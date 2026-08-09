@@ -3,10 +3,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Clock01Icon, Logout03Icon, Location01Icon } from "@hugeicons/core-free-icons";
+import { Clock01Icon, Logout03Icon, Location01Icon, InformationCircleIcon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuthStore, normalizeAuthSession } from "@/features/auth/store/auth.store";
 import { syncTimezoneCookie } from "@/features/auth/actions/auth.action";
 import { fetchClient } from "@/lib/fetchClient";
@@ -18,6 +19,7 @@ import { DialogFooter } from "@/components/ui/dialog";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { profileSchema, ProfileFormValues } from "../schema/profile.schema";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 const TIMEZONES = [
   { value: "Asia/Ho_Chi_Minh",    label: "🇻🇳 Hà Nội / Hồ Chí Minh (UTC+7)" },
@@ -55,6 +57,7 @@ export function ProfileFormContent({ onSuccess, onCancel, onLogoutClick, isOpen 
   const queryClient = useQueryClient();
 
   const [buffer, setBuffer] = useState(20);
+  const [bufferMins, setBufferMins] = useState(10);
   const [error, setError] = useState<string | null>(null);
   const hasInitializedRef = useRef(false);
 
@@ -64,6 +67,7 @@ export function ProfileFormContent({ onSuccess, onCancel, onLogoutClick, isOpen 
     control,
     reset,
     trigger,
+    getValues,
     formState: { errors, isValid, isSubmitting },
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -93,6 +97,7 @@ export function ProfileFormContent({ onSuccess, onCancel, onLogoutClick, isOpen 
             timezone: u.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Ho_Chi_Minh",
           });
           setBuffer(u.bufferPct ?? 20);
+          setBufferMins(u.bufferMinutes ?? 10);
           setError(null);
           void trigger();
         };
@@ -128,6 +133,7 @@ export function ProfileFormContent({ onSuccess, onCancel, onLogoutClick, isOpen 
       wakeTime: `${data.wakeTime}:00`,
       sleepTime: `${data.sleepTime}:00`,
       bufferPct: buffer,
+      bufferMinutes: bufferMins,
       timezone: data.timezone,
     };
 
@@ -149,14 +155,20 @@ export function ProfileFormContent({ onSuccess, onCancel, onLogoutClick, isOpen 
         wakeTime: payload.wakeTime,
         sleepTime: payload.sleepTime,
         bufferPct: payload.bufferPct,
+        bufferMinutes: payload.bufferMinutes,
         timezone: payload.timezone,
       };
 
       setSession({ user: updatedUser });
       
+      // Trigger Auto Schedule since profile (wake/sleep/buffer) changed
+      await fetchClient.post("auto-schedule", {});
+      
       // Invalidate queries to update UI in real-time
       queryClient.invalidateQueries({ queryKey: ["availableTime"] });
       queryClient.invalidateQueries({ queryKey: ["dailyPlan"] });
+      queryClient.invalidateQueries({ queryKey: ["dailyPlans"] });
+      queryClient.invalidateQueries({ queryKey: ["timeBlocks"] });
 
       onSuccess();
     } catch (err) {
@@ -292,6 +304,48 @@ export function ProfileFormContent({ onSuccess, onCancel, onLogoutClick, isOpen 
                 )}
               >
                 {opt}%
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Auto-Schedule Buffer Time */}
+        <div className="space-y-2.5 pt-2">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground">{t.profile.bufferMinutes || "Buffer Time"}</Label>
+              <TooltipProvider>
+                <Tooltip delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <button type="button" className="text-muted-foreground hover:text-foreground transition-colors cursor-help">
+                      <HugeiconsIcon icon={InformationCircleIcon} size={14} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-[200px]">
+                    {t.profile.bufferMinutesDesc || "Khoảng thời gian trống nghỉ ngơi tự động chèn vào giữa các task."}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-lg">{bufferMins} min</span>
+          </div>
+          <p className="text-[10px] leading-relaxed text-muted-foreground/80">
+            {t.profile.bufferMinutesDesc || "Khoảng thời gian trống nghỉ ngơi tự động chèn vào giữa các task."}
+          </p>
+          <div className="grid grid-cols-6 gap-2 pt-1">
+            {[0, 5, 10, 15, 20, 30].map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => setBufferMins(opt)}
+                className={cn(
+                  "h-8 rounded-xl text-xs font-semibold border transition-all active:scale-[0.96]",
+                  bufferMins === opt
+                    ? "bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20"
+                    : "bg-muted/10 border-border/40 text-muted-foreground hover:bg-muted/20 hover:text-foreground"
+                )}
+              >
+                {opt}m
               </button>
             ))}
           </div>

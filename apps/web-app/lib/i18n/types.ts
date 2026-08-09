@@ -384,6 +384,8 @@ export interface Translations {
     sleepTime: string;
     bufferRatio: string;
     bufferDesc: string;
+    bufferMinutes: string;
+    bufferMinutesDesc: string;
     logout: string;
     cancel: string;
     saving: string;
@@ -409,6 +411,10 @@ export interface Translations {
     activeHoursDesc: string;
     totalActiveLabel: string;
     fixedScheduleLabel: string;
+    bufferRatio: string;
+    bufferDesc: string;
+    bufferMinutes: string;
+    bufferMinutesDesc: string;
     bufferLabel: string;
     freeTimeLabel: string;
     autoScheduleDesc: (val: string) => string;

@@ -1,0 +1,1 @@
+ALTER TABLE users ADD COLUMN buffer_minutes INT NOT NULL DEFAULT 10;

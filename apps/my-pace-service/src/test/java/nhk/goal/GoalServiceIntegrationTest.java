@@ -1,5 +1,6 @@
 package nhk.goal;
 
+import nhk.BaseIntegrationTest;
 import nhk.category.Category;
 import nhk.category.CategoryRepository;
 import nhk.goal.GoalLimitExceededException;
@@ -9,9 +10,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -20,10 +18,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@SpringBootTest
-@ActiveProfiles("test")
-@Transactional
-class GoalServiceIntegrationTest {
+class GoalServiceIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private GoalServiceImpl goalService;
@@ -40,9 +35,22 @@ class GoalServiceIntegrationTest {
     private UUID userId;
     private Category category;
 
+    @Autowired
+    private nhk.user.UserRepository userRepository;
+
     @BeforeEach
     void setUp() {
-        userId = UUID.randomUUID();
+        nhk.user.User user = new nhk.user.User();
+        user.setEmail(UUID.randomUUID() + "@example.com");
+        user.setPasswordHash("hash");
+        user.setFullName("Test User");
+        user.setRole(nhk.user.Role.USER);
+        user.setWakeTime(java.time.LocalTime.of(6, 0));
+        user.setSleepTime(java.time.LocalTime.of(22, 0));
+        user.setBufferPct(15);
+        user.setTimezone("UTC");
+        user = userRepository.save(user);
+        userId = user.getId();
 
         category = new Category();
         category.setUserId(userId);
@@ -162,6 +170,7 @@ class GoalServiceIntegrationTest {
         task1.setGoalId(goal.getId());
         task1.setTitle("Task 1");
         task1.setStatus("Done");
+        task1.setDoneAt(java.time.OffsetDateTime.now());
         taskRepository.save(task1);
 
         Task task2 = new Task();
@@ -179,6 +188,7 @@ class GoalServiceIntegrationTest {
         assertThat(updatedGoal.getStatus()).isEqualTo("In Progress");
 
         task2.setStatus("Done");
+        task2.setDoneAt(java.time.OffsetDateTime.now());
         taskRepository.save(task2);
 
         goalService.updateGoalProgress(goal.getId());

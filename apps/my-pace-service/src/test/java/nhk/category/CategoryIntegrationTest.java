@@ -1,5 +1,6 @@
 package nhk.category;
 
+import nhk.BaseIntegrationTest;
 import jakarta.persistence.EntityManager;
 import nhk.goal.Goal;
 import nhk.goal.GoalRepository;
@@ -9,24 +10,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
-@ActiveProfiles("test")
-@Transactional
-@TestPropertySource(properties = {
-    "RESEND_API_KEY=test-api-key",
-    "JWT_SECRET=test-jwt-secret-with-at-least-256-bits-length-so-it-does-not-fail-validation"
-})
-class CategoryIntegrationTest {
+class CategoryIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private CategoryService categoryService;
@@ -47,7 +37,17 @@ class CategoryIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        userId = UUID.randomUUID();
+        nhk.user.User user = new nhk.user.User();
+        user.setEmail(UUID.randomUUID() + "@example.com");
+        user.setPasswordHash("hash");
+        user.setFullName("Test User");
+        user.setRole(nhk.user.Role.USER);
+        user.setWakeTime(java.time.LocalTime.of(6, 0));
+        user.setSleepTime(java.time.LocalTime.of(22, 0));
+        user.setBufferPct(15);
+        user.setTimezone("UTC");
+        entityManager.persist(user);
+        userId = user.getId();
     }
 
     @Test

@@ -226,7 +226,7 @@ class AuthServiceImplTest {
             Jwt newAccessTokenJwt = mock(Jwt.class);
             UserSimpleResponse userSimpleResponse = new UserSimpleResponse(
                     userId.toString(), "Test User", "test@example.com", "USER",
-                    LocalTime.of(7, 0), LocalTime.of(23, 0), 20, "Asia/Ho_Chi_Minh"
+                    LocalTime.of(7, 0), LocalTime.of(23, 0), 20, 10, "Asia/Ho_Chi_Minh"
             );
 
             when(jwtService.parseToken("valid_token")).thenReturn(jwt);

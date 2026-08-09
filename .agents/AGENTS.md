@@ -11,7 +11,7 @@ This file contains the workspace configuration, technology stack details, and co
 my-pace-app/
 ├── apps/
 │   ├── web-app/            # Frontend (Next.js 16, React 19, Zustand, Tailwind v4)
-│   └── my-pace-service/    # Backend (Spring Boot 4.x, Java 21, PostgreSQL, Redis)
+│   └── my-pace-service/    # Backend (Spring Boot 4.x, Java 21, PostgreSQL)
 ├── docker-compose.yml      # Docker orchestrator
 └── .env                    # Local environment variables
 ```
@@ -21,7 +21,7 @@ my-pace-app/
 - **Styling & UI:** Tailwind CSS v4, shadcn/ui components (`components/ui`)
 - **State Management:** Zustand
 - **Architecture:** 
-  - `app/(board)`: Main application routes and page layouts (e.g., today, tomorrow, flow, backlog).
+  - `app/(board)`: Main application routes and page layouts (`calendar`, `flow`, `goals`, `stats`).
   - `components/layout/`: Global layout components.
   - `components/features/`: Core feature components for timeboxing and daily planning.
 
@@ -32,7 +32,10 @@ my-pace-app/
 - **Package Structure (`nhk`):**
   - `auth`, `user`: Security, auth, user profiles.
   - `calendar`: Fixed events, daily check-ins, available time calculation.
-  - `timeblock`: Task time boxing and scheduling.
+  - `category`, `goal`: Goal and category management.
+  - `planning`, `scheduling`: Task planning and auto-scheduling algorithms.
+  - `task`, `timeblock`: Task management and time boxing slots.
+  - `timecontext`: Timezone safety and context.
 
 ---
 
@@ -62,8 +65,7 @@ Mọi Agent khi làm việc với UI components (tạo mới hoặc refactor) ph
 - **UUID:** User IDs phải luôn là `UUID` trên cả DB (PostgreSQL) và Java backend để tránh sai lệch.
 - **Logout Flow:** 
   - *Client:* Gọi `POST /api/auth/logout`, clear session Zustand, redirect về `/login`.
-  - *Server:* Lưu JWT vào Redis với key `blacklist:token:{token}`.
-  - *Filter:* `JwtAuthFilter` phải check Redis blacklist trước khi authenticate.
+  - *Server:* Không dùng blacklist lưu JWT trên server. Client tự xóa token và đăng xuất.
 
 ### Goals & Work Breakdown Structure
 - **Flat Architecture (3 Cấp):** `Milestone (Goal) -> Task -> Checklist`. Lưu phẳng trong DB, nhưng frontend build thành Tree View để dễ nhìn.
@@ -79,7 +81,7 @@ Mọi Agent khi làm việc với UI components (tạo mới hoặc refactor) ph
 - **+15m Buffer:** Lên lịch ngày hôm nay tính từ `Hiện tại + 15 phút`. Ngày mai tính từ `Giờ thức dậy + 15 phút`. Tách biệt State `dataToday` và `dataTomorrow`.
 
 ### Timeboxing & Daily Lifecycle
-- **Auto-Schedule:** Thuật toán xử lý tập trung hoàn toàn ở Backend (`ReclaimAutoScheduleServiceImpl`), ưu tiên Q1 > Q2 > Q3 > Q4. Chia khối tối thiểu 30 phút. Bỏ qua gap < 30 phút. Client gọi API `POST /api/daily-plans/auto-schedule-week`.
+- **Auto-Schedule:** Thuật toán xử lý tập trung hoàn toàn ở Backend (`AutoScheduleServiceImpl` kết hợp `InMemoryBitmapScheduler` và `TaskPriorityScorer`), ưu tiên Q1 > Q2 > Q3 > Q4. Chia khối tối thiểu 30 phút. Bỏ qua gap < 30 phút. Client gọi API.
 - **Execution Mode (isConfirmed):** Khi đã chốt lịch, khóa UI (ẩn nút thêm/sửa/xóa task).
 - **Read-Only Board:** Tab "Hôm nay" chỉ đọc. Việc hoàn thành task phải đi qua tab "Flow" để tận hưởng màn hình ăn mừng khi xong hết việc.
 - **Backend Coding:** Controller mỏng, đẩy logic vào Service. Dùng MapStruct mapper và Lombok boilerplate. Dùng `@RequiredArgsConstructor`.

@@ -150,10 +150,10 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
             int cursorMin;
             if (date.equals(today)) {
                 int nowMin = currentTime.getHour() * 60 + currentTime.getMinute();
-                int baseMin = Math.max(ctx.wakeMin(), nowMin + 5);
+                int baseMin = Math.max(ctx.wakeMin(), nowMin);
                 cursorMin = ((baseMin + 14) / 15) * 15;
             } else {
-                cursorMin = ctx.wakeMin() + 15;
+                cursorMin = ctx.wakeMin();
             }
 
             int endOfDayMin = ctx.sleepMin();
@@ -173,7 +173,7 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
                     freeLength += 15;
                 }
 
-                int minChunk = 30; // Rule: min chunk 30 minutes
+                int minChunk = 30; // Base rule: min chunk 30 minutes
                 if (freeLength < minChunk) {
                     cursorMin += freeLength; // Skip small gaps
                     continue;
@@ -190,7 +190,18 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
                     }
                     
                     int availableFromContext = getValidAvailableMinutes(item, date, cursorMin, ctx);
-                    if (availableFromContext >= minChunk) {
+                    
+                    int requiredMinChunk = 30;
+                    if (item.task.getMinChunkMinutes() != null && item.task.getMinChunkMinutes() > 0) {
+                        requiredMinChunk = item.task.getMinChunkMinutes();
+                    }
+                    if (Boolean.FALSE.equals(item.task.getIsSplittable())) {
+                        requiredMinChunk = item.remainingMinutes;
+                    }
+                    
+                    requiredMinChunk = Math.min(requiredMinChunk, item.remainingMinutes);
+
+                    if (freeLength >= requiredMinChunk && availableFromContext >= requiredMinChunk) {
                         selectedItem = item;
                         maxAvailableForItem = availableFromContext;
                         break;
@@ -205,13 +216,30 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
 
                 // Greedy allocation
                 int maxChunk = 120; // 2 hours hard limit for single sitting
+                if (Boolean.FALSE.equals(selectedItem.task.getIsSplittable())) {
+                    maxChunk = selectedItem.remainingMinutes; // Bypass hard limit for non-splittable tasks
+                }
+
                 int allocateSize = Math.min(selectedItem.remainingMinutes, Math.min(freeLength, maxChunk));
                 allocateSize = Math.min(allocateSize, maxAvailableForItem);
                 
-                // Align to 15m chunks
-                allocateSize = (allocateSize / 15) * 15;
+                // Align to 15m chunks ONLY if we are splitting the task (not the final chunk)
+                if (allocateSize < selectedItem.remainingMinutes) {
+                    allocateSize = (allocateSize / 15) * 15;
+                }
                 
-                if (allocateSize < minChunk) {
+                int requiredMinChunkForSelected = 30;
+                if (selectedItem.task.getMinChunkMinutes() != null && selectedItem.task.getMinChunkMinutes() > 0) {
+                    requiredMinChunkForSelected = selectedItem.task.getMinChunkMinutes();
+                }
+                if (Boolean.FALSE.equals(selectedItem.task.getIsSplittable())) {
+                    requiredMinChunkForSelected = selectedItem.remainingMinutes; // The initial remaining before this allocation
+                }
+                
+                // Cap the required min chunk so we don't demand a 30m gap for a 10m task
+                requiredMinChunkForSelected = Math.min(requiredMinChunkForSelected, selectedItem.remainingMinutes);
+
+                if (allocateSize < requiredMinChunkForSelected) {
                     cursorMin += 15;
                     continue;
                 }

@@ -196,7 +196,7 @@ class TimeResolver {
     private int applyPeriod(int hour, String normPeriod) {
         return switch (normPeriod) {
             case "sang", "am" -> (hour == 12) ? 0 : hour;
-            case "trua" -> (hour == 12) ? 12 : hour;
+            case "trua" -> hour;
             case "chieu", "xe", "pm" -> (hour > 0 && hour < 12) ? hour + 12 : hour;
             case "toi", "dem" -> (hour > 0 && hour < 12) ? hour + 12 : hour;
             default -> hour;

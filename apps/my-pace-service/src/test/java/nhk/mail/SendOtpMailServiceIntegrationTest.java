@@ -1,17 +1,16 @@
 package nhk.mail;
 
+import nhk.BaseIntegrationTest;
 import nhk.auth.OtpEntity;
 import nhk.auth.OtpRepository;
+import org.springframework.test.context.TestPropertySource;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
@@ -25,14 +24,12 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
-@SpringBootTest
-@ActiveProfiles("test")
 @TestPropertySource(properties = {
         "spring.resend.api-key=re_test_key_12345",
         "spring.resend.from=noreply@mypace.app",
         "JWT_SECRET=test-jwt-secret-with-at-least-256-bits-length-so-it-does-not-fail-validation"
 })
-class SendOtpMailServiceIntegrationTest {
+class SendOtpMailServiceIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private SendOtpMailService sendOtpMailService;
