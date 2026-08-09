@@ -64,7 +64,7 @@ class AuthControllerTest {
 
         userSimpleResponse = new UserSimpleResponse(
                 userId.toString(), "Controller User", "controller_user@example.com", "USER",
-                LocalTime.of(7, 0), LocalTime.of(23, 0), 20, "Asia/Ho_Chi_Minh"
+                LocalTime.of(7, 0), LocalTime.of(23, 0), 20, 10, "Asia/Ho_Chi_Minh"
         );
     }
 

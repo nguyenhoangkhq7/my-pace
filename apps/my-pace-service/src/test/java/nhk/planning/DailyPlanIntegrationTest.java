@@ -1,5 +1,6 @@
 package nhk.planning;
 
+import nhk.BaseIntegrationTest;
 import nhk.calendar.FixedEventService;
 import nhk.category.Category;
 import nhk.category.CategoryRepository;
@@ -15,11 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -28,14 +25,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
-@ActiveProfiles("test")
-@Transactional
-@TestPropertySource(properties = {
-    "RESEND_API_KEY=test-api-key",
-    "JWT_SECRET=test-jwt-secret-with-at-least-256-bits-length-so-it-does-not-fail-validation"
-})
-class DailyPlanIntegrationTest {
+class DailyPlanIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private DailyPlanService dailyPlanService;
@@ -202,6 +192,7 @@ class DailyPlanIntegrationTest {
         pastPlan.setPlanDate(pastDate);
         pastPlan.setAvailableMinutes(120);
         pastPlan.setIsConfirmed(true);
+        pastPlan.setConfirmedAt(java.time.OffsetDateTime.now());
         pastPlan.setIsReviewed(false);
         dailyPlanRepository.save(pastPlan);
 

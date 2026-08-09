@@ -1,5 +1,6 @@
 package nhk.stats;
 
+import nhk.BaseIntegrationTest;
 import nhk.calendar.DailyCheckin;
 import nhk.calendar.DailyCheckinRepository;
 import nhk.category.Category;
@@ -19,14 +20,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.MethodParameter;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.support.WebDataBinderFactory;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
@@ -41,10 +39,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
-@ActiveProfiles("test")
-@Transactional
-class StatsIntegrationTest {
+class StatsIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private StatsController statsController;
@@ -182,6 +177,7 @@ class StatsIntegrationTest {
         dailyPlan.setPlanDate(today);
         dailyPlan.setAvailableMinutes(300);
         dailyPlan.setIsConfirmed(true);
+        dailyPlan.setConfirmedAt(java.time.OffsetDateTime.now());
         dailyPlan = dailyPlanRepository.save(dailyPlan);
 
         DailyPlanTask dpt1 = new DailyPlanTask();

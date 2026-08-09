@@ -1,6 +1,8 @@
 package nhk.mail;
 
+import nhk.BaseIntegrationTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.test.context.TestPropertySource;
 import nhk.auth.OtpEntity;
 import nhk.auth.OtpRepository;
 import nhk.auth.SendOtpEmailRequest;
@@ -12,11 +14,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.servlet.MockMvc;
@@ -36,14 +35,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
-@ActiveProfiles("test")
 @TestPropertySource(properties = {
         "spring.resend.api-key=re_test_key_12345",
         "spring.resend.from=noreply@mypace.app",
         "JWT_SECRET=test-jwt-secret-with-at-least-256-bits-length-so-it-does-not-fail-validation"
 })
-class MailFlowIntegrationTest {
+class MailFlowIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private WebApplicationContext webApplicationContext;

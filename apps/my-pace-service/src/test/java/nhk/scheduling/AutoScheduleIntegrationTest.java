@@ -1,5 +1,6 @@
 package nhk.scheduling;
 
+import nhk.BaseIntegrationTest;
 import nhk.calendar.FixedEventService;
 import nhk.goal.Goal;
 import nhk.goal.GoalRepository;
@@ -15,11 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -28,14 +25,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
-@ActiveProfiles("test")
-@Transactional
-@TestPropertySource(properties = {
-    "RESEND_API_KEY=test-api-key",
-    "JWT_SECRET=test-jwt-secret-with-at-least-256-bits-length-so-it-does-not-fail-validation"
-})
-class AutoScheduleIntegrationTest {
+class AutoScheduleIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private AutoScheduleService autoScheduleService;
@@ -120,6 +110,7 @@ class AutoScheduleIntegrationTest {
         tbTask.setTitle("Học tiếng Anh hôm nay");
         tbTask.setEstimatedMinutes(1440); // 24 hours
         tbTask.setStatus("Backlog");
+        tbTask.setIsSplittable(true);
         taskRepository.save(tbTask);
 
         // Create Milestone Goal
@@ -136,6 +127,7 @@ class AutoScheduleIntegrationTest {
         mTask.setTitle("Làm backend");
         mTask.setEstimatedMinutes(1440); // 24 hours
         mTask.setStatus("Backlog");
+        mTask.setIsSplittable(true);
         taskRepository.save(mTask);
 
         // Run auto schedule

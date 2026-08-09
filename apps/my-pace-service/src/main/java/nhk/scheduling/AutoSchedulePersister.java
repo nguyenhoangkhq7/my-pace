@@ -87,6 +87,18 @@ public class AutoSchedulePersister {
                     }
                 }
 
+                List<TaskTimeBlock> allBlocksToCalculate = new ArrayList<>(existingBusyBlocks);
+                allBlocksToCalculate.addAll(finalFreeBlocks);
+
+                Map<UUID, Integer> taskMaxParts = new HashMap<>();
+                for (TaskTimeBlock b : allBlocksToCalculate) {
+                    int pIndex = b.getPartIndex() != null ? b.getPartIndex() : 1;
+                    taskMaxParts.put(b.getTaskId(), Math.max(taskMaxParts.getOrDefault(b.getTaskId(), 0), pIndex));
+                }
+                for (TaskTimeBlock b : allBlocksToCalculate) {
+                    b.setTotalParts(taskMaxParts.get(b.getTaskId()));
+                }
+
                 List<TaskTimeBlock> blocksToDelete = existingFreeBlocks.stream()
                         .filter(b -> !matchedExistingIds.contains(b.getId()))
                         .collect(Collectors.toList());
@@ -118,14 +130,6 @@ public class AutoSchedulePersister {
                 List<TaskTimeBlock> allBlocks = new ArrayList<>(existingBusyBlocks);
                 allBlocks.addAll(finalFreeBlocks);
                 allBlocks.sort(Comparator.comparing(TaskTimeBlock::getStartTime));
-
-                Map<UUID, Integer> taskMaxParts = new HashMap<>();
-                for (TaskTimeBlock b : allBlocks) {
-                    taskMaxParts.put(b.getTaskId(), Math.max(taskMaxParts.getOrDefault(b.getTaskId(), 0), b.getPartIndex()));
-                }
-                for (TaskTimeBlock b : allBlocks) {
-                    b.setTotalParts(taskMaxParts.get(b.getTaskId()));
-                }
 
                 List<TaskTimeBlockDto> dtos = allBlocks.stream()
                         .map(b -> new TaskTimeBlockDto(

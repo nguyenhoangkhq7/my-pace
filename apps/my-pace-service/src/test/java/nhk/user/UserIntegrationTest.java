@@ -1,5 +1,6 @@
 package nhk.user;
 
+import nhk.BaseIntegrationTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import nhk.common.GlobalExceptionHandler;
@@ -8,18 +9,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.support.WebDataBinderFactory;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
@@ -40,15 +37,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import org.springframework.test.context.NestedTestConfiguration;
 
-@SpringBootTest
-@ActiveProfiles("test")
-@Transactional
 @NestedTestConfiguration(NestedTestConfiguration.EnclosingConfiguration.INHERIT)
-@TestPropertySource(properties = {
-    "RESEND_API_KEY=test-api-key",
-    "JWT_SECRET=test-jwt-secret-with-at-least-256-bits-length-so-it-does-not-fail-validation"
-})
-class UserIntegrationTest {
+class UserIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private UserController userController;
@@ -118,6 +108,7 @@ class UserIntegrationTest {
                     LocalTime.of(7, 30),
                     LocalTime.of(23, 30),
                     25,
+                    10,
                     "Asia/Tokyo"
             );
 
@@ -159,6 +150,7 @@ class UserIntegrationTest {
                     LocalTime.of(7, 0),
                     LocalTime.of(23, 0),
                     20,
+                    10,
                     "Asia/Ho_Chi_Minh"
             );
 
@@ -179,6 +171,7 @@ class UserIntegrationTest {
                     LocalTime.of(7, 0),
                     LocalTime.of(23, 0),
                     20,
+                    10,
                     "Asia/Ho_Chi_Minh"
             );
 
@@ -199,7 +192,7 @@ class UserIntegrationTest {
             MockMvc mockMvc = createMockMvcWithPrincipal(userDetailsCustom);
 
             UserProfileUpdateRequest request = new UserProfileUpdateRequest(
-                    "Name", LocalTime.of(7, 0), LocalTime.of(23, 0), 5, "Asia/Ho_Chi_Minh"
+                    "Name", LocalTime.of(7, 0), LocalTime.of(23, 0), 5, 10, "Asia/Ho_Chi_Minh"
             );
 
             mockMvc.perform(put("/api/users/profile")
@@ -214,7 +207,7 @@ class UserIntegrationTest {
             MockMvc mockMvc = createMockMvcWithPrincipal(userDetailsCustom);
 
             UserProfileUpdateRequest request = new UserProfileUpdateRequest(
-                    "Name", LocalTime.of(7, 0), LocalTime.of(23, 0), 35, "Asia/Ho_Chi_Minh"
+                    "Name", LocalTime.of(7, 0), LocalTime.of(23, 0), 35, 10, "Asia/Ho_Chi_Minh"
             );
 
             mockMvc.perform(put("/api/users/profile")
@@ -229,7 +222,7 @@ class UserIntegrationTest {
             MockMvc mockMvc = createMockMvcWithPrincipal(userDetailsCustom);
 
             UserProfileUpdateRequest request = new UserProfileUpdateRequest(
-                    "Name", null, LocalTime.of(23, 0), 20, "Asia/Ho_Chi_Minh"
+                    "Name", null, LocalTime.of(23, 0), 20, 10, "Asia/Ho_Chi_Minh"
             );
 
             mockMvc.perform(put("/api/users/profile")
@@ -244,7 +237,7 @@ class UserIntegrationTest {
             MockMvc mockMvc = createMockMvcWithPrincipal(userDetailsCustom);
 
             UserProfileUpdateRequest request = new UserProfileUpdateRequest(
-                    "Name", LocalTime.of(7, 0), null, 20, "Asia/Ho_Chi_Minh"
+                    "Name", LocalTime.of(7, 0), null, 20, 10, "Asia/Ho_Chi_Minh"
             );
 
             mockMvc.perform(put("/api/users/profile")
@@ -259,7 +252,7 @@ class UserIntegrationTest {
             MockMvc mockMvc = createMockMvcWithPrincipal(userDetailsCustom);
 
             UserProfileUpdateRequest request = new UserProfileUpdateRequest(
-                    "Name", LocalTime.of(7, 0), LocalTime.of(23, 0), null, "Asia/Ho_Chi_Minh"
+                    "Name", LocalTime.of(7, 0), LocalTime.of(23, 0), null, 10, "Asia/Ho_Chi_Minh"
             );
 
             mockMvc.perform(put("/api/users/profile")

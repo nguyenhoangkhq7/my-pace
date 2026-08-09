@@ -108,7 +108,7 @@ public class TaskTimeBlockServiceImpl implements TaskTimeBlockService {
 
         if (isCompleted != null) {
             block.setIsCompleted(isCompleted);
-            if (Boolean.TRUE.equals(isCompleted)) {
+            if (isCompleted) {
                 block.setCompletedAt(OffsetDateTime.now());
                 block.setAvailabilityStatus("BUSY");
                 task.setStatus("Done");

@@ -16,7 +16,9 @@ public class AutoScheduleController {
     public AutoScheduleResponse autoSchedule(
             @RequestBody(required = false) AutoScheduleWeekRequest request,
             @AuthenticationPrincipal UserDetailsCustom userDetails) {
-        Integer bufferMinutes = (request != null && request.bufferMinutes() != null) ? request.bufferMinutes() : 10;
+        Integer bufferMinutes = (request != null && request.bufferMinutes() != null) 
+                ? request.bufferMinutes() 
+                : userDetails.user().getBufferMinutes();
         return autoScheduleService.autoSchedule(
                 userDetails.user().getId(), bufferMinutes);
     }

@@ -8,6 +8,7 @@ export interface AuthUser {
   wakeTime?: string | null;
   sleepTime?: string | null;
   bufferPct?: number;
+  bufferMinutes?: number;
   timezone?: string;
 }
 
@@ -30,6 +31,7 @@ function isAuthUser(value: unknown): value is AuthUser {
     (candidate.wakeTime === undefined || candidate.wakeTime === null || typeof candidate.wakeTime === "string") &&
     (candidate.sleepTime === undefined || candidate.sleepTime === null || typeof candidate.sleepTime === "string") &&
     (candidate.bufferPct === undefined || typeof candidate.bufferPct === "number") &&
+    (candidate.bufferMinutes === undefined || typeof candidate.bufferMinutes === "number") &&
     (candidate.timezone === undefined || typeof candidate.timezone === "string")
   );
 }
@@ -48,6 +50,7 @@ function extractUser(rawUser: Record<string, unknown>): AuthUser {
     wakeTime: rawUser.wakeTime as string | null | undefined,
     sleepTime: rawUser.sleepTime as string | null | undefined,
     bufferPct: typeof rawUser.bufferPct === "number" ? rawUser.bufferPct : 20,
+    bufferMinutes: typeof rawUser.bufferMinutes === "number" ? rawUser.bufferMinutes : 10,
     timezone: (rawUser.timezone as string) || "Asia/Ho_Chi_Minh",
   };
 }

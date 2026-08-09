@@ -114,7 +114,7 @@ export function TaskFormSplittable({ form }: TaskFormSplittableProps) {
             <Label className="text-xs font-medium text-muted-foreground">
               {t.taskForm.minChunkLabel}
             </Label>
-            <div className="flex items-center gap-2">
+            <div className="flex items-start gap-2">
               <Input
                 type="number"
                 placeholder={t.taskForm.minChunkPlaceholder}
@@ -151,7 +151,7 @@ export function TaskFormSplittable({ form }: TaskFormSplittableProps) {
             <Label className="text-xs font-medium text-muted-foreground">
               {t.taskForm.maxDailyLabel}
             </Label>
-            <div className="flex items-center gap-2">
+            <div className="flex items-start gap-2">
               <Input
                 type="number"
                 placeholder={t.taskForm.maxDailyPlaceholder}

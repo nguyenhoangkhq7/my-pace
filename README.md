@@ -4,8 +4,7 @@
 ![React](https://img.shields.io/badge/React-19.x-61DAFB?style=flat-square&logo=react)
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.x-6DB33F?style=flat-square&logo=springboot)
 ![Java](https://img.shields.io/badge/Java-21-ED8B00?style=flat-square&logo=openjdk)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16.x-4169E1?style=flat-square&logo=postgresql)
-![Redis](https://img.shields.io/badge/Redis-7.x-DC382D?style=flat-square&logo=redis)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17.x-4169E1?style=flat-square&logo=postgresql)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?style=flat-square&logo=tailwindcss)
 ![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?style=flat-square&logo=docker)
 
@@ -73,7 +72,7 @@ flowchart TD
 
 ### **Backend (`apps/my-pace-service`)**
 - **Framework:** Spring Boot 4.x, Java 21, Maven
-- **Database & Cache:** PostgreSQL 16 (Spring Data JPA), Spring ConcurrentMapCache
+- **Database & Cache:** PostgreSQL 17 (Spring Data JPA), Spring ConcurrentMapCache
 - **Security:** JWT Authentication (`jjwt`), BCrypt
 - **Mappers & Tools:** MapStruct, Lombok
 
@@ -143,7 +142,6 @@ docker compose up --build -d
 | 🌐 **Frontend App** | [http://localhost:3000](http://localhost:3000) |
 | ⚙️ **Backend API** | [http://localhost:8080](http://localhost:8080) |
 | 🗄️ **PostgreSQL** | `localhost:5432` |
-| 🔴 **Redis** | `localhost:6379` |
 
 #### 🛑 Dừng hệ thống
 ```bash
@@ -156,7 +154,7 @@ docker compose down
 
 #### 1️⃣ Chạy Database & Redis bằng Docker Compose
 ```bash
-docker compose up postgres redis -d
+docker compose up db -d
 ```
 
 #### 2️⃣ Chạy Backend Service (Spring Boot)
@@ -178,11 +176,10 @@ npm run dev
 
 ### Backend (`apps/my-pace-service/.env`)
 ```env
-SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/mypacedb
-SPRING_DATASOURCE_USERNAME=mypace
-SPRING_DATASOURCE_PASSWORD=mypace_secret
-SPRING_REDIS_HOST=localhost
-SPRING_REDIS_PORT=6379
+SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/my_pace_db
+SPRING_DATASOURCE_USERNAME=my_pace
+SPRING_DATASOURCE_PASSWORD=my_pace_pass
+GROQ_API_KEY=your_groq_api_key
 JWT_SECRET=your_super_secret_jwt_key_at_least_256_bits_long
 RESEND_API_KEY=re_123456789
 ```
@@ -199,10 +196,4 @@ NEXT_PUBLIC_API_URL=http://localhost:8080
 - **Frontend Atomic Design:** Tuân thủ Single Responsibility Principle. Mỗi item trong danh sách hoặc form inline được tách riêng thành sub-component bên dưới `components/`.
 - **Backend Architecture:** Controller mỏng, xử lý nghiệp vụ tập trung tại Service Layer. Sử dụng MapStruct cho DTO mapping và UUID cho toàn bộ Identifier.
 - **Timezone Safety:** Mọi tính toán mốc thời gian đều được bảo toàn theo Timezone người dùng (`ZoneId`).
-
----
-
-## 📄 License & Tác giả
-
-Dự án được phát triển bởi **Nguyen Hoang** và cộng đồng đóng góp.  
-Bản quyền © 2026 **My Pace**. Bảo lưu mọi quyền.
+

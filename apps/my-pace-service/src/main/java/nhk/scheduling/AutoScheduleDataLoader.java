@@ -53,7 +53,9 @@ public class AutoScheduleDataLoader {
         LocalDate endDate = endOfFirstWeek.plusWeeks(1);
         LocalTime wakeTime = user.getWakeTime() != null ? user.getWakeTime() : LocalTime.of(7, 0);
         LocalTime sleepTime = user.getSleepTime() != null ? user.getSleepTime() : LocalTime.of(23, 0);
-        int bufferMinutes = bufferMinutesInput != null && bufferMinutesInput >= 0 ? bufferMinutesInput : 15;
+        int bufferMinutes = bufferMinutesInput != null && bufferMinutesInput >= 0 
+                ? bufferMinutesInput 
+                : (user.getBufferMinutes() != null ? user.getBufferMinutes() : 15);
         int wakeMin = wakeTime.getHour() * 60 + wakeTime.getMinute();
         int sleepMin = sleepTime.getHour() * 60 + sleepTime.getMinute();
 

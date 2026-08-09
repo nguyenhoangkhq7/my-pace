@@ -551,9 +551,9 @@ export function TaskFormContent({
             />
             
             {!requireDuration && !prefilledGoalId && (
-              <div className="grid grid-cols-2 gap-4 mt-2">
+              <div className="grid grid-cols-2 gap-4 mt-2 items-start">
                 <div className="flex flex-col space-y-1">
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 h-6">
                     <Controller
                       name="isUrgent"
                       control={control}
@@ -572,7 +572,7 @@ export function TaskFormContent({
                     <p className="text-xs text-amber-500 font-medium leading-tight">💡 Hãy chọn Hạn chót để tối ưu lịch</p>
                   )}
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 h-6">
                   <Controller
                     name="isImportant"
                     control={control}

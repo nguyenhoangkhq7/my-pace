@@ -49,6 +49,7 @@ class UserServiceTest {
                 LocalTime.of(7, 0),
                 LocalTime.of(23, 0),
                 25,
+                10,
                 "Asia/Ho_Chi_Minh"
         );
 
@@ -60,6 +61,7 @@ class UserServiceTest {
                 LocalTime.of(7, 0),
                 LocalTime.of(23, 0),
                 25,
+                10,
                 "Asia/Ho_Chi_Minh"
         );
     }
