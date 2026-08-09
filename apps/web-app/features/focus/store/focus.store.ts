@@ -128,7 +128,8 @@ interface FocusState {
     planTaskId: string,
     estimatedMinutes: number,
     alreadyWorkedMinutes?: number,
-    timeBlockInfo?: ActiveTimeBlockInfo | null
+    timeBlockInfo?: ActiveTimeBlockInfo | null,
+    keepTimer?: boolean
   ) => void;
   closeFocusMode: () => void;
 
@@ -302,24 +303,27 @@ export const useFocusStore = create<FocusState>()(
         )
       })),
       
-      openFocusMode: (taskId, planTaskId, estimatedMinutes, alreadyWorkedMinutes = 0, timeBlockInfo = null) => {
+      openFocusMode: (taskId, planTaskId, estimatedMinutes, alreadyWorkedMinutes = 0, timeBlockInfo = null, keepTimer = false) => {
         const { focusMinutes } = get();
         // Calculate total sessions and current session index based on total estimated time
         const totalSessions = Math.max(1, Math.ceil(estimatedMinutes / focusMinutes));
         const currentSession = Math.min(totalSessions, Math.floor(alreadyWorkedMinutes / focusMinutes) + 1);
         
-        set({
+        set(() => ({
           activeTaskId: taskId,
           activePlanTaskId: planTaskId,
           activeTaskEstimatedMinutes: estimatedMinutes,
           activeTimeBlockInfo: timeBlockInfo ?? null,
-          pomodoroState: "idle",
           currentSession,
           totalSessions,
-          timeLeft: focusMinutes * 60,
           accumulatedFocusTime: alreadyWorkedMinutes * 60,
-          lastActiveTimestamp: Date.now()
-        });
+          
+          ...(keepTimer ? {} : {
+            pomodoroState: "idle",
+            timeLeft: focusMinutes * 60,
+            lastActiveTimestamp: Date.now()
+          })
+        }));
       },
 
       closeFocusMode: () => {
@@ -438,11 +442,23 @@ export const useFocusStore = create<FocusState>()(
       },
 
       adjustForElapsedTime: () => {
-        const { pomodoroState, timeLeft, lastActiveTimestamp, accumulatedFocusTime } = get();
-        if ((pomodoroState === "focusing" || pomodoroState === "breaking") && lastActiveTimestamp > 0) {
+        const { pomodoroState, timeLeft, lastActiveTimestamp, accumulatedFocusTime, focusMinutes } = get();
+        if (lastActiveTimestamp > 0) {
           const now = Date.now();
           const elapsedSeconds = Math.floor((now - lastActiveTimestamp) / 1000);
-          if (elapsedSeconds > 0) {
+          
+          // IDLE TIMEOUT: If away or inactive for more than 30 minutes (1800 seconds), reset pomodoro
+          if (elapsedSeconds > 1800) {
+            set({
+              pomodoroState: "idle",
+              timeLeft: focusMinutes * 60,
+              lastActiveTimestamp: now
+            });
+            return;
+          }
+
+          if ((pomodoroState === "focusing" || pomodoroState === "breaking")) {
+            if (elapsedSeconds > 0) {
             if (timeLeft - elapsedSeconds <= 0) {
               const remainingFocus = pomodoroState === "focusing" ? timeLeft : 0;
               if (pomodoroState === "focusing") {
@@ -481,6 +497,7 @@ export const useFocusStore = create<FocusState>()(
             }
           }
         }
+      }
       }
     }),
     {

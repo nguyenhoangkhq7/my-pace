@@ -69,6 +69,7 @@ class UserControllerTest {
                 LocalTime.of(8, 0),
                 LocalTime.of(22, 0),
                 20,
+                10,
                 "Asia/Ho_Chi_Minh"
         );
 
@@ -80,6 +81,7 @@ class UserControllerTest {
                 LocalTime.of(8, 0),
                 LocalTime.of(22, 0),
                 20,
+                10,
                 "Asia/Ho_Chi_Minh"
         );
     }

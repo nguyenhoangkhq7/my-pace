@@ -43,6 +43,7 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
                     .checkedIn(false).checkinTime(null)
                     .streak(getStreakForUser(userId, zoneId))
                     .isPlanConfirmed(false)
+                    .decayedTaskTitles(java.util.Collections.emptyList())
                     .build();
         }
 
@@ -85,6 +86,7 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
                         .checkinTime(checkinTime != null ? checkinTime.toString().substring(0, 5) : null)
                         .streak(getStreakForUser(userId, zoneId))
                         .isPlanConfirmed(isPlanConfirmed)
+                        .decayedTaskTitles(java.util.Collections.emptyList())
                         .build();
             }
             
@@ -102,7 +104,7 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
 
         int workingWindow;
         if (windowEnd.equals(LocalTime.MIDNIGHT)) {
-            workingWindow = 1440 - (int) (windowStart.toSecondOfDay() / 60);
+            workingWindow = 1440 - (windowStart.toSecondOfDay() / 60);
         } else {
             workingWindow = (int) java.time.Duration.between(windowStart, windowEnd).toMinutes();
             if (workingWindow < 0) {
@@ -122,6 +124,7 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
                     .checkinTime(checkinTime != null ? checkinTime.toString().substring(0, 5) : null)
                     .streak(getStreakForUser(userId, zoneId))
                     .isPlanConfirmed(isPlanConfirmed)
+                    .decayedTaskTitles(java.util.Collections.emptyList())
                     .build();
         }
 
@@ -147,6 +150,7 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
                 .streak(getStreakForUser(userId, zoneId))
                 .blockedIntervals(unionResult.blockedIntervals)
                 .isPlanConfirmed(isPlanConfirmed)
+                .decayedTaskTitles(java.util.Collections.emptyList())
                 .build();
     }
 
@@ -160,8 +164,8 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
             return new UnionResult(0, java.util.Collections.emptyList());
         }
 
-        int windowStartMin = (int) (windowStart.toSecondOfDay() / 60);
-        int windowEndMin   = (int) (windowEnd.toSecondOfDay() / 60);
+        int windowStartMin = windowStart.toSecondOfDay() / 60;
+        int windowEndMin   = windowEnd.toSecondOfDay() / 60;
 
         boolean crossesMidnight = windowEnd.isBefore(windowStart);
 
@@ -180,8 +184,8 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
         if (!crossesMidnight) {
             intervals = busyOccurrences.stream()
                     .map(e -> new int[]{
-                            Math.max((int) (e.startTime().toSecondOfDay() / 60), windowStartMin),
-                            Math.min((int) (e.endTime().toSecondOfDay() / 60),   windowEndMin)
+                            Math.max(e.startTime().toSecondOfDay() / 60, windowStartMin),
+                            Math.min(e.endTime().toSecondOfDay() / 60,   windowEndMin)
                     })
                     .filter(iv -> iv[1] > iv[0])   // discard events entirely outside window
                     .sorted(Comparator.comparingInt(iv -> iv[0]))
@@ -190,8 +194,8 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
             int endOfTodayMin = 24 * 60; // 1440 minutes
             intervals = busyOccurrences.stream()
                     .map(e -> new int[]{
-                            Math.max((int) (e.startTime().toSecondOfDay() / 60), windowStartMin),
-                            Math.min((int) (e.endTime().toSecondOfDay() / 60),   endOfTodayMin)
+                            Math.max(e.startTime().toSecondOfDay() / 60, windowStartMin),
+                            Math.min(e.endTime().toSecondOfDay() / 60,   endOfTodayMin)
                     })
                     .filter(iv -> iv[1] > iv[0])   // discard events entirely outside window
                     .sorted(Comparator.comparingInt(iv -> iv[0]))
@@ -271,13 +275,6 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
         return streak;
     }
 
-    private static class UnionResult {
-        public final int totalBlockedMinutes;
-        public final List<AvailableTimeResponse.TimeInterval> blockedIntervals;
-
-        public UnionResult(int totalBlockedMinutes, List<AvailableTimeResponse.TimeInterval> blockedIntervals) {
-            this.totalBlockedMinutes = totalBlockedMinutes;
-            this.blockedIntervals = blockedIntervals;
-        }
+    private record UnionResult(int totalBlockedMinutes, List<AvailableTimeResponse.TimeInterval> blockedIntervals) {
     }
 }

@@ -51,6 +51,10 @@ public class User {
     @Column(name = "buffer_pct", nullable = false)
     private Integer bufferPct = 20;
 
+    @NotNull
+    @Column(name = "buffer_minutes", nullable = false)
+    private Integer bufferMinutes = 10;
+
     @Size(max = 50)
     @NotNull
     @Column(name = "timezone", nullable = false, length = 50)

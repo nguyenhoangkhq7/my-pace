@@ -24,8 +24,11 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 import java.time.LocalDate;
 import java.util.Map;
 import java.util.UUID;
+import java.util.List;
 
-import static org.mockito.Mockito.mock;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -75,31 +78,63 @@ class AutoScheduleControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/auto-schedule/week should invoke autoScheduleService")
+    @DisplayName("POST /api/auto-schedule should invoke autoScheduleService with bufferMinutes")
     void autoScheduleWeek_WithRequest() throws Exception {
-        AutoScheduleWeekRequest req = new AutoScheduleWeekRequest(today, 15, true);
-        AutoScheduleResponse response = new AutoScheduleResponse(today, today.plusDays(7), Map.of(), 0, false);
+        AutoScheduleWeekRequest req = new AutoScheduleWeekRequest(15);
+        AutoScheduleResponse response = new AutoScheduleResponse(today, today.plusDays(7), Map.of(), 0, false, List.of());
 
-        when(autoScheduleService.autoScheduleWeek(userId, today, 15, true)).thenReturn(response);
+        when(autoScheduleService.autoSchedule(userId, 15)).thenReturn(response);
 
         mockMvc.perform(post("/api/auto-schedule")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk());
 
-        verify(autoScheduleService).autoScheduleWeek(userId, today, 15, true);
+        verify(autoScheduleService).autoSchedule(userId, 15);
     }
 
     @Test
-    @DisplayName("POST /api/auto-schedule with null request uses default values")
+    @DisplayName("POST /api/auto-schedule with null request uses default bufferMinutes (10)")
     void autoScheduleWeek_NullRequest() throws Exception {
-        AutoScheduleResponse response = new AutoScheduleResponse(today, today.plusDays(7), Map.of(), 0, false);
+        AutoScheduleResponse response = new AutoScheduleResponse(today, today.plusDays(7), Map.of(), 0, false, List.of());
 
-        when(autoScheduleService.autoScheduleWeek(userId, null, 10, false)).thenReturn(response);
+        when(autoScheduleService.autoSchedule(userId, 10)).thenReturn(response);
 
         mockMvc.perform(post("/api/auto-schedule"))
                 .andExpect(status().isOk());
 
-        verify(autoScheduleService).autoScheduleWeek(userId, null, 10, false);
+        verify(autoScheduleService).autoSchedule(userId, 10);
+    }
+
+    @Test
+    @DisplayName("POST /api/auto-schedule/preview-slack should return true slack time")
+    void previewSlack() throws Exception {
+        PreviewSlackRequest req = new PreviewSlackRequest(120, 30, today);
+
+        PreviewSlackResponse response = new PreviewSlackResponse(600);
+        when(autoScheduleService.previewSlack(any(UUID.class), any(PreviewSlackRequest.class), anyInt())).thenReturn(response);
+
+        mockMvc.perform(post("/api/auto-schedule/preview-slack")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk());
+
+        verify(autoScheduleService).previewSlack(any(UUID.class), any(PreviewSlackRequest.class), anyInt());
+    }
+
+    @Test
+    @DisplayName("POST /api/auto-schedule/batch-slack should return map of slack times")
+    void batchSlack() throws Exception {
+        BatchSlackRequest req = new BatchSlackRequest(List.of(UUID.randomUUID(), UUID.randomUUID()));
+        BatchSlackResponse response = new BatchSlackResponse(Map.of(req.taskIds().get(0), 100, req.taskIds().get(1), -20));
+
+        when(autoScheduleService.batchSlack(any(UUID.class), any(BatchSlackRequest.class), anyInt())).thenReturn(response);
+
+        mockMvc.perform(post("/api/auto-schedule/batch-slack")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk());
+
+        verify(autoScheduleService).batchSlack(any(UUID.class), any(BatchSlackRequest.class), anyInt());
     }
 }

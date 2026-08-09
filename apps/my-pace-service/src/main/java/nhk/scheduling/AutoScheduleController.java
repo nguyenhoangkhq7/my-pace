@@ -5,8 +5,6 @@ import nhk.user.UserDetailsCustom;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
-
 @RestController
 @RequestMapping("/api/auto-schedule")
 @RequiredArgsConstructor
@@ -18,10 +16,29 @@ public class AutoScheduleController {
     public AutoScheduleResponse autoSchedule(
             @RequestBody(required = false) AutoScheduleWeekRequest request,
             @AuthenticationPrincipal UserDetailsCustom userDetails) {
-        LocalDate startDate = request != null ? request.startDate() : null;
-        Integer bufferMinutes = (request != null && request.bufferMinutes() != null) ? request.bufferMinutes() : 10;
-        Boolean singleDayOnly = request != null && request.singleDayOnly() != null ? request.singleDayOnly() : false;
-        return autoScheduleService.autoScheduleWeek(
-                userDetails.user().getId(), startDate, bufferMinutes, singleDayOnly);
+        Integer bufferMinutes = (request != null && request.bufferMinutes() != null) 
+                ? request.bufferMinutes() 
+                : userDetails.user().getBufferMinutes();
+        return autoScheduleService.autoSchedule(
+                userDetails.user().getId(), bufferMinutes);
+    }
+
+    @PostMapping("/preview-slack")
+    public PreviewSlackResponse previewSlack(
+            @RequestBody PreviewSlackRequest request,
+            @RequestParam(required = false) Integer bufferMinutes,
+            @AuthenticationPrincipal UserDetailsCustom userDetails) {
+        Integer buffer = bufferMinutes != null ? bufferMinutes : userDetails.user().getBufferMinutes();
+        return autoScheduleService.previewSlack(userDetails.user().getId(), request, buffer);
+    }
+
+    @PostMapping("/batch-slack")
+    public BatchSlackResponse batchSlack(
+            @RequestBody BatchSlackRequest request,
+            @RequestParam(required = false) Integer bufferMinutes,
+            @AuthenticationPrincipal UserDetailsCustom userDetails) {
+        Integer buffer = bufferMinutes != null ? bufferMinutes : userDetails.user().getBufferMinutes();
+        return autoScheduleService.batchSlack(userDetails.user().getId(), request, buffer);
     }
 }
+

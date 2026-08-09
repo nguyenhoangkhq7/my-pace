@@ -30,7 +30,7 @@ class UrgencyEvaluator {
         }
         if (resolvedDueDate != null) {
             LocalDateTime threshold = now.toLocalDateTime().plusHours(48);
-            if (resolvedDueDate.isBefore(threshold)) return true;
+            return resolvedDueDate.isBefore(threshold);
         }
         return false;
     }

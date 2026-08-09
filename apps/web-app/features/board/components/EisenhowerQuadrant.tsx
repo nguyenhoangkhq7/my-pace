@@ -10,6 +10,7 @@ interface EisenhowerQuadrantProps {
   plannedTaskIds: string[];
   isPlanningMode: boolean;
   selectedFilterId: string | null;
+  slackTimes?: Record<string, number>;
   onTaskClick: (task: Task) => void;
   onTaskDrop: (taskId: string, isUrgent: boolean, isImportant: boolean) => void;
 }
@@ -23,6 +24,7 @@ export function EisenhowerQuadrant({
   plannedTaskIds,
   isPlanningMode,
   selectedFilterId,
+  slackTimes,
   onTaskClick,
   onTaskDrop,
 }: EisenhowerQuadrantProps) {
@@ -86,6 +88,7 @@ export function EisenhowerQuadrant({
           <TaskBacklogCard
             key={task.id}
             task={task}
+            slackTime={slackTimes?.[task.id]}
             onClick={() => onTaskClick(task)}
             isPlanned={isPlanningMode && plannedTaskIds.includes(task.id)}
           />

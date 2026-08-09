@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import { useAuthStore } from "@/features/auth";
@@ -35,7 +35,6 @@ export function FlowPage() {
   useAppVisibility();
   const { t } = useTranslation();
   usePomodoro();
-  const user = useAuthStore((s) => s.user);
   const pomodoroState = useFocusStore((s) => s.pomodoroState);
   const openFocusMode = useFocusStore((s) => s.openFocusMode);
   const activeTaskId = useFocusStore((s) => s.activeTaskId);
@@ -43,7 +42,6 @@ export function FlowPage() {
   const startTimer = useFocusStore((s) => s.startTimer);
   const pauseTimer = useFocusStore((s) => s.pauseTimer);
   const resumeTimer = useFocusStore((s) => s.resumeTimer);
-  const closeFocusMode = useFocusStore((s) => s.closeFocusMode);
   const isZenFull = useFocusStore((s) => s.isZenFull);
   const isVideoBackground = useFocusStore((s) => s.isVideoBackground);
   const isControllerBarVisible = useFocusStore((s) => s.isControllerBarVisible);
@@ -87,9 +85,7 @@ export function FlowPage() {
   // Remember the exact pomodoroState before we paused it for the dialog
   const [prevPomodoroState, setPrevPomodoroState] = useState<"focusing" | "breaking" | null>(null);
 
-  useEffect(() => {
-    // Only kept for the dependencies if needed
-  }, [user]);
+
 
   useEffect(() => {
     return () => {
@@ -120,7 +116,7 @@ export function FlowPage() {
     };
   };
 
-  const doSwitch = (task: DailyPlanTask, block?: TaskTimeBlock) => {
+  const doSwitch = (task: DailyPlanTask, block?: TaskTimeBlock, keepTimer = false) => {
     const timeBlockInfo = createTimeBlockInfo(block);
     const estMinutes = timeBlockInfo ? timeBlockInfo.durationMinutes : (task.task.estimatedMinutes || 25);
     openFocusMode(
@@ -128,9 +124,23 @@ export function FlowPage() {
       task.id,
       estMinutes,
       task.task.actualMinutes || 0,
-      timeBlockInfo
+      timeBlockInfo,
+      keepTimer
     );
   };
+
+  const hasAutoFocusedRef = useRef(false);
+  useEffect(() => {
+    if (hasAutoFocusedRef.current || !dailyPlanToday || !tasks) return;
+    hasAutoFocusedRef.current = true;
+
+    if (dailyPlanToday.isConfirmed && !activeTaskId && dailyPlanToday.tasks.length > 0) {
+      const firstPlanTask = dailyPlanToday.tasks[0];
+      const firstBlock = dailyPlanToday.timeBlocks?.find(b => b.taskId === firstPlanTask.task.id);
+      doSwitch(firstPlanTask, firstBlock);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dailyPlanToday, activeTaskId, tasks]);
 
   const handleTaskSelect = (task: DailyPlanTask, block?: TaskTimeBlock) => {
     const isSameTask = task.task.id === activeTaskId;
@@ -191,8 +201,11 @@ export function FlowPage() {
     const nextBlock = pendingSwitchBlock;
     setPendingSwitchTask(null);
     setPendingSwitchBlock(undefined);
-    closeFocusMode();
-    doSwitch(next, nextBlock);
+    doSwitch(next, nextBlock, true);
+    if (prevPomodoroState) {
+      resumeTimer(prevPomodoroState);
+    }
+    setPrevPomodoroState(null);
   };
 
   const handleSwitchSaveAndSwitch = async () => {
@@ -209,8 +222,11 @@ export function FlowPage() {
       const nextBlock = pendingSwitchBlock;
       setPendingSwitchTask(null);
       setPendingSwitchBlock(undefined);
-      closeFocusMode();
-      doSwitch(next, nextBlock);
+      doSwitch(next, nextBlock, true);
+      if (prevPomodoroState) {
+        resumeTimer(prevPomodoroState);
+      }
+      setPrevPomodoroState(null);
     } catch (err) {
       console.error(err);
       toast.error("Không thể lưu tiến trình.");

@@ -7,8 +7,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import java.time.LocalDate;
-
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -20,8 +18,7 @@ public class AutoScheduleEventListener {
     public void handleFixedEventChanged(FixedEventChangedEvent event) {
         log.info("AutoScheduleEventListener: Handling FixedEventChangedEvent for user {}", event.userId());
         try {
-            LocalDate startDate = event.eventDate() != null ? event.eventDate() : LocalDate.now();
-            autoScheduleService.autoScheduleWeek(event.userId(), startDate, 15, false);
+            autoScheduleService.autoSchedule(event.userId(), null);
         } catch (IllegalStateException e) {
             log.debug("Auto-schedule in progress, skipping auto-trigger: {}", e.getMessage());
         } catch (Exception e) {
@@ -33,8 +30,7 @@ public class AutoScheduleEventListener {
     public void handleTaskMutated(TaskMutatedEvent event) {
         log.info("AutoScheduleEventListener: Handling TaskMutatedEvent for user {}", event.userId());
         try {
-            LocalDate startDate = event.affectedDate() != null ? event.affectedDate() : LocalDate.now();
-            autoScheduleService.autoScheduleWeek(event.userId(), startDate, 15, false);
+            autoScheduleService.autoSchedule(event.userId(), null);
         } catch (IllegalStateException e) {
             log.debug("Auto-schedule in progress, skipping auto-trigger: {}", e.getMessage());
         } catch (Exception e) {
@@ -42,3 +38,4 @@ public class AutoScheduleEventListener {
         }
     }
 }
+

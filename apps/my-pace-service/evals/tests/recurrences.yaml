@@ -1,0 +1,56 @@
+  # ── 9. Sự kiện lặp lại hàng ngày ──────────────────────────────────────
+  - vars:
+      text: "tập thể dục 7h mỗi ngày 1 tiếng"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "recurrenceType"
+        expected: "DAILY"
+
+
+  # ── 10. Sự kiện lặp lại hàng tuần theo các ngày thứ ──────────────────
+  - vars:
+      text: "Họp standup lúc 9h sáng hàng tuần thứ 2, thứ 4, thứ 6"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "09:00"
+      - type: select-json
+        value: "recurrenceType"
+        expected: "WEEKLY"
+      - type: select-json
+        value: "recurrenceDaysOfWeek"
+        expected: [1, 3, 5]
+
+
+  # ── 21. Event lặp lại hàng tuần ──────────────────────────────────────
+  - vars:
+      text: "tập yoga 6h sáng hàng tuần"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "06:00"
+      - type: select-json
+        value: "recurrenceType"
+        expected: "WEEKLY"
+
+
+  # ── 85. Lặp lại với điều kiện kết thúc (Recurrence with end condition) ─
+  - vars:
+      text: "uống thuốc lúc 8h sáng mỗi ngày cho đến hết tháng"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "recurrenceType"
+        expected: "DAILY"
+

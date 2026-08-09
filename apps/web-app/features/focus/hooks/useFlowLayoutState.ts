@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useFocusStore } from "@/features/focus/store/focus.store";
+import { useAuthStore } from "@/features/auth";
+import { getTodayStr } from "@/lib/date";
 import type { GroupImperativeHandle } from "react-resizable-panels";
 
 const ZEN_FULL_THRESHOLD = 80;
@@ -13,6 +15,9 @@ export function useFlowLayoutState() {
   const [isLeftCollapsed, setIsLeftCollapsed] = useState(false);
   const [isRightCollapsed, setIsRightCollapsed] = useState(false);
   const [sizes, setSizes] = useState<number[] | null>(null);
+
+  const user = useAuthStore((s) => s.user);
+  const todayStr = user ? getTodayStr(user.timezone) : new Date().toISOString().split("T")[0];
 
   const groupRef = useRef<GroupImperativeHandle | null>(null);
   const lastGoodSizesRef = useRef<[number, number, number]>([20, 60, 20]);
@@ -61,31 +66,36 @@ export function useFlowLayoutState() {
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length === expectedLen) {
+          let loadedSizes = null;
+          if (parsed && !Array.isArray(parsed) && parsed.date === todayStr && Array.isArray(parsed.sizes)) {
+            loadedSizes = parsed.sizes;
+          }
+
+          if (loadedSizes && loadedSizes.length === expectedLen) {
             // Only reset if size is invalid (greater than 0 but less than minSize 15)
-            if (expectedLen === 3 && ((parsed[0] > 0 && parsed[0] < 15) || (parsed[2] > 0 && parsed[2] < 15))) {
+            if (expectedLen === 3 && ((loadedSizes[0] > 0 && loadedSizes[0] < 15) || (loadedSizes[2] > 0 && loadedSizes[2] < 15))) {
               setSizes([20, 60, 20]);
               setIsLeftCollapsed(false);
               setIsRightCollapsed(false);
-              localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify([20, 60, 20]));
+              localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify({ date: todayStr, sizes: [20, 60, 20] }));
               return;
             }
-            if (expectedLen === 2 && parsed[0] > 0 && parsed[0] < 15) {
+            if (expectedLen === 2 && loadedSizes[0] > 0 && loadedSizes[0] < 15) {
               setSizes([25, 75]);
               setIsLeftCollapsed(false);
-              localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify([25, 75]));
+              localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify({ date: todayStr, sizes: [25, 75] }));
               return;
             }
 
             // Sync collapse state with restored sizes
             if (expectedLen === 3) {
-              setIsLeftCollapsed(parsed[0] === 0);
-              setIsRightCollapsed(parsed[2] === 0);
+              setIsLeftCollapsed(loadedSizes[0] === 0);
+              setIsRightCollapsed(loadedSizes[2] === 0);
             } else if (expectedLen === 2) {
-              setIsLeftCollapsed(parsed[0] === 0);
+              setIsLeftCollapsed(loadedSizes[0] === 0);
             }
 
-            setSizes(parsed);
+            setSizes(loadedSizes);
             return;
           }
           localStorage.removeItem(`myPaceFlowSizes_${layoutKey}`);
@@ -102,7 +112,7 @@ export function useFlowLayoutState() {
         setSizes([100]);
       }
     });
-  }, [layoutKey, resetKey, isXl, isLg]);
+  }, [layoutKey, resetKey, isXl, isLg, todayStr]);
 
   const requestFullscreen = () => {
     if (typeof document !== 'undefined' && !document.fullscreenElement) {
@@ -122,7 +132,7 @@ export function useFlowLayoutState() {
     exitFullscreen();
     const restored = lastGoodSizesRef.current;
     setSizes([...restored]);
-    try { localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify(restored)); } catch {}
+    try { localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify({ date: todayStr, sizes: restored })); } catch {}
 
     // Defer setLayout to the next tick to avoid editing DOM during unmount/remount process
     setTimeout(() => {
@@ -189,13 +199,13 @@ export function useFlowLayoutState() {
       if (arr[2] > 0) {
         lastGoodSizesRef.current = arr;
       }
-      try { localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify(arr)); } catch {}
+      try { localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify({ date: todayStr, sizes: arr })); } catch {}
     } else if (isLg && !isXl && layout["todo-panel"] !== undefined) {
       const arr = [layout["todo-panel"], layout["pomodoro-panel"] ?? 75];
       if (arr[0] > 0 && arr[0] < 14) return;
-      try { localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify(arr)); } catch {}
+      try { localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify({ date: todayStr, sizes: arr })); } catch {}
     }
-  }, [isXl, isLg, layoutKey, handleExitZenFull, setIsRightCollapsed, setIsLeftCollapsed, sizes]);
+  }, [isXl, isLg, layoutKey, handleExitZenFull, setIsRightCollapsed, setIsLeftCollapsed, sizes, todayStr]);
 
   const handleResetLayout = useCallback(() => {
     try {
@@ -246,9 +256,9 @@ export function useFlowLayoutState() {
     });
     setSizes([todo, pomodoro, zenzoneSize]);
     try {
-      localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify([todo, pomodoro, zenzoneSize]));
+      localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify({ date: todayStr, sizes: [todo, pomodoro, zenzoneSize] }));
     } catch {}
-  }, [layoutKey, isLeftCollapsed, sizes]);
+  }, [layoutKey, isLeftCollapsed, sizes, todayStr]);
 
   const handleCollapseZenZone = useCallback(() => {
     setIsRightCollapsed(true);
@@ -264,9 +274,9 @@ export function useFlowLayoutState() {
     });
     setSizes([todo, pomodoro, 0]);
     try {
-      localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify([todo, pomodoro, 0]));
+      localStorage.setItem(`myPaceFlowSizes_${layoutKey}`, JSON.stringify({ date: todayStr, sizes: [todo, pomodoro, 0] }));
     } catch {}
-  }, [sizes, isLeftCollapsed, layoutKey]);
+  }, [sizes, isLeftCollapsed, layoutKey, todayStr]);
 
   return {
     isLg,

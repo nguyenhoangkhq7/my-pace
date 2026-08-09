@@ -1,14 +1,15 @@
 package nhk.goal;
 
+import nhk.BaseIntegrationTest;
 import jakarta.persistence.EntityManager;
 import nhk.category.Category;
+import nhk.user.User;
+import nhk.user.Role;
+import java.time.LocalTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,10 +17,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
-@ActiveProfiles("test")
-@Transactional
-class GoalRepositoryIntegrationTest {
+class GoalRepositoryIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private EntityManager entityManager;
@@ -34,8 +32,29 @@ class GoalRepositoryIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        userId1 = UUID.randomUUID();
-        userId2 = UUID.randomUUID();
+        User user1 = new User();
+        user1.setEmail("user1@example.com");
+        user1.setPasswordHash("hash");
+        user1.setFullName("User 1");
+        user1.setRole(Role.USER);
+        user1.setWakeTime(LocalTime.of(6, 0));
+        user1.setSleepTime(LocalTime.of(22, 0));
+        user1.setBufferPct(15);
+        user1.setTimezone("UTC");
+        entityManager.persist(user1);
+        userId1 = user1.getId();
+
+        User user2 = new User();
+        user2.setEmail("user2@example.com");
+        user2.setPasswordHash("hash");
+        user2.setFullName("User 2");
+        user2.setRole(Role.USER);
+        user2.setWakeTime(LocalTime.of(6, 0));
+        user2.setSleepTime(LocalTime.of(22, 0));
+        user2.setBufferPct(15);
+        user2.setTimezone("UTC");
+        entityManager.persist(user2);
+        userId2 = user2.getId();
 
         categoryA = new Category();
         categoryA.setUserId(userId1);

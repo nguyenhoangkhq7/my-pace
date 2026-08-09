@@ -21,6 +21,7 @@ import { ChecklistModal } from "@/features/focus/components/ChecklistModal";
 import { useFlowKeyboardShortcuts } from "@/features/focus/hooks/useFlowKeyboardShortcuts";
 
 function FocusedStatsDisplay() {
+  const { t } = useTranslation();
   const accumulatedFocusTime = useFocusStore((s) => s.accumulatedFocusTime);
   const isVideoBackground = useFocusStore((s) => s.isVideoBackground);
   const pomodoroState = useFocusStore((s) => s.pomodoroState);
@@ -31,11 +32,11 @@ function FocusedStatsDisplay() {
         "text-[11px] lg:text-xs font-bold uppercase tracking-[0.2em]",
         isVideoBackground ? "text-white/80 drop-shadow-xs" : "text-muted-foreground"
       )}>
-        FOCUSED: <span className={cn("ml-1 font-mono", isVideoBackground ? "text-white font-bold" : "text-foreground")}>{Math.floor(accumulatedFocusTime / 60)} MIN</span>
+        {t.flow.focusedLabel} <span className={cn("ml-1 font-mono", isVideoBackground ? "text-white font-bold" : "text-foreground")}>{Math.floor(accumulatedFocusTime / 60)} {t.flow.focusedMinLabel}</span>
       </div>
       {pomodoroState === "finished" && (
         <div className="text-amber-300 mt-2 text-center max-w-sm bg-amber-500/20 backdrop-blur-md px-4 py-2 rounded-xl border border-amber-400/30 font-medium text-xs md:text-sm">
-          Time is up! Keep working or mark as complete.
+          {t.flow.timeIsUpAlert}
         </div>
       )}
     </div>
@@ -76,7 +77,7 @@ export function FlowPomodoro() {
     },
   });
   const toggleTaskDoneMutation = useMutation({
-    mutationFn: ({ taskId }: { taskId: string }) => fetchClient.post(`daily-plans/tasks/${taskId}/toggle`, {}).then(r => r.data),
+    mutationFn: ({ taskId }: { taskId: string }) => fetchClient.put(`daily-plans/tasks/${taskId}/toggle-done`, {}).then(r => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['dailyPlan'] });
@@ -165,8 +166,6 @@ export function FlowPomodoro() {
       
       await toggleTaskDoneMutation.mutateAsync({ taskId: activePlanTaskId });
       
-      pauseTimer();
-      
       const freshPlan = queryClient.getQueryData<DailyPlan>(['dailyPlan', todayStr]) || dailyPlanToday;
       const currentTaskIndex = freshPlan?.tasks.findIndex((t: DailyPlanTask) => t.id === activePlanTaskId) ?? -1;
       
@@ -175,7 +174,7 @@ export function FlowPomodoro() {
         const nextTask = remainingTasks.find((t: DailyPlanTask) => t.task.status !== "Done" && t.id !== activePlanTaskId);
         
         if (nextTask) {
-          useFocusStore.getState().openFocusMode(nextTask.task.id, nextTask.id, nextTask.task.estimatedMinutes || 25, nextTask.task.actualMinutes || 0);
+          useFocusStore.getState().openFocusMode(nextTask.task.id, nextTask.id, nextTask.task.estimatedMinutes || 25, nextTask.task.actualMinutes || 0, null, true);
         } else {
           closeFocusMode();
         }

@@ -168,6 +168,7 @@ export interface Translations {
     errorMessage: string;
   };
   categories: {
+    title: string;
     manageTitle: string;
     manageDesc: string;
     noneYet: string;
@@ -383,6 +384,8 @@ export interface Translations {
     sleepTime: string;
     bufferRatio: string;
     bufferDesc: string;
+    bufferMinutes: string;
+    bufferMinutesDesc: string;
     logout: string;
     cancel: string;
     saving: string;
@@ -408,6 +411,10 @@ export interface Translations {
     activeHoursDesc: string;
     totalActiveLabel: string;
     fixedScheduleLabel: string;
+    bufferRatio: string;
+    bufferDesc: string;
+    bufferMinutes: string;
+    bufferMinutesDesc: string;
     bufferLabel: string;
     freeTimeLabel: string;
     autoScheduleDesc: (val: string) => string;
@@ -618,6 +625,19 @@ export interface Translations {
     summaryTitle: string;
     summaryDesc: string;
     tasksDone: string;
+    focusedLabel: string;
+    focusedMinLabel: string;
+    timeIsUpAlert: string;
+    statusIdle: string;
+    statusFocusing: string;
+    statusBreaking: string;
+    statusFinished: string;
+    statusPaused: string;
+    sessionCount: (current: number, total: number) => string;
+    executingBlock: (partIndex: number, totalParts: number, startTime: string, endTime: string, duration: number) => string;
+    timerHours: string;
+    timerMinutes: string;
+    timerSeconds: string;
     focusMinutes: string;
     estimatedTime: string;
     quote: string;

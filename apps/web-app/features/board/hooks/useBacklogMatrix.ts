@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 import { useBoardStore } from "../store/board.store";
 import { useShallow } from "zustand/react/shallow";
@@ -7,6 +7,7 @@ import { Task } from "../types";
 import { useTasks } from "./useTasks";
 import { useDailyPlan } from "./useDailyPlan";
 import { useCategories } from "./useCategories";
+import { useBatchSlack } from "./useAutoScheduleSlack";
 
 export function useBacklogMatrix(currentDate: string, tomorrowDate: string) {
   const {
@@ -68,13 +69,35 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string) {
 
   const [requireDurationForTask, setRequireDurationForTask] = useState<Task | undefined>(undefined);
 
+  const { batchSlack } = useBatchSlack();
+  const [slackTimes, setSlackTimes] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    const backlogTaskIds = tasks
+      .filter(t => t.status === "Backlog" || t.status === "Icebox")
+      .map(t => t.id);
+    if (backlogTaskIds.length > 0) {
+      batchSlack(backlogTaskIds).then(res => {
+        if (res) setSlackTimes(res);
+      });
+    }
+  }, [tasks, batchSlack]);
+
   const checkTimeLimit = (newEstimatedMinutes: number) => {
     const plannedTasks = tasks.filter(t => plannedTaskIds.includes(t.id));
     const usedTime = plannedTasks.reduce((acc, t) => acc + (t.estimatedMinutes || 0), 0);
 
-    if (usedTime + newEstimatedMinutes > availableMinutes) {
-      toast.warning("Task này vượt quá thời gian trống còn lại trong ngày!");
+    if (usedTime >= availableMinutes) {
+      toast.error("Quỹ thời gian trống đã cạn kiệt! Bạn không thể chọn thêm task vào kế hoạch.");
+      return false; // Not allowed
     }
+
+    if (usedTime + newEstimatedMinutes > availableMinutes) {
+      toast.warning("Cảnh báo: Bạn đã lên lịch vượt quá quỹ thời gian rảnh. Task này sẽ lấn vào thời gian dự phòng hoặc giờ nghỉ ngơi của bạn!");
+      return true; // Allowed this one time but with warning
+    }
+
+    return true; // Allowed
   };
 
   const handleCreateTask = async (data: Partial<Task>) => {
@@ -85,8 +108,9 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string) {
       newTask = await createTask(data);
       if (isPlanningMode && newTask) {
         if (newTask.estimatedMinutes) {
-          checkTimeLimit(newTask.estimatedMinutes);
-          addPlannedTaskLocally(newTask);
+          if (checkTimeLimit(newTask.estimatedMinutes)) {
+            addPlannedTaskLocally(newTask);
+          }
         }
       }
     }
@@ -106,8 +130,9 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string) {
         if (!task.estimatedMinutes) {
           setRequireDurationForTask(task);
         } else {
-          checkTimeLimit(task.estimatedMinutes);
-          addPlannedTaskLocally(task);
+          if (checkTimeLimit(task.estimatedMinutes)) {
+            addPlannedTaskLocally(task);
+          }
         }
       }
     } else {
@@ -123,9 +148,12 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string) {
     if (requireDurationForTask) {
       const updatedTask = await updateTask({ id: requireDurationForTask.id, data });
       if (updatedTask && updatedTask.estimatedMinutes) {
-        checkTimeLimit(updatedTask.estimatedMinutes);
+        if (checkTimeLimit(updatedTask.estimatedMinutes)) {
+          addPlannedTaskLocally(updatedTask);
+        }
+      } else {
+        addPlannedTaskLocally(updatedTask);
       }
-      addPlannedTaskLocally(updatedTask);
       setRequireDurationForTask(undefined);
     }
   };
@@ -143,6 +171,7 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string) {
     selectedFilterId,
     setFilter,
     categories,
+    slackTimes,
 
     // Handlers
     handleCreateTask,

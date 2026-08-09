@@ -1,5 +1,6 @@
 package nhk.timecontext;
 
+import nhk.BaseIntegrationTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import nhk.category.Category;
@@ -14,16 +15,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.NestedTestConfiguration;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.support.WebDataBinderFactory;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
@@ -43,15 +40,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import jakarta.persistence.EntityManager;
 
-@SpringBootTest
-@ActiveProfiles("test")
-@Transactional
 @NestedTestConfiguration(NestedTestConfiguration.EnclosingConfiguration.INHERIT)
-@TestPropertySource(properties = {
-    "RESEND_API_KEY=test-api-key",
-    "JWT_SECRET=test-jwt-secret-with-at-least-256-bits-length-so-it-does-not-fail-validation"
-})
-class TimeContextIntegrationTest {
+class TimeContextIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private EntityManager entityManager;

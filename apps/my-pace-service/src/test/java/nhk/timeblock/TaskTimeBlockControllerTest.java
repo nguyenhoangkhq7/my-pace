@@ -98,7 +98,8 @@ class TaskTimeBlockControllerTest {
                 false,
                 null,
                 "FREE",
-                false
+                false,
+                null
         );
     }
 
@@ -163,7 +164,8 @@ class TaskTimeBlockControllerTest {
                 true,
                 null,
                 "BUSY",
-                false
+                false,
+                null
         );
 
         when(timeBlockService.updateTimeBlockProgress(eq(blockId), eq(30), eq(true), eq(userId)))
@@ -229,7 +231,8 @@ class TaskTimeBlockControllerTest {
                 false,
                 null,
                 "BUSY",
-                false
+                false,
+                null
         );
 
         when(timeBlockService.toggleTimeBlockLockStatus(eq(blockId), eq("BUSY"), eq(userId)))

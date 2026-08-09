@@ -19,5 +19,10 @@ public record UserProfileUpdateRequest(
     @Max(value = 30, message = "Buffer percentage must be at most 30%")
     Integer bufferPct,
 
+    @NotNull(message = "Buffer minutes cannot be null")
+    @Min(value = 0, message = "Buffer minutes must be at least 0")
+    @Max(value = 60, message = "Buffer minutes must be at most 60")
+    Integer bufferMinutes,
+
     String timezone
 ) {}

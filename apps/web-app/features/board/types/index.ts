@@ -51,6 +51,7 @@ export interface TaskTimeBlock {
   isMit?: boolean;
   availabilityStatus?: 'BUSY' | 'FREE';
   isLocked?: boolean;
+  statusWarning?: string;
 }
 
 export interface DailyPlanTask {
@@ -59,6 +60,7 @@ export interface DailyPlanTask {
   task: Task;
   isMit: boolean;
   sortOrder: number;
+  escalationReason?: string;
 }
 
 export interface DailyPlan {
