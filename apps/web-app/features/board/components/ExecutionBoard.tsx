@@ -36,6 +36,7 @@ export function ExecutionBoard({
     currentAvailable,
     totalAvailable,
     availableData,
+    slackTimes,
     handleSavePlan,
     doSavePlan,
     handleCancelPlan,
@@ -52,6 +53,7 @@ export function ExecutionBoard({
           availableData={availableData ?? null}
           plannedTaskIds={plannedTaskIds}
           tasks={tasks}
+          slackTimes={slackTimes}
           onCancel={() => setPlanningMode(false)}
           onSave={handleSavePlan}
           onRemoveTask={removePlannedTaskLocally}

@@ -1,0 +1,44 @@
+  # ── 32. Nhập văn bản dài / Trò chuyện (Conversational) ─────────────────
+  - vars:
+      text: "Tối nay chắc tầm 8h tớ phải ngồi làm slide thuyết trình đến tầm 10h đêm đấy nhé"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "20:00"
+      - type: select-json
+        value: "endTime"
+        expected: "22:00"
+
+
+  # ── 33. Nhập câu trò chuyện có tính khẩn cấp ──────────────────────────
+  - vars:
+      text: "Sáng mai 9h nhớ đi họp với phòng HR vì có việc gấp liên quan đến hợp đồng"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "09:00"
+      - type: select-json
+        value: "isUrgent"
+        expected: true
+
+
+  # ── 74. Viết tắt quá mức (Gen Z / Heavy Slang) ───────────────────────
+  - vars:
+      text: "mai hsau t6 dl r lm btap thoi gap"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "task"
+      - type: select-json
+        value: "isUrgent"
+        expected: true
+      - type: select-json
+        value: "dueDate"
+        expected: ".*T23:59:00"
+

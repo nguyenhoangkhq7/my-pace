@@ -165,4 +165,48 @@ class AutoScheduleIntegrationTest extends BaseIntegrationTest {
         assertThat(mBlocksToday).isEmpty(); // Bị tbTask chiếm hết giờ hôm nay!
         assertThat(mBlocksTomorrow).isNotEmpty(); // Được vắt sang ngày mai!
     }
+
+    @Test
+    @DisplayName("Integration Test: Preview Slack Time")
+    void testPreviewSlackTime() {
+        LocalDate todayDate = LocalDate.now(java.time.ZoneId.of(testUser.getTimezone()));
+        
+        PreviewSlackRequest req = new PreviewSlackRequest(100, 20, todayDate);
+        
+        PreviewSlackResponse res = autoScheduleService.previewSlack(testUser.getId(), req, 0);
+        
+        assertThat(res).isNotNull();
+        // The exact slack time depends on available time and how the calculation behaves.
+        // It should just run successfully and return a number.
+        assertThat(res.trueSlackTime()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Integration Test: Batch Slack Time")
+    void testBatchSlackTime() {
+        LocalDate todayDate = LocalDate.now(java.time.ZoneId.of(testUser.getTimezone()));
+        
+        Task task1 = new Task();
+        task1.setUserId(testUser.getId());
+        task1.setTitle("Task 1");
+        task1.setEstimatedMinutes(120);
+        task1.setDueDate(todayDate.plusDays(1).atTime(23, 59));
+        task1.setStatus("Backlog");
+        task1 = taskRepository.save(task1);
+
+        Task task2 = new Task();
+        task2.setUserId(testUser.getId());
+        task2.setTitle("Task 2");
+        task2.setEstimatedMinutes(60);
+        task2.setDueDate(todayDate.plusDays(2).atTime(23, 59));
+        task2.setStatus("Backlog");
+        task2 = taskRepository.save(task2);
+
+        BatchSlackRequest req = new BatchSlackRequest(List.of(task1.getId(), task2.getId()));
+        BatchSlackResponse res = autoScheduleService.batchSlack(testUser.getId(), req, 0);
+
+        assertThat(res).isNotNull();
+        assertThat(res.slackTimes()).containsKey(task1.getId());
+        assertThat(res.slackTimes()).containsKey(task2.getId());
+    }
 }

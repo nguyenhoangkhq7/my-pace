@@ -63,6 +63,9 @@ public class TaskTimeBlock {
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 
+    @Column(name = "status_warning")
+    private String statusWarning;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = OffsetDateTime.now();

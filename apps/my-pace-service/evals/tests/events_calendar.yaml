@@ -1,0 +1,369 @@
+  # ── 4. Event buổi tối với thời lượng cụ thể ─────────────────────────────
+  - vars:
+      text: "xem phim tối nay 8 giờ tốn 2 tiếng"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "20:00"
+      - type: select-json
+        value: "endTime"
+        expected: "22:00"
+      - type: select-json
+        value: "estimatedMinutes"
+        expected: 120
+
+
+  # ── 5. Event buổi chiều ───────────────────────────────────────────────
+  - vars:
+      text: "họp team backend 3h chiều khoảng 1 tiếng"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "15:00"
+      - type: select-json
+        value: "endTime"
+        expected: "16:00"
+      - type: select-json
+        value: "estimatedMinutes"
+        expected: 60
+
+
+  # ── 6. Event buổi sáng ────────────────────────────────────────────────
+  - vars:
+      text: "tập gym 7h sáng 1 tiếng"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "07:00"
+      - type: select-json
+        value: "endTime"
+        expected: "08:00"
+      - type: select-json
+        value: "estimatedMinutes"
+        expected: 60
+
+
+  # ── 11. Event có vị trí / ghi chú ────────────────────────────────────
+  - vars:
+      text: "mai 3h họp team ở phòng B2 khoảng 2 tiếng"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "15:00"
+      - type: select-json
+        value: "notes"
+        expected: "B2"
+
+
+  # ── 13. Event phỏng vấn ứng viên 45 phút ─────────────────────────────
+  - vars:
+      text: "phỏng vấn ứng viên 2h chiều 45 phút"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "14:00"
+      - type: select-json
+        value: "endTime"
+        expected: "14:45"
+      - type: select-json
+        value: "estimatedMinutes"
+        expected: 45
+
+
+  # ── 14. Event ăn tối cuối tuần ───────────────────────────────────────
+  - vars:
+      text: "đi ăn tối với gia đình 7h tối thứ 7 khoảng 2 tiếng"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "19:00"
+      - type: select-json
+        value: "endTime"
+        expected: "21:00"
+      - type: select-json
+        value: "estimatedMinutes"
+        expected: 120
+
+
+  # ── 17. Event sức khỏe (Health domain -> Important) ───────────────────
+  - vars:
+      text: "đi khám răng 8h sáng thứ 3"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "08:00"
+      - type: select-json
+        value: "isImportant"
+        expected: true
+
+
+  # ── 22. Event cả ngày nghỉ cuối tuần ─────────────────────────────────
+  - vars:
+      text: "chủ nhật này đi du lịch cả ngày"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "isAllDay"
+        expected: true
+
+
+  # ── 24. Event trao đổi công việc 30 phút buổi chiều ──────────────────
+  - vars:
+      text: "họp trao đổi dự án lúc 2h chiều 30 phút"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "14:00"
+      - type: select-json
+        value: "endTime"
+        expected: "14:30"
+      - type: select-json
+        value: "estimatedMinutes"
+        expected: 30
+
+
+  # ── 26. Không dấu + Viết tắt (Teencode / Casual) ─────────────────────
+  - vars:
+      text: "hop team 3h chieu 30p"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "15:00"
+      - type: select-json
+        value: "estimatedMinutes"
+        expected: 30
+
+
+  # ── 29. Song ngữ / Tiếng Anh AM-PM Format ─────────────────────────────
+  - vars:
+      text: "Sync team at 10:30am for 1 hour"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "10:30"
+      - type: select-json
+        value: "estimatedMinutes"
+        expected: 60
+
+
+  # ── 30. Tiếng Anh với định dạng 3:30pm ────────────────────────────────
+  - vars:
+      text: "Meeting with client 3:30pm"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "15:30"
+
+
+  # ── 34. Khoảng thời gian cụ thể (từ ... đến ...) ─────────────────────
+  - vars:
+      text: "Đi bảo dưỡng xe từ 9h đến 11h sáng mai"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "09:00"
+      - type: select-json
+        value: "endTime"
+        expected: "11:00"
+      - type: select-json
+        value: "estimatedMinutes"
+        expected: 120
+
+
+  # ── 35. Nhập cực ngắn / Tối giản (Minimalist) ─────────────────────────
+  - vars:
+      text: "gym 7h sáng"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "07:00"
+
+
+  # ── 46. Đánh giá độ quan trọng: Giải trí (Entertainment -> NOT Important)
+  - vars:
+      text: "Chơi game Liên Minh lúc 9h tối"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "21:00"
+      - type: select-json
+        value: "isImportant"
+        expected: false
+
+
+  # ── 47. Đánh giá độ quan trọng: Giao lưu/Nhậu (Casual Social -> NOT Important)
+  - vars:
+      text: "Đi nhậu với team lúc 6h tối 2 tiếng"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "18:00"
+      - type: select-json
+        value: "isImportant"
+        expected: false
+
+
+  # ── 48. Mốc thời gian tương đối: "ngày kia" / "ngày mốt" ──────────────
+  - vars:
+      text: "Ngày kia đi phỏng vấn lúc 9h sáng"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "09:00"
+      - type: select-json
+        value: "isImportant"
+        expected: true
+
+
+  # Event Suggestion 1
+  - vars:
+      text: "team meeting at 3pm tomorrow"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "15:00"
+
+  - vars:
+      text: "họp team lúc 3h chiều mai"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "15:00"
+
+
+  # Event Suggestion 2
+  - vars:
+      text: "interview Tuesday 10am"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "10:00"
+
+  - vars:
+      text: "phỏng vấn thứ 3 lúc 10h"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "10:00"
+
+
+  # Event Suggestion 3
+  - vars:
+      text: "run 6am - 7am tomorrow #health"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "06:00"
+      - type: select-json
+        value: "endTime"
+        expected: "07:00"
+
+  - vars:
+      text: "chạy bộ 6h - 7h sáng mai #health"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "06:00"
+      - type: select-json
+        value: "endTime"
+        expected: "07:00"
+
+
+  # Event Suggestion 4
+  - vars:
+      text: "mom's birthday all day Sunday note: call in the evening"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "isAllDay"
+        expected: true
+      - type: select-json
+        value: "notes"
+        expected: "call in the evening"
+
+  - vars:
+      text: "sinh nhật mẹ cả ngày chủ nhật ghi chú: gọi điện vào buổi tối"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "isAllDay"
+        expected: true
+      - type: select-json
+        value: "notes"
+        expected: "gọi điện vào buổi tối"
+
+
+
+

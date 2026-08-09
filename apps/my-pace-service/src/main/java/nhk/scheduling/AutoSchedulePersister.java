@@ -78,6 +78,7 @@ public class AutoSchedulePersister {
                             existing.setStartTime(raw.getStartTime());
                             existing.setEndTime(raw.getEndTime());
                             existing.setPartIndex(raw.getPartIndex());
+                            existing.setStatusWarning(raw.getStatusWarning());
                             blocksToSave.add(existing);
                         }
                         finalFreeBlocks.add(existing);
@@ -140,7 +141,8 @@ public class AutoSchedulePersister {
                                 b.getIsCompleted() != null ? b.getIsCompleted() : false,
                                 b.getCompletedAt(),
                                 b.getAvailabilityStatus() != null ? b.getAvailabilityStatus() : "FREE",
-                                Boolean.TRUE.equals(b.getIsLocked())
+                                Boolean.TRUE.equals(b.getIsLocked()),
+                                b.getStatusWarning()
                         ))
                         .collect(Collectors.toList());
                 responseMap.put(date, dtos);
@@ -157,16 +159,26 @@ public class AutoSchedulePersister {
                                 b.getIsCompleted() != null ? b.getIsCompleted() : false,
                                 b.getCompletedAt(),
                                 b.getAvailabilityStatus() != null ? b.getAvailabilityStatus() : "FREE",
-                                Boolean.TRUE.equals(b.getIsLocked())
+                                Boolean.TRUE.equals(b.getIsLocked()),
+                                b.getStatusWarning()
                         ))
                         .collect(Collectors.toList());
                 responseMap.put(date, existingDtos);
             }
         }
 
+        List<String> schedulingWarnings = new ArrayList<>();
         int overflowMinutes = 0;
         for (List<TaskQueueItem> queue : queues.dateTaskQueues().values()) {
-            overflowMinutes += queue.stream().mapToInt(item -> item.remainingMinutes).sum();
+            for (TaskQueueItem item : queue) {
+                if (item.remainingMinutes > 0) {
+                    overflowMinutes += item.remainingMinutes;
+                    if ("INFEASIBLE".equals(item.statusWarning) || item.remainingMinutes > 0) {
+                        int est = item.task.getEstimatedMinutes() != null ? item.task.getEstimatedMinutes() : 0;
+                        schedulingWarnings.add("Task '" + item.task.getTitle() + "' chỉ xếp được " + (est - item.remainingMinutes) + "/" + est + " phút.");
+                    }
+                }
+            }
         }
         boolean scheduledBacklog = false;
         for (LocalDate d : ctx.dateRange()) {
@@ -177,10 +189,16 @@ public class AutoSchedulePersister {
         }
 
         if (scheduledBacklog) {
-            overflowMinutes += queues.backlogQueue().stream().mapToInt(item -> item.remainingMinutes).sum();
+            for (TaskQueueItem item : queues.backlogQueue()) {
+                if (item.remainingMinutes > 0) {
+                    overflowMinutes += item.remainingMinutes;
+                    int est = item.task.getEstimatedMinutes() != null ? item.task.getEstimatedMinutes() : 0;
+                    schedulingWarnings.add("Task '" + item.task.getTitle() + "' chỉ xếp được " + (est - item.remainingMinutes) + "/" + est + " phút.");
+                }
+            }
         }
         boolean isOverscheduled = overflowMinutes > 0;
 
-        return new AutoScheduleResponse(ctx.startDate(), ctx.endDate(), responseMap, overflowMinutes, isOverscheduled);
+        return new AutoScheduleResponse(ctx.startDate(), ctx.endDate(), responseMap, overflowMinutes, isOverscheduled, schedulingWarnings);
     }
 }
