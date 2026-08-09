@@ -162,7 +162,7 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
             while (cursorMin < endOfDayMin && !activeQueue.isEmpty()) {
                 // Move cursor forward to next free slot
                 while (cursorMin < endOfDayMin && bitmapScheduler.isBusy(ctx.userId(), date, cursorMin)) {
-                    cursorMin += 15;
+                    cursorMin += 5;
                 }
                 
                 if (cursorMin >= endOfDayMin) break;
@@ -170,7 +170,7 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
                 // Find contiguous free time from cursorMin
                 int freeLength = 0;
                 while (cursorMin + freeLength < endOfDayMin && !bitmapScheduler.isBusy(ctx.userId(), date, cursorMin + freeLength)) {
-                    freeLength += 15;
+                    freeLength += 5;
                 }
 
                 int minChunk = 30; // Base rule: min chunk 30 minutes
@@ -210,7 +210,7 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
                 
                 if (selectedItem == null) {
                     // No task can be scheduled at this time. Advance cursor.
-                    cursorMin += 15;
+                    cursorMin += 5;
                     continue;
                 }
 
@@ -240,7 +240,7 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
                 requiredMinChunkForSelected = Math.min(requiredMinChunkForSelected, selectedItem.remainingMinutes);
 
                 if (allocateSize < requiredMinChunkForSelected) {
-                    cursorMin += 15;
+                    cursorMin += 5;
                     continue;
                 }
 
