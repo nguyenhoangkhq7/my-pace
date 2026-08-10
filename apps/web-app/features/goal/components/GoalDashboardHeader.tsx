@@ -12,10 +12,9 @@ export function GoalDashboardHeader({ onOpenRules, onOpenCreate }: GoalDashboard
   const { t } = useTranslation();
 
   return (
-    <div className="flex items-center justify-between mb-8">
+    <div className="flex items-center justify-between mb-2">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
-          <HugeiconsIcon icon={Target02Icon} className="text-primary" size={26} />
+        <h1 className="text-lg font-bold tracking-tight text-foreground">
           {t.goals.title}
         </h1>
         <p className="text-sm text-muted-foreground mt-1.5">{t.goals.description}</p>

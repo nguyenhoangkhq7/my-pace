@@ -44,6 +44,9 @@ class AvailableTimeServiceImplTest {
     @Mock
     private DailyPlanRepository dailyPlanRepository;
 
+    @Mock
+    private CheckinStreakService streakService;
+
     @InjectMocks
     private AvailableTimeServiceImpl service;
 
@@ -81,7 +84,7 @@ class AvailableTimeServiceImplTest {
             sampleUser.setWakeTime(null);
             LocalDate date = LocalDate.now();
             when(userRepo.findById(userId)).thenReturn(Optional.of(sampleUser));
-            when(checkinRepo.findByUserIdOrderByCheckinDateDesc(userId)).thenReturn(Collections.emptyList());
+            when(streakService.getStreak(eq(userId), any())).thenReturn(0);
 
             AvailableTimeResponse resp = service.getAvailableTime(userId, date);
 
@@ -103,7 +106,7 @@ class AvailableTimeServiceImplTest {
             when(userRepo.findById(userId)).thenReturn(Optional.of(sampleUser));
             when(checkinRepo.findByUserIdAndCheckinDate(userId, pastDate)).thenReturn(Optional.empty());
             when(dailyPlanRepository.findByUserIdAndPlanDate(userId, pastDate)).thenReturn(Optional.empty());
-            when(checkinRepo.findByUserIdOrderByCheckinDateDesc(userId)).thenReturn(Collections.emptyList());
+            when(streakService.getStreak(eq(userId), any())).thenReturn(0);
 
             AvailableTimeResponse resp = service.getAvailableTime(userId, pastDate);
 
@@ -111,22 +114,22 @@ class AvailableTimeServiceImplTest {
         }
 
         @Test
-        @DisplayName("Should return available minutes for future date starting from wakeTime + 15m")
+        @DisplayName("Should return available minutes for future date starting from wakeTime")
         void getAvailableTime_FutureDate() {
             LocalDate futureDate = LocalDate.now(ZoneOffset.UTC).plusDays(2);
             when(userRepo.findById(userId)).thenReturn(Optional.of(sampleUser));
             when(checkinRepo.findByUserIdAndCheckinDate(userId, futureDate)).thenReturn(Optional.empty());
             when(dailyPlanRepository.findByUserIdAndPlanDate(userId, futureDate)).thenReturn(Optional.empty());
             when(eventService.getEventsInRange(userId, futureDate, futureDate)).thenReturn(Collections.emptyList());
-            when(checkinRepo.findByUserIdOrderByCheckinDateDesc(userId)).thenReturn(Collections.emptyList());
+            when(streakService.getStreak(eq(userId), any())).thenReturn(0);
 
-            // wakeTime = 07:00, windowStart = 07:15, sleepTime = 23:00 (15h 45m = 945 mins)
-            // buffer 20%: 945 * 0.8 = 756 mins available
+            // wakeTime = 07:00, windowStart = 07:00, sleepTime = 23:00 (16h = 960 mins)
+            // buffer 20%: 960 * 0.8 = 768 mins available
             AvailableTimeResponse resp = service.getAvailableTime(userId, futureDate);
 
-            assertThat(resp.workingWindowMinutes()).isEqualTo(945);
+            assertThat(resp.workingWindowMinutes()).isEqualTo(960);
             assertThat(resp.blockedMinutes()).isEqualTo(0);
-            assertThat(resp.availableMinutes()).isEqualTo(756);
+            assertThat(resp.availableMinutes()).isEqualTo(768);
         }
 
         @Test
@@ -143,14 +146,15 @@ class AvailableTimeServiceImplTest {
             when(checkinRepo.findByUserIdAndCheckinDate(userId, today)).thenReturn(Optional.empty());
             when(dailyPlanRepository.findByUserIdAndPlanDate(userId, today)).thenReturn(Optional.of(plan));
             when(eventService.getEventsInRange(userId, today, today)).thenReturn(Collections.emptyList());
+            when(streakService.getStreak(eq(userId), any())).thenReturn(0);
 
             AvailableTimeResponse resp = service.getAvailableTime(userId, today);
 
             assertThat(resp.isPlanConfirmed()).isTrue();
-            // windowStart = confirmedAt (08:00) + 15m = 08:15.
-            // 08:15 to 23:00 = 14h 45m = 885 mins. Buffer 20%: 885 * 0.8 = 708 mins available.
-            assertThat(resp.workingWindowMinutes()).isEqualTo(885);
-            assertThat(resp.availableMinutes()).isEqualTo(708);
+            // windowStart = confirmedAt (08:00).
+            // 08:00 to 23:00 = 15h = 900 mins. Buffer 20%: 900 * 0.8 = 720 mins available.
+            assertThat(resp.workingWindowMinutes()).isEqualTo(900);
+            assertThat(resp.availableMinutes()).isEqualTo(720);
         }
     }
 
@@ -174,6 +178,7 @@ class AvailableTimeServiceImplTest {
             when(checkinRepo.findByUserIdAndCheckinDate(userId, futureDate)).thenReturn(Optional.empty());
             when(dailyPlanRepository.findByUserIdAndPlanDate(userId, futureDate)).thenReturn(Optional.empty());
             when(eventService.getEventsInRange(userId, futureDate, futureDate)).thenReturn(List.of(freeEvent));
+            when(streakService.getStreak(eq(userId), any())).thenReturn(0);
 
             AvailableTimeResponse resp = service.getAvailableTime(userId, futureDate);
 
@@ -196,13 +201,14 @@ class AvailableTimeServiceImplTest {
             when(checkinRepo.findByUserIdAndCheckinDate(userId, futureDate)).thenReturn(Optional.empty());
             when(dailyPlanRepository.findByUserIdAndPlanDate(userId, futureDate)).thenReturn(Optional.empty());
             when(eventService.getEventsInRange(userId, futureDate, futureDate)).thenReturn(List.of(allDayEvent));
+            when(streakService.getStreak(eq(userId), any())).thenReturn(0);
 
             AvailableTimeResponse resp = service.getAvailableTime(userId, futureDate);
 
             assertThat(resp.blockedMinutes()).isEqualTo(resp.workingWindowMinutes());
             assertThat(resp.availableMinutes()).isEqualTo(0);
             assertThat(resp.blockedIntervals()).hasSize(1);
-            assertThat(resp.blockedIntervals().get(0).startTime()).isEqualTo("07:15");
+            assertThat(resp.blockedIntervals().get(0).startTime()).isEqualTo("07:00");
             assertThat(resp.blockedIntervals().get(0).endTime()).isEqualTo("23:00");
         }
 
@@ -242,6 +248,7 @@ class AvailableTimeServiceImplTest {
             when(checkinRepo.findByUserIdAndCheckinDate(userId, futureDate)).thenReturn(Optional.empty());
             when(dailyPlanRepository.findByUserIdAndPlanDate(userId, futureDate)).thenReturn(Optional.empty());
             when(eventService.getEventsInRange(userId, futureDate, futureDate)).thenReturn(List.of(event1, event2, event3));
+            when(streakService.getStreak(eq(userId), any())).thenReturn(0);
 
             AvailableTimeResponse resp = service.getAvailableTime(userId, futureDate);
 
@@ -264,7 +271,7 @@ class AvailableTimeServiceImplTest {
         void getStreak_EmptyCheckins() {
             LocalDate date = LocalDate.now(ZoneOffset.UTC).plusDays(1);
             when(userRepo.findById(userId)).thenReturn(Optional.of(sampleUser));
-            when(checkinRepo.findByUserIdOrderByCheckinDateDesc(userId)).thenReturn(Collections.emptyList());
+            when(streakService.getStreak(eq(userId), any())).thenReturn(0);
 
             AvailableTimeResponse resp = service.getAvailableTime(userId, date);
 
@@ -274,15 +281,9 @@ class AvailableTimeServiceImplTest {
         @Test
         @DisplayName("Should calculate consecutive streak when checked in today and previous days")
         void getStreak_CheckedInToday() {
-            LocalDate today = LocalDate.now(ZoneOffset.UTC);
-            LocalDate date = today.plusDays(1);
-
-            DailyCheckin c0 = DailyCheckin.builder().checkinDate(today).build();
-            DailyCheckin c1 = DailyCheckin.builder().checkinDate(today.minusDays(1)).build();
-            DailyCheckin c2 = DailyCheckin.builder().checkinDate(today.minusDays(2)).build();
-
+            LocalDate date = LocalDate.now(ZoneOffset.UTC).plusDays(1);
             when(userRepo.findById(userId)).thenReturn(Optional.of(sampleUser));
-            when(checkinRepo.findByUserIdOrderByCheckinDateDesc(userId)).thenReturn(List.of(c0, c1, c2));
+            when(streakService.getStreak(eq(userId), any())).thenReturn(3);
 
             AvailableTimeResponse resp = service.getAvailableTime(userId, date);
 
@@ -292,14 +293,9 @@ class AvailableTimeServiceImplTest {
         @Test
         @DisplayName("Should calculate consecutive streak when checked in yesterday (not today yet)")
         void getStreak_CheckedInYesterday() {
-            LocalDate today = LocalDate.now(ZoneOffset.UTC);
-            LocalDate date = today.plusDays(1);
-
-            DailyCheckin c1 = DailyCheckin.builder().checkinDate(today.minusDays(1)).build();
-            DailyCheckin c2 = DailyCheckin.builder().checkinDate(today.minusDays(2)).build();
-
+            LocalDate date = LocalDate.now(ZoneOffset.UTC).plusDays(1);
             when(userRepo.findById(userId)).thenReturn(Optional.of(sampleUser));
-            when(checkinRepo.findByUserIdOrderByCheckinDateDesc(userId)).thenReturn(List.of(c1, c2));
+            when(streakService.getStreak(eq(userId), any())).thenReturn(2);
 
             AvailableTimeResponse resp = service.getAvailableTime(userId, date);
 
@@ -309,13 +305,9 @@ class AvailableTimeServiceImplTest {
         @Test
         @DisplayName("Should return 0 streak when missing both today and yesterday checkin")
         void getStreak_MissedRecentDays() {
-            LocalDate today = LocalDate.now(ZoneOffset.UTC);
-            LocalDate date = today.plusDays(1);
-
-            DailyCheckin c2 = DailyCheckin.builder().checkinDate(today.minusDays(2)).build();
-
+            LocalDate date = LocalDate.now(ZoneOffset.UTC).plusDays(1);
             when(userRepo.findById(userId)).thenReturn(Optional.of(sampleUser));
-            when(checkinRepo.findByUserIdOrderByCheckinDateDesc(userId)).thenReturn(List.of(c2));
+            when(streakService.getStreak(eq(userId), any())).thenReturn(0);
 
             AvailableTimeResponse resp = service.getAvailableTime(userId, date);
 

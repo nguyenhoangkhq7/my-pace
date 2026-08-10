@@ -261,7 +261,8 @@ class CalendarIntegrationTest extends BaseIntegrationTest {
         @Test
         @DisplayName("Should query database for user settings and events, calculating union-intervals correctly")
         void getAvailableTime_Integration() throws Exception {
-            LocalDate targetDate = LocalDate.of(2026, 8, 10);
+            // Use a guaranteed future date so windowStart = wakeTime (07:00), not LocalTime.now()
+            LocalDate targetDate = LocalDate.now().plusDays(30);
 
             // Save fixed busy event 1: 09:00 - 11:00 in H2 DB
             FixedEvent e1 = FixedEvent.builder()
@@ -287,14 +288,14 @@ class CalendarIntegrationTest extends BaseIntegrationTest {
                     .build();
             fixedEventRepository.save(e2);
 
-            // User A settings: wake 07:00, sleep 23:00, buffer 20% -> window 07:15 to 23:00 (945 mins)
-            // Blocked = 180 mins (09:00 to 12:00). Remaining = 765 mins. Available = 612 mins.
+            // User A settings: wake 07:00, sleep 23:00, buffer 20% -> window 07:00 to 23:00 (960 mins)
+            // Blocked = 180 mins (09:00 to 12:00). Remaining = 780 mins. Available = 624 mins.
             mockMvcUserA.perform(get("/api/calendar/available-time")
-                            .param("date", "2026-08-10"))
+                            .param("date", targetDate.toString()))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.workingWindowMinutes").value(945))
+                    .andExpect(jsonPath("$.workingWindowMinutes").value(960))
                     .andExpect(jsonPath("$.blockedMinutes").value(180))
-                    .andExpect(jsonPath("$.availableMinutes").value(612))
+                    .andExpect(jsonPath("$.availableMinutes").value(624))
                     .andExpect(jsonPath("$.blockedIntervals[0].startTime").value("09:00"))
                     .andExpect(jsonPath("$.blockedIntervals[0].endTime").value("12:00"));
         }

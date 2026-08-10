@@ -6,7 +6,7 @@ import { InlineTitleEditor } from "./InlineTitleEditor";
 import { useBoardStore } from "../store/board.store";
 import { useTasks } from "../hooks/useTasks";
 
-import { AlertCircle } from "lucide-react";
+
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface PlanningTaskItemProps {
@@ -32,7 +32,8 @@ export function PlanningTaskItem({ task, slackTime, onRemove }: PlanningTaskItem
     openTaskModal(task);
   };
 
-  const isHighRisk = slackTime !== undefined && slackTime >= 0 && slackTime < 720;
+  const rem = Math.max(1, (task.estimatedMinutes || 60) - (task.actualMinutes || 0));
+  const isHighRisk = slackTime !== undefined && slackTime >= 0 && (slackTime < 480 || slackTime < rem * 0.5);
   const isInfeasible = slackTime !== undefined && slackTime < 0;
 
   return (
@@ -40,11 +41,7 @@ export function PlanningTaskItem({ task, slackTime, onRemove }: PlanningTaskItem
       onClick={handleCardClick}
       className={cn(
         "p-3 bg-card border rounded-lg flex justify-between items-center group cursor-pointer transition-colors",
-        isInfeasible 
-          ? "border-red-500 bg-red-500/10 shadow-[0_0_10px_rgba(239,68,68,0.2)]" 
-          : isHighRisk 
-            ? "border-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.2)]"
-            : "border-border hover:border-primary/45"
+        "border-border hover:border-primary/45"
       )}
     >
       <div className="flex-1">
@@ -65,18 +62,41 @@ export function PlanningTaskItem({ task, slackTime, onRemove }: PlanningTaskItem
             <Tooltip delayDuration={300}>
               <TooltipTrigger asChild>
                 <div className="shrink-0 cursor-help">
-                  <AlertCircle 
+                  <span 
                     className={cn(
-                      "w-4 h-4",
-                      isInfeasible ? "text-red-500" : "text-yellow-500"
-                    )} 
-                  />
+                      "flex items-center justify-center w-[16px] h-[16px] rounded-full text-[10px] font-extrabold shadow-sm font-mono",
+                      isInfeasible ? "bg-red-500 text-white" : "bg-yellow-500 text-yellow-950"
+                    )}
+                  >
+                    !
+                  </span>
                 </div>
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-[200px] text-xs">
-                {isInfeasible
-                  ? `Task này không thể hoàn thành đúng hạn! Thiếu ${Math.abs(slackTime!)} phút.` 
-                  : `Bạn chỉ còn khoảng ${Math.round(slackTime! / 60)}h thời gian trống để làm task này.`}
+                {(() => {
+                  if (slackTime === undefined) return "";
+                  const now = new Date();
+                  const dueDate = task.dueDate ? new Date(task.dueDate) : null;
+                  const isPastDue = dueDate && dueDate < now;
+                  
+                  const formatDuration = (minutes: number) => {
+                    const m = Math.abs(minutes);
+                    const h = Math.floor(m / 60);
+                    const min = m % 60;
+                    if (h > 0 && min > 0) return `${h} giờ ${min} phút`;
+                    if (h > 0) return `${h} giờ`;
+                    return `${min} phút`;
+                  };
+
+                  if (slackTime < 0) {
+                    if (isPastDue) {
+                      const diffMins = Math.floor((now.getTime() - dueDate.getTime()) / 60000);
+                      return `Đã quá hạn ${formatDuration(diffMins)}!`;
+                    }
+                    return `Task này không thể hoàn thành đúng hạn! Thiếu ${formatDuration(slackTime)}.`;
+                  }
+                  return `Bạn chỉ còn khoảng ${formatDuration(slackTime)} thời gian đệm trước khi task bị trễ.`;
+                })()}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>

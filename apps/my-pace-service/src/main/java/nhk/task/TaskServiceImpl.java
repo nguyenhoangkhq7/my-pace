@@ -113,6 +113,16 @@ public class TaskServiceImpl implements TaskService {
         
         taskMapper.updateFromRequest(request, task);
         
+        if (Boolean.TRUE.equals(request.clearDueDate())) {
+            task.setDueDate(null);
+        }
+        if (Boolean.TRUE.equals(request.clearGoalId())) {
+            task.setGoalId(null);
+        }
+        if (Boolean.TRUE.equals(request.clearCategoryId())) {
+            task.setCategoryId(null);
+            task.setCategory(null);
+        }
         // Update checklists manually if present in the request
         if (request.checklists() != null) {
             java.util.Map<UUID, TaskChecklistItem> existingItems = task.getChecklists().stream()
