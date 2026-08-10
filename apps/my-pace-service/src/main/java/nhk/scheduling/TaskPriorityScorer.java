@@ -67,21 +67,18 @@ public class TaskPriorityScorer {
 
             int trueSlackTime = calculateTrueSlackTime(t, ctx, cumulativeFreeTimeMap, totalFreeSoFar, rem);
             boolean isDueToday = t.getDueDate() != null && t.getDueDate().toLocalDate().equals(ctx.startDate());
-            boolean isHighRisk = isDueToday || (trueSlackTime < 720);
+            boolean isHighRisk = isDueToday || (trueSlackTime < 480) || (trueSlackTime < rem * 0.5);
 
             int priorityRank;
-            String escalationReason = null;
             if (isUrgent && isImportant) {
                 // Rank 0: High Risk Q1, Rank 2: Low Risk Q1
                 priorityRank = isHighRisk ? 0 : 2;
-                if (isHighRisk) escalationReason = "⏫ Ưu tiên tạm thời vì sắp hết hạn (Q1)";
             } else if (!isUrgent && isImportant) {
                 // Rank 1: Standard Q2
                 priorityRank = 1;
             } else if (isUrgent && !isImportant) {
                 if (isHighRisk) {
                     priorityRank = 0; // Rank 0: Escalated Q3
-                    escalationReason = "⏫ Ưu tiên tạm thời vì sắp hết hạn";
                 } else if (t.getDueDate() != null) {
                     priorityRank = 4; // Rank 4: Demoted Q3 (Low Risk)
                 } else {
@@ -94,11 +91,11 @@ public class TaskPriorityScorer {
             String statusWarning = "SAFE";
             if (trueSlackTime < 0) {
                 statusWarning = "INFEASIBLE";
-            } else if (trueSlackTime < 720) {
+            } else if (isHighRisk) {
                 statusWarning = "HIGH_RISK";
             }
 
-            TaskQueueItem item = new TaskQueueItem(t, rem, priorityRank, statusWarning, escalationReason);
+            TaskQueueItem item = new TaskQueueItem(t, rem, priorityRank, statusWarning);
             LocalDate pickedDate = taskIdToPickedDateMap.get(t.getId());
 
             if (pickedDate != null) {

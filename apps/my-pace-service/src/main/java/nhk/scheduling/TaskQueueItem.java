@@ -8,13 +8,11 @@ public class TaskQueueItem {
     public final int priorityRank;
     public int partsFilled = 0;
     public String statusWarning;
-    public String escalationReason;
 
-    public TaskQueueItem(Task task, int remainingMinutes, int priorityRank, String statusWarning, String escalationReason) {
+    public TaskQueueItem(Task task, int remainingMinutes, int priorityRank, String statusWarning) {
         this.task = task;
         this.remainingMinutes = remainingMinutes;
         this.priorityRank = priorityRank;
         this.statusWarning = statusWarning;
-        this.escalationReason = escalationReason;
     }
 }

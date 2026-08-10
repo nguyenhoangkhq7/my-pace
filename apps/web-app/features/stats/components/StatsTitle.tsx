@@ -18,8 +18,8 @@ export function StatsTitle({
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-1.5">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+      <div className="flex items-center gap-3">
+        <h1 className="text-lg font-bold tracking-tight text-foreground">
           {displayTitle}
         </h1>
         {streak > 0 && (

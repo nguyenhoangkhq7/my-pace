@@ -207,7 +207,7 @@ class TaskServiceIntegrationTest extends BaseIntegrationTest {
             task = taskRepository.save(task);
 
             TaskUpdateRequest request = new TaskUpdateRequest(
-                    "Updated Title", null, sampleCategory.getId(), 60, 20, true, false, true, 15, 120, "Picked for Today", LocalDateTime.now(), "Updated Notes", null
+                    "Updated Title", null, sampleCategory.getId(), 60, 20, true, false, true, 15, 120, "Picked for Today", LocalDateTime.now(), "Updated Notes", null, null, null, null
             );
 
             TaskDto updated = taskService.updateTask(task.getId(), request, sampleUser.getId());
@@ -233,7 +233,7 @@ class TaskServiceIntegrationTest extends BaseIntegrationTest {
             task = taskRepository.save(task);
 
             TaskUpdateRequest request = new TaskUpdateRequest(
-                    "Task To Finish", null, sampleCategory.getId(), 30, 30, false, false, false, null, null, "Done", null, null, null
+                    "Task To Finish", null, sampleCategory.getId(), 30, 30, false, false, false, null, null, "Done", null, null, null, null, null, null
             );
 
             TaskDto updated = taskService.updateTask(task.getId(), request, sampleUser.getId());
@@ -257,7 +257,7 @@ class TaskServiceIntegrationTest extends BaseIntegrationTest {
             task = taskRepository.save(task);
 
             TaskUpdateRequest request = new TaskUpdateRequest(
-                    "Done Task", null, sampleCategory.getId(), 30, 30, false, false, false, null, null, "Backlog", null, null, null
+                    "Done Task", null, sampleCategory.getId(), 30, 30, false, false, false, null, null, "Backlog", null, null, null, null, null, null
             );
 
             TaskDto updated = taskService.updateTask(task.getId(), request, sampleUser.getId());

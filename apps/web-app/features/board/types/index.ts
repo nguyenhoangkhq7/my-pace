@@ -60,7 +60,6 @@ export interface DailyPlanTask {
   task: Task;
   isMit: boolean;
   sortOrder: number;
-  escalationReason?: string;
 }
 
 export interface DailyPlan {

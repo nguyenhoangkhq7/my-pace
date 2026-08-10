@@ -105,7 +105,7 @@ class DailyPlanServiceImplTest {
         planTask.setId(UUID.randomUUID());
         planTask.setDailyPlanId(planId);
 
-        DailyPlanTaskDto taskDto = new DailyPlanTaskDto(planTask.getId(), planId, mock(TaskDto.class), true, 1, null);
+        DailyPlanTaskDto taskDto = new DailyPlanTaskDto(planTask.getId(), planId, mock(TaskDto.class), true, 1);
 
         TaskTimeBlock timeBlock = new TaskTimeBlock();
         timeBlock.setId(UUID.randomUUID());

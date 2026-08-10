@@ -280,6 +280,14 @@ export interface Translations {
     selectStatus: string;
     statusBusy: string;
     statusFree: string;
+    autoScheduleHelpTitle: string;
+    autoScheduleHelpDesc: string;
+    autoScheduleHelpQ1: string;
+    autoScheduleHelpQ2: string;
+    autoScheduleHelpQ3: string;
+    autoScheduleHelpQ4: string;
+    autoScheduleHelpException: string;
+    autoScheduleHelpRules: string;
   };
   availableTime: {
     remaining: string;

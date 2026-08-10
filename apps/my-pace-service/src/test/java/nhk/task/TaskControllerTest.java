@@ -170,7 +170,7 @@ class TaskControllerTest {
         @DisplayName("Should return 200 OK when update request is successful")
         void updateTask_Success() throws Exception {
             TaskUpdateRequest request = new TaskUpdateRequest(
-                    "Updated Title", null, null, 45, 15, true, true, false, null, null, "Picked for Today", LocalDateTime.now(), "Notes", null
+                    "Updated Title", null, null, 45, 15, true, true, false, null, null, "Picked for Today", LocalDateTime.now(), "Notes", null, null, null, null
             );
 
             when(taskService.updateTask(eq(taskId), any(TaskUpdateRequest.class), eq(userId))).thenReturn(sampleTaskDto);

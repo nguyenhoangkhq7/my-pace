@@ -5,7 +5,7 @@ import { TaskCardChecklist } from "./TaskCardChecklist";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { AlertCircle } from "lucide-react";
+
 
 interface TaskBacklogCardProps {
   task: Task;
@@ -72,25 +72,32 @@ export function TaskBacklogCard({
           {task.title}
         </div>
         
-        {slackTime !== undefined && slackTime < 720 && (
-          <TooltipProvider>
-            <Tooltip delayDuration={300}>
-              <TooltipTrigger asChild>
-                <div onClick={(e) => e.stopPropagation()} className="shrink-0 mt-0.5">
-                  <AlertCircle 
-                    className={cn(
-                      "w-4 h-4",
-                      slackTime < 0 ? "text-red-500" : "text-yellow-500"
-                    )} 
-                  />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-[200px] text-xs">
-                {getTooltipText()}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
+        {(() => {
+          const rem = Math.max(1, (task.estimatedMinutes || 60) - (task.actualMinutes || 0));
+          const isWarning = slackTime !== undefined && (slackTime < 0 || slackTime < 480 || slackTime < rem * 0.5);
+          if (!isWarning) return null;
+          return (
+            <TooltipProvider>
+              <Tooltip delayDuration={300}>
+                <TooltipTrigger asChild>
+                  <div onClick={(e) => e.stopPropagation()} className="shrink-0 mt-0.5">
+                    <span 
+                      className={cn(
+                        "flex items-center justify-center w-[16px] h-[16px] rounded-full text-[10px] font-extrabold shadow-sm font-mono",
+                        slackTime < 0 ? "bg-red-500 text-white" : "bg-yellow-500 text-yellow-950"
+                      )}
+                    >
+                      !
+                    </span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[200px] text-xs">
+                  {getTooltipText()}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        })()}
       </div>
       
       <div className="flex items-center gap-2 mt-2 flex-wrap">

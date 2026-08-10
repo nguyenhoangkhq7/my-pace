@@ -287,7 +287,7 @@ class TaskServiceImplTest {
         void updateTask_NotFound_ThrowsException() {
             TaskUpdateRequest request = new TaskUpdateRequest(
                     "New Title", null, null, 30, 0, false, false, false, null, null, "Backlog", null, null, null
-            );
+            , null, null, null);
             when(taskRepository.findById(taskId)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> taskService.updateTask(taskId, request, userId))
@@ -302,7 +302,7 @@ class TaskServiceImplTest {
             sampleTask.setUserId(otherUser);
             TaskUpdateRequest request = new TaskUpdateRequest(
                     "New Title", null, null, 30, 0, false, false, false, null, null, "Backlog", null, null, null
-            );
+            , null, null, null);
             when(taskRepository.findById(taskId)).thenReturn(Optional.of(sampleTask));
 
             assertThatThrownBy(() -> taskService.updateTask(taskId, request, userId))
@@ -311,12 +311,35 @@ class TaskServiceImplTest {
         }
 
         @Test
+        @DisplayName("Should clear fields when clear flags are true")
+        void updateTask_ClearFlags_SetsFieldsToNull() {
+            sampleTask.setDueDate(LocalDateTime.now());
+            sampleTask.setGoalId(UUID.randomUUID());
+            sampleTask.setCategoryId(UUID.randomUUID());
+
+            TaskUpdateRequest request = new TaskUpdateRequest(
+                    "New Title", null, null, 30, 0, false, false, false, null, null, "Backlog", null, null, null, true, true, true
+            );
+
+            when(taskRepository.findById(taskId)).thenReturn(Optional.of(sampleTask));
+            doAnswer(invocation -> null).when(taskMapper).updateFromRequest(request, sampleTask);
+            when(taskRepository.save(sampleTask)).thenReturn(sampleTask);
+            when(taskMapper.toDto(sampleTask)).thenReturn(sampleTaskDto);
+
+            taskService.updateTask(taskId, request, userId);
+
+            assertThat(sampleTask.getDueDate()).isNull();
+            assertThat(sampleTask.getGoalId()).isNull();
+            assertThat(sampleTask.getCategoryId()).isNull();
+        }
+
+        @Test
         @DisplayName("Should validate goal if new goalId provided in request")
         void updateTask_InvalidGoal_ThrowsException() {
             sampleGoal.setStatus("Freeze");
             TaskUpdateRequest request = new TaskUpdateRequest(
                     "New Title", goalId, null, 30, 0, false, false, false, null, null, "Backlog", null, null, null
-            );
+            , null, null, null);
             when(goalRepository.findById(goalId)).thenReturn(Optional.of(sampleGoal));
 
             assertThatThrownBy(() -> taskService.updateTask(taskId, request, userId))
@@ -329,7 +352,7 @@ class TaskServiceImplTest {
         void updateTask_TransitionToDone_SetsDoneAtWithUserTimezone() {
             TaskUpdateRequest request = new TaskUpdateRequest(
                     "Done Title", null, null, 30, 30, false, false, false, null, null, "Done", null, null, null
-            );
+            , null, null, null);
 
             when(taskRepository.findById(taskId)).thenReturn(Optional.of(sampleTask));
             doAnswer(invocation -> {
@@ -353,7 +376,7 @@ class TaskServiceImplTest {
             sampleUser.setTimezone("");
             TaskUpdateRequest request = new TaskUpdateRequest(
                     "Done Title", null, null, 30, 30, false, false, false, null, null, "Done", null, null, null
-            );
+            , null, null, null);
 
             when(taskRepository.findById(taskId)).thenReturn(Optional.of(sampleTask));
             doAnswer(invocation -> {
@@ -375,7 +398,7 @@ class TaskServiceImplTest {
         void updateTask_TransitionToDone_UserNotFound_ThrowsException() {
             TaskUpdateRequest request = new TaskUpdateRequest(
                     "Done Title", null, null, 30, 30, false, false, false, null, null, "Done", null, null, null
-            );
+            , null, null, null);
 
             when(taskRepository.findById(taskId)).thenReturn(Optional.of(sampleTask));
             doAnswer(invocation -> {
@@ -397,7 +420,7 @@ class TaskServiceImplTest {
 
             TaskUpdateRequest request = new TaskUpdateRequest(
                     "Backlog Title", null, null, 30, 0, false, false, false, null, null, "Backlog", null, null, null
-            );
+            , null, null, null);
 
             when(taskRepository.findById(taskId)).thenReturn(Optional.of(sampleTask));
             doAnswer(invocation -> {
@@ -422,7 +445,7 @@ class TaskServiceImplTest {
 
             TaskUpdateRequest request = new TaskUpdateRequest(
                     "Done Title", goalId, null, 30, 45, false, false, false, null, null, "Done", null, null, null
-            );
+            , null, null, null);
 
             when(goalRepository.findById(goalId)).thenReturn(Optional.of(sampleGoal));
             when(taskRepository.findById(taskId)).thenReturn(Optional.of(sampleTask));
@@ -457,7 +480,7 @@ class TaskServiceImplTest {
 
             TaskUpdateRequest request = new TaskUpdateRequest(
                     "Title", null, null, 30, 0, false, false, false, null, null, "Backlog", null, null,
-                    List.of(updateExistingReq, newReq, emptyReq)
+                    List.of(updateExistingReq, newReq, emptyReq), null, null, null
             );
 
             when(taskRepository.findById(taskId)).thenReturn(Optional.of(sampleTask));

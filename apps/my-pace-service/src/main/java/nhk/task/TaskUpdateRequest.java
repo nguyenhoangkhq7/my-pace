@@ -20,5 +20,8 @@ public record TaskUpdateRequest(
     String status,
     LocalDateTime dueDate,
     String notes,
-    List<TaskChecklistItemRequest> checklists
+    List<TaskChecklistItemRequest> checklists,
+    Boolean clearDueDate,
+    Boolean clearGoalId,
+    Boolean clearCategoryId
 ) {}
