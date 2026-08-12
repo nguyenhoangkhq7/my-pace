@@ -1,10 +1,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useFocusStore } from "../store/focus.store";
-import { useQueryClient, useMutation } from "@tanstack/react-query";
-import { fetchClient } from "@/lib/fetchClient";
-import { useAuthStore } from "@/features/auth";
-import { getTodayStr } from "@/lib/date";
-import type { DailyPlan, Task } from "@/features/board/types";
+import { useQueryClient } from "@tanstack/react-query";
+import { createTimeLog, updateTimeLog } from "../services/timelog-service";
 
 export function usePomodoro() {
   const pomodoroState = useFocusStore((s) => s.pomodoroState);
@@ -13,29 +10,7 @@ export function usePomodoro() {
   const adjustForElapsedTime = useFocusStore((s) => s.adjustForElapsedTime);
 
   const queryClient = useQueryClient();
-  const user = useAuthStore((s) => s.user);
 
-  const updateTaskMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: { actualMinutes: number } }) =>
-      fetchClient.put(`tasks/${id}`, data).then(r => r.data as Task),
-    onSuccess: (updatedTask: Task) => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      if (user) {
-        const currentDate = getTodayStr(user.timezone);
-        queryClient.setQueryData(['dailyPlan', currentDate], (old: DailyPlan | undefined) => {
-          if (!old) return old;
-          return {
-            ...old,
-            tasks: old.tasks.map((pt) =>
-              pt.task.id === updatedTask.id
-                ? { ...pt, task: { ...pt.task, actualMinutes: updatedTask.actualMinutes } }
-                : pt
-            ),
-          };
-        });
-      }
-    },
-  });
 
   const lastTickRef = useRef<number>(0);
   const lastSavedMinutesRef = useRef<number>(-1);
@@ -204,25 +179,28 @@ export function usePomodoro() {
     }
   }, [activeTaskId]);
 
-  const updateTaskMutate = updateTaskMutation.mutate;
-
-  // Auto-save actualMinutes every 5 minutes (checkpoint-based)
-  // Check every 5 seconds to avoid subscribing React component to per-second timer ticks
+  // Auto-save: Ping TimeLog every 5 minutes
   const AUTOSAVE_INTERVAL_MIN = 5;
   useEffect(() => {
     if (!activeTaskId || pomodoroState === "idle" || pomodoroState === "finished" || pomodoroState === "paused") return;
 
     const checkAutosave = () => {
-      const { accumulatedFocusTime } = useFocusStore.getState();
+      const { accumulatedFocusTime, activeTimeLogId, focusSessionStartAccumulatedTime } = useFocusStore.getState();
       const currentMinutes = Math.floor(accumulatedFocusTime / 60);
       if (currentMinutes < AUTOSAVE_INTERVAL_MIN) return;
       const currentCheckpoint = Math.floor(currentMinutes / AUTOSAVE_INTERVAL_MIN) * AUTOSAVE_INTERVAL_MIN;
       if (lastSavedMinutesRef.current !== -1 && currentCheckpoint > lastSavedMinutesRef.current) {
         lastSavedMinutesRef.current = currentCheckpoint;
-        updateTaskMutate({
-          id: activeTaskId,
-          data: { actualMinutes: currentMinutes }
-        });
+        if (activeTimeLogId) {
+          const focusDeltaSeconds = accumulatedFocusTime - focusSessionStartAccumulatedTime;
+          const sessionMinutes = Math.max(0, Math.round(focusDeltaSeconds / 60));
+          updateTimeLog(activeTimeLogId, {
+            loggedMinutes: sessionMinutes,
+            endedAt: new Date().toISOString()
+          }).then(() => {
+             queryClient.invalidateQueries({ queryKey: ['dailyPlan'] });
+          }).catch(console.error);
+        }
       }
     };
 
@@ -231,23 +209,43 @@ export function usePomodoro() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTaskId, pomodoroState]);
 
-  // State transitions sound manager + opportunistic save on pause/break
+  // State transitions sound manager + opportunistic TimeLog create/update on state changes
   const prevStateRef = useRef<string>("idle");
   useEffect(() => {
     const prev = prevStateRef.current;
     prevStateRef.current = pomodoroState;
 
-    // Save actual minutes ONLY on state transitions (not repeatedly while in breaking/finished state)
-    const shouldSave = (
-      (pomodoroState === "paused" && (prev === "focusing" || prev === "breaking")) ||
-      (pomodoroState === "breaking" && prev === "focusing") ||
-      (pomodoroState === "finished" && prev !== "finished")
-    );
-    if (shouldSave && activeTaskId) {
-      const mins = Math.round(useFocusStore.getState().accumulatedFocusTime / 60);
-      if (mins > 0) {
-        updateTaskMutate({ id: activeTaskId, data: { actualMinutes: mins } });
-        lastSavedMinutesRef.current = mins;
+    if (activeTaskId) {
+      const state = useFocusStore.getState();
+
+      // CREATION: When entering focusing from non-focusing state, create a new TimeLog
+      if (pomodoroState === "focusing" && prev !== "focusing") {
+        const sessionStart = state.focusSessionStartedAt || new Date().toISOString();
+        createTimeLog({
+          timeBlockId: state.activeTimeBlockInfo?.id,
+          taskId: activeTaskId,
+          loggedMinutes: 0,
+          startedAt: sessionStart,
+          endedAt: sessionStart,
+        }).then((res) => {
+          useFocusStore.setState({ activeTimeLogId: res.id });
+        }).catch(console.error);
+      }
+
+      // FINAL UPDATE: When leaving focusing state, finalize the TimeLog
+      const shouldFinalize = prev === "focusing" && pomodoroState !== "focusing";
+      if (shouldFinalize && state.activeTimeLogId) {
+        const focusDeltaSeconds = state.accumulatedFocusTime - state.focusSessionStartAccumulatedTime;
+        const sessionMinutes = Math.max(0, Math.round(focusDeltaSeconds / 60));
+        updateTimeLog(state.activeTimeLogId, {
+          loggedMinutes: sessionMinutes,
+          endedAt: new Date().toISOString()
+        }).then(() => {
+          queryClient.invalidateQueries({ queryKey: ['timeBlocks'] });
+          queryClient.invalidateQueries({ queryKey: ['dailyPlan'] });
+          queryClient.invalidateQueries({ queryKey: ['timeLogs'] });
+        }).catch(console.error);
+        useFocusStore.setState({ activeTimeLogId: null, focusSessionStartedAt: null });
       }
     }
 
@@ -273,11 +271,15 @@ export function usePomodoro() {
   useEffect(() => {
     return () => {
       const state = useFocusStore.getState();
-      if (state.activeTaskId) {
-        const finalMinutes = Math.round(state.accumulatedFocusTime / 60);
-        if (finalMinutes > 0) {
-          fetchClient.put(`tasks/${state.activeTaskId}`, { actualMinutes: finalMinutes }).catch(console.error);
-        }
+      if (state.activeTimeLogId && state.activeTaskId) {
+        const focusDeltaSeconds = state.accumulatedFocusTime - state.focusSessionStartAccumulatedTime;
+        const sessionMinutes = Math.max(0, Math.round(focusDeltaSeconds / 60));
+        // We use fetch API with keepalive for reliable unmount tracking, though browser support varies
+        // A simple fetch is better than nothing during unmount
+        navigator.sendBeacon?.(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/time-logs/${state.activeTimeLogId}`,
+          JSON.stringify({ loggedMinutes: sessionMinutes, endedAt: new Date().toISOString() })
+        );
       }
     };
   }, []);

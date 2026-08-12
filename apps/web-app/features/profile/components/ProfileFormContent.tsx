@@ -19,7 +19,6 @@ import { DialogFooter } from "@/components/ui/dialog";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { profileSchema, ProfileFormValues } from "../schema/profile.schema";
 import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 
 const TIMEZONES = [
   { value: "Asia/Ho_Chi_Minh",    label: "🇻🇳 Hà Nội / Hồ Chí Minh (UTC+7)" },
@@ -67,7 +66,6 @@ export function ProfileFormContent({ onSuccess, onCancel, onLogoutClick, isOpen 
     control,
     reset,
     trigger,
-    getValues,
     formState: { errors, isValid, isSubmitting },
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),

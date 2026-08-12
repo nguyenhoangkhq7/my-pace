@@ -5,7 +5,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useOnboardingStore } from "@/features/onboarding";
-import { ProfileDialog } from "@/features/profile";
+import dynamic from "next/dynamic";
+import { StartTimeLabel } from "./StartTimeLabel";
+
+const ProfileDialog = dynamic(() => import("@/features/profile").then(m => m.ProfileDialog), { ssr: false });
 import {
   Calendar03Icon,
   Grid02Icon,
@@ -14,11 +17,10 @@ import {
   Target02Icon,
   Analytics01Icon
 } from "@hugeicons/core-free-icons";
-import { useAvailableTimeQuery } from "@/features/available-time";
-import { FeedbackModal } from "../feedback/FeedbackModal";
 import { useTranslation } from "@/hooks/use-translation";
 import { Settings } from "lucide-react";
-import { SettingsModal } from "@/features/settings/components/SettingsModal";
+const SettingsModal = dynamic(() => import("@/features/settings/components/SettingsModal").then(m => m.SettingsModal), { ssr: false });
+const FeedbackModal = dynamic(() => import("../feedback/FeedbackModal").then(m => m.FeedbackModal), { ssr: false });
 import { StickyNotesTriggerBtn } from "@/features/sticky-notes/components/StickyNotesTriggerBtn";
 import { QuickAddTriggerBtn } from "@/features/quick-add/components/QuickAddTriggerBtn";
 import { useQuickAddUIStore } from "@/features/quick-add/store/quickAddUI.store";
@@ -57,11 +59,7 @@ export function Sidebar() {
     });
   };
 
-  const today = (() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  })();
-  const { data: availableTime } = useAvailableTimeQuery(today);
+
 
   type NavItem = {
     id: string;
@@ -161,13 +159,7 @@ export function Sidebar() {
         <div className="flex-1" />
 
         {/* ── Start Time Label ── */}
-        {!isCollapsed && availableTime?.checkedIn && availableTime.checkinTime && (
-          <div className="px-2 pb-2">
-            <span className="text-xs text-muted-foreground block">
-              {t.sidebar.todayStartedAt} <span className="font-semibold text-foreground">{availableTime.checkinTime}</span>
-            </span>
-          </div>
-        )}
+        <StartTimeLabel isCollapsed={isCollapsed} />
 
         {/* ── Bottom section ──────────────────────────────────────── */}
         <div className="flex flex-col gap-1 border-t border-border pt-4">

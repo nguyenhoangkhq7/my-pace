@@ -27,9 +27,18 @@ public class InMemoryBitmapScheduler {
      */
     public void markRangeBusy(UUID userId, LocalDate date, int startMin, int endMin) {
         if (startMin >= endMin) return;
+        if (startMin >= 1440) {
+            markRangeBusy(userId, date.plusDays(1), startMin - 1440, endMin - 1440);
+            return;
+        }
+        if (endMin > 1440) {
+            markRangeBusy(userId, date, startMin, 1440);
+            markRangeBusy(userId, date.plusDays(1), 0, endMin - 1440);
+            return;
+        }
         String key = buildKey(userId, date);
-        int from = Math.max(0, Math.min(1439, startMin));
-        int to = Math.max(0, Math.min(1440, endMin));
+        int from = Math.max(0, startMin);
+        int to = Math.min(1440, endMin);
 
         BitSet bitSet = store.computeIfAbsent(key, k -> new BitSet(1440));
         bitSet.set(from, to, true);
@@ -44,7 +53,10 @@ public class InMemoryBitmapScheduler {
     }
 
     public boolean isBusy(UUID userId, LocalDate date, int min) {
-        if (min < 0 || min >= 1440) return true;
+        if (min < 0) return true;
+        if (min >= 1440) {
+            return isBusy(userId, date.plusDays(1), min - 1440);
+        }
         String key = buildKey(userId, date);
         BitSet bitSet = store.get(key);
         return bitSet != null && bitSet.get(min);

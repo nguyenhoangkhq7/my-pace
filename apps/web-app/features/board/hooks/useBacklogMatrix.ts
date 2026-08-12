@@ -55,6 +55,10 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string) {
     return null;
   }, [planningTarget, dailyPlanToday, dailyPlanTomorrow]);
 
+  const originalPlanTaskIds = useMemo(() => {
+    if (!targetPlan || !targetPlan.tasks) return [];
+    return targetPlan.tasks.map(pt => pt.task?.id).filter(Boolean);
+  }, [targetPlan]);
 
   const { data: dataToday } = useAvailableTimeQuery(currentDate);
   const { data: dataTomorrow } = useAvailableTimeQuery(tomorrowDate);
@@ -162,6 +166,7 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string) {
     tasks,
     isPlanningMode,
     plannedTaskIds,
+    originalPlanTaskIds,
     isTaskModalOpen,
     editingTask,
     prefilledGoalId,

@@ -9,9 +9,15 @@ import nhk.task.TaskRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import nhk.timelog.TimeLog;
+import nhk.timelog.TimeLogRepository;
+import nhk.timelog.dto.TimeLogResponse;
+
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -23,16 +29,14 @@ public class TaskTimeBlockServiceImpl implements TaskTimeBlockService {
     private final DailyPlanRepository dailyPlanRepository;
     private final nhk.planning.DailyPlanTaskRepository dailyPlanTaskRepository;
     private final TaskRepository taskRepository;
+    private final TimeLogRepository timeLogRepository;
 
     @Override
     @Transactional(readOnly = true)
     public List<TaskTimeBlockDto> getTimeBlocks(java.time.LocalDate startDate, java.time.LocalDate endDate, UUID userId) {
         java.time.LocalDateTime start = startDate.atStartOfDay();
         java.time.LocalDateTime end = endDate.plusDays(1).atStartOfDay().minusNanos(1);
-        return timeBlockRepository.findByUserIdAndDateRange(userId, start, end)
-                .stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
+        return toDtoList(timeBlockRepository.findByUserIdAndDateRange(userId, start, end));
     }
 
     @Override
@@ -75,58 +79,10 @@ public class TaskTimeBlockServiceImpl implements TaskTimeBlockService {
                 })
                 .collect(Collectors.toList());
 
-        return timeBlockRepository.saveAll(blocks)
-                .stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
+        return toDtoList(timeBlockRepository.saveAll(blocks));
     }
 
-    @Override
-    @Transactional
-    public TaskTimeBlockDto updateTimeBlockProgress(UUID blockId, Integer actualMinutes, Boolean isCompleted, UUID userId) {
-        TaskTimeBlock block = timeBlockRepository.findById(blockId)
-                .orElseThrow(() -> new EntityNotFoundException("Time block not found"));
 
-        Task task = taskRepository.findById(block.getTaskId())
-                .orElseThrow(() -> new EntityNotFoundException("Time block not found"));
-
-        if (!task.getUserId().equals(userId)) {
-            throw new EntityNotFoundException("Time block not found");
-        }
-
-        if (actualMinutes != null) {
-            int prevBlockActual = block.getActualMinutes() != null ? block.getActualMinutes() : 0;
-            block.setActualMinutes(prevBlockActual + actualMinutes);
-
-            int prevTaskActual = task.getActualMinutes() != null ? task.getActualMinutes() : 0;
-            task.setActualMinutes(prevTaskActual + actualMinutes);
-
-            if (actualMinutes > 0) {
-                block.setAvailabilityStatus("BUSY");
-            }
-        }
-
-        if (isCompleted != null) {
-            block.setIsCompleted(isCompleted);
-            if (isCompleted) {
-                block.setCompletedAt(OffsetDateTime.now());
-                block.setAvailabilityStatus("BUSY");
-                task.setStatus("Done");
-                task.setDoneAt(OffsetDateTime.now());
-            } else {
-                block.setCompletedAt(null);
-                if ("Done".equalsIgnoreCase(task.getStatus())) {
-                    task.setStatus("Picked for Today");
-                    task.setDoneAt(null);
-                }
-            }
-        }
-
-        TaskTimeBlock savedBlock = timeBlockRepository.save(block);
-        taskRepository.save(task);
-
-        return toDto(savedBlock);
-    }
 
     @Override
     @Transactional
@@ -167,10 +123,7 @@ public class TaskTimeBlockServiceImpl implements TaskTimeBlockService {
 
         java.time.LocalDateTime startOfDay = original.getStartTime().toLocalDate().atStartOfDay();
         java.time.LocalDateTime endOfDay = original.getStartTime().toLocalDate().plusDays(1).atStartOfDay().minusNanos(1);
-        return timeBlockRepository.findByUserIdAndDateRange(userId, startOfDay, endOfDay)
-                .stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
+        return toDtoList(timeBlockRepository.findByUserIdAndDateRange(userId, startOfDay, endOfDay));
     }
 
     @Override
@@ -218,6 +171,13 @@ public class TaskTimeBlockServiceImpl implements TaskTimeBlockService {
         TaskTimeBlock block = timeBlockRepository.findById(blockId)
                 .orElseThrow(() -> new EntityNotFoundException("Time block not found"));
 
+        Task task = taskRepository.findById(block.getTaskId())
+                .orElseThrow(() -> new EntityNotFoundException("Time block not found"));
+
+        if (!task.getUserId().equals(userId)) {
+            throw new EntityNotFoundException("Time block not found");
+        }
+
         if (request.startTime() != null) {
             block.setStartTime(request.startTime());
         }
@@ -240,11 +200,8 @@ public class TaskTimeBlockServiceImpl implements TaskTimeBlockService {
             totalMinutes += java.time.Duration.between(b.getStartTime(), b.getEndTime()).toMinutes();
         }
 
-        Task task = taskRepository.findById(block.getTaskId()).orElse(null);
-        if (task != null) {
-            task.setEstimatedMinutes((int) totalMinutes);
-            taskRepository.save(task);
-        }
+        task.setEstimatedMinutes((int) totalMinutes);
+        taskRepository.save(task);
 
         return toDto(savedBlock);
     }
@@ -274,7 +231,42 @@ public class TaskTimeBlockServiceImpl implements TaskTimeBlockService {
         return toDto(savedBlock);
     }
 
+    private List<TaskTimeBlockDto> toDtoList(List<TaskTimeBlock> blocks) {
+        if (blocks.isEmpty()) return List.of();
+        List<UUID> blockIds = blocks.stream().map(TaskTimeBlock::getId).toList();
+        List<TimeLog> allLogs = timeLogRepository.findByTimeBlockIdIn(blockIds);
+        Map<UUID, List<TimeLog>> logsByBlockId = allLogs.stream()
+                .collect(Collectors.groupingBy(TimeLog::getTimeBlockId));
+        return blocks.stream().map(block -> {
+            List<TimeLog> logs = logsByBlockId.getOrDefault(block.getId(), List.of());
+            List<TimeLogResponse> logResponses = logs.stream()
+                    .sorted(Comparator.comparing(TimeLog::getStartedAt))
+                    .map(tl -> new TimeLogResponse(
+                            tl.getId(), tl.getTimeBlockId(), tl.getTaskId(),
+                            tl.getLoggedMinutes(), tl.getStartedAt(), tl.getEndedAt(), tl.getCreatedAt()))
+                    .toList();
+            int totalLogged = logs.stream().mapToInt(TimeLog::getLoggedMinutes).sum();
+            return new TaskTimeBlockDto(
+                    block.getId(), block.getTaskId(),
+                    block.getStartTime(), block.getEndTime(),
+                    block.getPartIndex() != null ? block.getPartIndex() : 1,
+                    block.getTotalParts() != null ? block.getTotalParts() : 1,
+                    block.getAvailabilityStatus() != null ? block.getAvailabilityStatus() : "FREE",
+                    Boolean.TRUE.equals(block.getIsLocked()),
+                    block.getCreatedAt(),
+                    logResponses, totalLogged, !logs.isEmpty()
+            );
+        }).toList();
+    }
+
     private TaskTimeBlockDto toDto(TaskTimeBlock block) {
+        List<TimeLog> logs = timeLogRepository.findByTimeBlockIdOrderByStartedAtAsc(block.getId());
+        List<TimeLogResponse> logResponses = logs.stream()
+                .map(tl -> new TimeLogResponse(
+                        tl.getId(), tl.getTimeBlockId(), tl.getTaskId(),
+                        tl.getLoggedMinutes(), tl.getStartedAt(), tl.getEndedAt(), tl.getCreatedAt()))
+                .toList();
+        int totalLogged = logs.stream().mapToInt(TimeLog::getLoggedMinutes).sum();
         return new TaskTimeBlockDto(
                 block.getId(),
                 block.getTaskId(),
@@ -282,12 +274,12 @@ public class TaskTimeBlockServiceImpl implements TaskTimeBlockService {
                 block.getEndTime(),
                 block.getPartIndex() != null ? block.getPartIndex() : 1,
                 block.getTotalParts() != null ? block.getTotalParts() : 1,
-                block.getActualMinutes() != null ? block.getActualMinutes() : 0,
-                block.getIsCompleted() != null ? block.getIsCompleted() : false,
-                block.getCompletedAt(),
                 block.getAvailabilityStatus() != null ? block.getAvailabilityStatus() : "FREE",
                 Boolean.TRUE.equals(block.getIsLocked()),
-                block.getStatusWarning()
+                block.getCreatedAt(),
+                logResponses,
+                totalLogged,
+                !logs.isEmpty()
         );
     }
 }

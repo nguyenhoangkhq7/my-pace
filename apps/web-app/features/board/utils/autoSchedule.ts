@@ -177,6 +177,9 @@ export function autoSchedule(
           endTime: toLocalISOString(blockEnd),
           partIndex: item.partsFilled,
           totalParts: item.totalParts,
+          timeLogs: [],
+          totalLoggedMinutes: 0,
+          hasTimeLogs: false,
         });
 
         gapCursor = blockEnd;
@@ -194,6 +197,9 @@ export function autoSchedule(
             endTime: toLocalISOString(gap.endTime),
             partIndex: item.partsFilled,
             totalParts: 999, // sẽ được chuẩn hóa ở bước post-process
+            timeLogs: [],
+            totalLoggedMinutes: 0,
+            hasTimeLogs: false,
           });
 
           // Trừ đi thời lượng thực tế của task

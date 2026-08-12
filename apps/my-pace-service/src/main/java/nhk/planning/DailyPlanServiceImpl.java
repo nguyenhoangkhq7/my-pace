@@ -35,6 +35,7 @@ public class DailyPlanServiceImpl implements DailyPlanService {
     private final TaskRepository taskRepository;
     private final DailyPlanMapper dailyPlanMapper;
     private final TaskTimeBlockRepository timeBlockRepository;
+    private final nhk.timelog.TimeLogRepository timeLogRepository;
     private final GoalService goalService;
     private final UserRepository userRepo;
     private final GoalRepository goalRepository;
@@ -256,20 +257,23 @@ public class DailyPlanServiceImpl implements DailyPlanService {
         plan.setIsReviewed(true);
         dailyPlanRepository.save(plan);
 
-        // Process time blocks for planDate:
-        // - Worked (actualMinutes > 0): Keep and adjust endTime = startTime + actualMinutes
-        // - Completed (isCompleted == true): Keep as is
-        // - Unworked (actualMinutes == 0 && !isCompleted): Delete block
         LocalDateTime planStart = planDate.atStartOfDay();
         LocalDateTime planEnd = planDate.plusDays(1).atStartOfDay().minusNanos(1);
         List<TaskTimeBlock> pastBlocks = timeBlockRepository.findByUserIdAndDateRange(userId, planStart, planEnd);
+
+        List<UUID> blockIds = pastBlocks.stream().map(TaskTimeBlock::getId).toList();
+        List<nhk.timelog.TimeLog> allLogs = timeLogRepository.findByTimeBlockIdIn(blockIds);
+        java.util.Map<UUID, List<nhk.timelog.TimeLog>> logsByBlockId = allLogs.stream()
+                .collect(java.util.stream.Collectors.groupingBy(nhk.timelog.TimeLog::getTimeBlockId));
+
         for (TaskTimeBlock tb : pastBlocks) {
-            int actMins = tb.getActualMinutes() != null ? tb.getActualMinutes() : 0;
-            boolean isComp = Boolean.TRUE.equals(tb.getIsCompleted());
+            List<nhk.timelog.TimeLog> blockLogs = logsByBlockId.getOrDefault(tb.getId(), List.of());
+            int actMins = blockLogs.stream().mapToInt(nhk.timelog.TimeLog::getLoggedMinutes).sum();
+            boolean hasLogs = !blockLogs.isEmpty();
             if (actMins > 0) {
                 tb.setEndTime(tb.getStartTime().plusMinutes(actMins));
                 timeBlockRepository.save(tb);
-            } else if (!isComp) {
+            } else if (!hasLogs) {
                 timeBlockRepository.delete(tb);
             }
         }

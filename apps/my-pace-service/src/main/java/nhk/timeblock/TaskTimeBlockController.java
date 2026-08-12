@@ -33,16 +33,7 @@ public class TaskTimeBlockController {
         return timeBlockService.saveTimeBlocks(request, userDetails.user().getId());
     }
 
-    public record UpdateTimeBlockProgressRequest(Integer actualMinutes, Boolean isCompleted) {}
     public record SplitTimeBlockRequest(Integer splitAtMinutes) {}
-
-    @PatchMapping("/{id}/progress")
-    public TaskTimeBlockDto updateProgress(
-            @PathVariable UUID id,
-            @RequestBody UpdateTimeBlockProgressRequest request,
-            @AuthenticationPrincipal UserDetailsCustom userDetails) {
-        return timeBlockService.updateTimeBlockProgress(id, request.actualMinutes(), request.isCompleted(), userDetails.user().getId());
-    }
 
     @PostMapping("/{id}/split")
     public List<TaskTimeBlockDto> splitTimeBlock(

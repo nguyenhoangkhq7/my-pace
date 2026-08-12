@@ -69,6 +69,9 @@ class StatsServiceImplTest {
     @Mock
     private CheckinStreakService checkinStreakService;
 
+    @Mock
+    private nhk.timelog.TimeLogRepository timeLogRepository;
+
     @InjectMocks
     private StatsServiceImpl statsService;
 
@@ -133,6 +136,9 @@ class StatsServiceImplTest {
 
         // Fixed events service default empty
         when(fixedEventService.getEventsInRange(any(), any(), any())).thenReturn(Collections.emptyList());
+
+        // TimeLogRepository default empty
+        when(timeLogRepository.findHourlyFocusMinutes(any(), any(), any(), anyString())).thenReturn(Collections.emptyList());
     }
 
     @Test

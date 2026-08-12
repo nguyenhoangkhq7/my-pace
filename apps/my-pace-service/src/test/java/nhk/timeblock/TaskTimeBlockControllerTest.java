@@ -94,12 +94,12 @@ class TaskTimeBlockControllerTest {
                 LocalDateTime.of(2026, 8, 2, 10, 0),
                 1,
                 1,
-                0,
-                false,
-                null,
                 "FREE",
                 false,
-                null
+                null,
+                List.of(),
+                0,
+                false
         );
     }
 
@@ -148,39 +148,41 @@ class TaskTimeBlockControllerTest {
     }
 
     @Test
-    @DisplayName("PATCH /api/time-blocks/{id}/progress - Should return status 200 OK and updated time block DTO")
-    void updateProgress_Success() throws Exception {
-        TaskTimeBlockController.UpdateTimeBlockProgressRequest progressRequest =
-                new TaskTimeBlockController.UpdateTimeBlockProgressRequest(30, true);
+    @DisplayName("PATCH /api/time-blocks/{id} - Should return status 200 OK and updated time block DTO")
+    void updateTimeBlock_Success() throws Exception {
+        TaskTimeBlockController.UpdateTimeBlockRequest updateRequest =
+                new TaskTimeBlockController.UpdateTimeBlockRequest(
+                        LocalDateTime.of(2026, 8, 2, 9, 30),
+                        LocalDateTime.of(2026, 8, 2, 10, 30),
+                        "BUSY"
+                );
 
         TaskTimeBlockDto updatedDto = new TaskTimeBlockDto(
                 blockId,
                 taskId,
-                LocalDateTime.of(2026, 8, 2, 9, 0),
-                LocalDateTime.of(2026, 8, 2, 10, 0),
+                LocalDateTime.of(2026, 8, 2, 9, 30),
+                LocalDateTime.of(2026, 8, 2, 10, 30),
                 1,
                 1,
-                30,
-                true,
-                null,
                 "BUSY",
                 false,
-                null
+                null,
+                List.of(),
+                0,
+                false
         );
 
-        when(timeBlockService.updateTimeBlockProgress(eq(blockId), eq(30), eq(true), eq(userId)))
+        when(timeBlockService.updateTimeBlock(eq(blockId), any(TaskTimeBlockController.UpdateTimeBlockRequest.class), eq(userId)))
                 .thenReturn(updatedDto);
 
-        mockMvc.perform(patch("/api/time-blocks/{id}/progress", blockId)
+        mockMvc.perform(patch("/api/time-blocks/{id}", blockId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(progressRequest)))
+                        .content(objectMapper.writeValueAsString(updateRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(blockId.toString())))
-                .andExpect(jsonPath("$.actualMinutes", is(30)))
-                .andExpect(jsonPath("$.isCompleted", is(true)))
                 .andExpect(jsonPath("$.availabilityStatus", is("BUSY")));
 
-        verify(timeBlockService, times(1)).updateTimeBlockProgress(eq(blockId), eq(30), eq(true), eq(userId));
+        verify(timeBlockService, times(1)).updateTimeBlock(eq(blockId), any(TaskTimeBlockController.UpdateTimeBlockRequest.class), eq(userId));
     }
 
     @Test
@@ -227,12 +229,12 @@ class TaskTimeBlockControllerTest {
                 LocalDateTime.of(2026, 8, 2, 10, 0),
                 1,
                 1,
-                0,
-                false,
-                null,
                 "BUSY",
                 false,
-                null
+                null,
+                List.of(),
+                0,
+                false
         );
 
         when(timeBlockService.toggleTimeBlockLockStatus(eq(blockId), eq("BUSY"), eq(userId)))

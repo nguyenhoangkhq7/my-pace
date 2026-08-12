@@ -41,15 +41,18 @@ export const FlowTodoItem = memo(function FlowTodoItem({ task, blocks = [], sche
     <div
       onClick={handleClick}
       className={cn(
-        "p-3 rounded-xl border flex flex-col transition-all cursor-pointer group",
+        "p-3 rounded-xl border flex flex-col transition-all cursor-pointer group relative",
         isActive
-          ? "bg-card/90 border-indigo-500/55 shadow-[0_0_20px_rgba(99,102,241,0.15)]"
+          ? "bg-primary/5 border-primary shadow-md shadow-primary/10 ring-1 ring-primary/30 backdrop-blur-md z-10"
           : isVideoBackground
-          ? "bg-card/60 backdrop-blur-xs border-border/60 hover:border-indigo-500/30 hover:bg-card/80"
-          : "bg-card border-border hover:border-indigo-500/30 hover:bg-muted",
-        isDone ? "opacity-40 grayscale cursor-default hover:border-border hover:bg-card" : ""
+          ? "bg-card/80 backdrop-blur-md border-border/60 hover:border-primary/40 hover:bg-card/90"
+          : "bg-card border-border hover:border-primary/40 hover:bg-muted",
+        isDone ? "opacity-60 cursor-default hover:border-border hover:bg-card" : ""
       )}
     >
+      {isActive && (
+        <div className="absolute inset-y-0 left-0 w-1 bg-primary rounded-l-xl shadow-[0_0_10px_rgba(var(--primary),0.8)]" />
+      )}
       <div className="flex items-start space-x-3 w-full">
         <div className="mt-1 shrink-0">
           {isDone ? (
@@ -57,27 +60,32 @@ export const FlowTodoItem = memo(function FlowTodoItem({ task, blocks = [], sche
               <HugeiconsIcon icon={Tick01Icon} size={14} />
             </div>
           ) : isActive ? (
-            <div className="w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center text-white shadow-[0_0_10px_rgba(99,102,241,0.5)]">
+            <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-sm shadow-primary/50 animate-pulse">
               <HugeiconsIcon icon={PlayIcon} size={12} />
             </div>
           ) : (
-            <div className="w-5 h-5 rounded-full border border-border group-hover:border-indigo-400 flex items-center justify-center text-transparent group-hover:text-indigo-400 transition-colors">
+            <div className="w-5 h-5 rounded-full border border-border group-hover:border-primary flex items-center justify-center text-transparent group-hover:text-primary transition-colors">
               <HugeiconsIcon icon={PlayIcon} size={12} className="ml-0.5" />
             </div>
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <div
-            className={cn(
-              "text-sm font-medium truncate tracking-wide",
-              isDone ? "text-muted-foreground line-through" : isActive ? "text-indigo-300 font-semibold" : "text-foreground"
-            )}
-          >
-            {task.task.title}
+          <div className="flex justify-between items-start gap-2">
+            <span className={cn(
+              "font-semibold text-sm line-clamp-2 leading-tight transition-colors",
+              isActive ? "text-primary" : "text-foreground",
+              isDone ? "line-through text-muted-foreground" : ""
+            )}>
+              {task.task.title}
+            </span>
           </div>
-          <div className="flex items-center mt-1.5 gap-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider flex-wrap">
+          
+          <div className="flex flex-wrap items-center gap-2 mt-2 text-xs">
             {task.task.estimatedMinutes > 0 && (
-              <span className="bg-background px-1.5 py-0.5 rounded border border-border text-muted-foreground">
+              <span className={cn(
+                "px-1.5 py-0.5 rounded-md border transition-colors",
+                isActive ? "bg-primary/10 border-primary/20 text-primary" : "bg-secondary/50 border-border/50 text-secondary-foreground"
+              )}>
                 {task.task.estimatedMinutes}m
               </span>
             )}
@@ -90,7 +98,7 @@ export const FlowTodoItem = memo(function FlowTodoItem({ task, blocks = [], sche
               </div>
             )}
             {scheduleLabel && (
-              <span className="ml-auto inline-flex items-center rounded-full border border-background/20 bg-foreground px-2 py-0.5 text-[10px] font-semibold normal-case tracking-normal text-background shadow-[0_4px_12px_rgba(0,0,0,0.14)]">
+              <span className="ml-auto inline-flex items-center rounded-md border border-border/50 bg-secondary px-2 py-0.5 text-[10px] font-medium text-secondary-foreground shadow-sm">
                 {scheduleLabel}
               </span>
             )}
@@ -119,16 +127,16 @@ export const FlowTodoItem = memo(function FlowTodoItem({ task, blocks = [], sche
                   }
                 }}
                 className={cn(
-                  "px-2 py-0.5 rounded-lg text-[10px] font-semibold transition-all border flex items-center space-x-1 cursor-pointer",
+                  "px-2 py-0.5 rounded-md text-[10px] font-medium transition-all border flex items-center space-x-1 cursor-pointer",
                   isBlockActive
-                    ? "bg-indigo-500 text-white border-indigo-400 shadow-xs"
-                    : "bg-muted/80 hover:bg-indigo-500/15 hover:text-indigo-400 hover:border-indigo-500/40 text-muted-foreground border-border/60"
+                    ? "bg-primary text-primary-foreground border-primary shadow-md scale-105 z-10 relative"
+                    : "bg-secondary/60 hover:bg-secondary text-secondary-foreground border-border/40 hover:border-border/80"
                 )}
                 title={`Thực thi khối ${b.partIndex}/${b.totalParts} (${startStr} - ${endStr})`}
               >
                 <span>🕒</span>
                 <span>{startStr}-{endStr}</span>
-                <span className="opacity-75">({dur}m)</span>
+                <span className={cn("opacity-75", isBlockActive ? "text-primary-foreground/80" : "")}>({dur}m)</span>
               </button>
             );
           })}

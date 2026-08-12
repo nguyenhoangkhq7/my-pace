@@ -311,7 +311,7 @@ export function TaskFormContent({
   }, [watchGoalId, goals, setValue, watchTitle, watchEstimatedMinutes]);
 
   const handleFormSubmit = async (values: TaskFormValues) => {
-    const taskData: any = {
+    const taskData: Partial<Task> & Record<string, unknown> = {
       title: values.title,
       estimatedMinutes: values.estimatedMinutes || undefined,
       notes: values.notes || undefined,

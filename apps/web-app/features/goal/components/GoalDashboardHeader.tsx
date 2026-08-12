@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Target02Icon, PlusSignIcon, InformationCircleIcon } from "@hugeicons/core-free-icons";
+import { PlusSignIcon, InformationCircleIcon } from "@hugeicons/core-free-icons";
 import { useTranslation } from "@/hooks/use-translation";
 
 interface GoalDashboardHeaderProps {

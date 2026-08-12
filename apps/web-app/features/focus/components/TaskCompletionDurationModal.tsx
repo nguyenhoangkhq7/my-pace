@@ -4,14 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFocusStore } from "../store/focus.store";
-import type { Task } from "@/features/board/types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchClient } from "@/lib/fetchClient";
 import { shiftTimeBlocks } from "@/features/board/utils/timeShift";
 import { useAuthStore } from "@/features/auth";
 import { getTodayStr } from "@/lib/date";
-import type { TaskTimeBlock } from "@/features/board/types";
+import type { TaskTimeBlock, DailyPlan } from "@/features/board/types";
 import { useTaskTimeBlocks } from "@/features/board/hooks/useTaskTimeBlocks";
+import { createTimeLog } from "../services/timelog-service";
 
 export function TaskCompletionDurationModal() {
   const promptTask = useFocusStore((s) => s.promptTask);
@@ -22,10 +22,7 @@ export function TaskCompletionDurationModal() {
   const todayStr = getTodayStr(user?.timezone);
   const { data: timeBlocks = [] } = useTaskTimeBlocks(todayStr, todayStr);
 
-  const updateTaskMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string, data: Partial<Task> }) => fetchClient.put(`tasks/${id}`, data).then(r => r.data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
-  });
+
 
   const saveTimeBlocksMutation = useMutation({
     mutationFn: (blocks: Omit<TaskTimeBlock, 'id'>[]) => fetchClient.post<TaskTimeBlock[]>('time-blocks/batch', { targetDate: todayStr, blocks }).then(r => r.data),
@@ -53,12 +50,34 @@ export function TaskCompletionDurationModal() {
   const handleSaveDuration = async (minutes: number) => {
     setIsSaving(true);
     try {
-      await updateTaskMutation.mutateAsync({ id: promptTask.id, data: { actualMinutes: minutes } });
+      const dailyPlan = queryClient.getQueryData<DailyPlan>(['dailyPlan', todayStr]);
+      const taskInPlan = dailyPlan?.tasks.find(t => t.task.id === promptTask.id);
+      const currentActualMinutes = taskInPlan?.task.actualMinutes || 0;
+      
+      const delta = minutes - currentActualMinutes;
+      
+      if (delta > 0) {
+        const endedAt = new Date();
+        const startedAt = new Date(endedAt.getTime() - delta * 60000);
+        
+        await createTimeLog({
+          taskId: promptTask.id,
+          loggedMinutes: delta,
+          startedAt: startedAt.toISOString(),
+          endedAt: endedAt.toISOString(),
+        });
+      }
+
       if (timeBlocks && timeBlocks.length > 0) {
         const estimated = promptTask.estimatedMinutes || 0;
         const shifted = shiftTimeBlocks(timeBlocks, promptTask.id, minutes, estimated);
         await saveTimeBlocksMutation.mutateAsync(shifted);
       }
+      
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['dailyPlan'] });
+      queryClient.invalidateQueries({ queryKey: ['timeLogs'] });
+      
       setPromptTask(null);
       setIsCustom(false);
       setCustomValue("");

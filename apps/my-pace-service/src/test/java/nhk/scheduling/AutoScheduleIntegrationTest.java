@@ -12,6 +12,7 @@ import nhk.timeblock.TaskTimeBlock;
 import nhk.timeblock.TaskTimeBlockRepository;
 import nhk.user.User;
 import nhk.user.UserRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -54,6 +55,9 @@ class AutoScheduleIntegrationTest extends BaseIntegrationTest {
     private User testUser;
     private final LocalDate today = LocalDate.of(2026, 8, 2);
 
+    private org.mockito.MockedStatic<LocalDate> mockedLocalDate;
+    private org.mockito.MockedStatic<LocalTime> mockedLocalTime;
+
     @BeforeEach
     void setUp() {
         testUser = new User();
@@ -64,6 +68,25 @@ class AutoScheduleIntegrationTest extends BaseIntegrationTest {
         testUser.setWakeTime(LocalTime.of(7, 0));
         testUser.setSleepTime(LocalTime.of(23, 0));
         testUser = userRepository.save(testUser);
+
+        LocalDate fixedDate = this.today;
+        LocalTime fixedTime = LocalTime.of(8, 0); // 8:00 AM
+
+        mockedLocalDate = org.mockito.Mockito.mockStatic(LocalDate.class, org.mockito.Mockito.CALLS_REAL_METHODS);
+        mockedLocalTime = org.mockito.Mockito.mockStatic(LocalTime.class, org.mockito.Mockito.CALLS_REAL_METHODS);
+
+        mockedLocalDate.when(() -> LocalDate.now(org.mockito.ArgumentMatchers.any(java.time.ZoneId.class))).thenReturn(fixedDate);
+        mockedLocalTime.when(() -> LocalTime.now(org.mockito.ArgumentMatchers.any(java.time.ZoneId.class))).thenReturn(fixedTime);
+    }
+
+    @AfterEach
+    void tearDown() {
+        if (mockedLocalDate != null) {
+            mockedLocalDate.close();
+        }
+        if (mockedLocalTime != null) {
+            mockedLocalTime.close();
+        }
     }
 
     @Test

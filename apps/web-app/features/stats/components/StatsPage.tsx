@@ -9,6 +9,7 @@ import { PlanVsActualChart } from "./PlanVsActualChart";
 import { KPISection } from "./KPISection";
 import { StatsLoadingState } from "./StatsLoadingState";
 import { StatsErrorState } from "./StatsErrorState";
+import { HourlyHeatmap } from "./HourlyHeatmap";
 import { useAvailableTimeQuery } from "@/features/available-time/hooks/useAvailableTime";
 import { formatDateStr } from "../utils/statsDateUtils";
 
@@ -65,6 +66,11 @@ export function StatsPage() {
       <div className={cn("space-y-8 transition-opacity duration-200", isLoading && "opacity-60")}>
         {/* Plan vs Actual Chart */}
         <PlanVsActualChart data={planVsActualData} />
+
+        {/* Hourly Focus Heatmap */}
+        {overview?.hourlyFocusMinutes && (
+          <HourlyHeatmap data={overview.hourlyFocusMinutes} />
+        )}
 
         {/* Charts Grid */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">

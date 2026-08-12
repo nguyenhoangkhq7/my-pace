@@ -142,7 +142,7 @@ export function useFlowLayoutState() {
         "zenzone-panel": restored[2],
       });
     }, 50);
-  }, [layoutKey]);
+  }, [layoutKey, todayStr]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {

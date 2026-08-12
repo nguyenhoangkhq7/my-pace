@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Trash2 } from "lucide-react";
+import { TimeSelect } from "@/components/ui/time-select";
 import { useTranslation } from "@/hooks/use-translation";
 import type { DayOfWeek, TimeContextSlot } from "../types";
 
@@ -37,21 +37,23 @@ export function TimeContextSlotRow({ slot, onChange, onRemove }: TimeContextSlot
         ))}
       </select>
 
-      <Input
-        type="time"
-        value={slot.startTime ? slot.startTime.substring(0, 5) : "07:00"}
-        onChange={(e) => onChange({ ...slot, startTime: `${e.target.value}:00` })}
-        className="h-7 w-24 text-xs bg-background border-border text-foreground"
-      />
+      <div className="w-24 shrink-0">
+        <TimeSelect
+          size="sm"
+          value={slot.startTime ? slot.startTime.substring(0, 5) : "07:00"}
+          onChange={(val) => onChange({ ...slot, startTime: `${val}:00` })}
+        />
+      </div>
 
       <span className="text-muted-foreground">-</span>
 
-      <Input
-        type="time"
-        value={slot.endTime ? slot.endTime.substring(0, 5) : "09:00"}
-        onChange={(e) => onChange({ ...slot, endTime: `${e.target.value}:00` })}
-        className="h-7 w-24 text-xs bg-background border-border text-foreground"
-      />
+      <div className="w-24 shrink-0">
+        <TimeSelect
+          size="sm"
+          value={slot.endTime ? slot.endTime.substring(0, 5) : "09:00"}
+          onChange={(val) => onChange({ ...slot, endTime: `${val}:00` })}
+        />
+      </div>
 
       <Button
         type="button"

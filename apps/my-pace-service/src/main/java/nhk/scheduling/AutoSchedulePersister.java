@@ -44,8 +44,15 @@ public class AutoSchedulePersister {
             boolean isConfirmed = existingPlan != null && Boolean.TRUE.equals(existingPlan.getIsConfirmed());
 
             if (!isConfirmed && datesActuallyProcessed.contains(date)) {
-                java.time.LocalDateTime start = date.atStartOfDay();
-                java.time.LocalDateTime end = date.plusDays(1).atStartOfDay().minusNanos(1);
+                java.time.LocalDateTime start;
+                java.time.LocalDateTime end;
+                if (ctx.sleepMin() < ctx.wakeMin()) {
+                    start = date.atStartOfDay().plusMinutes(ctx.wakeMin());
+                    end = date.plusDays(1).atStartOfDay().plusMinutes(ctx.sleepMin());
+                } else {
+                    start = date.atStartOfDay();
+                    end = date.plusDays(1).atStartOfDay();
+                }
                 
                 List<TaskTimeBlock> allExistingBlocks = timeBlockRepository.findByUserIdAndDateRange(ctx.userId(), start, end);
 
@@ -78,7 +85,6 @@ public class AutoSchedulePersister {
                             existing.setStartTime(raw.getStartTime());
                             existing.setEndTime(raw.getEndTime());
                             existing.setPartIndex(raw.getPartIndex());
-                            existing.setStatusWarning(raw.getStatusWarning());
                             blocksToSave.add(existing);
                         }
                         finalFreeBlocks.add(existing);
@@ -137,30 +143,37 @@ public class AutoSchedulePersister {
                                 b.getId(), b.getTaskId(),
                                 b.getStartTime(), b.getEndTime(),
                                 b.getPartIndex(), b.getTotalParts(),
-                                b.getActualMinutes() != null ? b.getActualMinutes() : 0,
-                                b.getIsCompleted() != null ? b.getIsCompleted() : false,
-                                b.getCompletedAt(),
                                 b.getAvailabilityStatus() != null ? b.getAvailabilityStatus() : "FREE",
                                 Boolean.TRUE.equals(b.getIsLocked()),
-                                b.getStatusWarning()
+                                b.getCreatedAt(),
+                                java.util.List.of(),
+                                0,
+                                false
                         ))
                         .collect(Collectors.toList());
                 responseMap.put(date, dtos);
             } else {
-                java.time.LocalDateTime start = date.atStartOfDay();
-                java.time.LocalDateTime end = date.plusDays(1).atStartOfDay().minusNanos(1);
+                java.time.LocalDateTime start;
+                java.time.LocalDateTime end;
+                if (ctx.sleepMin() < ctx.wakeMin()) {
+                    start = date.atStartOfDay().plusMinutes(ctx.wakeMin());
+                    end = date.plusDays(1).atStartOfDay().plusMinutes(ctx.sleepMin());
+                } else {
+                    start = date.atStartOfDay();
+                    end = date.plusDays(1).atStartOfDay();
+                }
                 List<TaskTimeBlockDto> existingDtos = timeBlockRepository.findByUserIdAndDateRange(ctx.userId(), start, end)
                         .stream()
                         .map(b -> new TaskTimeBlockDto(
                                 b.getId(), b.getTaskId(),
                                 b.getStartTime(), b.getEndTime(),
                                 b.getPartIndex(), b.getTotalParts(),
-                                b.getActualMinutes() != null ? b.getActualMinutes() : 0,
-                                b.getIsCompleted() != null ? b.getIsCompleted() : false,
-                                b.getCompletedAt(),
                                 b.getAvailabilityStatus() != null ? b.getAvailabilityStatus() : "FREE",
                                 Boolean.TRUE.equals(b.getIsLocked()),
-                                b.getStatusWarning()
+                                b.getCreatedAt(),
+                                java.util.List.of(),
+                                0,
+                                false
                         ))
                         .collect(Collectors.toList());
                 responseMap.put(date, existingDtos);

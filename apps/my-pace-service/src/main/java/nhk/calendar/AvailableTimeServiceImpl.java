@@ -70,8 +70,13 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
             return zeroResponse(user, checkedIn, checkinTime, isPlanConfirmed, streak);
         }
 
-        List<FixedEventResponse> occurrences = eventService.getEventsInRange(userId, date, date);
-        UnionResult unionResult = computeUnionBlockedMinutes(occurrences, windowStart, windowEnd);
+        List<FixedEventResponse> occurrencesToday = eventService.getEventsInRange(userId, date, date);
+        List<FixedEventResponse> occurrencesTomorrow = eventService.getEventsInRange(userId, date.plusDays(1), date.plusDays(1));
+        
+        List<FixedEventResponse> allOccurrences = new ArrayList<>(occurrencesToday);
+        allOccurrences.addAll(occurrencesTomorrow);
+
+        UnionResult unionResult = computeUnionBlockedMinutes(allOccurrences, windowStart, windowEnd, date);
 
         int bufferPct = user.getBufferPct();
         int availableMinutes = Math.max(0,
@@ -144,7 +149,7 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
     // ─── Union-Interval Algorithm ─────────────────────────────────────────────────
 
     private UnionResult computeUnionBlockedMinutes(List<FixedEventResponse> occurrences,
-                                                   LocalTime windowStart, LocalTime windowEnd) {
+                                                   LocalTime windowStart, LocalTime windowEnd, LocalDate baseDate) {
         List<FixedEventResponse> busyEvents = occurrences.stream()
                 .filter(e -> !"FREE".equalsIgnoreCase(e.availabilityStatus()))
                 .toList();
@@ -159,12 +164,23 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
             return allDayBlockedResult(windowStartMin, windowEndMin, crossesMidnight);
         }
 
-        int effectiveEnd = crossesMidnight ? 1440 : windowEndMin;
+        int effectiveEnd = crossesMidnight ? (windowEndMin + 1440) : windowEndMin;
         List<Interval> intervals = busyEvents.stream()
-                .map(e -> new Interval(
-                        Math.max(toMinutes(e.startTime()), windowStartMin),
-                        Math.min(toMinutes(e.endTime()), effectiveEnd)
-                ))
+                .map(e -> {
+                    int start = toMinutes(e.startTime());
+                    int end = toMinutes(e.endTime());
+                    if (end <= start && !"00:00".equals(e.endTime().toString())) {
+                        end += 1440;
+                    }
+                    if (e.occurrenceDate() != null && e.occurrenceDate().isAfter(baseDate)) {
+                        start += 1440;
+                        end += 1440;
+                    }
+                    return new Interval(
+                            Math.max(start, windowStartMin),
+                            Math.min(end, effectiveEnd)
+                    );
+                })
                 .filter(Interval::isValid)
                 .sorted(Comparator.comparingInt(Interval::start))
                 .collect(Collectors.toList());
