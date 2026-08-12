@@ -1,7 +1,10 @@
 package nhk.timeblock;
 
+import nhk.timelog.dto.TimeLogResponse;
+
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 public record TaskTimeBlockDto(
@@ -11,10 +14,10 @@ public record TaskTimeBlockDto(
     LocalDateTime endTime,
     Integer partIndex,
     Integer totalParts,
-    Integer actualMinutes,
-    Boolean isCompleted,
-    OffsetDateTime completedAt,
     String availabilityStatus,
     Boolean isLocked,
-    String statusWarning
+    OffsetDateTime createdAt,
+    List<TimeLogResponse> timeLogs,
+    Integer totalLoggedMinutes,
+    Boolean hasTimeLogs
 ) {}

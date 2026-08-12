@@ -11,6 +11,7 @@ import { getTodayStr } from "@/lib/date";
 import type { DailyPlanTask, TaskTimeBlock, DailyPlan } from "@/features/board/types";
 import { useTaskTimeBlocks } from "@/features/board/hooks/useTaskTimeBlocks";
 import { FlowTodoItem } from "./FlowTodoItem";
+import { TodayFocusSummary } from "./TodayFocusSummary";
 
 interface FlowTodoListProps {
   onTaskSelect?: (task: DailyPlanTask, block?: TaskTimeBlock) => void;
@@ -109,13 +110,14 @@ export function FlowTodoList({ onTaskSelect }: FlowTodoListProps) {
           <h2 className="font-bold text-foreground tracking-wide flex items-center">
             Flow
             <span className="relative flex h-2 w-2 ml-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
             </span>
           </h2>
           <p className="text-xs text-muted-foreground font-medium mt-1 uppercase tracking-widest">
             {t.flow.todayTasksCount(dailyPlanToday.tasks.length)}
           </p>
+          <TodayFocusSummary />
         </div>
       </div>
 

@@ -24,6 +24,7 @@ public class StatsServiceImpl implements StatsService {
     private final nhk.user.UserRepository userRepository;
     private final nhk.calendar.FixedEventService fixedEventService;
     private final CheckinStreakService checkinStreakService;
+    private final nhk.timelog.TimeLogRepository timeLogRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -229,6 +230,16 @@ public class StatsServiceImpl implements StatsService {
             estimationAccuracy = 100.0;
         }
 
+        // 6. Hourly focus minutes from raw TimeLogs
+        List<Object[]> hourlyResults = timeLogRepository.findHourlyFocusMinutes(user.getId(), startDate, endDate, userZone.getId());
+        Map<Integer, Integer> hourlyFocusMinutes = new HashMap<>();
+        for (int h = 0; h < 24; h++) hourlyFocusMinutes.put(h, 0); // initialize all hours to 0
+        for (Object[] row : hourlyResults) {
+            int hour = ((Number) row[0]).intValue();
+            int minutes = ((Number) row[1]).intValue();
+            hourlyFocusMinutes.put(hour, minutes);
+        }
+
         return StatsResponse.builder()
                 .matrixTime(matrixTime)
                 .categoryTime(categoryTime)
@@ -240,6 +251,7 @@ public class StatsServiceImpl implements StatsService {
                 .q2FocusRatio(Math.round(q2FocusRatio * 10.0) / 10.0)
                 .rolloverRate(Math.round(rolloverRate * 10.0) / 10.0)
                 .dailyTimeStats(dailyTimeStats)
+                .hourlyFocusMinutes(hourlyFocusMinutes)
                 .build();
     }
 }

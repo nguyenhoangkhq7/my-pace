@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { TimeSelect } from "@/components/ui/time-select";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -193,22 +194,18 @@ export function QuickAddForm({ initialData, onSuccess, onCancel }: QuickAddFormP
         <div className="grid grid-cols-2 gap-4">
           <div className="grid gap-1.5">
             <Label htmlFor="qa-event-start">{t.quickAdd.startTime}</Label>
-            <Input
-              id="qa-event-start"
-              type="time"
+            <TimeSelect
               value={eventStart}
-              onChange={(e) => setEventStart(e.target.value)}
-              className="bg-card border-border focus:border-primary text-sm"
+              onChange={setEventStart}
+              size="md"
             />
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="qa-event-end">{t.quickAdd.endTime}</Label>
-            <Input
-              id="qa-event-end"
-              type="time"
+            <TimeSelect
               value={eventEnd}
-              onChange={(e) => setEventEnd(e.target.value)}
-              className="bg-card border-border focus:border-primary text-sm"
+              onChange={setEventEnd}
+              size="md"
             />
           </div>
         </div>

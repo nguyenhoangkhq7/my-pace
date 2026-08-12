@@ -1,5 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { TimeSelect } from "@/components/ui/time-select";
 import { ModalMode, RecurrenceType } from "../types";
 
 interface EventDateTimeRowProps {
@@ -55,22 +56,20 @@ export function EventDateTimeRow({
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="evt-start">Bắt đầu {!isAllDay && "*"}</Label>
-          <Input
-            id="evt-start"
-            type="time"
+          <TimeSelect
             value={isAllDay ? "" : startTime}
-            onChange={(e) => setStartTime(e.target.value)}
+            onChange={setStartTime}
             disabled={isAllDay}
+            size="md"
           />
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="evt-end">Kết thúc {!isAllDay && "*"}</Label>
-          <Input
-            id="evt-end"
-            type="time"
+          <TimeSelect
             value={isAllDay ? "" : endTime}
-            onChange={(e) => setEndTime(e.target.value)}
+            onChange={setEndTime}
             disabled={isAllDay}
+            size="md"
           />
         </div>
       </div>

@@ -8,9 +8,10 @@ interface TimeSelectProps {
   onChange: (val: string) => void;
   className?: string;
   size?: "default" | "md" | "sm";
+  disabled?: boolean;
 }
 
-export function TimeSelect({ value, onChange, className, size = "default" }: TimeSelectProps) {
+export function TimeSelect({ value, onChange, className, size = "default", disabled = false }: TimeSelectProps) {
   const [hStr, mStr] = (value || "07:00").split(":");
   const currentHour = hStr || "07";
   const currentMin = mStr || "00";
@@ -45,8 +46,10 @@ export function TimeSelect({ value, onChange, className, size = "default" }: Tim
         onClick={(e) => e.stopPropagation()}
         className={cn(
           "flex-1 bg-card border border-border text-foreground text-xs font-mono font-semibold focus:outline-hidden focus:border-primary cursor-pointer text-center appearance-none",
+          disabled && "opacity-50 cursor-not-allowed",
           isSm ? "h-7 rounded-md px-2" : isMd ? "h-9 rounded-md px-2.5" : "h-10 rounded-xl px-3"
         )}
+        disabled={disabled}
         style={{
           backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
           backgroundRepeat: "no-repeat",
@@ -70,8 +73,10 @@ export function TimeSelect({ value, onChange, className, size = "default" }: Tim
         onClick={(e) => e.stopPropagation()}
         className={cn(
           "flex-1 bg-card border border-border text-foreground text-xs font-mono font-semibold focus:outline-hidden focus:border-primary cursor-pointer text-center appearance-none",
+          disabled && "opacity-50 cursor-not-allowed",
           isSm ? "h-7 rounded-md px-2" : isMd ? "h-9 rounded-md px-2.5" : "h-10 rounded-xl px-3"
         )}
+        disabled={disabled}
         style={{
           backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
           backgroundRepeat: "no-repeat",

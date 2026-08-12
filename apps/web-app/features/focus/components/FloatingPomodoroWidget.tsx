@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import { useTasks } from "@/features/board/hooks/useTasks";
 import { useDraggable } from "@/hooks/use-draggable";
@@ -16,6 +17,18 @@ export function FloatingPomodoroWidget() {
   const setPomodoroFloating = useFocusStore((s) => s.setPomodoroFloating);
   const { tasks } = useTasks();
   const activeTask = tasks.find((t) => t.id === activeTaskId);
+  const [isCooldown, setIsCooldown] = React.useState(false);
+
+  const handleToggleTimer = () => {
+    if (isCooldown) return;
+    setIsCooldown(true);
+    if (pomodoroState === "focusing" || pomodoroState === "breaking") {
+      pauseTimer();
+    } else {
+      startTimer();
+    }
+    setTimeout(() => setIsCooldown(false), 1000);
+  };
 
   const {
     position: pomodoroPos,
@@ -74,8 +87,9 @@ export function FloatingPomodoroWidget() {
 
       <div className="flex items-center gap-1.5">
         <button
-          onClick={pomodoroState === "focusing" || pomodoroState === "breaking" ? pauseTimer : startTimer}
-          className="p-1.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground transition-all hover:scale-105 active:scale-95 cursor-pointer flex items-center justify-center"
+          onClick={handleToggleTimer}
+          disabled={isCooldown}
+          className="p-1.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground transition-all hover:scale-105 active:scale-95 cursor-pointer flex items-center justify-center disabled:opacity-50 disabled:pointer-events-none"
         >
           {pomodoroState === "focusing" || pomodoroState === "breaking" ? (
             <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>

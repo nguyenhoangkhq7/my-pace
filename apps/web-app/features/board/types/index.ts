@@ -40,6 +40,16 @@ export interface Task {
   updatedAt?: string;
 }
 
+export interface TimeLog {
+  id: string;
+  timeBlockId: string;
+  taskId: string;
+  loggedMinutes: number;
+  startedAt: string;
+  endedAt: string;
+  createdAt?: string;
+}
+
 export interface TaskTimeBlock {
   id: string;
   taskId: string;
@@ -51,7 +61,11 @@ export interface TaskTimeBlock {
   isMit?: boolean;
   availabilityStatus?: 'BUSY' | 'FREE';
   isLocked?: boolean;
-  statusWarning?: string;
+  createdAt?: string;
+  // TimeLog tracking
+  timeLogs: TimeLog[];
+  totalLoggedMinutes: number;
+  hasTimeLogs: boolean;
 }
 
 export interface DailyPlanTask {

@@ -332,8 +332,7 @@ public class FixedEventServiceImpl implements FixedEventService {
             if (request.startTime() == null || request.endTime() == null) {
                 throw new IllegalArgumentException("startTime and endTime are required when isAllDay is false");
             }
-            boolean isMidnightWrap = LocalTime.MIDNIGHT.equals(request.endTime());
-            if (!isMidnightWrap && (request.endTime().isBefore(request.startTime()) || request.endTime().equals(request.startTime()))) {
+            if (!request.endTime().isAfter(request.startTime())) {
                 throw new IllegalArgumentException("endTime must be after startTime");
             }
         }

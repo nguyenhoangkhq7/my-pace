@@ -20,5 +20,8 @@ export interface StatsOverviewResponse {
   q2FocusRatio?: number;
   rolloverRate?: number;
   dailyTimeStats?: DailyTimeStat[];
+  /** Focus minutes aggregated by hour-of-day (key = 0-23, value = total minutes). */
+  hourlyFocusMinutes?: Record<number, number>;
 }
+
 

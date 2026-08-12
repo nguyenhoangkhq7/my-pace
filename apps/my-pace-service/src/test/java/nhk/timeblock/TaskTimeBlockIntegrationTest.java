@@ -218,33 +218,31 @@ class TaskTimeBlockIntegrationTest extends BaseIntegrationTest {
     class ProgressUpdateAndTaskRollupFlow {
 
         @Test
-        @DisplayName("Updating time block progress should update block status and rollup actualMinutes to Task entity")
-        void updateProgress_RollsUpToTask_AndMarksDone() throws Exception {
+        @DisplayName("Updating time block should update block status and update task estimatedMinutes")
+        void updateTimeBlock_UpdatesStatus_AndEstimatedMinutes() throws Exception {
             TaskTimeBlock block = new TaskTimeBlock();
             block.setTaskId(user1Task.getId());
-            // removed planId
             block.setStartTime(LocalDateTime.of(2026, 8, 2, 9, 0));
             block.setEndTime(LocalDateTime.of(2026, 8, 2, 10, 0));
             block.setAvailabilityStatus("FREE");
             TaskTimeBlock savedBlock = timeBlockRepository.save(block);
 
-            TaskTimeBlockController.UpdateTimeBlockProgressRequest progressRequest =
-                    new TaskTimeBlockController.UpdateTimeBlockProgressRequest(60, true);
+            TaskTimeBlockController.UpdateTimeBlockRequest updateRequest =
+                    new TaskTimeBlockController.UpdateTimeBlockRequest(
+                            LocalDateTime.of(2026, 8, 2, 9, 30),
+                            LocalDateTime.of(2026, 8, 2, 10, 30),
+                            "BUSY");
 
-            mockMvc.perform(patch("/api/time-blocks/{id}/progress", savedBlock.getId())
+            mockMvc.perform(patch("/api/time-blocks/{id}", savedBlock.getId())
                             .with(authUser1)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(progressRequest)))
+                            .content(objectMapper.writeValueAsString(updateRequest)))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.actualMinutes", is(60)))
-                    .andExpect(jsonPath("$.isCompleted", is(true)))
                     .andExpect(jsonPath("$.availabilityStatus", is("BUSY")));
 
-            // DB verify: Task actualMinutes updated to 60, status updated to 'Done'
+            // DB verify: Task estimatedMinutes updated to 60 (between 9:30 and 10:30)
             Task dbTask = taskRepository.findById(user1Task.getId()).orElseThrow();
-            assertEquals(60, dbTask.getActualMinutes());
-            assertEquals("Done", dbTask.getStatus());
-            assertNotNull(dbTask.getDoneAt());
+            assertEquals(60, dbTask.getEstimatedMinutes());
         }
     }
 
@@ -339,13 +337,13 @@ class TaskTimeBlockIntegrationTest extends BaseIntegrationTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$", hasSize(0)));
 
-            // User2 PATCH progress on User1's block -> returns 404
-            TaskTimeBlockController.UpdateTimeBlockProgressRequest progressReq =
-                    new TaskTimeBlockController.UpdateTimeBlockProgressRequest(30, true);
-            mockMvc.perform(patch("/api/time-blocks/{id}/progress", savedBlock1.getId())
+            // User2 PATCH on User1's block -> returns 404
+            TaskTimeBlockController.UpdateTimeBlockRequest updateReq =
+                    new TaskTimeBlockController.UpdateTimeBlockRequest(null, null, "BUSY");
+            mockMvc.perform(patch("/api/time-blocks/{id}", savedBlock1.getId())
                             .with(authUser2)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(progressReq)))
+                            .content(objectMapper.writeValueAsString(updateReq)))
                     .andExpect(status().isNotFound());
 
             // User2 POST split on User1's block -> returns 404
@@ -365,7 +363,6 @@ class TaskTimeBlockIntegrationTest extends BaseIntegrationTest {
             // DB verify: User1's block remains untouched
             TaskTimeBlock dbBlock = timeBlockRepository.findById(savedBlock1.getId()).orElseThrow();
             assertEquals("FREE", dbBlock.getAvailabilityStatus());
-            assertEquals(0, dbBlock.getActualMinutes());
         }
     }
 }

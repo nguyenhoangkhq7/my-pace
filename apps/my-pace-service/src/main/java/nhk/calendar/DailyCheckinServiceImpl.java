@@ -199,6 +199,9 @@ public class DailyCheckinServiceImpl implements DailyCheckinService {
                 LocalTime evEndLt = ev.endTime();
                 java.time.LocalDateTime evStart = java.time.LocalDateTime.of(date, evStartLt);
                 java.time.LocalDateTime evEnd = java.time.LocalDateTime.of(date, evEndLt);
+                if (evEndLt.isBefore(evStartLt) || evEndLt.equals(evStartLt)) {
+                    evEnd = evEnd.plusDays(1);
+                }
                 
                 if (candidateStart.isBefore(evEnd) && candidateEnd.isAfter(evStart)) {
                     overlap = true;

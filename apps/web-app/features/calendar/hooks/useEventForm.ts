@@ -135,7 +135,6 @@ export function useEventForm({
     if (!title.trim()) { setError("Vui lòng nhập tiêu đề"); return false; }
     if (!isAllDay) {
       if (!startTime || !endTime) { setError("Vui lòng chọn giờ bắt đầu và kết thúc"); return false; }
-      if (startTime >= endTime) { setError("Giờ kết thúc phải sau giờ bắt đầu"); return false; }
     }
     if (recurrenceType === "NONE" && !date) { setError("Vui lòng chọn ngày"); return false; }
     if ((recurrenceType === "WEEKLY" || recurrenceType === "CUSTOM") && selectedDays.length === 0) {

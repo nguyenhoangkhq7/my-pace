@@ -29,9 +29,6 @@ export function useFlowKeyboardShortcuts() {
       if (key === "ArrowRight") {
         e.preventDefault();
         const store = useFocusStore.getState();
-        if (store.activeTaskId) {
-          store.seekTimer(15);
-        }
         if (store.playerControls) {
           store.playerControls.seek(Math.max(0, store.currentTime + 15));
         }
@@ -42,9 +39,6 @@ export function useFlowKeyboardShortcuts() {
       if (key === "ArrowLeft") {
         e.preventDefault();
         const store = useFocusStore.getState();
-        if (store.activeTaskId) {
-          store.seekTimer(-15);
-        }
         if (store.playerControls) {
           store.playerControls.seek(Math.max(0, store.currentTime - 15));
         }

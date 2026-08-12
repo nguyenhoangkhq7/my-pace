@@ -4,8 +4,10 @@ import { useAuthStore, InitialSetupForm } from "@/features/auth";
 import { BacklogMatrix } from "@/features/board/components/BacklogMatrix";
 import { ExecutionBoard } from "@/features/board/components/ExecutionBoard";
 import { useAppVisibility } from "@/features/available-time";
-import { OutstandingTasksModal } from "./OutstandingTasksModal";
-import { StreakCelebrationModal } from "@/features/gamification";
+import dynamic from "next/dynamic";
+
+const OutstandingTasksModal = dynamic(() => import("./OutstandingTasksModal").then(m => m.OutstandingTasksModal), { ssr: false });
+const StreakCelebrationModal = dynamic(() => import("@/features/gamification").then(m => m.StreakCelebrationModal), { ssr: false });
 import { useTasks } from "../hooks/useTasks";
 import { useDailyPlan } from "../hooks/useDailyPlan";
 import { useUnreviewedPlan } from "../hooks/useUnreviewedPlan";
