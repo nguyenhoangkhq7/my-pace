@@ -5,9 +5,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchClient } from "@/lib/fetchClient";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, Square, Check, ListTodo, Eye, EyeOff } from "lucide-react";
-import { shiftTimeBlocks } from "@/features/board/utils/timeShift";
-import type { TaskTimeBlock } from "@/features/board/types";
-import { useTaskTimeBlocks } from "@/features/board/hooks/useTaskTimeBlocks";
 
 import { useAuthStore } from "@/features/auth";
 import { getTodayStr } from "@/lib/date";
@@ -83,20 +80,27 @@ export function FlowPomodoro() {
       queryClient.invalidateQueries({ queryKey: ['dailyPlan'] });
     },
   });
-  const { data: timeBlocks = [] } = useTaskTimeBlocks(todayStr, todayStr);
-
-  const saveTimeBlocksMutation = useMutation({
-    mutationFn: (blocks: Omit<TaskTimeBlock, 'id'>[]) => fetchClient.post<TaskTimeBlock[]>('time-blocks/batch', { targetDate: todayStr, blocks }).then(r => r.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['timeBlocks'] });
-    }
-  });
   const { refetch: fetchGoals } = useQuery({ queryKey: ['goals'], queryFn: () => fetchClient.get('goals').then(r => r.data), enabled: false });
 
   const [isFinishing, setIsFinishing] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
   const [isChecklistModalOpen, setIsChecklistModalOpen] = useState(false);
   const [isUiHidden, setIsUiHidden] = useState(false);
+  const [isCooldown, setIsCooldown] = useState(false);
+
+  const handleStartTimer = () => {
+    if (isCooldown) return;
+    setIsCooldown(true);
+    startTimer();
+    setTimeout(() => setIsCooldown(false), 1000);
+  };
+
+  const handlePauseTimer = () => {
+    if (isCooldown) return;
+    setIsCooldown(true);
+    pauseTimer();
+    setTimeout(() => setIsCooldown(false), 1000);
+  };
 
   useEffect(() => {
     fetchGoals().catch(console.error);
@@ -149,14 +153,10 @@ export function FlowPomodoro() {
     try {
       const { accumulatedFocusTime } = useFocusStore.getState();
       const actualMinutes = Math.floor(accumulatedFocusTime / 60);
-      if (actualMinutes > 0) {
-        await updateTaskMutation.mutateAsync({ id: activeTaskId, data: { actualMinutes } });
-        if (timeBlocks && timeBlocks.length > 0) {
-          const estimated = activeTask.estimatedMinutes || 0;
-          const shifted = shiftTimeBlocks(timeBlocks, activeTaskId, actualMinutes, estimated);
-          await saveTimeBlocksMutation.mutateAsync(shifted);
-        }
-      } else {
+      
+      // If no time was tracked for this active task in this session (e.g. offline task), ask them how long it took.
+      // If time was tracked, the Ping Architecture (usePomodoro.ts) already saved the TimeLog.
+      if (actualMinutes === 0) {
         useFocusStore.getState().setPromptTask({
           id: activeTaskId,
           title: activeTask.title,
@@ -293,7 +293,8 @@ export function FlowPomodoro() {
                    ? "bg-gradient-to-tr from-indigo-500 via-indigo-600 to-cyan-500 backdrop-blur-xl border-2 border-white/40 shadow-[0_0_35px_rgba(99,102,241,0.6)]"
                    : "bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-700 hover:from-indigo-400 hover:to-violet-600 shadow-[0_0_35px_rgba(99,102,241,0.5)] border-2 border-indigo-400/40"
                )}
-               onClick={startTimer}
+               onClick={handleStartTimer}
+               disabled={isCooldown}
                title={t.flow.player.start}
              >
                <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/btn:opacity-100 transition-opacity rounded-2xl" />
@@ -308,7 +309,8 @@ export function FlowPomodoro() {
                    ? "bg-gradient-to-br from-amber-500 via-orange-600 to-amber-600 backdrop-blur-xl border-2 border-amber-300/60 shadow-[0_0_35px_rgba(245,158,11,0.6)]"
                    : "bg-gradient-to-br from-amber-500 via-amber-600 to-orange-600 hover:from-amber-400 hover:to-orange-500 shadow-[0_0_35px_rgba(245,158,11,0.5)] border-2 border-amber-300/40"
                )}
-               onClick={pauseTimer}
+               onClick={handlePauseTimer}
+               disabled={isCooldown}
                title={t.flow.player.pause}
              >
                <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/btn:opacity-100 transition-opacity rounded-2xl" />

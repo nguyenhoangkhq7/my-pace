@@ -166,9 +166,6 @@ export function useCalendarPage() {
     }
   }, [dailyPlanToday, confirmPlanMutation, router]);
 
-  const slotMin = "00:00:00";
-  const slotMax = "24:00:00";
-
   const scrollTime = useMemo(() => {
     return user?.wakeTime ? toSlotTime(user.wakeTime, "06:00:00") : "06:00:00";
   }, [user]);
@@ -245,9 +242,9 @@ export function useCalendarPage() {
     const updatedBlocks = timeBlocks
       .filter((b) => b.taskId !== taskId)
       .map((b) => {
-        const copy = { ...b } as Partial<TaskTimeBlock>;
-        delete copy.id;
-        return copy as Omit<TaskTimeBlock, "id">;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { id, ...copy } = b;
+        return copy;
       });
 
     try {
@@ -319,11 +316,21 @@ export function useCalendarPage() {
         const isAllDay = !!occ.isAllDay;
         const isFree = occ.availabilityStatus === 'FREE';
         const occEditable = !isAllDay && isOccurrenceEditable(occ.occurrenceDate);
+        
+        let parsedEndTime = occ.endTime;
+        if (!isAllDay && occ.endTime <= occ.startTime && occ.endTime !== "00:00:00") {
+           const parts = occ.endTime.split(":");
+           const h = parseInt(parts[0], 10) + 24;
+           parsedEndTime = `${String(h).padStart(2, '0')}:${parts[1]}:${parts.length > 2 ? parts[2] : "00"}`;
+        } else if (!isAllDay && occ.endTime === "00:00:00") {
+           parsedEndTime = "24:00:00";
+        }
+
         return {
           id: occ.id,
           title: occ.title,
           start: isAllDay ? occ.occurrenceDate : `${occ.occurrenceDate}T${occ.startTime}`,
-          end: isAllDay ? occ.occurrenceDate : `${occ.occurrenceDate}T${occ.endTime}`,
+          end: isAllDay ? occ.occurrenceDate : `${occ.occurrenceDate}T${parsedEndTime}`,
           allDay: isAllDay,
           editable: occEditable,
           durationEditable: occEditable,
@@ -395,11 +402,29 @@ export function useCalendarPage() {
           const blockEditable = blockBelongsToFocused && !isConfirmed && isInPlan;
           const isBlockBusy = block.availabilityStatus === 'BUSY';
 
+          const start = new Date(block.startTime);
+          const end = new Date(block.endTime);
+          const blockDuration = Math.round((end.getTime() - start.getTime()) / 60000);
+
+          let fcEndStr = block.endTime;
+          const startDateStr = block.startTime.substring(0, 10);
+          const endDateStr = block.endTime.substring(0, 10);
+          if (startDateStr !== endDateStr) {
+             const dStart = new Date(startDateStr);
+             const dEnd = new Date(endDateStr);
+             const diffDays = Math.round((dEnd.getTime() - dStart.getTime()) / 86400000);
+             if (diffDays > 0) {
+               const timePart = block.endTime.substring(11);
+               const hours = parseInt(timePart.substring(0, 2), 10) + (diffDays * 24);
+               fcEndStr = `${startDateStr}T${String(hours).padStart(2, '0')}${timePart.substring(2)}`;
+             }
+          }
+
           return {
             id: block.id || `block-${block.taskId}-${block.partIndex}`,
             title: label,
             start: block.startTime,
-            end: block.endTime,
+            end: fcEndStr,
             backgroundColor: color,
             borderColor: color,
             textColor: "#ffffff",
@@ -421,6 +446,8 @@ export function useCalendarPage() {
               isBusy: isBlockBusy,
               isFree: !isBlockBusy,
               isInPlan,
+              totalLoggedMinutes: block.totalLoggedMinutes || 0,
+              blockDuration: blockDuration || 0,
             },
           };
         })
@@ -428,6 +455,58 @@ export function useCalendarPage() {
 
     return list;
   }, [events, allTimeBlocks, plansInRange, fixedEventColor, isConfirmed, tasks, focusedDate, today, wakeSleepLineEvents]);
+
+  const { slotMin, slotMax } = useMemo(() => {
+    const wake = user?.wakeTime ? user.wakeTime.substring(0, 5) : "06:00";
+    const sleep = user?.sleepTime ? user.sleepTime.substring(0, 5) : "22:00";
+    const isNightOwl = sleep < wake;
+
+    const wakeHour = parseInt(wake.substring(0, 2), 10);
+    const sleepHour = parseInt(sleep.substring(0, 2), 10);
+
+    let minLogicalHour = Math.max(0, wakeHour - 1);
+    let maxLogicalHour = (isNightOwl ? 24 + sleepHour : sleepHour) + 1;
+
+    const updateBounds = (timeStr: string | undefined | null) => {
+      if (!timeStr) return;
+      
+      let h: number;
+      if (timeStr.includes("T")) {
+        h = parseInt(timeStr.split("T")[1].substring(0, 2), 10);
+      } else {
+        h = parseInt(timeStr.substring(0, 2), 10);
+      }
+
+      if (isNaN(h)) return;
+
+      let logicalHour = h;
+      if (isNightOwl && h <= sleepHour + 3) {
+        logicalHour = 24 + h;
+      } else if (isNightOwl && h > sleepHour + 3 && h < wakeHour - 2) {
+        logicalHour = h;
+      }
+
+      if (logicalHour < minLogicalHour) minLogicalHour = logicalHour;
+      if (logicalHour + 1 > maxLogicalHour) maxLogicalHour = logicalHour + 1;
+    };
+
+    fcEvents.forEach((ev) => {
+      if (!ev.allDay && ev.display !== "background") { // Ignore background events (sleep/wake lines) for bounds
+        updateBounds(ev.start as string);
+        updateBounds(ev.end as string);
+      }
+    });
+
+    minLogicalHour = Math.max(0, Math.min(23, minLogicalHour));
+    maxLogicalHour = Math.min(47, Math.max(minLogicalHour + 1, maxLogicalHour));
+
+    const formatHour = (h: number) => `${String(h).padStart(2, '0')}:00:00`;
+    
+    return {
+      slotMin: formatHour(minLogicalHour),
+      slotMax: formatHour(maxLogicalHour)
+    };
+  }, [user, fcEvents]);
 
   const [initialView] = useState(() => {
     if (typeof window !== "undefined") {

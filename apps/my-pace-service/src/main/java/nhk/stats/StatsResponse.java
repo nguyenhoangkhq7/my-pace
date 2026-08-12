@@ -15,7 +15,8 @@ public record StatsResponse(
     Double estimationAccuracy,
     Double q2FocusRatio,
     Double rolloverRate,
-    List<DailyTimeStat> dailyTimeStats
+    List<DailyTimeStat> dailyTimeStats,
+    Map<Integer, Integer> hourlyFocusMinutes
 ) {
     public record DailyTimeStat(
         String date,
@@ -23,4 +24,5 @@ public record StatsResponse(
         Integer actualMinutes
     ) {}
 }
+
 

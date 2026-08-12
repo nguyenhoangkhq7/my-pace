@@ -3,6 +3,7 @@ package nhk.stats;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
+import nhk.calendar.CheckinStreakService;
 import nhk.user.User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,8 @@ public class StatsServiceImpl implements StatsService {
     private EntityManager entityManager;
     private final nhk.user.UserRepository userRepository;
     private final nhk.calendar.FixedEventService fixedEventService;
+    private final CheckinStreakService checkinStreakService;
+    private final nhk.timelog.TimeLogRepository timeLogRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -145,44 +148,7 @@ public class StatsServiceImpl implements StatsService {
         }
 
         // 4. Streak
-        List<LocalDate> checkinDates = entityManager.createQuery(
-                "SELECT dc.checkinDate FROM DailyCheckin dc " +
-                "WHERE dc.user.id = :userId " +
-                "ORDER BY dc.checkinDate DESC", LocalDate.class)
-                .setParameter("userId", user.getId())
-                .getResultList();
-
-        int streak = 0;
-        LocalDate current = today;
-        
-        // If they haven't checked in today yet, the streak could still be alive if they checked in yesterday
-        boolean foundToday = false;
-        boolean foundYesterday = false;
-        
-        for (LocalDate d : checkinDates) {
-            if (d.equals(today)) {
-                foundToday = true;
-            } else if (d.equals(today.minusDays(1))) {
-                foundYesterday = true;
-            }
-        }
-        
-        if (foundToday) {
-            current = today;
-        } else if (foundYesterday) {
-            current = today.minusDays(1);
-        }
-        
-        if (foundToday || foundYesterday) {
-            for (LocalDate d : checkinDates) {
-                if (d.equals(current)) {
-                    streak++;
-                    current = current.minusDays(1);
-                } else if (d.isBefore(current)) {
-                    break;
-                }
-            }
-        }
+        int streak = checkinStreakService.getStreak(userId, userZone);
 
         // 5. P1 & P2 Extended Metrics: Q2 Focus Ratio, Rollover Rate, Plan vs Actual
         int totalMatrixTime = matrixTime.values().stream().mapToInt(Integer::intValue).sum();
@@ -264,6 +230,16 @@ public class StatsServiceImpl implements StatsService {
             estimationAccuracy = 100.0;
         }
 
+        // 6. Hourly focus minutes from raw TimeLogs
+        List<Object[]> hourlyResults = timeLogRepository.findHourlyFocusMinutes(user.getId(), startDate, endDate, userZone.getId());
+        Map<Integer, Integer> hourlyFocusMinutes = new HashMap<>();
+        for (int h = 0; h < 24; h++) hourlyFocusMinutes.put(h, 0); // initialize all hours to 0
+        for (Object[] row : hourlyResults) {
+            int hour = ((Number) row[0]).intValue();
+            int minutes = ((Number) row[1]).intValue();
+            hourlyFocusMinutes.put(hour, minutes);
+        }
+
         return StatsResponse.builder()
                 .matrixTime(matrixTime)
                 .categoryTime(categoryTime)
@@ -275,6 +251,7 @@ public class StatsServiceImpl implements StatsService {
                 .q2FocusRatio(Math.round(q2FocusRatio * 10.0) / 10.0)
                 .rolloverRate(Math.round(rolloverRate * 10.0) / 10.0)
                 .dailyTimeStats(dailyTimeStats)
+                .hourlyFocusMinutes(hourlyFocusMinutes)
                 .build();
     }
 }

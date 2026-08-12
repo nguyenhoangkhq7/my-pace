@@ -71,13 +71,16 @@ export function useCalendarInteractions({
         dailyPlanId: dailyPlanToday.id,
         isMit: !!isMit,
         availabilityStatus: "BUSY",
+        timeLogs: [],
+        totalLoggedMinutes: 0,
+        hasTimeLogs: false,
       };
 
       const updatedBlocks: Omit<TaskTimeBlock, 'id'>[] = [
         ...timeBlocks.map((b) => {
-          const copy = { ...b } as Partial<TaskTimeBlock>;
-          delete copy.id;
-          return copy as Omit<TaskTimeBlock, 'id'>;
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { id, ...copy } = b;
+          return copy;
         }),
         newBlock,
       ];

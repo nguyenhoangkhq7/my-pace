@@ -62,9 +62,6 @@ export function ExecutionModeView({
     return maxEndDate > sleepDate;
   }, [currentPlan, user, currentTimeBlocks]);
 
-  const infeasibleTasks = useMemo(() => {
-    return tasksList.filter(t => !!t.escalationReason);
-  }, [tasksList]);
 
   if (tasksList.length === 0) {
     return null;
@@ -114,23 +111,6 @@ export function ExecutionModeView({
         </div>
       )}
 
-      {infeasibleTasks.length > 0 && activeTab === 'today' && (
-        <div className="p-4 rounded-xl border border-yellow-500/30 bg-yellow-950/20 text-yellow-400 flex flex-col gap-2.5 animate-in fade-in slide-in-from-top-2 duration-300">
-          <div className="flex items-start gap-2.5">
-            <span className="text-lg">⚠️</span>
-            <div className="flex-1 space-y-1">
-              <h4 className="text-sm font-semibold text-yellow-200">Cảnh báo lập lịch (High Risk / Infeasible)</h4>
-              <ul className="text-xs text-yellow-300/80 leading-relaxed list-disc list-inside">
-                {infeasibleTasks.map(t => (
-                  <li key={t.id}>
-                    <span className="font-medium text-yellow-200">{t.task.title}</span>: {t.escalationReason}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="pt-4 border-t border-border flex flex-col gap-2">
         {activeTab === 'today' ? (

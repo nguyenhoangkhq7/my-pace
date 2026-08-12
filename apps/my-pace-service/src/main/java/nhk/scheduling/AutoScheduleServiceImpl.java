@@ -42,6 +42,26 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
         }
     }
 
+    private AutoScheduleResponse doAutoSchedule(UUID userId, Integer bufferMinutesInput) {
+        // 1. Data Loading Phase
+        ScheduleContext ctx = dataLoader.loadContext(userId, bufferMinutesInput);
+
+        // 2. Prepare Timetable (Bitmaps)
+        prepareBitmaps(ctx);
+
+        // 3. Scoring & Queuing Phase
+        TaskQueueResult queueResult = priorityScorer.buildTaskQueues(ctx);
+
+        // 4. Scheduling Engine (Linear Timeline Algorithm)
+        Set<LocalDate> datesActuallyProcessed = new HashSet<>();
+        Map<LocalDate, List<TaskTimeBlock>> generatedBlocksPerDate = scheduleBlocksForDate(
+                ctx, queueResult, datesActuallyProcessed
+        );
+
+        // 5. Persistence Phase
+        return persister.persistAndReconcile(ctx, queueResult, generatedBlocksPerDate, datesActuallyProcessed);
+    }
+
     @Override
     public PreviewSlackResponse previewSlack(UUID userId, PreviewSlackRequest request, Integer bufferMinutesInput) {
         ReentrantLock lock = userLocks.computeIfAbsent(userId, k -> new ReentrantLock());
@@ -105,26 +125,6 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
         }
     }
 
-    private AutoScheduleResponse doAutoSchedule(UUID userId, Integer bufferMinutesInput) {
-        // 1. Data Loading Phase
-        ScheduleContext ctx = dataLoader.loadContext(userId, bufferMinutesInput);
-
-        // 2. Prepare Timetable (Bitmaps)
-        prepareBitmaps(ctx);
-
-        // 3. Scoring & Queuing Phase
-        TaskQueueResult queueResult = priorityScorer.buildTaskQueues(ctx);
-
-        // 4. Scheduling Engine (Linear Timeline Algorithm)
-        Set<LocalDate> datesActuallyProcessed = new HashSet<>();
-        Map<LocalDate, List<TaskTimeBlock>> generatedBlocksPerDate = scheduleBlocksForDate(
-                ctx, queueResult, datesActuallyProcessed
-        );
-
-        // 5. Persistence Phase
-        return persister.persistAndReconcile(ctx, queueResult, generatedBlocksPerDate, datesActuallyProcessed);
-    }
-
     private void prepareBitmaps(ScheduleContext ctx) {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
@@ -141,8 +141,18 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
 
         for (LocalDate date : ctx.dateRange()) {
             bitmapScheduler.clearSchedule(ctx.userId(), date);
-            bitmapScheduler.markRangeBusy(ctx.userId(), date, 0, ctx.wakeMin());
-            bitmapScheduler.markRangeBusy(ctx.userId(), date, ctx.sleepMin(), 1440);
+            if (ctx.sleepMin() < ctx.wakeMin()) {
+                // Sleeps past midnight (e.g. sleep at 01:00, wake at 07:00)
+                // Logical day extends until next day's sleep time.
+                // The actual asleep period for the current day's cycle is from next day's 00:00 (which we map to 1440+)
+                // Wait, if we mark 120 to 480 as busy on the NEXT day, we should just mark it on the next day.
+                // The current calendar day is asleep from sleepMin to wakeMin.
+                bitmapScheduler.markRangeBusy(ctx.userId(), date, ctx.sleepMin(), ctx.wakeMin());
+            } else {
+                // Normal schedule (e.g. wake at 07:00, sleep at 23:00)
+                bitmapScheduler.markRangeBusy(ctx.userId(), date, 0, ctx.wakeMin());
+                bitmapScheduler.markRangeBusy(ctx.userId(), date, ctx.sleepMin(), 1440);
+            }
         }
 
         List<FixedEventResponse> fixedEvents = eventService.getEventsInRange(ctx.userId(), ctx.startDate(), ctx.endDate());
@@ -156,7 +166,7 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
             } else if (ev.startTime() != null && ev.endTime() != null) {
                 int sMin = ev.startTime().getHour() * 60 + ev.startTime().getMinute();
                 int eMin = ev.endTime().getHour() * 60 + ev.endTime().getMinute();
-                if (eMin <= sMin) eMin = 1440;
+                if (eMin <= sMin) eMin += 1440;
                 bitmapScheduler.markRangeBusy(ctx.userId(), evDate, sMin, eMin + ctx.bufferMinutes());
             }
         }
@@ -169,7 +179,7 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
                     if (Boolean.TRUE.equals(plan.getIsConfirmed()) || "BUSY".equalsIgnoreCase(tb.getAvailabilityStatus()) || Boolean.TRUE.equals(tb.getIsLocked())) {
                         int sMin = tb.getStartTime().getHour() * 60 + tb.getStartTime().getMinute();
                         int eMin = tb.getEndTime().getHour() * 60 + tb.getEndTime().getMinute();
-                        if (eMin <= sMin) eMin = 1440;
+                        if (eMin <= sMin) eMin += 1440;
                         bitmapScheduler.markRangeBusy(ctx.userId(), date, sMin, eMin + ctx.bufferMinutes());
                     }
                 }
@@ -219,6 +229,9 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
                 startOfDayMin = ctx.wakeMin();
             }
             int endOfDayMin = ctx.sleepMin();
+            if (ctx.sleepMin() < ctx.wakeMin()) {
+                endOfDayMin += 1440;
+            }
 
             // Pass 1: Strict Time Context
             runTimelineAllocation(activeQueue, date, ctx, generatedBlocksPerDate, true, startOfDayMin, endOfDayMin);
@@ -369,7 +382,6 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
             block.setEndTime(blockEndLdt);
             block.setPartIndex(selectedItem.partsFilled);
             block.setAvailabilityStatus("FREE");
-            block.setStatusWarning(selectedItem.statusWarning);
 
             generatedBlocksPerDate.get(date).add(block);
             bitmapScheduler.markRangeBusy(ctx.userId(), date, cursorMin, cursorMin + allocateSize + ctx.bufferMinutes());
@@ -395,15 +407,42 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
         nhk.timecontext.TimeContext tc = cat.getTimeContext();
         if (tc.getSlots() == null || tc.getSlots().isEmpty()) return 1440;
         
-        java.time.DayOfWeek dayOfWeek = date.getDayOfWeek();
+        java.time.LocalDateTime actualDateTime = date.atStartOfDay().plusMinutes(cursorMin);
+        java.time.DayOfWeek actualDayOfWeek = actualDateTime.getDayOfWeek();
+        int actualCursorMin = actualDateTime.getHour() * 60 + actualDateTime.getMinute();
+
         for (nhk.timecontext.TimeContextSlot slot : tc.getSlots()) {
-            if (slot.getDayOfWeek() == dayOfWeek) {
+            boolean matches = false;
+            if (slot.getDayOfWeek() == actualDayOfWeek) {
+                matches = true;
+            } else {
+                // Check if the slot from the previous day crosses midnight
+                java.time.DayOfWeek previousDayOfWeek = actualDayOfWeek.minus(1);
+                if (slot.getDayOfWeek() == previousDayOfWeek) {
+                    int startMin = slot.getStartTime().getHour() * 60 + slot.getStartTime().getMinute();
+                    int endMin = slot.getEndTime().getHour() * 60 + slot.getEndTime().getMinute();
+                    if (endMin <= startMin && actualCursorMin < endMin) {
+                        return endMin - actualCursorMin;
+                    }
+                }
+            }
+
+            if (matches) {
                 int startMin = slot.getStartTime().getHour() * 60 + slot.getStartTime().getMinute();
                 int endMin = slot.getEndTime().getHour() * 60 + slot.getEndTime().getMinute();
-                if (endMin <= startMin) endMin = 1440;
                 
-                if (cursorMin >= startMin && cursorMin < endMin) {
-                    return endMin - cursorMin;
+                if (endMin <= startMin) {
+                    // Slot crosses midnight (e.g. 22:00 to 02:00)
+                    if (actualCursorMin >= startMin) {
+                        return 1440 - actualCursorMin + endMin;
+                    }
+                    if (actualCursorMin < endMin) {
+                        return endMin - actualCursorMin;
+                    }
+                } else {
+                    if (actualCursorMin >= startMin && actualCursorMin < endMin) {
+                        return endMin - actualCursorMin;
+                    }
                 }
             }
         }

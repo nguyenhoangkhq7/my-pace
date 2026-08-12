@@ -8,6 +8,7 @@ interface EisenhowerQuadrantProps {
   colorClass: string;
   tasks: Task[];
   plannedTaskIds: string[];
+  originalPlanTaskIds?: string[];
   isPlanningMode: boolean;
   selectedFilterId: string | null;
   slackTimes?: Record<string, number>;
@@ -22,6 +23,7 @@ export function EisenhowerQuadrant({
   colorClass,
   tasks,
   plannedTaskIds,
+  originalPlanTaskIds,
   isPlanningMode,
   selectedFilterId,
   slackTimes,
@@ -36,6 +38,11 @@ export function EisenhowerQuadrant({
     if (isPlanningMode && plannedTaskIds.includes(t.id)) {
       return false;
     }
+
+    if (isPlanningMode && originalPlanTaskIds?.includes(t.id) && !plannedTaskIds.includes(t.id)) {
+      return true;
+    }
+
     return t.status === "Backlog";
   });
   

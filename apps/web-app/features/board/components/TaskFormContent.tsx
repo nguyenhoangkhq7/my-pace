@@ -311,7 +311,7 @@ export function TaskFormContent({
   }, [watchGoalId, goals, setValue, watchTitle, watchEstimatedMinutes]);
 
   const handleFormSubmit = async (values: TaskFormValues) => {
-    const taskData: Partial<Task> = {
+    const taskData: Partial<Task> & Record<string, unknown> = {
       title: values.title,
       estimatedMinutes: values.estimatedMinutes || undefined,
       notes: values.notes || undefined,
@@ -324,6 +324,12 @@ export function TaskFormContent({
       minChunkMinutes: values.isSplittable ? (values.minChunkMinutes || undefined) : undefined,
       maxDailyDuration: values.isSplittable ? (values.maxDailyDuration || undefined) : undefined,
     };
+
+    if (initialData?.id) {
+      if (!values.dueDate) taskData.clearDueDate = true;
+      if (values.goalId === "none" || !values.goalId) taskData.clearGoalId = true;
+      if (values.categoryId === "none" || !values.categoryId) taskData.clearCategoryId = true;
+    }
 
     if (!initialData?.id && localChecklists.length > 0) {
       taskData.checklists = localChecklists as TaskChecklistItem[];

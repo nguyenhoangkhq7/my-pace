@@ -2,6 +2,7 @@ package nhk.stats;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
+import nhk.calendar.CheckinStreakService;
 import nhk.calendar.FixedEventResponse;
 import nhk.calendar.FixedEventService;
 import nhk.category.Category;
@@ -65,6 +66,12 @@ class StatsServiceImplTest {
     @Mock
     private TypedQuery<LocalDate> checkinTypedQuery;
 
+    @Mock
+    private CheckinStreakService checkinStreakService;
+
+    @Mock
+    private nhk.timelog.TimeLogRepository timeLogRepository;
+
     @InjectMocks
     private StatsServiceImpl statsService;
 
@@ -113,11 +120,8 @@ class StatsServiceImplTest {
         when(donePlanTypedQuery.setParameter(anyString(), any())).thenReturn(donePlanTypedQuery);
         when(donePlanTypedQuery.getSingleResult()).thenReturn(0L);
 
-        // 4. Streak query
-        when(entityManager.createQuery(contains("SELECT dc.checkinDate FROM DailyCheckin dc"), eq(LocalDate.class)))
-                .thenReturn(checkinTypedQuery);
-        when(checkinTypedQuery.setParameter(anyString(), any())).thenReturn(checkinTypedQuery);
-        when(checkinTypedQuery.getResultList()).thenReturn(Collections.emptyList());
+        // 4. Streak — now delegated to CheckinStreakService
+        when(checkinStreakService.getStreak(any(), any())).thenReturn(0);
 
         // 5. Daily Time stats queries
         when(entityManager.createQuery(contains("dp.planDate"), eq(Object[].class)))
@@ -132,6 +136,9 @@ class StatsServiceImplTest {
 
         // Fixed events service default empty
         when(fixedEventService.getEventsInRange(any(), any(), any())).thenReturn(Collections.emptyList());
+
+        // TimeLogRepository default empty
+        when(timeLogRepository.findHourlyFocusMinutes(any(), any(), any(), anyString())).thenReturn(Collections.emptyList());
     }
 
     @Test
@@ -271,14 +278,7 @@ class StatsServiceImplTest {
     void getOverview_Streak_CheckedInToday() {
         when(userRepository.findById(userId)).thenReturn(Optional.of(sampleUser));
         mockDefaultEntityManagerQueries();
-
-        LocalDate today = LocalDate.now(ZoneId.of("UTC"));
-        List<LocalDate> checkins = List.of(
-                today,
-                today.minusDays(1),
-                today.minusDays(2)
-        );
-        when(checkinTypedQuery.getResultList()).thenReturn(checkins);
+        when(checkinStreakService.getStreak(eq(userId), any())).thenReturn(3);
 
         StatsResponse response = statsService.getOverview(userId, null, null);
 
@@ -291,13 +291,7 @@ class StatsServiceImplTest {
     void getOverview_Streak_CheckedInYesterdayNotToday() {
         when(userRepository.findById(userId)).thenReturn(Optional.of(sampleUser));
         mockDefaultEntityManagerQueries();
-
-        LocalDate today = LocalDate.now(ZoneId.of("UTC"));
-        List<LocalDate> checkins = List.of(
-                today.minusDays(1),
-                today.minusDays(2)
-        );
-        when(checkinTypedQuery.getResultList()).thenReturn(checkins);
+        when(checkinStreakService.getStreak(eq(userId), any())).thenReturn(2);
 
         StatsResponse response = statsService.getOverview(userId, null, null);
 
@@ -310,13 +304,7 @@ class StatsServiceImplTest {
     void getOverview_Streak_MissingTodayAndYesterday() {
         when(userRepository.findById(userId)).thenReturn(Optional.of(sampleUser));
         mockDefaultEntityManagerQueries();
-
-        LocalDate today = LocalDate.now(ZoneId.of("UTC"));
-        List<LocalDate> checkins = List.of(
-                today.minusDays(2),
-                today.minusDays(3)
-        );
-        when(checkinTypedQuery.getResultList()).thenReturn(checkins);
+        // default stub in mockDefaultEntityManagerQueries returns 0 already
 
         StatsResponse response = statsService.getOverview(userId, null, null);
 

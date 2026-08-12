@@ -67,6 +67,17 @@ interface FocusState {
   // Accumulated time for the current task (in seconds)
   accumulatedFocusTime: number;
   lastActiveTimestamp: number;
+  
+  // TimeLog: tracking the current server TimeLog ID for the "Ping" architecture
+  activeTimeLogId: string | null;
+  setActiveTimeLogId: (id: string | null) => void;
+  
+  // TimeLog: when current focus session started (ISO timestamp)
+  focusSessionStartedAt: string | null;
+  // Accumulated focus time (seconds) at the moment the current focus segment began.
+  // Used to compute loggedMinutes = accumulatedFocusTime - focusSessionStartAccumulatedTime,
+  // which excludes any pause time from the TimeLog duration.
+  focusSessionStartAccumulatedTime: number;
 
   // Widget settings (persisted)
   youtubeUrl: string;
@@ -186,6 +197,9 @@ export const useFocusStore = create<FocusState>()(
       totalSessions: 1,
       accumulatedFocusTime: 0,
       lastActiveTimestamp: 0,
+      activeTimeLogId: null,
+      focusSessionStartedAt: null,
+      focusSessionStartAccumulatedTime: 0,
       
       youtubeUrl: "https://www.youtube.com/live/X4VbdwhkE10?si=gV884ky2WVfhPwQQ",
       youtubeHistory: [
@@ -208,6 +222,7 @@ export const useFocusStore = create<FocusState>()(
       promptTask: null,
       isPomodoroFloating: false,
 
+      setActiveTimeLogId: (id) => set({ activeTimeLogId: id }),
       setIsPlaying: (isPlaying) => set({ isPlaying }),
       setVolume: (volume) => {
         set({ volume });
@@ -332,14 +347,21 @@ export const useFocusStore = create<FocusState>()(
           activePlanTaskId: null,
           activeTimeBlockInfo: null,
           pomodoroState: "idle",
-          lastActiveTimestamp: 0
+          lastActiveTimestamp: 0,
+          focusSessionStartedAt: null
         });
       },
 
       startTimer: () => {
-        const { pomodoroState } = get();
+        const { pomodoroState, accumulatedFocusTime } = get();
         if (pomodoroState === "idle" || pomodoroState === "paused") {
-          set({ pomodoroState: "focusing", lastActiveTimestamp: Date.now() });
+          set({
+            pomodoroState: "focusing",
+            lastActiveTimestamp: Date.now(),
+            focusSessionStartedAt: new Date().toISOString(),
+            // Snapshot accumulated time at segment start so loggedMinutes = delta (excludes pause time)
+            focusSessionStartAccumulatedTime: accumulatedFocusTime,
+          });
         } else if (pomodoroState === "breaking") {
           set({ pomodoroState: "breaking", lastActiveTimestamp: Date.now() });
         }
@@ -350,7 +372,16 @@ export const useFocusStore = create<FocusState>()(
       },
 
       resumeTimer: (previousState) => {
-        set({ pomodoroState: previousState, lastActiveTimestamp: Date.now() });
+        const { accumulatedFocusTime } = get();
+        set({
+          pomodoroState: previousState,
+          lastActiveTimestamp: Date.now(),
+          // Reset both timestamps at resume so the new TimeLog segment only covers time after this point.
+          ...(previousState === "focusing" ? {
+            focusSessionStartedAt: new Date().toISOString(),
+            focusSessionStartAccumulatedTime: accumulatedFocusTime,
+          } : {}),
+        });
       },
 
       tick: (seconds) => {
@@ -386,12 +417,16 @@ export const useFocusStore = create<FocusState>()(
       },
 
       transitionToFocus: () => {
-        const { focusMinutes, currentSession } = get();
+        const { focusMinutes, currentSession, accumulatedFocusTime } = get();
+        // Note: transitionToBreak already incremented accumulatedFocusTime before this call,
+        // so snapshotting it here correctly marks the start of the new focus segment.
         set({
           pomodoroState: "focusing",
           timeLeft: focusMinutes * 60,
           currentSession: currentSession + 1,
-          lastActiveTimestamp: Date.now()
+          lastActiveTimestamp: Date.now(),
+          focusSessionStartedAt: new Date().toISOString(),
+          focusSessionStartAccumulatedTime: accumulatedFocusTime,
         });
       },
 
@@ -447,12 +482,18 @@ export const useFocusStore = create<FocusState>()(
           const now = Date.now();
           const elapsedSeconds = Math.floor((now - lastActiveTimestamp) / 1000);
           
-          // IDLE TIMEOUT: If away or inactive for more than 30 minutes (1800 seconds), reset pomodoro
+          // IDLE TIMEOUT: If away or inactive for more than 30 minutes (1800 seconds), clear the session entirely.
+          // This prevents yesterday's task from showing a prompt today.
           if (elapsedSeconds > 1800) {
             set({
+              activeTaskId: null,
+              activePlanTaskId: null,
+              activeTimeBlockInfo: null,
               pomodoroState: "idle",
               timeLeft: focusMinutes * 60,
-              lastActiveTimestamp: now
+              accumulatedFocusTime: 0,
+              lastActiveTimestamp: 0,
+              focusSessionStartedAt: null,
             });
             return;
           }
@@ -517,6 +558,9 @@ export const useFocusStore = create<FocusState>()(
         totalSessions: state.totalSessions,
         accumulatedFocusTime: state.accumulatedFocusTime,
         lastActiveTimestamp: state.lastActiveTimestamp,
+        activeTimeLogId: state.activeTimeLogId,
+        focusSessionStartedAt: state.focusSessionStartedAt,
+        focusSessionStartAccumulatedTime: state.focusSessionStartAccumulatedTime,
         volume: state.volume,
         isLooping: state.isLooping,
         activeVideoTitle: state.activeVideoTitle,

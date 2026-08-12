@@ -41,6 +41,7 @@ class DailyPlanServiceImplTest {
     private TaskRepository taskRepository;
     private DailyPlanMapper dailyPlanMapper;
     private TaskTimeBlockRepository timeBlockRepository;
+    private nhk.timelog.TimeLogRepository timeLogRepository;
     private GoalService goalService;
     private UserRepository userRepo;
     private GoalRepository goalRepository;
@@ -60,6 +61,7 @@ class DailyPlanServiceImplTest {
         taskRepository = mock(TaskRepository.class);
         dailyPlanMapper = mock(DailyPlanMapper.class);
         timeBlockRepository = mock(TaskTimeBlockRepository.class);
+        timeLogRepository = mock(nhk.timelog.TimeLogRepository.class);
         goalService = mock(GoalService.class);
         userRepo = mock(UserRepository.class);
         goalRepository = mock(GoalRepository.class);
@@ -72,6 +74,7 @@ class DailyPlanServiceImplTest {
                 taskRepository,
                 dailyPlanMapper,
                 timeBlockRepository,
+                timeLogRepository,
                 goalService,
                 userRepo,
                 goalRepository,
@@ -105,7 +108,7 @@ class DailyPlanServiceImplTest {
         planTask.setId(UUID.randomUUID());
         planTask.setDailyPlanId(planId);
 
-        DailyPlanTaskDto taskDto = new DailyPlanTaskDto(planTask.getId(), planId, mock(TaskDto.class), true, 1, null);
+        DailyPlanTaskDto taskDto = new DailyPlanTaskDto(planTask.getId(), planId, mock(TaskDto.class), true, 1);
 
         TaskTimeBlock timeBlock = new TaskTimeBlock();
         timeBlock.setId(UUID.randomUUID());
@@ -115,8 +118,6 @@ class DailyPlanServiceImplTest {
         timeBlock.setEndTime(LocalDateTime.of(planDate, LocalTime.of(10, 0)));
         timeBlock.setPartIndex(1);
         timeBlock.setTotalParts(1);
-        timeBlock.setActualMinutes(60);
-        timeBlock.setIsCompleted(false);
         timeBlock.setAvailabilityStatus("FREE");
 
         when(dailyPlanRepository.findByUserIdAndPlanDate(userId, planDate)).thenReturn(Optional.of(plan));
@@ -586,20 +587,26 @@ class DailyPlanServiceImplTest {
         when(dailyPlanRepository.findByUserIdAndPlanDate(userId, planDate)).thenReturn(Optional.of(plan));
 
         TaskTimeBlock workedBlock = new TaskTimeBlock();
-        workedBlock.setId(UUID.randomUUID());
+        UUID workedBlockId = UUID.randomUUID();
+        workedBlock.setId(workedBlockId);
         workedBlock.setStartTime(planDate.atTime(10, 0));
         workedBlock.setEndTime(planDate.atTime(11, 0));
-        workedBlock.setActualMinutes(30);
 
         TaskTimeBlock unworkedBlock = new TaskTimeBlock();
-        unworkedBlock.setId(UUID.randomUUID());
+        UUID unworkedBlockId = UUID.randomUUID();
+        unworkedBlock.setId(unworkedBlockId);
         unworkedBlock.setStartTime(planDate.atTime(14, 0));
         unworkedBlock.setEndTime(planDate.atTime(15, 0));
-        unworkedBlock.setActualMinutes(0);
-        unworkedBlock.setIsCompleted(false);
 
         when(timeBlockRepository.findByUserIdAndDateRange(eq(userId), any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenReturn(List.of(workedBlock, unworkedBlock));
+
+        nhk.timelog.TimeLog timeLog = new nhk.timelog.TimeLog();
+        timeLog.setId(UUID.randomUUID());
+        timeLog.setTimeBlockId(workedBlockId);
+        timeLog.setLoggedMinutes(30);
+
+        when(timeLogRepository.findByTimeBlockIdIn(anyList())).thenReturn(List.of(timeLog));
 
         DailyPlanDto baseDto = DailyPlanDto.builder().id(planId).isReviewed(true).build();
         when(dailyPlanMapper.toDto(plan)).thenReturn(baseDto);

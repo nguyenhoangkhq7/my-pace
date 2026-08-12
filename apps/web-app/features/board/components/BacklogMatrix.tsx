@@ -20,6 +20,7 @@ export function BacklogMatrix({
     tasks,
     isPlanningMode,
     plannedTaskIds,
+    originalPlanTaskIds,
     isTaskModalOpen,
     editingTask,
     prefilledGoalId,
@@ -42,7 +43,7 @@ export function BacklogMatrix({
   const closeTaskModal = useBoardStore(s => s.closeTaskModal);
 
   return (
-    <div className="h-full flex flex-col space-y-4">
+    <div className="h-full flex flex-col space-y-2">
       <BacklogMatrixHeader 
         categories={categories}
         selectedFilterId={selectedFilterId}
@@ -60,6 +61,7 @@ export function BacklogMatrix({
           colorClass="text-red-400"
           tasks={tasks}
           plannedTaskIds={plannedTaskIds}
+          originalPlanTaskIds={originalPlanTaskIds}
           isPlanningMode={isPlanningMode}
           selectedFilterId={selectedFilterId}
           slackTimes={slackTimes}
@@ -73,6 +75,7 @@ export function BacklogMatrix({
           colorClass="text-blue-400"
           tasks={tasks}
           plannedTaskIds={plannedTaskIds}
+          originalPlanTaskIds={originalPlanTaskIds}
           isPlanningMode={isPlanningMode}
           selectedFilterId={selectedFilterId}
           slackTimes={slackTimes}
@@ -86,6 +89,7 @@ export function BacklogMatrix({
           colorClass="text-yellow-400"
           tasks={tasks}
           plannedTaskIds={plannedTaskIds}
+          originalPlanTaskIds={originalPlanTaskIds}
           isPlanningMode={isPlanningMode}
           selectedFilterId={selectedFilterId}
           slackTimes={slackTimes}
@@ -99,6 +103,7 @@ export function BacklogMatrix({
           colorClass="text-slate-400"
           tasks={tasks}
           plannedTaskIds={plannedTaskIds}
+          originalPlanTaskIds={originalPlanTaskIds}
           isPlanningMode={isPlanningMode}
           selectedFilterId={selectedFilterId}
           slackTimes={slackTimes}

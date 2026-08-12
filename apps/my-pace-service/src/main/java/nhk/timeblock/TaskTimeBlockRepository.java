@@ -22,6 +22,10 @@ public interface TaskTimeBlockRepository extends JpaRepository<TaskTimeBlock, UU
     @Query("SELECT ttb FROM TaskTimeBlock ttb WHERE ttb.taskId IN :taskIds AND ttb.startTime >= :startDate AND ttb.endTime <= :endDate")
     List<TaskTimeBlock> findByTaskIdInAndDateRange(@Param("taskIds") List<UUID> taskIds, @Param("startDate") java.time.LocalDateTime startDate, @Param("endDate") java.time.LocalDateTime endDate);
     @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("DELETE FROM TaskTimeBlock ttb WHERE ttb.taskId IN (SELECT t.id FROM Task t WHERE t.userId = :userId) AND ttb.availabilityStatus = 'FREE' AND ttb.isLocked = false AND ttb.startTime >= :now")
+    void deleteFreeUnlockedBlocksFrom(@Param("userId") UUID userId, @Param("now") java.time.LocalDateTime now);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("DELETE FROM TaskTimeBlock ttb WHERE ttb.taskId IN (SELECT t.id FROM Task t WHERE t.userId = :userId) AND ttb.startTime >= :startOfDay AND ttb.startTime < :endOfDay")
     void deleteByUserIdAndDate(@Param("userId") UUID userId, @Param("startOfDay") java.time.LocalDateTime startOfDay, @Param("endOfDay") java.time.LocalDateTime endOfDay);
 

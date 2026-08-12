@@ -22,7 +22,6 @@ export const PomodoroTimerDisplay = memo(function PomodoroTimerDisplay({
   const maxTime = pomodoroState === "breaking" ? breakMinutes * 60 : focusMinutes * 60;
   const progressPct = maxTime > 0 ? Math.min(100, Math.max(0, ((maxTime - timeLeft) / maxTime) * 100)) : 0;
 
-  const activeTimeBlockInfo = useFocusStore((s) => s.activeTimeBlockInfo);
 
   const hours = Math.floor(timeLeft / 3600);
   const minutes = Math.floor((timeLeft % 3600) / 60);
@@ -114,19 +113,6 @@ export const PomodoroTimerDisplay = memo(function PomodoroTimerDisplay({
           )}>
             {activeTask.title}
           </h2>
-          {activeTimeBlockInfo && (
-            <div className={cn(
-              "mt-2.5 inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-semibold tracking-wide border shadow-sm transition-all animate-in fade-in slide-in-from-top-1 duration-300",
-              isVideoBackground
-                ? "bg-indigo-950/30 border-indigo-400/30 text-indigo-200 backdrop-blur-md shadow-sm"
-                : "bg-indigo-50/70 dark:bg-indigo-950/30 border-indigo-200/60 dark:border-indigo-800/40 text-indigo-700 dark:text-indigo-300 backdrop-blur-sm"
-            )}>
-              <span className="text-indigo-400">🕒</span>
-              <span>
-                {t.flow.executingBlock(activeTimeBlockInfo.partIndex, activeTimeBlockInfo.totalParts, activeTimeBlockInfo.startTime, activeTimeBlockInfo.endTime, activeTimeBlockInfo.durationMinutes)}
-              </span>
-            </div>
-          )}
         </div>
 
         {/* Timer Cards Container */}

@@ -159,4 +159,35 @@ public class TaskPriorityScorerTest {
         TaskQueueResult res = scorer.buildTaskQueues(ctx);
         assertEquals("Nộp CV", res.backlogQueue().get(0).task.getTitle(), "Nộp CV (Due Today -> High Risk Rank 0) must beat Q2");
     }
+    @Test
+    void testScenario8_SlackTimeLessThan480_HighRisk() {
+        // Due tomorrow. Total free time = 2880 mins.
+        // Task est = 2500 mins. rem = 2500. trueSlackTime = 2880 - 2500 = 380 mins.
+        // trueSlackTime (380) < 480 -> High Risk (Rank 0)
+        Task t1 = createTask("Huge Task", true, true, today.plusDays(1).atTime(23, 59), 2500);
+        Task t2 = createTask("Q2", false, true, null, 100);
+
+        ctx = new ScheduleContext(userId, ctx.zoneId(), ctx.startDate(), ctx.endDate(), ctx.dateRange(), 
+                ctx.bufferMinutes(), ctx.wakeMin(), ctx.sleepMin(), ctx.categoryMap(), ctx.planMap(), 
+                ctx.taskTimeBlocksByDate(), ctx.dailyPlanTasksByPlanId(), Collections.emptyMap(), List.of(t1, t2), ctx.taskTimeBlocksByTaskId());
+
+        TaskQueueResult res = scorer.buildTaskQueues(ctx);
+        assertEquals("Huge Task", res.backlogQueue().get(0).task.getTitle(), "trueSlackTime < 480 -> High Risk (Rank 0)");
+    }
+
+    @Test
+    void testScenario9_SlackRatioLessThanHalf_HighRisk() {
+        // Due tomorrow. Total free time = 2880 mins.
+        // Task est = 2000 mins. rem = 2000. trueSlackTime = 2880 - 2000 = 880 mins.
+        // 880 is NOT < 480. BUT 880 < (2000 * 0.5 = 1000). So it is High Risk.
+        Task t1 = createTask("Relative High Risk", true, true, today.plusDays(1).atTime(23, 59), 2000);
+        Task t2 = createTask("Q2", false, true, null, 100);
+
+        ctx = new ScheduleContext(userId, ctx.zoneId(), ctx.startDate(), ctx.endDate(), ctx.dateRange(), 
+                ctx.bufferMinutes(), ctx.wakeMin(), ctx.sleepMin(), ctx.categoryMap(), ctx.planMap(), 
+                ctx.taskTimeBlocksByDate(), ctx.dailyPlanTasksByPlanId(), Collections.emptyMap(), List.of(t1, t2), ctx.taskTimeBlocksByTaskId());
+
+        TaskQueueResult res = scorer.buildTaskQueues(ctx);
+        assertEquals("Relative High Risk", res.backlogQueue().get(0).task.getTitle(), "trueSlackTime < rem * 0.5 -> High Risk (Rank 0)");
+    }
 }

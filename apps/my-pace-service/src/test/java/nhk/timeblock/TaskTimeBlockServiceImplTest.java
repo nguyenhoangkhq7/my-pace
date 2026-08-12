@@ -40,6 +40,9 @@ class TaskTimeBlockServiceImplTest {
     @Mock
     private TaskRepository taskRepository;
 
+    @Mock
+    private nhk.timelog.TimeLogRepository timeLogRepository;
+
     @InjectMocks
     private TaskTimeBlockServiceImpl timeBlockService;
 
@@ -69,8 +72,6 @@ class TaskTimeBlockServiceImplTest {
         sampleBlock.setEndTime(LocalDateTime.of(2026, 8, 2, 10, 0));
         sampleBlock.setPartIndex(1);
         sampleBlock.setTotalParts(1);
-        sampleBlock.setActualMinutes(0);
-        sampleBlock.setIsCompleted(false);
         sampleBlock.setAvailabilityStatus("FREE");
     }
 
@@ -137,91 +138,54 @@ class TaskTimeBlockServiceImplTest {
     }
 
     @Nested
-    @DisplayName("updateTimeBlockProgress Tests")
-    class UpdateTimeBlockProgressTests {
+    @DisplayName("updateTimeBlock Tests")
+    class UpdateTimeBlockTests {
 
         @Test
-        @DisplayName("Should update actual minutes and set availabilityStatus to BUSY")
-        void updateProgress_ActualMinutes() {
+        @DisplayName("Should update fields and task estimated minutes")
+        void updateTimeBlock_Success() {
             Task task = new Task();
             task.setId(taskId);
             task.setUserId(userId);
             task.setEstimatedMinutes(60);
-            task.setActualMinutes(0);
-            task.setStatus("Picked for Today");
+
+            TaskTimeBlockController.UpdateTimeBlockRequest request =
+                    new TaskTimeBlockController.UpdateTimeBlockRequest(
+                            LocalDateTime.of(2026, 8, 2, 9, 30),
+                            LocalDateTime.of(2026, 8, 2, 10, 30),
+                            "BUSY"
+                    );
 
             when(timeBlockRepository.findById(blockId)).thenReturn(Optional.of(sampleBlock));
             when(timeBlockRepository.save(any(TaskTimeBlock.class))).thenAnswer(inv -> inv.getArgument(0));
+            when(timeBlockRepository.findByTaskId(taskId)).thenReturn(List.of(sampleBlock));
             when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
 
-            TaskTimeBlockDto result = timeBlockService.updateTimeBlockProgress(blockId, 30, null, userId);
+            TaskTimeBlockDto result = timeBlockService.updateTimeBlock(blockId, request, userId);
 
             assertNotNull(result);
-            assertEquals(30, result.actualMinutes());
-            assertEquals("BUSY", result.availabilityStatus());
-            assertEquals(30, task.getActualMinutes());
+            assertEquals(LocalDateTime.of(2026, 8, 2, 9, 30), sampleBlock.getStartTime());
+            assertEquals(LocalDateTime.of(2026, 8, 2, 10, 30), sampleBlock.getEndTime());
+            assertEquals("BUSY", sampleBlock.getAvailabilityStatus());
+            assertEquals(60, task.getEstimatedMinutes());
+            verify(timeBlockRepository, times(1)).save(sampleBlock);
             verify(taskRepository, times(1)).save(task);
-        }
-
-        @Test
-        @DisplayName("Should mark timeblock completed and update task status to Done when total actualMinutes >= estimatedMinutes")
-        void updateProgress_MarkCompleted_TaskDone() {
-            Task task = new Task();
-            task.setId(taskId);
-            task.setUserId(userId);
-            task.setEstimatedMinutes(30);
-            task.setActualMinutes(0);
-            task.setStatus("Picked for Today");
-
-            when(timeBlockRepository.findById(blockId)).thenReturn(Optional.of(sampleBlock));
-            when(timeBlockRepository.save(any(TaskTimeBlock.class))).thenAnswer(inv -> inv.getArgument(0));
-            when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
-
-            TaskTimeBlockDto result = timeBlockService.updateTimeBlockProgress(blockId, 45, true, userId);
-
-            assertNotNull(result);
-            assertTrue(result.isCompleted());
-            assertNotNull(result.completedAt());
-            assertEquals("BUSY", result.availabilityStatus());
-            assertEquals("Done", task.getStatus());
-            assertNotNull(task.getDoneAt());
-            verify(taskRepository, times(1)).save(task);
-        }
-
-        @Test
-        @DisplayName("Should mark timeblock uncompleted and clear completedAt")
-        void updateProgress_MarkUncompleted() {
-            Task task = new Task();
-            task.setId(taskId);
-            task.setUserId(userId);
-
-            sampleBlock.setIsCompleted(true);
-            sampleBlock.setCompletedAt(java.time.OffsetDateTime.now());
-
-            when(timeBlockRepository.findById(blockId)).thenReturn(Optional.of(sampleBlock));
-            when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
-            when(timeBlockRepository.save(any(TaskTimeBlock.class))).thenAnswer(inv -> inv.getArgument(0));
-
-            TaskTimeBlockDto result = timeBlockService.updateTimeBlockProgress(blockId, null, false, userId);
-
-            assertNotNull(result);
-            assertFalse(result.isCompleted());
-            assertNull(result.completedAt());
         }
 
         @Test
         @DisplayName("Should throw EntityNotFoundException when timeblock not found")
-        void updateProgress_BlockNotFound() {
+        void updateTimeBlock_BlockNotFound() {
             when(timeBlockRepository.findById(blockId)).thenReturn(Optional.empty());
+
+            TaskTimeBlockController.UpdateTimeBlockRequest request =
+                    new TaskTimeBlockController.UpdateTimeBlockRequest(null, null, "BUSY");
 
             EntityNotFoundException ex = assertThrows(
                     EntityNotFoundException.class,
-                    () -> timeBlockService.updateTimeBlockProgress(blockId, 30, true, userId)
+                    () -> timeBlockService.updateTimeBlock(blockId, request, userId)
             );
             assertEquals("Time block not found", ex.getMessage());
         }
-
-        // tests removed
     }
 
     @Nested

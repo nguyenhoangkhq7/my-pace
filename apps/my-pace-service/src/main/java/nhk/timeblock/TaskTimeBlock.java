@@ -42,17 +42,6 @@ public class TaskTimeBlock {
     private Integer totalParts = 1;
 
     @NotNull
-    @Column(name = "actual_minutes", nullable = false)
-    private Integer actualMinutes = 0;
-
-    @NotNull
-    @Column(name = "is_completed", nullable = false)
-    private Boolean isCompleted = false;
-
-    @Column(name = "completed_at")
-    private OffsetDateTime completedAt;
-
-    @NotNull
     @Column(name = "availability_status", nullable = false)
     private String availabilityStatus = "FREE";
 
@@ -62,9 +51,6 @@ public class TaskTimeBlock {
 
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
-
-    @Column(name = "status_warning")
-    private String statusWarning;
 
     @PrePersist
     protected void onCreate() {

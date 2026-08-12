@@ -16,13 +16,11 @@ export function shiftTimeBlocks(
   actualMinutes: number,
   estimatedMinutes: number
 ): Omit<TaskTimeBlock, "id">[] {
-  const stripId = (tb: TaskTimeBlock): Omit<TaskTimeBlock, "id"> => ({
-    taskId: tb.taskId,
-    startTime: tb.startTime,
-    endTime: tb.endTime,
-    partIndex: tb.partIndex,
-    totalParts: tb.totalParts,
-  });
+  const stripId = (tb: TaskTimeBlock): Omit<TaskTimeBlock, "id"> => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { id, ...rest } = tb;
+    return rest;
+  };
 
   const diff = actualMinutes - estimatedMinutes;
   if (diff === 0) {

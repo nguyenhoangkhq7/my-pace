@@ -3,14 +3,17 @@
 import React, { useEffect } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { useAuthStore } from "@/features/auth";
-import { OnboardingModal } from "@/features/onboarding";
+import dynamic from "next/dynamic";
+
+const OnboardingModal = dynamic(() => import("@/features/onboarding").then(m => m.OnboardingModal), { ssr: false });
+const StickyNotesManagerDrawer = dynamic(() => import("@/features/sticky-notes/components/StickyNotesManagerDrawer").then(m => m.StickyNotesManagerDrawer), { ssr: false });
+const QuickAddPalette = dynamic(() => import("@/features/quick-add/components/QuickAddPalette").then(m => m.QuickAddPalette), { ssr: false });
+
 import { usePathname } from "next/navigation";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import { cn } from "@/lib/utils";
 
 import { StickyNotesOverlay } from "@/features/sticky-notes/components/StickyNotesOverlay";
-import { StickyNotesManagerDrawer } from "@/features/sticky-notes/components/StickyNotesManagerDrawer";
-import { QuickAddPalette } from "@/features/quick-add/components/QuickAddPalette";
 
 export default function AppLayout({
   children,

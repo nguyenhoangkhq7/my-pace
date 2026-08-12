@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { useFocusStore } from "@/features/focus/store/focus.store";
-import { useAuthStore } from "@/features/auth";
 import { useFlowPageData } from "@/features/focus/hooks/useFlowPageData";
 import { useAppVisibility } from "@/features/available-time";
 import { FlowTodoList } from "@/features/focus/components/FlowTodoList";
@@ -143,8 +142,24 @@ export function FlowPage() {
   }, [dailyPlanToday, activeTaskId, tasks]);
 
   const handleTaskSelect = (task: DailyPlanTask, block?: TaskTimeBlock) => {
+    let resolvedBlock = block;
+    if (!resolvedBlock && dailyPlanToday?.timeBlocks) {
+      const taskBlocks = dailyPlanToday.timeBlocks
+        .filter(b => b.taskId === task.task.id)
+        .sort((a, b) => a.startTime.localeCompare(b.startTime));
+      
+      if (taskBlocks.length > 0) {
+        const now = new Date();
+        const currentHourMin = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+        resolvedBlock = taskBlocks.find(b => {
+          const bEnd = formatTime(b.endTime);
+          return bEnd >= currentHourMin;
+        }) || taskBlocks[0];
+      }
+    }
+
     const isSameTask = task.task.id === activeTaskId;
-    const blockInfo = createTimeBlockInfo(block);
+    const blockInfo = createTimeBlockInfo(resolvedBlock);
     const isSameBlock = isSameTask && (
       (!blockInfo && !activeTimeBlockInfo) ||
       (blockInfo && activeTimeBlockInfo && blockInfo.startTime === activeTimeBlockInfo.startTime)
@@ -175,12 +190,12 @@ export function FlowPage() {
       }
       setPrevPomodoroState(wasRunning ? (pomodoroState as "focusing" | "breaking") : null);
       setPendingSwitchTask(task);
-      setPendingSwitchBlock(block);
+      setPendingSwitchBlock(resolvedBlock);
       setIsSwitchDialogOpen(true);
       return;
     }
 
-    doSwitch(task, block);
+    doSwitch(task, resolvedBlock);
   };
 
   const handleSwitchCancel = () => {
