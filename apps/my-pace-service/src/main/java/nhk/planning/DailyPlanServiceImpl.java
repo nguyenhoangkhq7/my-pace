@@ -23,6 +23,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -91,19 +92,34 @@ public class DailyPlanServiceImpl implements DailyPlanService {
         plan.setAvailableMinutes(request.availableMinutes() != null ? request.availableMinutes() : 0);
         plan = dailyPlanRepository.save(plan);
 
-        // Find existing tasks in the plan to check which ones are being removed
-        List<DailyPlanTask> existingPlanTasks = dailyPlanTaskRepository.findByDailyPlanIdOrderBySortOrderAsc(plan.getId());
-        List<UUID> newTasksIds = request.tasks() != null
-                ? request.tasks().stream().map(PlanMyDayRequest.PlanTaskItem::taskId).collect(Collectors.toList())
-                : List.of();
+        boolean isConfirmedSwap = Boolean.TRUE.equals(plan.getIsConfirmed());
 
+        List<UUID> newTasksIds = request.tasks() != null 
+                ? request.tasks().stream().map(PlanMyDayRequest.PlanTaskItem::taskId).toList() 
+                : Collections.emptyList();
+        
+        List<DailyPlanTask> existingPlanTasks = dailyPlanTaskRepository.findByDailyPlanIdOrderBySortOrderAsc(plan.getId());
+        
         for (DailyPlanTask pt : existingPlanTasks) {
             Task task = pt.getTask();
-            if (task != null && !newTasksIds.contains(task.getId())) {
-                // Task is removed from the plan, set status back to Backlog (if not Done)
-                if (!"Done".equals(task.getStatus())) {
+            if (task != null) {
+                boolean isRemoved = !newTasksIds.contains(task.getId());
+                boolean isUncompleted = !"Done".equals(task.getStatus());
+                
+                if (isRemoved && isUncompleted) {
                     task.setStatus("Backlog");
                     taskRepository.save(task);
+                }
+                
+                if (isConfirmedSwap && isUncompleted) {
+                    java.time.LocalDateTime startOfDay = plan.getPlanDate().atStartOfDay();
+                    java.time.LocalDateTime endOfDay = plan.getPlanDate().plusDays(1).atStartOfDay();
+                    List<TaskTimeBlock> blocks = timeBlockRepository.findByUserIdAndDateRange(userId, startOfDay, endOfDay);
+                    for (TaskTimeBlock b : blocks) {
+                        if (b.getTaskId() != null && b.getTaskId().equals(task.getId())) {
+                            timeBlockRepository.delete(b);
+                        }
+                    }
                 }
             }
         }
@@ -130,6 +146,7 @@ public class DailyPlanServiceImpl implements DailyPlanService {
                     taskRepository.save(task);
 
                     // Check if this task has a goal and that goal has a preferTime
+                    boolean scheduledByGoal = false;
                     if (task.getGoalId() != null) {
                         Goal goal = goalRepository.findById(task.getGoalId()).orElse(null);
                         if (goal != null && goal.getPreferTime() != null) {
@@ -143,10 +160,25 @@ public class DailyPlanServiceImpl implements DailyPlanService {
                                 ZoneId zoneId = ZoneId.of(tz != null && !tz.isBlank() ? tz : "UTC");
                                 int estimatedMinutes = task.getEstimatedMinutes() != null ? task.getEstimatedMinutes() : 60;
                                 scheduleTaskTimeBlock(plan, task, goal.getPreferTime(), estimatedMinutes, zoneId);
+                                scheduledByGoal = true;
                             }
                         }
                     }
+
+                    // We removed the manual scheduleTaskTimeBlock for new tasks here
+                    // because Auto-Schedule will handle it in bulk and compact the schedule.
                 }
+            }
+        }
+
+        if (isConfirmedSwap) {
+            dailyPlanTaskRepository.flush();
+            taskRepository.flush();
+            timeBlockRepository.flush();
+            try {
+                autoScheduleService.autoSchedule(userId, 0, true);
+            } catch (Exception e) {
+                System.err.println("Failed to auto-schedule after swap: " + e.getMessage());
             }
         }
 
@@ -274,7 +306,15 @@ public class DailyPlanServiceImpl implements DailyPlanService {
                 tb.setEndTime(tb.getStartTime().plusMinutes(actMins));
                 timeBlockRepository.save(tb);
             } else if (!hasLogs) {
-                timeBlockRepository.delete(tb);
+                Task task = tb.getTaskId() != null ? taskRepository.findById(tb.getTaskId()).orElse(null) : null;
+                if (task != null && ("Done".equalsIgnoreCase(task.getStatus()) || (task.getActualMinutes() != null && task.getActualMinutes() > 0))) {
+                    if (task.getActualMinutes() != null && task.getActualMinutes() > 0) {
+                        tb.setEndTime(tb.getStartTime().plusMinutes(task.getActualMinutes()));
+                        timeBlockRepository.save(tb);
+                    }
+                } else {
+                    timeBlockRepository.delete(tb);
+                }
             }
         }
 
@@ -352,7 +392,7 @@ public class DailyPlanServiceImpl implements DailyPlanService {
 
             if (hasMovedToToday) {
                 try {
-                    autoScheduleService.autoSchedule(userId, 15);
+                    autoScheduleService.autoSchedule(userId, 15, false);
                 } catch (Exception ignored) {}
             }
         }

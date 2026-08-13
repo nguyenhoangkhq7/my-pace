@@ -103,18 +103,21 @@ export function FlowZenZone({ onExit, onCollapse }: FlowZenZoneProps) {
   const activeTask = tasks.find((t: Task) => t.id === activeTaskId);
 
   const handleDragEnter = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes("application/my-pace-soundscape-reorder")) return;
     e.preventDefault();
     e.stopPropagation();
     setIsDragOver(true);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes("application/my-pace-soundscape-reorder")) return;
     e.preventDefault();
     e.stopPropagation();
     if (!isDragOver) setIsDragOver(true);
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes("application/my-pace-soundscape-reorder")) return;
     e.preventDefault();
     e.stopPropagation();
     if (e.currentTarget.contains(e.relatedTarget as Node)) return;
@@ -122,6 +125,7 @@ export function FlowZenZone({ onExit, onCollapse }: FlowZenZoneProps) {
   };
 
   const handleDrop = async (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes("application/my-pace-soundscape-reorder")) return;
     e.preventDefault();
     e.stopPropagation();
     setIsDragOver(false);

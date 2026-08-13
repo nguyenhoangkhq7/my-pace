@@ -544,6 +544,22 @@ export interface Translations {
     q2Label: string;
     q3Label: string;
     q4Label: string;
+    kpiCompletion: string;
+    kpiStreak: string;
+    kpiQ2Focus: string;
+    kpiAccuracy: string;
+    unitDays: string;
+    heatmapTitle: string;
+    heatmapSubtitle: string;
+    heatmapTotal: string;
+    heatmapNoData: string;
+    heatmapHint: string;
+    heatmapPeak: string;
+    heatmapFocus: string;
+    planActualTitle: string;
+    planActualPlanned: string;
+    planActualActual: string;
+    planActualNoData: string;
   };
   goals: {
     title: string;

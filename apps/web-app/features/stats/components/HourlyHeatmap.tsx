@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface HourlyHeatmapProps {
   /** Key = hour 0-23, value = total focus minutes in that hour across the selected range */
@@ -17,6 +18,8 @@ function formatMinutes(min: number): string {
 }
 
 export function HourlyHeatmap({ data, className }: HourlyHeatmapProps) {
+  const { t } = useTranslation();
+
   const maxMinutes = useMemo(
     () => Math.max(1, ...Object.values(data)),
     [data]
@@ -48,12 +51,12 @@ export function HourlyHeatmap({ data, className }: HourlyHeatmapProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-bold text-foreground text-base">Phân bố Focus theo Giờ</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">Giờ nào bạn tập trung nhiều nhất</p>
+          <h3 className="font-bold text-foreground text-base">{t.stats.heatmapTitle}</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">{t.stats.heatmapSubtitle}</p>
         </div>
         {totalMinutes > 0 && (
           <div className="text-right">
-            <p className="text-xs text-muted-foreground">Tổng</p>
+            <p className="text-xs text-muted-foreground">{t.stats.heatmapTotal}</p>
             <p className="font-mono font-bold text-sm text-foreground">{formatMinutes(totalMinutes)}</p>
           </div>
         )}
@@ -61,8 +64,9 @@ export function HourlyHeatmap({ data, className }: HourlyHeatmapProps) {
 
       {/* Heatmap bars */}
       {totalMinutes === 0 ? (
-        <div className="h-28 flex items-center justify-center text-muted-foreground text-sm">
-          Chưa có dữ liệu focus trong khoảng thời gian này
+        <div className="h-28 flex flex-col items-center justify-center text-muted-foreground text-sm text-center px-4 space-y-1">
+          <p>{t.stats.heatmapNoData}</p>
+          <p className="text-xs opacity-80">{t.stats.heatmapHint}</p>
         </div>
       ) : (
         <>
@@ -115,13 +119,12 @@ export function HourlyHeatmap({ data, className }: HourlyHeatmapProps) {
           {/* Peak callout */}
           {peakHour.hour >= 0 && (
             <div className="flex items-center gap-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 px-4 py-2.5">
-              <span className="text-lg">⚡</span>
               <p className="text-xs text-indigo-300">
-                Giờ vàng của bạn:{" "}
+                {t.stats.heatmapPeak}{" "}
                 <strong className="font-bold text-indigo-200">
                   {String(peakHour.hour).padStart(2, "0")}:00
                 </strong>{" "}
-                — focus{" "}
+                — {t.stats.heatmapFocus}{" "}
                 <strong className="font-bold text-indigo-200">{formatMinutes(peakHour.minutes)}</strong>
               </p>
             </div>

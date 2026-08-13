@@ -14,6 +14,8 @@ interface EisenhowerQuadrantProps {
   slackTimes?: Record<string, number>;
   onTaskClick: (task: Task) => void;
   onTaskDrop: (taskId: string, isUrgent: boolean, isImportant: boolean) => void;
+  isStarted?: boolean;
+  onSwapClick?: (task: Task) => void;
 }
 
 export function EisenhowerQuadrant({
@@ -29,6 +31,8 @@ export function EisenhowerQuadrant({
   slackTimes,
   onTaskClick,
   onTaskDrop,
+  isStarted,
+  onSwapClick,
 }: EisenhowerQuadrantProps) {
   
   let qTasks = tasks.filter(t => {
@@ -98,6 +102,11 @@ export function EisenhowerQuadrant({
             slackTime={slackTimes?.[task.id]}
             onClick={() => onTaskClick(task)}
             isPlanned={isPlanningMode && plannedTaskIds.includes(task.id)}
+            isStarted={isStarted}
+            onSwapClick={(e) => {
+              e.stopPropagation();
+              onSwapClick?.(task);
+            }}
           />
         ))}
       </div>

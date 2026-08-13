@@ -5,6 +5,7 @@ import { TaskCardChecklist } from "./TaskCardChecklist";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 
 
 interface TaskBacklogCardProps {
@@ -12,6 +13,8 @@ interface TaskBacklogCardProps {
   onClick: () => void;
   isPlanned: boolean;
   slackTime?: number;
+  isStarted?: boolean;
+  onSwapClick?: (e: React.MouseEvent) => void;
 }
 
 export function TaskBacklogCard({
@@ -19,6 +22,8 @@ export function TaskBacklogCard({
   onClick,
   isPlanned,
   slackTime,
+  isStarted,
+  onSwapClick,
 }: TaskBacklogCardProps) {
   const { t } = useTranslation();
 
@@ -38,10 +43,13 @@ export function TaskBacklogCard({
     const dueDate = task.dueDate ? new Date(task.dueDate) : null;
     const isPastDue = dueDate && dueDate < now;
 
-    if (slackTime < 0) {
+    if (slackTime <= 0) {
       if (isPastDue) {
         const diffMins = Math.floor((now.getTime() - dueDate.getTime()) / 60000);
         return `Đã quá hạn ${formatDuration(diffMins)}!`;
+      }
+      if (slackTime === 0) {
+        return `Lưu ý: Bạn phải bắt tay vào làm ngay bây giờ để kịp hạn chót!`;
       }
       return `Không đủ thời gian trống! Bạn còn thiếu ${formatDuration(Math.abs(slackTime))} để hoàn thành đúng hạn.`;
     }
@@ -72,32 +80,53 @@ export function TaskBacklogCard({
           {task.title}
         </div>
         
-        {(() => {
-          const rem = Math.max(1, (task.estimatedMinutes || 60) - (task.actualMinutes || 0));
-          const isWarning = slackTime !== undefined && (slackTime < 0 || slackTime < 480 || slackTime < rem * 0.5);
-          if (!isWarning) return null;
-          return (
+        <div className="flex items-center gap-2">
+          {isStarted && !isPlanned && (
             <TooltipProvider>
               <Tooltip delayDuration={300}>
                 <TooltipTrigger asChild>
-                  <div onClick={(e) => e.stopPropagation()} className="shrink-0 mt-0.5">
-                    <span 
-                      className={cn(
-                        "flex items-center justify-center w-[16px] h-[16px] rounded-full text-[10px] font-extrabold shadow-sm font-mono",
-                        slackTime < 0 ? "bg-red-500 text-white" : "bg-yellow-500 text-yellow-950"
-                      )}
-                    >
-                      !
-                    </span>
-                  </div>
+                  <button
+                    onClick={onSwapClick}
+                    className="group relative flex items-center justify-center overflow-hidden rounded-full bg-orange-100 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800/50 px-2 py-0.5 text-[9px] font-bold tracking-wide text-orange-600 dark:text-orange-400 transition-all hover:bg-orange-200 dark:hover:bg-orange-900/50 active:scale-95 shrink-0 cursor-pointer"
+                  >
+                    <span className="relative z-10">{t.board.today.toLowerCase() === "today" ? "Swap" : "Chèn"}</span>
+                    <div className="absolute inset-0 z-0 bg-white/20 opacity-0 transition-opacity group-hover:opacity-100" />
+                  </button>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="max-w-[200px] text-xs">
-                  {getTooltipText()}
+                <TooltipContent side="top" className="text-xs">
+                  {t.board.today.toLowerCase() === "today" ? "Inject / Swap this task" : "Chen ngang công việc này"}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-          );
-        })()}
+          )}
+
+          {(() => {
+            const rem = Math.max(1, (task.estimatedMinutes || 60) - (task.actualMinutes || 0));
+            const isWarning = slackTime !== undefined && (slackTime < 0 || slackTime < 480 || slackTime < rem * 0.5);
+            if (!isWarning) return null;
+            return (
+              <TooltipProvider>
+                <Tooltip delayDuration={300}>
+                  <TooltipTrigger asChild>
+                    <div onClick={(e) => e.stopPropagation()} className="shrink-0 mt-0.5">
+                      <span 
+                        className={cn(
+                          "flex items-center justify-center w-[16px] h-[16px] rounded-full text-[10px] font-extrabold shadow-sm font-mono",
+                          slackTime < 0 ? "bg-red-500 text-white" : "bg-yellow-500 text-yellow-950"
+                        )}
+                      >
+                        !
+                      </span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-[200px] text-xs">
+                    {getTooltipText()}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            );
+          })()}
+        </div>
       </div>
       
       <div className="flex items-center gap-2 mt-2 flex-wrap">

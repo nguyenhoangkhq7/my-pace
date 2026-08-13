@@ -27,7 +27,8 @@ public class AutoSchedulePersister {
     @Transactional
     public AutoScheduleResponse persistAndReconcile(
             ScheduleContext ctx, TaskQueueResult queues,
-            Map<LocalDate, List<TaskTimeBlock>> generatedBlocksPerDate, Set<LocalDate> datesActuallyProcessed
+            Map<LocalDate, List<TaskTimeBlock>> generatedBlocksPerDate, Set<LocalDate> datesActuallyProcessed,
+            boolean forceRescheduleToday
     ) {
         Map<LocalDate, List<TaskTimeBlockDto>> responseMap = new LinkedHashMap<>();
 
@@ -42,8 +43,10 @@ public class AutoSchedulePersister {
             // hoặc đã có nhưng chưa được chốt (isConfirmed == false), thì được phép lưu TimeBlocks.
             // Nếu đã chốt, tuyệt đối không được ghi đè TimeBlocks.
             boolean isConfirmed = existingPlan != null && Boolean.TRUE.equals(existingPlan.getIsConfirmed());
+            LocalDate today = LocalDate.now(ctx.zoneId());
+            boolean allowOverride = forceRescheduleToday && date.equals(today);
 
-            if (!isConfirmed && datesActuallyProcessed.contains(date)) {
+            if ((!isConfirmed || allowOverride) && datesActuallyProcessed.contains(date)) {
                 java.time.LocalDateTime start;
                 java.time.LocalDateTime end;
                 if (ctx.sleepMin() < ctx.wakeMin()) {
@@ -212,6 +215,101 @@ public class AutoSchedulePersister {
         }
         boolean isOverscheduled = overflowMinutes > 0;
 
-        return new AutoScheduleResponse(ctx.startDate(), ctx.endDate(), responseMap, overflowMinutes, isOverscheduled, schedulingWarnings);
+        WeeklyAllocationSummary weeklyAllocation = calculateWeeklyAllocation(ctx, responseMap);
+
+        return new AutoScheduleResponse(ctx.startDate(), ctx.endDate(), responseMap, overflowMinutes, isOverscheduled, schedulingWarnings, weeklyAllocation);
+    }
+
+    private WeeklyAllocationSummary calculateWeeklyAllocation(ScheduleContext ctx, Map<LocalDate, List<TaskTimeBlockDto>> responseMap) {
+        Map<UUID, Integer> minutesByCategory = new HashMap<>();
+        int uncategorizedMinutes = 0;
+        int totalScheduledMinutes = 0;
+
+        Map<UUID, nhk.task.Task> taskMap = ctx.activeTasks().stream()
+                .collect(Collectors.toMap(nhk.task.Task::getId, t -> t, (a, b) -> a));
+
+        for (List<TaskTimeBlockDto> blocks : responseMap.values()) {
+            for (TaskTimeBlockDto block : blocks) {
+                if (!"BUSY".equalsIgnoreCase(block.availabilityStatus())) {
+                    int duration = (int) java.time.Duration.between(block.startTime(), block.endTime()).toMinutes();
+                    if (duration < 0) duration += 1440;
+                    
+                    totalScheduledMinutes += duration;
+                    nhk.task.Task task = taskMap.get(block.taskId());
+                    if (task != null && task.getCategoryId() != null) {
+                        minutesByCategory.merge(task.getCategoryId(), duration, Integer::sum);
+                    } else {
+                        uncategorizedMinutes += duration;
+                    }
+                }
+            }
+        }
+
+        if (ctx.fixedEvents() != null) {
+            for (nhk.calendar.FixedEventResponse ev : ctx.fixedEvents()) {
+                if ("BUSY".equalsIgnoreCase(ev.availabilityStatus())) {
+                    int duration = 0;
+                    if (Boolean.TRUE.equals(ev.isAllDay())) {
+                        duration = 1440;
+                    } else if (ev.startTime() != null && ev.endTime() != null) {
+                        duration = (int) java.time.Duration.between(ev.startTime(), ev.endTime()).toMinutes();
+                        if (duration < 0) duration += 1440;
+                    }
+
+                    if (duration > 0) {
+                        totalScheduledMinutes += duration;
+                        if (ev.categoryId() != null) {
+                            minutesByCategory.merge(ev.categoryId(), duration, Integer::sum);
+                        } else {
+                            uncategorizedMinutes += duration;
+                        }
+                    }
+                }
+            }
+        }
+
+        List<CategoryAllocation> allocations = new ArrayList<>();
+        for (Map.Entry<UUID, Integer> entry : minutesByCategory.entrySet()) {
+            nhk.category.Category cat = ctx.categoryMap().get(entry.getKey());
+            if (cat != null) {
+                allocations.add(new CategoryAllocation(
+                        cat.getId(),
+                        cat.getName(),
+                        cat.getColor(),
+                        entry.getValue()
+                ));
+            } else {
+                uncategorizedMinutes += entry.getValue();
+            }
+        }
+
+        if (uncategorizedMinutes > 0) {
+            allocations.add(new CategoryAllocation(
+                    null,
+                    "Khác",
+                    "#94a3b8",
+                    uncategorizedMinutes
+            ));
+        }
+        
+        allocations.sort((a, b) -> Integer.compare(b.scheduledMinutes(), a.scheduledMinutes()));
+
+        int days = ctx.dateRange().size();
+        int awakeMinutesPerDay = ctx.sleepMin() < ctx.wakeMin() ? (ctx.sleepMin() + 1440 - ctx.wakeMin()) : (ctx.sleepMin() - ctx.wakeMin());
+        int totalAvailableMinutes = awakeMinutesPerDay * days;
+        
+        int bufferMinutes = (int) ((totalAvailableMinutes - totalScheduledMinutes) * (ctx.bufferPct() / 100.0));
+        if (bufferMinutes < 0) bufferMinutes = 0;
+        
+        int freeMinutes = totalAvailableMinutes - totalScheduledMinutes - bufferMinutes;
+        if (freeMinutes < 0) freeMinutes = 0;
+
+        return new WeeklyAllocationSummary(
+                totalAvailableMinutes,
+                totalScheduledMinutes,
+                bufferMinutes,
+                freeMinutes,
+                allocations
+        );
     }
 }

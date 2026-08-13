@@ -10,6 +10,7 @@ import { CalendarStyles } from "@/features/calendar/components/CalendarStyles";
 import { EventModal } from "@/features/calendar/components/EventModal";
 import { TaskTimeBlockModal } from "@/features/board/components/TaskTimeBlockModal";
 import { CalendarEventItem } from "@/features/calendar/components/CalendarEventItem";
+import { WeeklyAllocationWidget } from "@/features/calendar/components/WeeklyAllocationWidget";
 import { useCalendarPage } from "../hooks/useCalendarPage";
 import { useTranslation } from "@/hooks/use-translation";
 
@@ -97,7 +98,9 @@ export function CalendarPage() {
       <div className="flex gap-4 flex-1 min-h-0">
         
         {/* ── FullCalendar ── */}
-        <div className="flex-1 rounded-2xl border border-border bg-card overflow-hidden shadow-sm calendar-wrapper">
+        <div className="flex-1 flex flex-col min-w-0">
+          <WeeklyAllocationWidget />
+          <div className="flex-1 rounded-2xl border border-border bg-card overflow-hidden shadow-sm calendar-wrapper">
           {isCalendarMounted && (
             <FullCalendar
               ref={calendarRef}
@@ -146,6 +149,7 @@ export function CalendarPage() {
               height="100%"
             />
           )}
+        </div>
         </div>
 
         {/* ── Todo Today Sidebar ── */}

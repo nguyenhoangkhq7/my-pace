@@ -88,10 +88,13 @@ export function PlanningTaskItem({ task, slackTime, onRemove }: PlanningTaskItem
                     return `${min} phút`;
                   };
 
-                  if (slackTime < 0) {
+                  if (slackTime <= 0) {
                     if (isPastDue) {
                       const diffMins = Math.floor((now.getTime() - dueDate.getTime()) / 60000);
                       return `Đã quá hạn ${formatDuration(diffMins)}!`;
+                    }
+                    if (slackTime === 0) {
+                      return `Lưu ý: Bạn phải bắt tay vào làm ngay bây giờ để kịp hạn chót!`;
                     }
                     return `Task này không thể hoàn thành đúng hạn! Thiếu ${formatDuration(slackTime)}.`;
                   }

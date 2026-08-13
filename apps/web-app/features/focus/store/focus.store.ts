@@ -134,6 +134,7 @@ interface FocusState {
   addToHistory: (url: string, title: string) => void;
   removeFromHistory: (url: string) => void;
   updateHistoryTitle: (url: string, newTitle: string) => void;
+  reorderHistory: (oldIndex: number, newIndex: number) => void;
   openFocusMode: (
     taskId: string,
     planTaskId: string,
@@ -317,6 +318,13 @@ export const useFocusStore = create<FocusState>()(
           item.url === url ? { ...item, title: newTitle } : item
         )
       })),
+
+      reorderHistory: (oldIndex, newIndex) => set((state) => {
+        const history = [...state.youtubeHistory];
+        const [movedItem] = history.splice(oldIndex, 1);
+        history.splice(newIndex, 0, movedItem);
+        return { youtubeHistory: history };
+      }),
       
       openFocusMode: (taskId, planTaskId, estimatedMinutes, alreadyWorkedMinutes = 0, timeBlockInfo = null, keepTimer = false) => {
         const { focusMinutes } = get();

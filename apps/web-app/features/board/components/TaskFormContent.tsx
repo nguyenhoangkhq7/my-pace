@@ -319,10 +319,10 @@ export function TaskFormContent({
       isImportant: values.isImportant,
       categoryId: values.categoryId === "none" ? undefined : (values.categoryId || undefined),
       goalId: values.goalId === "none" ? undefined : (values.goalId || undefined),
-      dueDate: values.dueDate ? `${format(values.dueDate, "yyyy-MM-dd")}T${dueTime || "23:59"}:00` : undefined,
       isSplittable: values.isSplittable || false,
       minChunkMinutes: values.isSplittable ? (values.minChunkMinutes || undefined) : undefined,
       maxDailyDuration: values.isSplittable ? (values.maxDailyDuration || undefined) : undefined,
+      dueDate: values.dueDate ? `${format(values.dueDate, "yyyy-MM-dd")}T${dueTime === "00:00" ? "23:59" : (dueTime || "23:59")}:00` : undefined,
     };
 
     if (initialData?.id) {

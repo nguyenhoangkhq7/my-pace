@@ -35,7 +35,9 @@ public class UserService {
             ZoneId zoneId = ZoneId.of(savedUser.getTimezone() != null ? savedUser.getTimezone() : "UTC");
             java.time.LocalDateTime todayStart = LocalDate.now(zoneId).atStartOfDay();
             taskTimeBlockRepository.deleteFreeUnlockedBlocksFrom(userId, todayStart);
-            autoScheduleService.autoSchedule(userId, 15);
+            try {
+                autoScheduleService.autoSchedule(userId, user.getBufferMinutes(), false);
+            } catch (Exception ignored) {}
         }
 
         return userMapper.toUserSimpleResponse(savedUser);

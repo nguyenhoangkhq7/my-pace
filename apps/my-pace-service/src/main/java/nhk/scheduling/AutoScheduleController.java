@@ -20,7 +20,7 @@ public class AutoScheduleController {
                 ? request.bufferMinutes() 
                 : userDetails.user().getBufferMinutes();
         return autoScheduleService.autoSchedule(
-                userDetails.user().getId(), bufferMinutes);
+                userDetails.user().getId(), bufferMinutes, false);
     }
 
     @PostMapping("/preview-slack")
