@@ -66,18 +66,15 @@ public class InMemoryBitmapScheduler {
      * Scans bitmap for available free gaps >= minChunkMinutes between windowStartMin and windowEndMin.
      */
     public List<ScheduleGap> findFreeGaps(UUID userId, LocalDate date, int windowStartMin, int windowEndMin, int minChunkMinutes) {
-        String key = buildKey(userId, date);
-        BitSet bitSet = store.get(key);
-
         List<ScheduleGap> gaps = new ArrayList<>();
         int gapStart = -1;
 
-        int from = Math.max(0, Math.min(1439, windowStartMin));
-        int to = Math.max(0, Math.min(1440, windowEndMin));
+        int from = Math.max(0, windowStartMin);
+        int to = Math.max(0, windowEndMin);
 
         for (int m = from; m < to; m++) {
-            boolean isBusy = bitSet != null && bitSet.get(m);
-            if (!isBusy) {
+            boolean busy = isBusy(userId, date, m);
+            if (!busy) {
                 if (gapStart == -1) {
                     gapStart = m;
                 }

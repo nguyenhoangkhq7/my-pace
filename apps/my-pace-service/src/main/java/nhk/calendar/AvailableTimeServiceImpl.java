@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -48,23 +49,24 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
         boolean checkedIn = checkinOpt.isPresent();
         LocalTime checkinTime = checkedIn ? checkinOpt.get().getCheckinTime() : null;
 
-        LocalDate today = LocalDate.now(zoneId);
-        LocalTime now = resolveNow(zoneId, date, userId);
+        LocalDateTime nowDateTime = resolveNowDateTime(zoneId, date, userId);
 
         boolean isPlanConfirmed = isPlanConfirmed(date, userId, zoneId);
-        boolean isCrossMidnight = isCrossMidnight(user);
 
-        if (date.isBefore(today)) {
+        LocalDateTime logicalStart = date.atTime(user.getWakeTime());
+        LocalDateTime logicalEnd = date.atTime(user.getSleepTime());
+        if (user.getSleepTime().equals(LocalTime.MIDNIGHT)) {
+            logicalEnd = date.plusDays(1).atStartOfDay();
+        } else if (user.getSleepTime().isBefore(user.getWakeTime())) {
+            logicalEnd = logicalEnd.plusDays(1);
+        }
+
+        if (!nowDateTime.isBefore(logicalEnd)) { // now >= logicalEnd
             return zeroResponse(user, checkedIn, checkinTime, isPlanConfirmed, streak);
         }
 
-        if (date.equals(today) && isDayOver(now, user.getSleepTime(), user.getWakeTime(), isCrossMidnight)) {
-            return zeroResponse(user, checkedIn, checkinTime, isPlanConfirmed, streak);
-        }
-
-        LocalTime windowStart = resolveWindowStart(date, today, now, user.getWakeTime());
-        LocalTime windowEnd = user.getSleepTime();
-        int workingWindow = computeWorkingWindow(windowStart, windowEnd, isCrossMidnight);
+        LocalDateTime windowStart = nowDateTime.isBefore(logicalStart) ? logicalStart : nowDateTime;
+        int workingWindow = (int) Duration.between(windowStart, logicalEnd).toMinutes();
 
         if (workingWindow <= 0) {
             return zeroResponse(user, checkedIn, checkinTime, isPlanConfirmed, streak);
@@ -76,7 +78,7 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
         List<FixedEventResponse> allOccurrences = new ArrayList<>(occurrencesToday);
         allOccurrences.addAll(occurrencesTomorrow);
 
-        UnionResult unionResult = computeUnionBlockedMinutes(allOccurrences, windowStart, windowEnd, date);
+        UnionResult unionResult = computeUnionBlockedMinutes(allOccurrences, windowStart, logicalEnd, date);
 
         int bufferPct = user.getBufferPct();
         int availableMinutes = Math.max(0,
@@ -106,11 +108,11 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
     /**
      * Returns effective "now": if the plan is already confirmed, freeze time at the moment of confirmation.
      */
-    private LocalTime resolveNow(ZoneId zoneId, LocalDate date, UUID userId) {
+    private LocalDateTime resolveNowDateTime(ZoneId zoneId, LocalDate date, UUID userId) {
         return dailyPlanRepository.findByUserIdAndPlanDate(userId, date)
                 .filter(p -> Boolean.TRUE.equals(p.getIsConfirmed()) && p.getConfirmedAt() != null)
-                .map(p -> p.getConfirmedAt().atZoneSameInstant(zoneId).toLocalTime())
-                .orElseGet(() -> LocalTime.now(zoneId));
+                .map(p -> p.getConfirmedAt().atZoneSameInstant(zoneId).toLocalDateTime())
+                .orElseGet(() -> LocalDateTime.now(zoneId));
     }
 
     private boolean isPlanConfirmed(LocalDate date, UUID userId, ZoneId zoneId) {
@@ -119,66 +121,42 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
                 .orElse(false);
     }
 
-    // ─── Window Calculation ───────────────────────────────────────────────────────
-
-    private boolean isCrossMidnight(User user) {
-        LocalTime sleep = user.getSleepTime();
-        return !sleep.equals(LocalTime.MIDNIGHT) && sleep.isBefore(user.getWakeTime());
-    }
-
-    private boolean isDayOver(LocalTime now, LocalTime sleepTime, LocalTime wakeTime, boolean isCrossMidnight) {
-        if (sleepTime.equals(LocalTime.MIDNIGHT)) return false;
-        if (!isCrossMidnight) return now.isAfter(sleepTime);
-        return now.isAfter(sleepTime) && now.isBefore(wakeTime);
-    }
-
-    private LocalTime resolveWindowStart(LocalDate date, LocalDate today, LocalTime now, LocalTime wakeTime) {
-        if (!date.equals(today)) return wakeTime; // future date: always start from wake time
-        return now.isBefore(wakeTime) ? wakeTime : now;
-    }
-
-    private int computeWorkingWindow(LocalTime windowStart, LocalTime windowEnd, boolean isCrossMidnight) {
-        if (windowEnd.equals(LocalTime.MIDNIGHT)) {
-            return 1440 - (windowStart.toSecondOfDay() / 60);
-        }
-        int minutes = (int) Duration.between(windowStart, windowEnd).toMinutes();
-        if (minutes < 0) return isCrossMidnight ? minutes + 1440 : 0;
-        return minutes;
-    }
-
     // ─── Union-Interval Algorithm ─────────────────────────────────────────────────
 
     private UnionResult computeUnionBlockedMinutes(List<FixedEventResponse> occurrences,
-                                                   LocalTime windowStart, LocalTime windowEnd, LocalDate baseDate) {
+                                                   LocalDateTime windowStart, LocalDateTime windowEnd, LocalDate baseDate) {
         List<FixedEventResponse> busyEvents = occurrences.stream()
                 .filter(e -> !"FREE".equalsIgnoreCase(e.availabilityStatus()))
                 .toList();
 
         if (busyEvents.isEmpty()) return UnionResult.empty();
 
-        int windowStartMin  = toMinutes(windowStart);
-        int windowEndMin    = toMinutes(windowEnd);
-        boolean crossesMidnight = windowEnd.isBefore(windowStart);
+        LocalDateTime baseStart = baseDate.atStartOfDay();
+        int windowStartMin = (int) Duration.between(baseStart, windowStart).toMinutes();
+        int windowEndMin = (int) Duration.between(baseStart, windowEnd).toMinutes();
 
         if (busyEvents.stream().anyMatch(e -> Boolean.TRUE.equals(e.isAllDay()))) {
-            return allDayBlockedResult(windowStartMin, windowEndMin, crossesMidnight);
+            int total = windowEndMin - windowStartMin;
+            return new UnionResult(Math.max(0, total), List.of(
+                    new AvailableTimeResponse.TimeInterval(minutesToHHMM(windowStartMin), minutesToHHMM(windowEndMin))
+            ));
         }
 
-        int effectiveEnd = crossesMidnight ? (windowEndMin + 1440) : windowEndMin;
         List<Interval> intervals = busyEvents.stream()
                 .map(e -> {
-                    int start = toMinutes(e.startTime());
-                    int end = toMinutes(e.endTime());
-                    if (end <= start && !"00:00".equals(e.endTime().toString())) {
-                        end += 1440;
+                    LocalDate occDate = e.occurrenceDate() != null ? e.occurrenceDate() : baseDate;
+                    LocalDateTime evStart = occDate.atTime(e.startTime());
+                    LocalDateTime evEnd = occDate.atTime(e.endTime());
+                    if (!evEnd.isAfter(evStart) && !"00:00".equals(e.endTime().toString())) {
+                        evEnd = evEnd.plusDays(1);
                     }
-                    if (e.occurrenceDate() != null && e.occurrenceDate().isAfter(baseDate)) {
-                        start += 1440;
-                        end += 1440;
-                    }
+                    
+                    int startMin = (int) Duration.between(baseStart, evStart).toMinutes();
+                    int endMin = (int) Duration.between(baseStart, evEnd).toMinutes();
+                    
                     return new Interval(
-                            Math.max(start, windowStartMin),
-                            Math.min(end, effectiveEnd)
+                            Math.max(startMin, windowStartMin),
+                            Math.min(endMin, windowEndMin)
                     );
                 })
                 .filter(Interval::isValid)
@@ -188,15 +166,6 @@ public class AvailableTimeServiceImpl implements AvailableTimeService {
         if (intervals.isEmpty()) return UnionResult.empty();
 
         return mergeIntervals(intervals);
-    }
-
-    private UnionResult allDayBlockedResult(int windowStartMin, int windowEndMin, boolean crossesMidnight) {
-        int total = crossesMidnight
-                ? (1440 - windowStartMin + windowEndMin)
-                : (windowEndMin - windowStartMin);
-        return new UnionResult(Math.max(0, total), List.of(
-                new AvailableTimeResponse.TimeInterval(minutesToHHMM(windowStartMin), minutesToHHMM(windowEndMin))
-        ));
     }
 
     private UnionResult mergeIntervals(List<Interval> intervals) {

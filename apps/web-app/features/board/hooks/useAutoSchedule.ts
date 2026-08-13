@@ -16,6 +16,7 @@ export function useAutoSchedule() {
         queryClient.invalidateQueries({ queryKey: ["dailyPlan"] });
         queryClient.invalidateQueries({ queryKey: ["dailyPlans"] });
         queryClient.invalidateQueries({ queryKey: ["timeBlocks"] });
+        queryClient.invalidateQueries({ queryKey: ["weeklyAllocation"] });
       } catch (e) {
         console.error("Auto-schedule failed:", e);
       }

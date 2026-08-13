@@ -27,7 +27,8 @@ public class AutoSchedulePersister {
     @Transactional
     public AutoScheduleResponse persistAndReconcile(
             ScheduleContext ctx, TaskQueueResult queues,
-            Map<LocalDate, List<TaskTimeBlock>> generatedBlocksPerDate, Set<LocalDate> datesActuallyProcessed
+            Map<LocalDate, List<TaskTimeBlock>> generatedBlocksPerDate, Set<LocalDate> datesActuallyProcessed,
+            boolean forceRescheduleToday
     ) {
         Map<LocalDate, List<TaskTimeBlockDto>> responseMap = new LinkedHashMap<>();
 
@@ -42,8 +43,10 @@ public class AutoSchedulePersister {
             // hoặc đã có nhưng chưa được chốt (isConfirmed == false), thì được phép lưu TimeBlocks.
             // Nếu đã chốt, tuyệt đối không được ghi đè TimeBlocks.
             boolean isConfirmed = existingPlan != null && Boolean.TRUE.equals(existingPlan.getIsConfirmed());
+            LocalDate today = LocalDate.now(ctx.zoneId());
+            boolean allowOverride = forceRescheduleToday && date.equals(today);
 
-            if (!isConfirmed && datesActuallyProcessed.contains(date)) {
+            if ((!isConfirmed || allowOverride) && datesActuallyProcessed.contains(date)) {
                 java.time.LocalDateTime start;
                 java.time.LocalDateTime end;
                 if (ctx.sleepMin() < ctx.wakeMin()) {

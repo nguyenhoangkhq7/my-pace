@@ -46,14 +46,15 @@ public class TaskPriorityScorerTest {
                 today,
                 today.plusDays(7),
                 List.of(today, today.plusDays(1), today.plusDays(2), today.plusDays(3), today.plusDays(4), today.plusDays(5), today.plusDays(6), today.plusDays(7)),
-                0, 360, 1320,
+                0, 0, 360, 1320,
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
                 Collections.emptyMap(),
                 new ArrayList<>(),
-                new HashMap<>()
+                new HashMap<>(),
+                Collections.emptyList()
         );
     }
 
@@ -74,8 +75,8 @@ public class TaskPriorityScorerTest {
         Task t2 = createTask("Q2", false, true, null, 100);
 
         ctx = new ScheduleContext(userId, ctx.zoneId(), ctx.startDate(), ctx.endDate(), ctx.dateRange(), 
-                ctx.bufferMinutes(), ctx.wakeMin(), ctx.sleepMin(), ctx.categoryMap(), ctx.planMap(), 
-                ctx.taskTimeBlocksByDate(), ctx.dailyPlanTasksByPlanId(), Collections.emptyMap(), List.of(t1, t2), ctx.taskTimeBlocksByTaskId());
+                ctx.bufferPct(), ctx.bufferMinutes(), ctx.wakeMin(), ctx.sleepMin(), ctx.categoryMap(), ctx.planMap(), 
+                ctx.taskTimeBlocksByDate(), ctx.dailyPlanTasksByPlanId(), Collections.emptyMap(), List.of(t1, t2), ctx.taskTimeBlocksByTaskId(), ctx.fixedEvents());
 
         TaskQueueResult res = scorer.buildTaskQueues(ctx);
         assertEquals("Q1 High Risk", res.backlogQueue().get(0).task.getTitle(), "Q1 High Risk (Rank 0) must beat Q2 (Rank 1)");
@@ -87,8 +88,8 @@ public class TaskPriorityScorerTest {
         Task t2 = createTask("Q2", false, true, null, 100);
 
         ctx = new ScheduleContext(userId, ctx.zoneId(), ctx.startDate(), ctx.endDate(), ctx.dateRange(), 
-                ctx.bufferMinutes(), ctx.wakeMin(), ctx.sleepMin(), ctx.categoryMap(), ctx.planMap(), 
-                ctx.taskTimeBlocksByDate(), ctx.dailyPlanTasksByPlanId(), Collections.emptyMap(), List.of(t1, t2), ctx.taskTimeBlocksByTaskId());
+                ctx.bufferPct(), ctx.bufferMinutes(), ctx.wakeMin(), ctx.sleepMin(), ctx.categoryMap(), ctx.planMap(), 
+                ctx.taskTimeBlocksByDate(), ctx.dailyPlanTasksByPlanId(), Collections.emptyMap(), List.of(t1, t2), ctx.taskTimeBlocksByTaskId(), ctx.fixedEvents());
 
         TaskQueueResult res = scorer.buildTaskQueues(ctx);
         assertEquals("Q2", res.backlogQueue().get(0).task.getTitle(), "Q2 (Rank 1) must beat Q1 Low Risk (Rank 2)");
@@ -100,8 +101,8 @@ public class TaskPriorityScorerTest {
         Task t2 = createTask("Q2", false, true, null, 100);
 
         ctx = new ScheduleContext(userId, ctx.zoneId(), ctx.startDate(), ctx.endDate(), ctx.dateRange(), 
-                ctx.bufferMinutes(), ctx.wakeMin(), ctx.sleepMin(), ctx.categoryMap(), ctx.planMap(), 
-                ctx.taskTimeBlocksByDate(), ctx.dailyPlanTasksByPlanId(), Collections.emptyMap(), List.of(t1, t2), ctx.taskTimeBlocksByTaskId());
+                ctx.bufferPct(), ctx.bufferMinutes(), ctx.wakeMin(), ctx.sleepMin(), ctx.categoryMap(), ctx.planMap(), 
+                ctx.taskTimeBlocksByDate(), ctx.dailyPlanTasksByPlanId(), Collections.emptyMap(), List.of(t1, t2), ctx.taskTimeBlocksByTaskId(), ctx.fixedEvents());
 
         TaskQueueResult res = scorer.buildTaskQueues(ctx);
         assertEquals("Q3 High Risk", res.backlogQueue().get(0).task.getTitle(), "Q3 High Risk (Rank 0) must beat Q2 (Rank 1)");
@@ -113,8 +114,8 @@ public class TaskPriorityScorerTest {
         Task t2 = createTask("Q3 Standard", true, false, null, 100); 
 
         ctx = new ScheduleContext(userId, ctx.zoneId(), ctx.startDate(), ctx.endDate(), ctx.dateRange(), 
-                ctx.bufferMinutes(), ctx.wakeMin(), ctx.sleepMin(), ctx.categoryMap(), ctx.planMap(), 
-                ctx.taskTimeBlocksByDate(), ctx.dailyPlanTasksByPlanId(), Collections.emptyMap(), List.of(t1, t2), ctx.taskTimeBlocksByTaskId());
+                ctx.bufferPct(), ctx.bufferMinutes(), ctx.wakeMin(), ctx.sleepMin(), ctx.categoryMap(), ctx.planMap(), 
+                ctx.taskTimeBlocksByDate(), ctx.dailyPlanTasksByPlanId(), Collections.emptyMap(), List.of(t1, t2), ctx.taskTimeBlocksByTaskId(), ctx.fixedEvents());
 
         TaskQueueResult res = scorer.buildTaskQueues(ctx);
         assertEquals("Q1 Low Risk", res.backlogQueue().get(0).task.getTitle(), "Q1 Low Risk (Rank 2) must beat Q3 Standard (Rank 3)");
@@ -126,8 +127,8 @@ public class TaskPriorityScorerTest {
         Task t2 = createTask("Q4", false, false, null, 100);
 
         ctx = new ScheduleContext(userId, ctx.zoneId(), ctx.startDate(), ctx.endDate(), ctx.dateRange(), 
-                ctx.bufferMinutes(), ctx.wakeMin(), ctx.sleepMin(), ctx.categoryMap(), ctx.planMap(), 
-                ctx.taskTimeBlocksByDate(), ctx.dailyPlanTasksByPlanId(), Collections.emptyMap(), List.of(t1, t2), ctx.taskTimeBlocksByTaskId());
+                ctx.bufferPct(), ctx.bufferMinutes(), ctx.wakeMin(), ctx.sleepMin(), ctx.categoryMap(), ctx.planMap(), 
+                ctx.taskTimeBlocksByDate(), ctx.dailyPlanTasksByPlanId(), Collections.emptyMap(), List.of(t1, t2), ctx.taskTimeBlocksByTaskId(), ctx.fixedEvents());
 
         TaskQueueResult res = scorer.buildTaskQueues(ctx);
         assertEquals("Q3 Low Risk", res.backlogQueue().get(0).task.getTitle(), "Both Rank 4, but Q3 has due date so it wins");
@@ -139,8 +140,8 @@ public class TaskPriorityScorerTest {
         Task t2_high = createTask("Due Today 12:00", true, true, today.atTime(12, 0), 1000);
 
         ctx = new ScheduleContext(userId, ctx.zoneId(), ctx.startDate(), ctx.endDate(), ctx.dateRange(), 
-                ctx.bufferMinutes(), ctx.wakeMin(), ctx.sleepMin(), ctx.categoryMap(), ctx.planMap(), 
-                ctx.taskTimeBlocksByDate(), ctx.dailyPlanTasksByPlanId(), Collections.emptyMap(), List.of(t1_high, t2_high), ctx.taskTimeBlocksByTaskId());
+                ctx.bufferPct(), ctx.bufferMinutes(), ctx.wakeMin(), ctx.sleepMin(), ctx.categoryMap(), ctx.planMap(), 
+                ctx.taskTimeBlocksByDate(), ctx.dailyPlanTasksByPlanId(), Collections.emptyMap(), List.of(t1_high, t2_high), ctx.taskTimeBlocksByTaskId(), ctx.fixedEvents());
 
         TaskQueueResult res = scorer.buildTaskQueues(ctx);
         assertEquals("Due Today 12:00", res.backlogQueue().get(0).task.getTitle(), "Due Today 12:00 is earlier");
@@ -153,8 +154,8 @@ public class TaskPriorityScorerTest {
         Task t2 = createTask("Học tiếng Anh", false, true, null, 100);
 
         ctx = new ScheduleContext(userId, ctx.zoneId(), ctx.startDate(), ctx.endDate(), ctx.dateRange(), 
-                ctx.bufferMinutes(), ctx.wakeMin(), ctx.sleepMin(), ctx.categoryMap(), ctx.planMap(), 
-                ctx.taskTimeBlocksByDate(), ctx.dailyPlanTasksByPlanId(), Collections.emptyMap(), List.of(t1, t2), ctx.taskTimeBlocksByTaskId());
+                ctx.bufferPct(), ctx.bufferMinutes(), ctx.wakeMin(), ctx.sleepMin(), ctx.categoryMap(), ctx.planMap(), 
+                ctx.taskTimeBlocksByDate(), ctx.dailyPlanTasksByPlanId(), Collections.emptyMap(), List.of(t1, t2), ctx.taskTimeBlocksByTaskId(), ctx.fixedEvents());
 
         TaskQueueResult res = scorer.buildTaskQueues(ctx);
         assertEquals("Nộp CV", res.backlogQueue().get(0).task.getTitle(), "Nộp CV (Due Today -> High Risk Rank 0) must beat Q2");
@@ -168,8 +169,8 @@ public class TaskPriorityScorerTest {
         Task t2 = createTask("Q2", false, true, null, 100);
 
         ctx = new ScheduleContext(userId, ctx.zoneId(), ctx.startDate(), ctx.endDate(), ctx.dateRange(), 
-                ctx.bufferMinutes(), ctx.wakeMin(), ctx.sleepMin(), ctx.categoryMap(), ctx.planMap(), 
-                ctx.taskTimeBlocksByDate(), ctx.dailyPlanTasksByPlanId(), Collections.emptyMap(), List.of(t1, t2), ctx.taskTimeBlocksByTaskId());
+                ctx.bufferPct(), ctx.bufferMinutes(), ctx.wakeMin(), ctx.sleepMin(), ctx.categoryMap(), ctx.planMap(), 
+                ctx.taskTimeBlocksByDate(), ctx.dailyPlanTasksByPlanId(), Collections.emptyMap(), List.of(t1, t2), ctx.taskTimeBlocksByTaskId(), ctx.fixedEvents());
 
         TaskQueueResult res = scorer.buildTaskQueues(ctx);
         assertEquals("Huge Task", res.backlogQueue().get(0).task.getTitle(), "trueSlackTime < 480 -> High Risk (Rank 0)");
@@ -184,8 +185,8 @@ public class TaskPriorityScorerTest {
         Task t2 = createTask("Q2", false, true, null, 100);
 
         ctx = new ScheduleContext(userId, ctx.zoneId(), ctx.startDate(), ctx.endDate(), ctx.dateRange(), 
-                ctx.bufferMinutes(), ctx.wakeMin(), ctx.sleepMin(), ctx.categoryMap(), ctx.planMap(), 
-                ctx.taskTimeBlocksByDate(), ctx.dailyPlanTasksByPlanId(), Collections.emptyMap(), List.of(t1, t2), ctx.taskTimeBlocksByTaskId());
+                ctx.bufferPct(), ctx.bufferMinutes(), ctx.wakeMin(), ctx.sleepMin(), ctx.categoryMap(), ctx.planMap(), 
+                ctx.taskTimeBlocksByDate(), ctx.dailyPlanTasksByPlanId(), Collections.emptyMap(), List.of(t1, t2), ctx.taskTimeBlocksByTaskId(), ctx.fixedEvents());
 
         TaskQueueResult res = scorer.buildTaskQueues(ctx);
         assertEquals("Relative High Risk", res.backlogQueue().get(0).task.getTitle(), "trueSlackTime < rem * 0.5 -> High Risk (Rank 0)");

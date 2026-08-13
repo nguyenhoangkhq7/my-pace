@@ -50,8 +50,9 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string) {
   const dailyPlanTomorrow = tomorrowPlan.dailyPlan;
 
   const targetPlan = useMemo(() => {
-    if (planningTarget === 'today') return dailyPlanToday;
-    if (planningTarget === 'tomorrow') return dailyPlanTomorrow;
+    const target = planningTarget || 'today';
+    if (target === 'today') return dailyPlanToday;
+    if (target === 'tomorrow') return dailyPlanTomorrow;
     return null;
   }, [planningTarget, dailyPlanToday, dailyPlanTomorrow]);
 
@@ -60,18 +61,16 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string) {
     return targetPlan.tasks.map(pt => pt.task?.id).filter(Boolean);
   }, [targetPlan]);
 
-  const { data: dataToday } = useAvailableTimeQuery(currentDate);
-  const { data: dataTomorrow } = useAvailableTimeQuery(tomorrowDate);
+  const [requireDurationForTask, setRequireDurationForTask] = useState<Task | null>(null);
   
-  const availableTimeData = useMemo(() => {
-    if (planningTarget === 'today') return dataToday;
-    if (planningTarget === 'tomorrow') return dataTomorrow;
-    return null;
-  }, [planningTarget, dataToday, dataTomorrow]);
+  // Swap Task State
+  const [swapUrgentTask, setSwapUrgentTask] = useState<Task | null>(null);
 
-  const availableMinutes = availableTimeData?.availableMinutes || 0;
+  const isTargetStarted = !!(targetPlan?.isConfirmed);
 
-  const [requireDurationForTask, setRequireDurationForTask] = useState<Task | undefined>(undefined);
+  const targetDateStr = (planningTarget || 'today') === 'today' ? currentDate : tomorrowDate;
+  const { data: availableData } = useAvailableTimeQuery(targetDateStr);
+  const totalAvailable = availableData?.availableMinutes ?? 0;
 
   const { batchSlack } = useBatchSlack();
   const [slackTimes, setSlackTimes] = useState<Record<string, number>>({});
@@ -88,17 +87,20 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string) {
   }, [tasks, batchSlack]);
 
   const checkTimeLimit = (newEstimatedMinutes: number) => {
+    const customAvailable = targetPlan?.availableMinutes || 0;
+    const effectiveAvailable = customAvailable > 0 ? customAvailable : totalAvailable;
+    
     const plannedTasks = tasks.filter(t => plannedTaskIds.includes(t.id));
     const usedTime = plannedTasks.reduce((acc, t) => acc + (t.estimatedMinutes || 0), 0);
 
-    if (usedTime >= availableMinutes) {
-      toast.error("Quỹ thời gian trống đã cạn kiệt! Bạn không thể chọn thêm task vào kế hoạch.");
+    if (usedTime >= effectiveAvailable) {
+      toast.error("Quỹ thời gian trống đã cạn kiệt! Bạn có thể chọn thêm sau khi hoàn thành các công việc đã xếp lịch.");
       return false; // Not allowed
     }
 
-    if (usedTime + newEstimatedMinutes > availableMinutes) {
-      toast.warning("Cảnh báo: Bạn đã lên lịch vượt quá quỹ thời gian rảnh. Task này sẽ lấn vào thời gian dự phòng hoặc giờ nghỉ ngơi của bạn!");
-      return true; // Allowed this one time but with warning
+    if (usedTime + newEstimatedMinutes > effectiveAvailable) {
+      toast.error(`Thời gian rảnh của bạn chỉ còn ${effectiveAvailable - usedTime} phút, không đủ cho công việc này. Bạn có thể chọn thêm sau khi hoàn thành các công việc đã xếp lịch!`);
+      return false; // Not allowed
     }
 
     return true; // Allowed
@@ -123,7 +125,6 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string) {
 
   const handleTaskClick = (task: Task) => {
     if (isPlanningMode) {
-      const isTargetStarted = !!targetPlan?.isConfirmed;
       if (isTargetStarted) {
         toast.error("Kế hoạch đã chốt và đang thực thi, không thể chỉnh sửa.");
         return;
@@ -158,7 +159,7 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string) {
       } else {
         addPlannedTaskLocally(updatedTask);
       }
-      setRequireDurationForTask(undefined);
+      setRequireDurationForTask(null);
     }
   };
 
@@ -177,6 +178,11 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string) {
     setFilter,
     categories,
     slackTimes,
+    isTargetStarted,
+    swapUrgentTask,
+    setSwapUrgentTask,
+    targetPlan,
+    totalAvailable,
 
     // Handlers
     handleCreateTask,

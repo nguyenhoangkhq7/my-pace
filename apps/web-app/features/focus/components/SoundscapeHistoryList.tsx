@@ -1,6 +1,7 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { SoundscapeHistoryItem } from "./SoundscapeHistoryItem";
 import { cn } from "@/lib/utils";
+import { useFocusStore } from "@/features/focus/store/focus.store";
 
 interface SoundscapeItem {
   url: string;
@@ -44,6 +45,55 @@ export function SoundscapeHistoryList({
   isZenFull,
 }: SoundscapeHistoryListProps) {
   const currentParsed = useMemo(() => parseYouTube(currentUrl), [currentUrl]);
+  const reorderHistory = useFocusStore((s) => s.reorderHistory);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragTargetIndex, setDragTargetIndex] = useState<number | null>(null);
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("application/my-pace-soundscape-reorder", index.toString());
+    e.stopPropagation();
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault(); 
+    e.stopPropagation();
+    if (draggedIndex !== null && index !== draggedIndex) {
+      setDragTargetIndex(index);
+    }
+  };
+
+  const handleDragEnter = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (draggedIndex !== null && index !== draggedIndex) {
+      setDragTargetIndex(index);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (dragTargetIndex === index) {
+      setDragTargetIndex(null);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (draggedIndex !== null && draggedIndex !== index) {
+      reorderHistory(draggedIndex, index);
+    }
+    setDraggedIndex(null);
+    setDragTargetIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragTargetIndex(null);
+  };
 
   return (
     <div
@@ -60,7 +110,7 @@ export function SoundscapeHistoryList({
           No saved playlists yet.
         </div>
       )}
-      {history.map((item) => {
+      {history.map((item, index) => {
         const itemParsed = parseYouTube(item.url);
         const isPlaying =
           (currentParsed.listId && itemParsed.listId && currentParsed.listId === itemParsed.listId) ||
@@ -76,6 +126,14 @@ export function SoundscapeHistoryList({
             onRemove={() => onRemove(item.url)}
             onRename={(newTitle) => onRename(item.url, newTitle)}
             layout={layoutMode}
+            draggable={true}
+            onDragStart={(e) => handleDragStart(e, index)}
+            onDragOver={(e) => handleDragOver(e, index)}
+            onDragEnter={(e) => handleDragEnter(e, index)}
+            onDragLeave={(e) => handleDragLeave(e, index)}
+            onDrop={(e) => handleDrop(e, index)}
+            onDragEnd={handleDragEnd}
+            isDragTarget={dragTargetIndex === index}
           />
         );
       })}

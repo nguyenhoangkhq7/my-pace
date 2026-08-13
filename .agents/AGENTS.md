@@ -78,7 +78,7 @@ Mọi Agent khi làm việc với UI components (tạo mới hoặc refactor) ph
 ### Available Time & Daily Check-in
 - **Union-Interval Engine:** Tính Available Time bằng việc gộp (union) các sự kiện cố định trùng lặp để không trừ thời gian hai lần.
 - **Auto Check-in & Freeze:** Khóa thời điểm check-in (frozen) ngay lần mở app đầu tiên trong ngày. Mở hook Next.js `useAppVisibility` chạy ngầm.
-- **+15m Buffer:** Lên lịch ngày hôm nay tính từ `Hiện tại + 15 phút`. Ngày mai tính từ `Giờ thức dậy + 15 phút`. Tách biệt State `dataToday` và `dataTomorrow`.
+- **No Buffer:** Lên lịch ngày hôm nay tính từ `Hiện tại` (không có buffer 15 phút). Tách biệt State `dataToday` và `dataTomorrow`.
 
 ### Timeboxing & Daily Lifecycle
 - **Auto-Schedule:** Thuật toán xử lý tập trung hoàn toàn ở Backend (`AutoScheduleServiceImpl` kết hợp `InMemoryBitmapScheduler` và `TaskPriorityScorer`), ưu tiên Q1 > Q2 > Q3 > Q4. Chia khối tối thiểu 30 phút. Bỏ qua gap < 30 phút. Client gọi API.

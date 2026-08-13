@@ -65,7 +65,7 @@ public class DailyCheckinServiceImpl implements DailyCheckinService {
             generateDailyTasksForGoals(userId, date);
 
             try {
-                autoScheduleService.autoSchedule(userId, 15);
+                autoScheduleService.autoSchedule(userId, user.getBufferMinutes(), false);
             } catch (Exception ignored) {}
             
             List<String> decayedTaskTitles = cleanupStaleUrgentTasks(userId);
@@ -139,7 +139,7 @@ public class DailyCheckinServiceImpl implements DailyCheckinService {
                 task.setIsImportant(true);
                 task.setIsUrgent(false);
                 task.setStatus("Picked for Today");
-                task.setDueDate(date.atStartOfDay());
+                task.setDueDate(date.atTime(23, 59));
                 task.setTaskType("GOAL_SESSION");
 
                 task = taskRepo.save(task);

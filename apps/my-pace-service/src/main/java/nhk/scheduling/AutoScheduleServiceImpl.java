@@ -30,19 +30,19 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
     private final ConcurrentHashMap<UUID, ReentrantLock> userLocks = new ConcurrentHashMap<>();
 
     @Override
-    public AutoScheduleResponse autoSchedule(UUID userId, Integer bufferMinutesInput) {
+    public AutoScheduleResponse autoSchedule(UUID userId, Integer bufferMinutesInput, boolean forceRescheduleToday) {
         ReentrantLock lock = userLocks.computeIfAbsent(userId, k -> new ReentrantLock());
         if (!lock.tryLock()) {
             throw new IllegalStateException("Auto-schedule is already in progress for user: " + userId);
         }
         try {
-            return doAutoSchedule(userId, bufferMinutesInput);
+            return doAutoSchedule(userId, bufferMinutesInput, forceRescheduleToday);
         } finally {
             lock.unlock();
         }
     }
 
-    private AutoScheduleResponse doAutoSchedule(UUID userId, Integer bufferMinutesInput) {
+    private AutoScheduleResponse doAutoSchedule(UUID userId, Integer bufferMinutesInput, boolean forceRescheduleToday) {
         // 1. Data Loading Phase
         ScheduleContext ctx = dataLoader.loadContext(userId, bufferMinutesInput);
 
@@ -55,11 +55,11 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
         // 4. Scheduling Engine (Linear Timeline Algorithm)
         Set<LocalDate> datesActuallyProcessed = new HashSet<>();
         Map<LocalDate, List<TaskTimeBlock>> generatedBlocksPerDate = scheduleBlocksForDate(
-                ctx, queueResult, datesActuallyProcessed
+                ctx, queueResult, datesActuallyProcessed, forceRescheduleToday
         );
 
         // 5. Persistence Phase
-        return persister.persistAndReconcile(ctx, queueResult, generatedBlocksPerDate, datesActuallyProcessed);
+        return persister.persistAndReconcile(ctx, queueResult, generatedBlocksPerDate, datesActuallyProcessed, forceRescheduleToday);
     }
 
     @Override
@@ -155,7 +155,7 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
             }
         }
 
-        List<FixedEventResponse> fixedEvents = eventService.getEventsInRange(ctx.userId(), ctx.startDate(), ctx.endDate());
+        List<FixedEventResponse> fixedEvents = ctx.fixedEvents();
         for (FixedEventResponse ev : fixedEvents) {
             LocalDate evDate = ev.occurrenceDate();
             if (evDate == null || !ctx.dateRange().contains(evDate)) continue;
@@ -188,7 +188,7 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
     }
 
     private Map<LocalDate, List<TaskTimeBlock>> scheduleBlocksForDate(
-            ScheduleContext ctx, TaskQueueResult queues, Set<LocalDate> datesActuallyProcessed
+            ScheduleContext ctx, TaskQueueResult queues, Set<LocalDate> datesActuallyProcessed, boolean forceRescheduleToday
     ) {
         Map<LocalDate, List<TaskTimeBlock>> generatedBlocksPerDate = new LinkedHashMap<>();
         for (LocalDate d : ctx.dateRange()) {
@@ -201,7 +201,9 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
         for (LocalDate date : ctx.dateRange()) {
             DailyPlan planOfDate = ctx.planMap().get(date);
             if (planOfDate != null && Boolean.TRUE.equals(planOfDate.getIsConfirmed())) {
-                continue;
+                if (!forceRescheduleToday || !date.equals(today)) {
+                    continue;
+                }
             }
 
             // MUST add to processed dates early, so that even if activeQueue is empty,
@@ -226,12 +228,14 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
                 int baseMin = Math.max(ctx.wakeMin(), nowMin);
                 startOfDayMin = ((baseMin + 14) / 15) * 15;
             } else {
-                startOfDayMin = ctx.wakeMin();
+                startOfDayMin = ((ctx.wakeMin() + 14) / 15) * 15;
             }
             int endOfDayMin = ctx.sleepMin();
             if (ctx.sleepMin() < ctx.wakeMin()) {
                 endOfDayMin += 1440;
             }
+            
+            System.out.println("AUTO-SCHEDULE DEBUG: Date=" + date + ", startOfDayMin=" + startOfDayMin + ", endOfDayMin=" + endOfDayMin + ", sleepMin=" + ctx.sleepMin() + ", wakeMin=" + ctx.wakeMin() + ", nowMin=" + (currentTime.getHour() * 60 + currentTime.getMinute()));
 
             // Pass 1: Strict Time Context
             runTimelineAllocation(activeQueue, date, ctx, generatedBlocksPerDate, true, startOfDayMin, endOfDayMin);
@@ -300,7 +304,22 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
                 freeLength += 5;
             }
 
-            int minChunk = 30; // Base rule: min chunk 30 minutes
+            int minChunk = activeQueue.stream()
+                .mapToInt(item -> {
+                    int req = 30;
+                    if (item.task.getMinChunkMinutes() != null && item.task.getMinChunkMinutes() > 0) {
+                        req = item.task.getMinChunkMinutes();
+                    }
+                    if (Boolean.FALSE.equals(item.task.getIsSplittable())) {
+                        req = item.remainingMinutes;
+                    }
+                    return Math.min(req, item.remainingMinutes);
+                })
+                .min().orElse(30);
+
+            // Giới hạn cứng: thuật toán không được phép chia quá nhỏ (< 15 phút)
+            minChunk = Math.max(15, minChunk);
+
             if (freeLength < minChunk) {
                 cursorMin += freeLength; // Skip small gaps
                 continue;

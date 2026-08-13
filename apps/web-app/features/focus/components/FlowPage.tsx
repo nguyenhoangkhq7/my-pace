@@ -134,9 +134,11 @@ export function FlowPage() {
     hasAutoFocusedRef.current = true;
 
     if (dailyPlanToday.isConfirmed && !activeTaskId && dailyPlanToday.tasks.length > 0) {
-      const firstPlanTask = dailyPlanToday.tasks[0];
-      const firstBlock = dailyPlanToday.timeBlocks?.find(b => b.taskId === firstPlanTask.task.id);
-      doSwitch(firstPlanTask, firstBlock);
+      const firstPlanTask = dailyPlanToday.tasks.find(t => t.task.status !== "Done");
+      if (firstPlanTask) {
+        const firstBlock = dailyPlanToday.timeBlocks?.find(b => b.taskId === firstPlanTask.task.id);
+        doSwitch(firstPlanTask, firstBlock);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dailyPlanToday, activeTaskId, tasks]);

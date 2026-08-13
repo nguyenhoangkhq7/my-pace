@@ -18,7 +18,7 @@ public class AutoScheduleEventListener {
     public void handleFixedEventChanged(FixedEventChangedEvent event) {
         log.info("AutoScheduleEventListener: Handling FixedEventChangedEvent for user {}", event.userId());
         try {
-            autoScheduleService.autoSchedule(event.userId(), null);
+            autoScheduleService.autoSchedule(event.userId(), null, false);
         } catch (IllegalStateException e) {
             log.debug("Auto-schedule in progress, skipping auto-trigger: {}", e.getMessage());
         } catch (Exception e) {
@@ -30,7 +30,7 @@ public class AutoScheduleEventListener {
     public void handleTaskMutated(TaskMutatedEvent event) {
         log.info("AutoScheduleEventListener: Handling TaskMutatedEvent for user {}", event.userId());
         try {
-            autoScheduleService.autoSchedule(event.userId(), null);
+            autoScheduleService.autoSchedule(event.userId(), null, false);
         } catch (IllegalStateException e) {
             log.debug("Auto-schedule in progress, skipping auto-trigger: {}", e.getMessage());
         } catch (Exception e) {

@@ -572,6 +572,7 @@ export function useCalendarPage() {
       queryClient.invalidateQueries({ queryKey: ["dailyPlan"] });
       queryClient.invalidateQueries({ queryKey: ["dailyPlans"] });
       queryClient.invalidateQueries({ queryKey: ["timeBlocks"] });
+      queryClient.invalidateQueries({ queryKey: ["weeklyAllocation"] });
       toast.success("Đã tự động sắp xếp các công việc vào lịch!");
     } catch (err) {
       console.error(err);

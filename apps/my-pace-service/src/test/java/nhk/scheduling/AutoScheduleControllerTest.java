@@ -28,6 +28,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -83,14 +84,14 @@ class AutoScheduleControllerTest {
         AutoScheduleWeekRequest req = new AutoScheduleWeekRequest(15);
         AutoScheduleResponse response = new AutoScheduleResponse(today, today.plusDays(7), Map.of(), 0, false, List.of());
 
-        when(autoScheduleService.autoSchedule(userId, 15)).thenReturn(response);
+        when(autoScheduleService.autoSchedule(any(UUID.class), anyInt(), eq(false))).thenReturn(response);
 
         mockMvc.perform(post("/api/auto-schedule")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk());
 
-        verify(autoScheduleService).autoSchedule(userId, 15);
+        verify(autoScheduleService).autoSchedule(userId, 15, false);
     }
 
     @Test
@@ -98,12 +99,12 @@ class AutoScheduleControllerTest {
     void autoScheduleWeek_NullRequest() throws Exception {
         AutoScheduleResponse response = new AutoScheduleResponse(today, today.plusDays(7), Map.of(), 0, false, List.of());
 
-        when(autoScheduleService.autoSchedule(userId, 10)).thenReturn(response);
+        when(autoScheduleService.autoSchedule(userId, 10, false)).thenReturn(response);
 
         mockMvc.perform(post("/api/auto-schedule"))
                 .andExpect(status().isOk());
 
-        verify(autoScheduleService).autoSchedule(userId, 10);
+        verify(autoScheduleService).autoSchedule(userId, 10, false);
     }
 
     @Test

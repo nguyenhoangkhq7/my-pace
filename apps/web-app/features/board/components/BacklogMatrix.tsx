@@ -1,8 +1,10 @@
 import { TaskFormModal } from "./TaskFormModal";
 import { EisenhowerQuadrant } from "./EisenhowerQuadrant";
 import { BacklogMatrixHeader } from "./BacklogMatrixHeader";
+import { SwapTaskModal } from "./SwapTaskModal";
 
 import { useBacklogMatrix } from "../hooks/useBacklogMatrix";
+import { usePlanMyDay } from "../hooks/usePlanMyDay";
 import { useTranslation } from "@/hooks/use-translation";
 import { useBoardStore } from "../store/board.store";
 
@@ -31,6 +33,11 @@ export function BacklogMatrix({
     setFilter,
     categories,
     slackTimes,
+    isTargetStarted,
+    swapUrgentTask,
+    setSwapUrgentTask,
+    targetPlan,
+    totalAvailable,
 
     // Handlers
     handleCreateTask,
@@ -39,8 +46,40 @@ export function BacklogMatrix({
     handleMissingDurationSubmit,
   } = useBacklogMatrix(currentDate, tomorrowDate);
 
+  const { planMyDay } = usePlanMyDay(currentDate);
+
   const openTaskModal = useBoardStore(s => s.openTaskModal);
   const closeTaskModal = useBoardStore(s => s.closeTaskModal);
+
+  const handleSwapConfirm = async (tasksToDrop: string[]) => {
+    if (!targetPlan || !swapUrgentTask) return;
+    
+    // Create new list of tasks
+    const newTasks = targetPlan.tasks
+      .filter(pt => !tasksToDrop.includes(pt.task.id))
+      .map((pt, i) => ({
+        taskId: pt.task.id,
+        isMit: pt.isMit,
+        sortOrder: i
+      }));
+      
+    // Add the new urgent task
+    newTasks.push({
+      taskId: swapUrgentTask.id,
+      isMit: true, // Urgent task is MIT by default
+      sortOrder: newTasks.length
+    });
+    
+    try {
+      await planMyDay({
+        availableMinutes: targetPlan.availableMinutes || totalAvailable,
+        tasks: newTasks
+      });
+      setSwapUrgentTask(null);
+    } catch (e) {
+      console.error("Failed to swap tasks", e);
+    }
+  };
 
   return (
     <div className="h-full flex flex-col space-y-2">
@@ -67,6 +106,8 @@ export function BacklogMatrix({
           slackTimes={slackTimes}
           onTaskClick={handleTaskClick}
           onTaskDrop={handleTaskDrop}
+          isStarted={isTargetStarted}
+          onSwapClick={setSwapUrgentTask}
         />
         <EisenhowerQuadrant
           title={`${t.eisenhower.q2Label}: ${t.eisenhower.q2Action}`}
@@ -81,6 +122,8 @@ export function BacklogMatrix({
           slackTimes={slackTimes}
           onTaskClick={handleTaskClick}
           onTaskDrop={handleTaskDrop}
+          isStarted={isTargetStarted}
+          onSwapClick={setSwapUrgentTask}
         />
         <EisenhowerQuadrant
           title={`${t.eisenhower.q3Label}: ${t.eisenhower.q3Action}`}
@@ -95,6 +138,8 @@ export function BacklogMatrix({
           slackTimes={slackTimes}
           onTaskClick={handleTaskClick}
           onTaskDrop={handleTaskDrop}
+          isStarted={isTargetStarted}
+          onSwapClick={setSwapUrgentTask}
         />
         <EisenhowerQuadrant
           title={`${t.eisenhower.q4Label}: ${t.eisenhower.q4Action}`}
@@ -109,8 +154,20 @@ export function BacklogMatrix({
           slackTimes={slackTimes}
           onTaskClick={handleTaskClick}
           onTaskDrop={handleTaskDrop}
+          isStarted={isTargetStarted}
+          onSwapClick={setSwapUrgentTask}
         />
       </div>
+
+      {swapUrgentTask && targetPlan && (
+        <SwapTaskModal
+          isOpen={!!swapUrgentTask}
+          urgentTask={swapUrgentTask}
+          plannedTasks={targetPlan.tasks.map(pt => pt.task).filter(Boolean)}
+          onOpenChange={(open) => !open && setSwapUrgentTask(null)}
+          onConfirmSwap={handleSwapConfirm}
+        />
+      )}
 
       <TaskFormModal 
         isOpen={isTaskModalOpen} 
@@ -125,9 +182,9 @@ export function BacklogMatrix({
 
       <TaskFormModal 
         isOpen={!!requireDurationForTask} 
-        onClose={() => setRequireDurationForTask(undefined)} 
+        onClose={() => setRequireDurationForTask(null)} 
         onSubmit={handleMissingDurationSubmit}
-        initialData={requireDurationForTask}
+        initialData={requireDurationForTask || undefined}
         requireDuration={true}
       />
     </div>
