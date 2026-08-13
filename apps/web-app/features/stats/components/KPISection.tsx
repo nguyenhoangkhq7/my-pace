@@ -1,6 +1,8 @@
 import { Flame, TrendingUp, Target, Clock } from "lucide-react";
 import { KPICard } from "./KPICard";
 
+import { useTranslation } from "@/hooks/use-translation";
+
 interface KPISectionProps {
   completionRate?: number;
   streak?: number;
@@ -14,10 +16,12 @@ export function KPISection({
   q2FocusRatio = 0,
   estimationAccuracy = 0,
 }: KPISectionProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
       <KPICard
-        label="Hoàn thành"
+        label={t.stats.kpiCompletion}
         value={completionRate}
         unit="%"
         icon={<TrendingUp className="w-4 h-4 text-emerald-400" />}
@@ -26,16 +30,16 @@ export function KPISection({
       />
 
       <KPICard
-        label="Chuỗi streak"
+        label={t.stats.kpiStreak}
         value={streak}
-        unit="ngày"
+        unit={t.stats.unitDays}
         icon={<Flame className="w-4 h-4 text-orange-400" />}
         iconBgClass="bg-orange-500/10"
         unitColorClass="text-orange-400"
       />
 
       <KPICard
-        label="Tập trung Q2"
+        label={t.stats.kpiQ2Focus}
         value={q2FocusRatio}
         unit="%"
         icon={<Target className="w-4 h-4 text-indigo-400" />}
@@ -44,7 +48,7 @@ export function KPISection({
       />
 
       <KPICard
-        label="Chuẩn Kế Hoạch"
+        label={t.stats.kpiAccuracy}
         value={estimationAccuracy}
         unit="%"
         icon={<Clock className="w-4 h-4 text-sky-400" />}

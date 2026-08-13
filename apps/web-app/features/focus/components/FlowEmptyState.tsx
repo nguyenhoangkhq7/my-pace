@@ -44,6 +44,16 @@ export function FlowEmptyState() {
         setRequireDurationForTask(task);
         return;
       }
+      
+      if (task.estimatedMinutes > remainingMinutes) {
+        toast.error(
+          locale === "vi"
+            ? `Công việc yêu cầu ${task.estimatedMinutes} phút, nhưng bạn chỉ còn ${remainingMinutes} phút rảnh.`
+            : `Task requires ${task.estimatedMinutes} mins, but you only have ${remainingMinutes} mins left.`
+        );
+        return;
+      }
+
       try {
         await addAndSaveTask(task);
         setIsReviewModalOpen(false);
@@ -64,6 +74,17 @@ export function FlowEmptyState() {
 
     const onSubmitDuration = async (taskData: Partial<Task>) => {
       if (!requireDurationForTask) return;
+      
+      const newEstimatedMinutes = taskData.estimatedMinutes ?? 0;
+      if (newEstimatedMinutes > remainingMinutes) {
+        toast.error(
+          locale === "vi"
+            ? `Công việc yêu cầu ${newEstimatedMinutes} phút, nhưng bạn chỉ còn ${remainingMinutes} phút rảnh.`
+            : `Task requires ${newEstimatedMinutes} mins, but you only have ${remainingMinutes} mins left.`
+        );
+        return;
+      }
+
       try {
         await handleDurationSubmit(requireDurationForTask, taskData, () => {
           setRequireDurationForTask(undefined);

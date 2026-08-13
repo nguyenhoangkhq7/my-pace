@@ -16,6 +16,8 @@ import nhk.timeblock.TaskTimeBlock;
 import nhk.timeblock.TaskTimeBlockRepository;
 import nhk.user.User;
 import nhk.user.UserRepository;
+import nhk.calendar.FixedEventService;
+import nhk.calendar.FixedEventResponse;
 import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
@@ -42,6 +44,7 @@ public class AutoScheduleDataLoader {
     private final CategoryRepository categoryRepository;
     private final DailyPlanTaskRepository dailyPlanTaskRepository;
     private final GoalRepository goalRepository;
+    private final FixedEventService fixedEventService;
 
     public ScheduleContext loadContext(UUID userId, Integer bufferMinutesInput) {
         User user = userRepo.findById(userId)
@@ -56,6 +59,7 @@ public class AutoScheduleDataLoader {
         int bufferMinutes = bufferMinutesInput != null && bufferMinutesInput >= 0 
                 ? bufferMinutesInput 
                 : (user.getBufferMinutes() != null ? user.getBufferMinutes() : 15);
+        int bufferPct = user.getBufferPct() != null ? user.getBufferPct() : 20;
         int wakeMin = wakeTime.getHour() * 60 + wakeTime.getMinute();
         int sleepMin = sleepTime.getHour() * 60 + sleepTime.getMinute();
 
@@ -110,10 +114,12 @@ public class AutoScheduleDataLoader {
         Map<UUID, Goal> goalMap = goalRepository.findByUserId(userId)
                 .stream().collect(Collectors.toMap(Goal::getId, g -> g, (a, b) -> a));
 
+        List<FixedEventResponse> fixedEvents = fixedEventService.getEventsInRange(userId, startDate, endDate);
+
         return new ScheduleContext(
-                userId, zoneId, startDate, endDate, dateRange, bufferMinutes,
+                userId, zoneId, startDate, endDate, dateRange, bufferPct, bufferMinutes,
                 wakeMin, sleepMin, categoryMap, planMap, blocksByDate, planTasksByPlanId,
-                goalMap, activeTasks, blocksByTaskId
+                goalMap, activeTasks, blocksByTaskId, fixedEvents
         );
     }
 }

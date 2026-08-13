@@ -42,7 +42,7 @@ export function StatsPage() {
   }
 
   return (
-    <div className="h-full overflow-y-auto p-6 lg:p-10 space-y-8 bg-background text-foreground">
+    <div className="h-full overflow-y-auto space-y-8 bg-background text-foreground pb-4">
       {/* Header & Filter Bar */}
       <StatsHeaderSection
         range={range}

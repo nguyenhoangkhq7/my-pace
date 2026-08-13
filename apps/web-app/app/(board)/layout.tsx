@@ -63,7 +63,7 @@ export default function AppLayout({
       <main 
         className={cn(
           "flex min-w-0 flex-1 flex-col overflow-y-auto scrollbar-thin transition-all duration-300 relative",
-          (isFullscreenMode || isFlowPage) ? "p-0 overflow-hidden" : "px-8 py-6"
+          (isFullscreenMode || isFlowPage) ? "p-0 overflow-hidden" : "px-6 py-4"
         )}
       >
         {children}

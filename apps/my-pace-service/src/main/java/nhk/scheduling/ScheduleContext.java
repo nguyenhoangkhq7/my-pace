@@ -14,12 +14,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import nhk.calendar.FixedEventResponse;
+
 public record ScheduleContext(
         UUID userId,
         ZoneId zoneId,
         LocalDate startDate,
         LocalDate endDate,
         List<LocalDate> dateRange,
+        int bufferPct,
         int bufferMinutes,
         int wakeMin,
         int sleepMin,
@@ -29,5 +32,6 @@ public record ScheduleContext(
         Map<UUID, List<DailyPlanTask>> dailyPlanTasksByPlanId,
         Map<UUID, Goal> goalMap,
         List<Task> activeTasks,
-        Map<UUID, List<TaskTimeBlock>> taskTimeBlocksByTaskId
+        Map<UUID, List<TaskTimeBlock>> taskTimeBlocksByTaskId,
+        List<FixedEventResponse> fixedEvents
 ) {}

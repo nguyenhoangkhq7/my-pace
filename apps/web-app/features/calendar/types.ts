@@ -89,3 +89,20 @@ export interface ModalState {
   /** The occurrence being edited (null for create). */
   occurrence?: FixedEventOccurrence;
 }
+
+// ─── Auto Schedule Summary ───────────────────────────────────────────────────
+
+export interface CategoryAllocation {
+  categoryId: string | null;
+  categoryName: string;
+  categoryColor: string;
+  scheduledMinutes: number;
+}
+
+export interface WeeklyAllocationSummary {
+  totalAvailableMinutes: number;
+  totalScheduledMinutes: number;
+  bufferMinutes: number;
+  freeMinutes: number;
+  byCategory: CategoryAllocation[];
+}

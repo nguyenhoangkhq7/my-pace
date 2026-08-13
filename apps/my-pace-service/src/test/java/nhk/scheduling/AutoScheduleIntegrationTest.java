@@ -102,7 +102,7 @@ class AutoScheduleIntegrationTest extends BaseIntegrationTest {
         taskRepository.save(backlogTask);
 
         AutoScheduleResponse response = autoScheduleService.autoSchedule(
-                testUser.getId(), 10
+                testUser.getId(), 10, false
         );
 
         assertThat(response).isNotNull();
@@ -154,7 +154,7 @@ class AutoScheduleIntegrationTest extends BaseIntegrationTest {
         taskRepository.save(mTask);
 
         // Run auto schedule
-        autoScheduleService.autoSchedule(testUser.getId(), 0);
+        autoScheduleService.autoSchedule(testUser.getId(), 0, false);
 
         LocalDate now = LocalDate.now(java.time.ZoneId.of(testUser.getTimezone()));
         LocalDate tomorrow = now.plusDays(1);

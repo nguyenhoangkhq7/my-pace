@@ -70,7 +70,7 @@ export function DashboardPage({
   const hasUncompleted = !!unreviewedPlan && unreviewedPlan.tasks?.some(pt => pt.task?.status !== "Done");
 
   return (
-    <div className="flex-1 flex flex-col w-full h-[calc(100vh-4rem)] p-4 sm:p-6 overflow-hidden">
+    <div className="flex-1 flex flex-col w-full h-full min-h-0 overflow-hidden">
       <div className="flex-1 grid grid-cols-[7fr_3fr] gap-6 min-h-0 w-full">
         <div className="min-h-0 h-full">
           <BacklogMatrix 

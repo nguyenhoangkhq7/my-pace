@@ -572,7 +572,7 @@ class DailyPlanServiceImplTest {
         verify(dailyPlanTaskRepository).save(any(DailyPlanTask.class));
 
         assertNotNull(result);
-        verify(autoScheduleService).autoSchedule(userId, 15);
+        verify(autoScheduleService).autoSchedule(userId, 15, false);
     }
 
     @Test

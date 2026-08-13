@@ -12,5 +12,6 @@ public record AutoScheduleResponse(
     Map<LocalDate, List<TaskTimeBlockDto>> schedule,
     Integer overflowMinutes,
     Boolean isOverscheduled,
-    List<String> schedulingWarnings
+    List<String> schedulingWarnings,
+    WeeklyAllocationSummary weeklyAllocation
 ) {}

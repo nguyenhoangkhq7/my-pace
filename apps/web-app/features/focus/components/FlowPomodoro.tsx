@@ -170,14 +170,7 @@ export function FlowPomodoro() {
       const currentTaskIndex = freshPlan?.tasks.findIndex((t: DailyPlanTask) => t.id === activePlanTaskId) ?? -1;
       
       if (freshPlan && currentTaskIndex !== -1) {
-        const remainingTasks = freshPlan.tasks.slice(currentTaskIndex + 1).concat(freshPlan.tasks.slice(0, currentTaskIndex));
-        const nextTask = remainingTasks.find((t: DailyPlanTask) => t.task.status !== "Done" && t.id !== activePlanTaskId);
-        
-        if (nextTask) {
-          useFocusStore.getState().openFocusMode(nextTask.task.id, nextTask.id, nextTask.task.estimatedMinutes || 25, nextTask.task.actualMinutes || 0, null, true);
-        } else {
-          closeFocusMode();
-        }
+        closeFocusMode();
       } else {
         closeFocusMode();
       }

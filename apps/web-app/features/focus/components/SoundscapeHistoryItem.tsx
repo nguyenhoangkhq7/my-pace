@@ -15,6 +15,14 @@ interface SoundscapeHistoryItemProps {
   onRemove: () => void;
   onRename?: (newTitle: string) => void;
   layout?: "list" | "grid";
+  draggable?: boolean;
+  onDragStart?: (e: React.DragEvent) => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDragEnter?: (e: React.DragEvent) => void;
+  onDragLeave?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent) => void;
+  onDragEnd?: (e: React.DragEvent) => void;
+  isDragTarget?: boolean;
 }
 
 export const SoundscapeHistoryItem = memo(function SoundscapeHistoryItem({
@@ -25,6 +33,14 @@ export const SoundscapeHistoryItem = memo(function SoundscapeHistoryItem({
   onRemove,
   onRename,
   layout = "list",
+  draggable,
+  onDragStart,
+  onDragOver,
+  onDragEnter,
+  onDragLeave,
+  onDrop,
+  onDragEnd,
+  isDragTarget,
 }: SoundscapeHistoryItemProps) {
   const isVideoBackground = useFocusStore((s) => s.isVideoBackground);
   const [isEditing, setIsEditing] = useState(false);
@@ -50,7 +66,14 @@ export const SoundscapeHistoryItem = memo(function SoundscapeHistoryItem({
     const thumb = getThumbnail();
     return (
       <div 
-        className={cn("relative flex flex-col h-fit w-full group rounded-xl overflow-hidden border transition-all cursor-pointer", isPlaying ? "border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.2)]" : "border-border hover:border-border/80")} 
+        draggable={draggable && !isEditing}
+        onDragStart={onDragStart}
+        onDragOver={onDragOver}
+        onDragEnter={onDragEnter}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+        onDragEnd={onDragEnd}
+        className={cn("relative flex flex-col h-fit w-full group rounded-xl overflow-hidden border transition-all cursor-pointer", isPlaying ? "border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.2)]" : "border-border hover:border-border/80", isDragTarget && "opacity-50 border-primary ring-2 ring-primary ring-offset-2")} 
         onClick={onPlay}
       >
         <div className="relative w-full pt-[56.25%] bg-muted shrink-0">
@@ -109,13 +132,22 @@ export const SoundscapeHistoryItem = memo(function SoundscapeHistoryItem({
 
   return (
     <div
+      draggable={draggable && !isEditing}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDragEnter={onDragEnter}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+      onDragEnd={onDragEnd}
       className={cn(
         "flex items-center justify-between p-3 rounded-xl border group transition-all",
         isPlaying
           ? "bg-card/90 border-indigo-500/55 shadow-[0_0_15px_rgba(99,102,241,0.1)]"
           : isVideoBackground
           ? "bg-card/60 backdrop-blur-xs border-border/60 hover:border-border/80 hover:bg-card/80"
-          : "bg-card border-border hover:border-border/80 hover:bg-muted"
+          : "bg-card border-border hover:border-border/80 hover:bg-muted",
+        isDragTarget && "opacity-50 border-primary ring-2 ring-primary ring-offset-2",
+        draggable && "cursor-grab active:cursor-grabbing"
       )}
     >
       <div className="flex-1 min-w-0 pr-3 relative group/title flex items-center">
