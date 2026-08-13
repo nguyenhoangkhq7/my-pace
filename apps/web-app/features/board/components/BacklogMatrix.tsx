@@ -164,7 +164,6 @@ export function BacklogMatrix({
           isOpen={!!swapUrgentTask}
           urgentTask={swapUrgentTask}
           plannedTasks={targetPlan.tasks.map(pt => pt.task).filter(Boolean)}
-          availableMinutes={targetPlan.availableMinutes || totalAvailable}
           onOpenChange={(open) => !open && setSwapUrgentTask(null)}
           onConfirmSwap={handleSwapConfirm}
         />

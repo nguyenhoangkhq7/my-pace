@@ -9,7 +9,6 @@ interface SwapTaskModalProps {
   isOpen: boolean;
   urgentTask: Task | null;
   plannedTasks: Task[];
-  availableMinutes: number;
   onOpenChange: (open: boolean) => void;
   onConfirmSwap: (tasksToDrop: string[]) => void;
 }
@@ -18,7 +17,6 @@ export function SwapTaskModal({
   isOpen,
   urgentTask,
   plannedTasks,
-  availableMinutes,
   onOpenChange,
   onConfirmSwap
 }: SwapTaskModalProps) {
@@ -27,8 +25,6 @@ export function SwapTaskModal({
   const isEn = t.board.today.toLowerCase() === "today";
 
   // Calculate times
-  const usedTime = plannedTasks.reduce((acc, t) => acc + (t.estimatedMinutes || 0), 0);
-  const remainingFreeTime = Math.max(0, availableMinutes - usedTime);
   const urgentTime = urgentTask?.estimatedMinutes || 0;
 
   // Time freed up by selected tasks

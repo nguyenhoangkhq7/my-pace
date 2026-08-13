@@ -18,8 +18,6 @@ import { useAutoSchedule } from "@/features/board/hooks/useAutoSchedule";
 import { useTaskTimeBlocks } from "@/features/board/hooks/useTaskTimeBlocks";
 import { useTasks } from "@/features/board/hooks/useTasks";
 
-import { useWeeklyAllocationStore } from "./useWeeklyAllocationStore";
-
 // ─── Constants & Helpers ──────────────────────────────────────────────────────
 const EVENT_TEXT      = "#ffffff";
 const TASK_COLOR_MIT  = "#6366f1"; // indigo for MITs
@@ -32,7 +30,6 @@ const toSlotTime = (t: string | null | undefined, fallback: string) =>
 export function useCalendarPage() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
-  const { setSummary } = useWeeklyAllocationStore();
   const calendarRef = useRef<FullCalendar>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
@@ -571,13 +568,11 @@ export function useCalendarPage() {
   const handleAutoScheduleFromSidebar = useCallback(async () => {
     setIsAutoScheduling(true);
     try {
-      const res = await fetchClient.post<any>("auto-schedule", {});
-      if (res && res.data && res.data.weeklyAllocation) {
-        setSummary(res.data.weeklyAllocation);
-      }
+      await fetchClient.post("auto-schedule", {});
       queryClient.invalidateQueries({ queryKey: ["dailyPlan"] });
       queryClient.invalidateQueries({ queryKey: ["dailyPlans"] });
       queryClient.invalidateQueries({ queryKey: ["timeBlocks"] });
+      queryClient.invalidateQueries({ queryKey: ["weeklyAllocation"] });
       toast.success("Đã tự động sắp xếp các công việc vào lịch!");
     } catch (err) {
       console.error(err);
