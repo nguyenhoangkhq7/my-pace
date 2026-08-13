@@ -82,7 +82,7 @@ class AutoScheduleControllerTest {
     @DisplayName("POST /api/auto-schedule should invoke autoScheduleService with bufferMinutes")
     void autoScheduleWeek_WithRequest() throws Exception {
         AutoScheduleWeekRequest req = new AutoScheduleWeekRequest(15);
-        AutoScheduleResponse response = new AutoScheduleResponse(today, today.plusDays(7), Map.of(), 0, false, List.of(), null);
+        AutoScheduleResponse response = new AutoScheduleResponse(today, today.plusDays(7), Map.of(), 0, false, List.of());
 
         when(autoScheduleService.autoSchedule(any(UUID.class), anyInt(), eq(false))).thenReturn(response);
 
@@ -97,7 +97,7 @@ class AutoScheduleControllerTest {
     @Test
     @DisplayName("POST /api/auto-schedule with null request uses default bufferMinutes (10)")
     void autoScheduleWeek_NullRequest() throws Exception {
-        AutoScheduleResponse response = new AutoScheduleResponse(today, today.plusDays(7), Map.of(), 0, false, List.of(), null);
+        AutoScheduleResponse response = new AutoScheduleResponse(today, today.plusDays(7), Map.of(), 0, false, List.of());
 
         when(autoScheduleService.autoSchedule(userId, 10, false)).thenReturn(response);
 

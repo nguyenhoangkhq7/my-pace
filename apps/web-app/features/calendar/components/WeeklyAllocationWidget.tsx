@@ -1,11 +1,15 @@
 "use client";
 
-import { useWeeklyAllocationStore } from "../hooks/useWeeklyAllocationStore";
+import { useWeeklyAllocation } from "../hooks/useWeeklyAllocation";
 import { Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 
 export function WeeklyAllocationWidget() {
-  const { summary } = useWeeklyAllocationStore();
+  const { data: summary, isLoading } = useWeeklyAllocation();
+
+  if (isLoading) {
+    return <div className="h-3 w-full bg-muted/20 animate-pulse rounded-full mb-4 mt-2 px-1" />;
+  }
 
   if (!summary) return null;
 

@@ -61,18 +61,6 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string) {
     return targetPlan.tasks.map(pt => pt.task?.id).filter(Boolean);
   }, [targetPlan]);
 
-  const { data: dataToday } = useAvailableTimeQuery(currentDate);
-  const { data: dataTomorrow } = useAvailableTimeQuery(tomorrowDate);
-  
-  const availableTimeData = useMemo(() => {
-    const target = planningTarget || 'today';
-    if (target === 'today') return dataToday;
-    if (target === 'tomorrow') return dataTomorrow;
-    return null;
-  }, [planningTarget, dataToday, dataTomorrow]);
-
-  const availableMinutes = targetPlan?.availableMinutes || 0;
-
   const [requireDurationForTask, setRequireDurationForTask] = useState<Task | null>(null);
   
   // Swap Task State
