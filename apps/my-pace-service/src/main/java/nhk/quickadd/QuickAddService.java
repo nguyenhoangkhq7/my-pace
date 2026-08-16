@@ -180,8 +180,15 @@ public class QuickAddService {
         LocalTime resolvedEndTime    = (timeRange != null && timeRange.endTime() != null)
                 ? timeRange.endTime()
                 : timeResolver.resolveEndTime(resolvedStartTime, durationMinutes);
-        UUID      categoryId         = categoryResolver.resolve(extraction.categoryHint(), categories);
         UUID      goalId             = goalResolver.resolve(extraction.goalHint(), goals);
+        UUID      categoryId         = categoryResolver.resolve(extraction.categoryHint(), categories);
+        if (goalId != null) {
+            categoryId = goals.stream()
+                    .filter(g -> g.getId().equals(goalId) && g.getCategoryId() != null)
+                    .map(Goal::getCategoryId)
+                    .findFirst()
+                    .orElse(categoryId);
+        }
 
         // 2. Classify intent from resolved data (NOT from LLM's literal "type" field)
         String type = intentClassifier.classify(extraction, resolvedStartTime);

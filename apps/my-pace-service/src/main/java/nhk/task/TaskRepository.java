@@ -29,4 +29,8 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
 
     long countByGoalId(UUID goalId);
     long countByGoalIdAndStatus(UUID goalId, String status);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("UPDATE Task t SET t.categoryId = :categoryId, t.updatedAt = CURRENT_TIMESTAMP WHERE t.goalId = :goalId")
+    int updateCategoryIdByGoalId(@Param("goalId") UUID goalId, @Param("categoryId") UUID categoryId);
 }

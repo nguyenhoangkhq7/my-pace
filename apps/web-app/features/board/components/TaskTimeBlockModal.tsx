@@ -9,6 +9,8 @@ import React from "react";
 import { useTranslation } from "@/hooks/use-translation";
 import type { Task, TaskTimeBlock } from "../types";
 
+import { useCategories } from "../hooks/useCategories";
+
 interface TaskTimeBlockModalProps {
   open: boolean;
   block: TaskTimeBlock | null;
@@ -33,9 +35,12 @@ export function TaskTimeBlockModal({
   isSubmitting = false,
 }: TaskTimeBlockModalProps) {
   const { t } = useTranslation();
+  const { categories } = useCategories();
   const [isToggling, setIsToggling] = React.useState(false);
 
   if (!block || !task) return null;
+
+  const category = task.category || categories.find((c) => c.id === task.categoryId);
 
   const startTimeStr = new Date(block.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   const endTimeStr = new Date(block.endTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -64,23 +69,24 @@ export function TaskTimeBlockModal({
                 MIT
               </Badge>
             )}
-            {task.goalId ? (
+            {task.goalId && (
               <Badge className="bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 text-[10px]">
                 Goal
               </Badge>
-            ) : task.category ? (
+            )}
+            {category && (
               <Badge
                 className="hover:brightness-110 text-[10px]"
                 style={{
-                  backgroundColor: `${task.category.color}15`,
-                  color: task.category.color,
-                  borderColor: `${task.category.color}30`,
+                  backgroundColor: `${category.color}15`,
+                  color: category.color,
+                  borderColor: `${category.color}30`,
                 }}
                 variant="outline"
               >
-                {task.category.name}
+                {category.name}
               </Badge>
-            ) : null}
+            )}
             {isChunked && (
               <Badge variant="secondary" className="text-[10px]">
                 {t.timeblock.part(block.partIndex, block.totalParts)}

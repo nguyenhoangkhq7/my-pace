@@ -5,9 +5,20 @@ interface UpdateProfilePayload {
   wakeTime: string;
   sleepTime: string;
   bufferPct: number;
+  bufferMinutes?: number;
+  timezone?: string;
+  fullName?: string;
 }
 
 interface UpdateProfileResponse {
+  id?: string;
+  name?: string;
+  email?: string;
+  role?: string;
+  wakeTime?: string;
+  sleepTime?: string;
+  bufferPct?: number;
+  bufferMinutes?: number;
   timezone?: string;
 }
 

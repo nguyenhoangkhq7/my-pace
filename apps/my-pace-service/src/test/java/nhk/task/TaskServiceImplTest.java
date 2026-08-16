@@ -55,6 +55,9 @@ class TaskServiceImplTest {
     private TaskTimeBlockRepository timeBlockRepository;
 
     @Mock
+    private nhk.category.CategoryRepository categoryRepository;
+
+    @Mock
     private org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
@@ -245,6 +248,33 @@ class TaskServiceImplTest {
             assertThat(result).isNotNull();
             assertThat(entityToSave.getStatus()).isEqualTo("Picked for Today");
             verify(goalService, times(1)).updateGoalProgress(goalId);
+        }
+
+        @Test
+        @DisplayName("Should auto-inherit goal categoryId when creating task with goalId")
+        void createTask_WithGoal_InheritsGoalCategoryId() {
+            UUID goalCategoryId = UUID.randomUUID();
+            sampleGoal.setCategoryId(goalCategoryId);
+
+            TaskCreateRequest request = new TaskCreateRequest(
+                    "Goal Task", goalId, null, 30, false, true, false, null, null,
+                    null, "Backlog", null, null
+            );
+
+            Task entityToSave = new Task();
+            entityToSave.setTitle("Goal Task");
+            entityToSave.setGoalId(goalId);
+            entityToSave.setChecklists(new ArrayList<>());
+
+            when(goalRepository.findById(goalId)).thenReturn(Optional.of(sampleGoal));
+            when(taskMapper.toEntity(request)).thenReturn(entityToSave);
+            when(taskRepository.save(entityToSave)).thenReturn(entityToSave);
+            when(taskMapper.toDto(entityToSave)).thenReturn(sampleTaskDto);
+
+            TaskDto result = taskService.createTask(request, userId);
+
+            assertThat(result).isNotNull();
+            assertThat(entityToSave.getCategoryId()).isEqualTo(goalCategoryId);
         }
 
         @Test
@@ -459,6 +489,32 @@ class TaskServiceImplTest {
             taskService.updateTask(taskId, request, userId);
 
             verify(goalService, times(1)).updateGoalProgress(goalId);
+        }
+
+        @Test
+        @DisplayName("Should auto-inherit goal categoryId when updating task with goalId")
+        void updateTask_WithGoal_InheritsGoalCategoryId() {
+            UUID goalCategoryId = UUID.randomUUID();
+            sampleGoal.setCategoryId(goalCategoryId);
+
+            TaskUpdateRequest request = new TaskUpdateRequest(
+                    "Updated Title", goalId, null, 30, 0, false, false, false, null, null, "Backlog", null, null,
+                    null, null, null, null
+            );
+
+            when(goalRepository.findById(goalId)).thenReturn(Optional.of(sampleGoal));
+            when(taskRepository.findById(taskId)).thenReturn(Optional.of(sampleTask));
+            doAnswer(invocation -> {
+                sampleTask.setGoalId(goalId);
+                return null;
+            }).when(taskMapper).updateFromRequest(request, sampleTask);
+            when(taskRepository.save(sampleTask)).thenReturn(sampleTask);
+            when(taskMapper.toDto(sampleTask)).thenReturn(sampleTaskDto);
+
+            TaskDto result = taskService.updateTask(taskId, request, userId);
+
+            assertThat(result).isNotNull();
+            assertThat(sampleTask.getCategoryId()).isEqualTo(goalCategoryId);
         }
 
         @Test
