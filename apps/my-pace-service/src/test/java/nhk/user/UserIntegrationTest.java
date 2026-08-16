@@ -260,6 +260,40 @@ class UserIntegrationTest extends BaseIntegrationTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest());
         }
+
+        @Test
+        @DisplayName("Should successfully update profile when bufferMinutes is null")
+        void updateProfile_NullBufferMinutes_Success() throws Exception {
+            MockMvc mockMvc = createMockMvcWithPrincipal(userDetailsCustom);
+
+            UserProfileUpdateRequest request = new UserProfileUpdateRequest(
+                    "Optional Buffer Name", LocalTime.of(7, 0), LocalTime.of(23, 0), 20, null, "Asia/Ho_Chi_Minh"
+            );
+
+            mockMvc.perform(put("/api/users/profile")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.name", is("Optional Buffer Name")))
+                    .andExpect(jsonPath("$.wakeTime", is("07:00:00")))
+                    .andExpect(jsonPath("$.sleepTime", is("23:00:00")))
+                    .andExpect(jsonPath("$.bufferPct", is(20)));
+        }
+
+        @Test
+        @DisplayName("Should return 400 Bad Request when bufferMinutes is greater than 60")
+        void updateProfile_BufferMinutesTooHigh_Returns400() throws Exception {
+            MockMvc mockMvc = createMockMvcWithPrincipal(userDetailsCustom);
+
+            UserProfileUpdateRequest request = new UserProfileUpdateRequest(
+                    "Name", LocalTime.of(7, 0), LocalTime.of(23, 0), 20, 75, "Asia/Ho_Chi_Minh"
+            );
+
+            mockMvc.perform(put("/api/users/profile")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest());
+        }
     }
 
     @Nested

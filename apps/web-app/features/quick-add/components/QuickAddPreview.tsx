@@ -17,6 +17,7 @@ import {
   Task01Icon,
 } from "@hugeicons/core-free-icons";
 import { useTranslation } from "@/hooks/use-translation";
+import { cn } from "@/lib/utils";
 import type { QuickAddResult } from "../types";
 import type { Category } from "@/features/board/types";
 import type { Goal } from "@/features/goal/types";
@@ -29,6 +30,7 @@ interface QuickAddPreviewProps {
   onEdit: () => void;
   onToggleType: () => void;
   isCreating: boolean;
+  hideTypeHeader?: boolean;
 }
 
 export function QuickAddPreview({
@@ -39,6 +41,7 @@ export function QuickAddPreview({
   onEdit,
   onToggleType,
   isCreating,
+  hideTypeHeader = false,
 }: QuickAddPreviewProps) {
   const { t } = useTranslation();
   const isEvent = result.type === "event";
@@ -67,45 +70,55 @@ export function QuickAddPreview({
   };
 
   return (
-    <div className="px-4 py-3 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
-      {/* Header: Type Switcher */}
-      <div className="flex items-center justify-end">
-        {/* Type Toggle Pills */}
-        <div className="flex items-center rounded-lg bg-muted/70 p-0.5 text-xs font-medium border border-border/50">
-          <button
-            type="button"
-            onClick={() => isEvent && onToggleType()}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all cursor-pointer ${
-              !isEvent
-                ? "bg-primary text-primary-foreground font-semibold shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <HugeiconsIcon icon={Task01Icon} className="h-3.5 w-3.5" />
-            {t.quickAdd.typeTask}
-          </button>
-          <button
-            type="button"
-            onClick={() => !isEvent && onToggleType()}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all cursor-pointer ${
-              isEvent
-                ? "bg-primary text-primary-foreground font-semibold shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <HugeiconsIcon icon={Calendar03Icon} className="h-3.5 w-3.5" />
-            {t.quickAdd.typeEvent}
-          </button>
+    <div className="p-4 sm:p-5 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+      {/* Header: Type Switcher (only shown if not hidden) */}
+      {!hideTypeHeader && (
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            {t.quickAdd.aiParsed || "Preview"}
+          </span>
+
+          {/* Type Toggle Pills */}
+          <div className="flex items-center rounded-lg bg-muted/60 p-0.5 text-xs font-medium border border-border/50">
+            <button
+              type="button"
+              onClick={() => isEvent && onToggleType()}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1 rounded-md transition-all cursor-pointer text-xs",
+                !isEvent
+                  ? "bg-background text-foreground font-semibold shadow-xs border border-border/50"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <HugeiconsIcon icon={Task01Icon} className="h-3.5 w-3.5 text-primary" />
+              {t.quickAdd.typeTask}
+            </button>
+            <button
+              type="button"
+              onClick={() => !isEvent && onToggleType()}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1 rounded-md transition-all cursor-pointer text-xs",
+                isEvent
+                  ? "bg-background text-foreground font-semibold shadow-xs border border-border/50"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <HugeiconsIcon icon={Calendar03Icon} className="h-3.5 w-3.5 text-amber-500" />
+              {t.quickAdd.typeEvent}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Title */}
-      <h3 className="text-lg font-semibold text-foreground">{result.title}</h3>
+      <h3 className="text-base sm:text-lg font-medium text-foreground tracking-tight leading-snug">
+        {result.title}
+      </h3>
 
       {/* Metadata grid for TASK */}
       {result.type === "task" && (
         <>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2.5">
             <InfoBadge
               icon={Clock01Icon}
               label={t.quickAdd.duration}
@@ -121,15 +134,15 @@ export function QuickAddPreview({
           </div>
 
           {(result.isUrgent || result.isImportant) && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               {result.isUrgent && (
-                <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-red-500/10 text-red-400 font-medium">
+                <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-500 dark:text-rose-400 font-medium border border-rose-500/20">
                   <HugeiconsIcon icon={Alert02Icon} className="h-3 w-3" />
                   {t.quickAdd.urgent}
                 </span>
               )}
               {result.isImportant && (
-                <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-amber-500/10 text-amber-400 font-medium">
+                <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 dark:text-amber-400 font-medium border border-amber-500/20">
                   <HugeiconsIcon icon={StarIcon} className="h-3 w-3" />
                   {t.quickAdd.important}
                 </span>
@@ -141,7 +154,7 @@ export function QuickAddPreview({
 
       {/* Metadata grid for EVENT */}
       {result.type === "event" && (
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2.5">
           <InfoBadge
             icon={Calendar01Icon}
             label={t.quickAdd.eventDate}
@@ -163,21 +176,21 @@ export function QuickAddPreview({
 
       {/* Category & Goal & Recurrence */}
       {(category || goal || (result.type === "event" && result.recurrenceType && result.recurrenceType !== "NONE")) && (
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap pt-1">
           {category && (
-            <span className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-md bg-muted/60 text-foreground">
+            <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-muted/60 text-foreground border border-border/40 font-medium">
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: category.color }} />
               {category.name}
             </span>
           )}
           {goal && (
-            <span className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-md bg-muted/60 text-foreground">
+            <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-muted/60 text-foreground border border-border/40 font-medium">
               <HugeiconsIcon icon={Target01Icon} className="h-3 w-3 text-primary" />
               {goal.title}
             </span>
           )}
           {result.type === "event" && result.recurrenceType && result.recurrenceType !== "NONE" && (
-            <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-blue-500/10 text-blue-400 font-medium">
+            <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-500 dark:text-blue-400 border border-blue-500/20 font-medium">
               <HugeiconsIcon icon={Calendar03Icon} className="h-3 w-3" />
               {result.recurrenceType === "DAILY" ? "Lặp hàng ngày" : "Lặp hàng tuần"}
             </span>
@@ -187,23 +200,23 @@ export function QuickAddPreview({
 
       {/* Notes */}
       {result.notes && (
-        <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/30 rounded-md px-3 py-2">
+        <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/30 rounded-lg px-3 py-2 border border-border/30">
           <HugeiconsIcon icon={Note01Icon} className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-          <span>{result.notes}</span>
+          <span className="leading-relaxed">{result.notes}</span>
         </div>
       )}
 
       {/* Checklists (Task only) */}
       {result.type === "task" && result.checklists && result.checklists.length > 0 && (
-        <div className="space-y-1">
+        <div className="space-y-1.5 bg-muted/20 rounded-lg p-3 border border-border/30">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-            <HugeiconsIcon icon={CheckListIcon} className="h-3.5 w-3.5" />
-            {t.quickAdd.checklist}
+            <HugeiconsIcon icon={CheckListIcon} className="h-3.5 w-3.5 text-primary" />
+            {t.quickAdd.checklist} ({result.checklists.length})
           </div>
-          <ul className="space-y-0.5 ml-5">
+          <ul className="space-y-1 ml-4">
             {result.checklists.map((item, i) => (
-              <li key={i} className="text-xs text-foreground/80 flex items-center gap-1.5">
-                <span className="w-1 h-1 rounded-full bg-muted-foreground/50" />
+              <li key={i} className="text-xs text-foreground/85 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary/60" />
                 {item.title}
               </li>
             ))}
@@ -212,12 +225,12 @@ export function QuickAddPreview({
       )}
 
       {/* Actions */}
-      <div className="flex items-center justify-between pt-2 border-t border-border/50">
+      <div className="flex items-center justify-between pt-3 border-t border-border/40">
         <Button
           variant="ghost"
           size="sm"
           onClick={onEdit}
-          className="gap-1.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+          className="gap-1.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer rounded-lg"
         >
           <HugeiconsIcon icon={PencilEdit01Icon} className="h-3.5 w-3.5" />
           {t.quickAdd.edit}
@@ -226,13 +239,18 @@ export function QuickAddPreview({
           size="sm"
           onClick={onConfirm}
           disabled={isCreating}
-          className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs cursor-pointer"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium px-4 py-1.5 rounded-lg shadow-sm cursor-pointer gap-1.5"
         >
-          {isCreating
-            ? t.quickAdd.creating
-            : isEvent
-            ? `Tạo ${t.quickAdd.typeEvent}`
-            : t.quickAdd.createTask}
+          <span>
+            {isCreating
+              ? t.quickAdd.creating
+              : isEvent
+              ? `Tạo ${t.quickAdd.typeEvent}`
+              : t.quickAdd.createTask}
+          </span>
+          <kbd className="px-1 py-0.2 rounded bg-primary-foreground/20 text-[9px] font-mono leading-none">
+            ↵
+          </kbd>
         </Button>
       </div>
     </div>
@@ -252,10 +270,10 @@ function InfoBadge({
   muted?: boolean;
 }) {
   return (
-    <div className="flex items-center gap-2 text-xs px-2.5 py-1.5 rounded-md bg-muted/30">
-      <HugeiconsIcon icon={icon} className={`h-3.5 w-3.5 shrink-0 ${muted ? "text-muted-foreground/50" : "text-primary/70"}`} />
+    <div className="flex items-center gap-2 text-xs px-3 py-2 rounded-xl bg-muted/30 border border-border/40">
+      <HugeiconsIcon icon={icon} className={`h-3.5 w-3.5 shrink-0 ${muted ? "text-muted-foreground/40" : "text-primary"}`} />
       <div className="min-w-0">
-        <span className="text-muted-foreground">{label}: </span>
+        <span className="text-muted-foreground/80">{label}: </span>
         <span className={muted ? "text-muted-foreground/60 italic" : "text-foreground font-medium"}>{value}</span>
       </div>
     </div>

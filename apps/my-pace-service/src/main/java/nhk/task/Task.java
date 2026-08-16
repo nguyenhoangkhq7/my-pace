@@ -16,8 +16,11 @@ import java.util.UUID;
 @Setter
 @Entity
 @EntityListeners(org.springframework.data.jpa.domain.support.AuditingEntityListener.class)
+@NamedEntityGraph(name = "Task.withChecklists", attributeNodes = {
+    @NamedAttributeNode("checklists"),
+    @NamedAttributeNode("category")
+})
 @Table(name = "tasks")
-@NamedEntityGraph(name = "Task.withChecklists", attributeNodes = @NamedAttributeNode("checklists"))
 public class Task {
     @Id
     @UuidGenerator

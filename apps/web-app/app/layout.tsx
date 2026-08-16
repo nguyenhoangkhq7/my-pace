@@ -1,23 +1,11 @@
-import type {Metadata} from "next";
-import {Geist_Mono, Inter} from "next/font/google";
+import type { Metadata } from "next";
 import "./globals.css";
 import "sonner/dist/styles.css";
-import {cn} from "@/lib/utils";
-import {AppToastHost} from "@/components/feedback/toast-host";
-import {AuthProvider} from "@/features/auth";
-import {TooltipProvider} from "@/components/ui/tooltip";
-import {ReactQueryProvider} from "@/components/providers/react-query-provider";
+import { AppToastHost } from "@/components/feedback/toast-host";
+import { AuthProvider } from "@/features/auth";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { ReactQueryProvider } from "@/components/providers/react-query-provider";
 import React from "react";
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-sans",
-});
-
-const geistMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-geist-mono",
-});
 
 export const metadata: Metadata = {
   title: "MyPACE",
@@ -30,11 +18,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={cn("h-full antialiased", inter.variable, geistMono.variable)}
-    >
+    <html lang="en" className="h-full antialiased">
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap"
+          rel="stylesheet"
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `

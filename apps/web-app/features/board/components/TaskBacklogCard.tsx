@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
+import { useCategories } from "../hooks/useCategories";
+
 interface TaskBacklogCardProps {
   task: Task;
   onClick: () => void;
@@ -25,6 +27,8 @@ export function TaskBacklogCard({
   onSwapClick,
 }: TaskBacklogCardProps) {
   const { t } = useTranslation();
+  const { categories } = useCategories();
+  const category = task.category || categories.find((c) => c.id === task.categoryId);
 
   const formatDuration = (minutes: number) => {
     const m = Math.abs(minutes);
@@ -129,22 +133,23 @@ export function TaskBacklogCard({
       </div>
       
       <div className="flex items-center gap-2 mt-2 flex-wrap">
-        {task.goalId ? (
+        {task.goalId && (
           <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
             {t.common.goal}
           </span>
-        ) : task.category ? (
+        )}
+        {category && (
           <span 
             className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border"
             style={{ 
-              backgroundColor: `${task.category.color}15`, 
-              color: task.category.color,
-              borderColor: `${task.category.color}30`
+              backgroundColor: `${category.color}15`, 
+              color: category.color,
+              borderColor: `${category.color}30`
             }}
           >
-            {task.category.name}
+            {category.name}
           </span>
-        ) : null}
+        )}
 
         {task.dueDate && (
           <span className="inline-flex items-center text-[10px] text-muted-foreground">

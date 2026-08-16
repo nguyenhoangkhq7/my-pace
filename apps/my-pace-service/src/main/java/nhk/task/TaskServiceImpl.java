@@ -28,6 +28,7 @@ public class TaskServiceImpl implements TaskService {
     private final UserRepository userRepository;
     private final nhk.planning.DailyPlanTaskRepository dailyPlanTaskRepository;
     private final nhk.timeblock.TaskTimeBlockRepository timeBlockRepository;
+    private final nhk.category.CategoryRepository categoryRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
@@ -39,7 +40,7 @@ public class TaskServiceImpl implements TaskService {
                 .collect(Collectors.toList());
     }
 
-    private void validateGoal(UUID goalId, UUID userId) {
+    private Goal validateGoal(UUID goalId, UUID userId) {
         if (goalId != null) {
             Goal goal = goalRepository.findById(goalId)
                     .filter(g -> g.getUserId().equals(userId))
@@ -47,16 +48,26 @@ public class TaskServiceImpl implements TaskService {
             if ("Freeze".equals(goal.getStatus()) || "Archived".equals(goal.getStatus())) {
                 throw new IllegalArgumentException("Chỉ có thể liên kết Task với Goal đang In Progress hoặc Done.");
             }
+            return goal;
         }
+        return null;
     }
 
     @Override
     @Transactional
     public TaskDto createTask(TaskCreateRequest request, UUID userId) {
-        validateGoal(request.goalId(), userId);
+        Goal goal = validateGoal(request.goalId(), userId);
         
         Task task = taskMapper.toEntity(request);
         task.setUserId(userId);
+        if (goal != null) {
+            task.setCategoryId(goal.getCategoryId());
+            if (goal.getCategoryId() != null) {
+                categoryRepository.findById(goal.getCategoryId()).ifPresent(task::setCategory);
+            }
+        } else if (task.getCategoryId() != null) {
+            categoryRepository.findById(task.getCategoryId()).ifPresent(task::setCategory);
+        }
         
         if (task.getIsUrgent() == null) {
             task.setIsUrgent(false);
@@ -100,8 +111,9 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional
     public TaskDto updateTask(UUID taskId, TaskUpdateRequest request, UUID userId) {
+        Goal goal = null;
         if (request.goalId() != null) {
-            validateGoal(request.goalId(), userId);
+            goal = validateGoal(request.goalId(), userId);
         }
 
         Task task = taskRepository.findById(taskId)
@@ -122,6 +134,22 @@ public class TaskServiceImpl implements TaskService {
         if (Boolean.TRUE.equals(request.clearCategoryId())) {
             task.setCategoryId(null);
             task.setCategory(null);
+        }
+
+        if (task.getGoalId() != null) {
+            if (goal == null) {
+                goal = validateGoal(task.getGoalId(), userId);
+            }
+            if (goal != null) {
+                task.setCategoryId(goal.getCategoryId());
+                if (goal.getCategoryId() != null) {
+                    categoryRepository.findById(goal.getCategoryId()).ifPresent(task::setCategory);
+                } else {
+                    task.setCategory(null);
+                }
+            }
+        } else if (task.getCategoryId() != null) {
+            categoryRepository.findById(task.getCategoryId()).ifPresent(task::setCategory);
         }
         // Update checklists manually if present in the request
         if (request.checklists() != null) {

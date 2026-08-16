@@ -1,27 +1,35 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { VisuallyHidden } from "radix-ui";
 import { useTranslation } from "@/hooks/use-translation";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { QuickAddInput } from "./QuickAddInput";
 import { QuickAddSuggestions } from "./QuickAddSuggestions";
-import { QuickAddPreview } from "./QuickAddPreview";
-import { QuickAddForm } from "./QuickAddForm";
+import { SunsamaTaskInput } from "./SunsamaTaskInput";
+import { SunsamaEventInput } from "./SunsamaEventInput";
 import { useQuickAdd } from "../hooks/useQuickAdd";
 import { useQuickAddUIStore } from "../store/quickAddUI.store";
 import { useCategories } from "@/features/board/hooks/useCategories";
 import { useGoals } from "@/features/board/hooks/useGoals";
-import { useState } from "react";
 
 export function QuickAddPalette() {
-  const { isOpen, open, close } = useQuickAddUIStore();
-  const [isEditing, setIsEditing] = useState(false);
+  const { isOpen, open, close, autoConfirm } = useQuickAddUIStore();
   const { t } = useTranslation();
-  const { result, status, error, parseText, confirmCreate, toggleType, reset } = useQuickAdd();
   const { categories } = useCategories();
   const { goals } = useGoals();
+
+  const {
+    result,
+    status,
+    error,
+    parseText,
+    confirmCreate,
+    toggleType,
+    reset,
+  } = useQuickAdd();
 
   // Global "/" shortcut — only when not focused on input/textarea
   useEffect(() => {
@@ -39,99 +47,133 @@ export function QuickAddPalette() {
     return () => document.removeEventListener("keydown", handler);
   }, [open]);
 
-  const autoConfirm = useQuickAddUIStore((s) => s.autoConfirm);
-
   const handleClose = useCallback(() => {
+    reset();
     close();
-    setIsEditing(false);
-    setTimeout(reset, 200);
-  }, [close, reset]);
+  }, [reset, close]);
 
-  const handleSubmit = useCallback(
-    async (text: string) => {
-      setIsEditing(false);
-      const data = await parseText(text);
-      if (data && autoConfirm) {
-        const success = await confirmCreate(data);
-        if (success) {
-          toast.success(data.type === "event" ? t.quickAdd.createdEvent : t.quickAdd.created);
-          handleClose();
-        }
+  const handleSubmit = async (text: string) => {
+    const res = await parseText(text);
+    if (res && autoConfirm) {
+      const ok = await confirmCreate(res);
+      if (ok) {
+        toast.success(res.type === "event" ? t.quickAdd.createdEvent : t.quickAdd.created);
+        handleClose();
       }
-    },
-    [parseText, confirmCreate, autoConfirm, handleClose, t]
-  );
-
-  const handleSuggestionSelect = useCallback(
-    async (text: string) => {
-      setIsEditing(false);
-      const data = await parseText(text);
-      if (data && autoConfirm) {
-        const success = await confirmCreate(data);
-        if (success) {
-          toast.success(data.type === "event" ? t.quickAdd.createdEvent : t.quickAdd.created);
-          handleClose();
-        }
-      }
-    },
-    [parseText, confirmCreate, autoConfirm, handleClose, t]
-  );
-
-  const handleConfirm = useCallback(async () => {
-    const success = await confirmCreate();
-    if (success) {
-      toast.success(result?.type === "event" ? t.quickAdd.createdEvent : t.quickAdd.created);
-      handleClose();
     }
-  }, [confirmCreate, handleClose, result, t]);
+  };
 
-  const isResultVisible = (status === "preview" || status === "creating") && result;
+  const isResultVisible = (status === "preview" || status === "creating") && !!result;
 
   return (
     <Dialog open={isOpen} onOpenChange={(v) => (v ? open() : handleClose())}>
       <DialogContent
-        className="sm:max-w-[680px] !top-[20%] !-translate-y-0 p-0 gap-0 bg-background/95 backdrop-blur-xl border-border/50 shadow-2xl"
+        className="sm:max-w-[560px] !top-[18%] !-translate-y-0 p-0 gap-0 rounded-xl bg-card/95 backdrop-blur-xl border border-border/80 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] overflow-hidden transition-all duration-200"
         showCloseButton={false}
       >
         <VisuallyHidden.Root>
           <DialogTitle>{t.quickAdd.title}</DialogTitle>
         </VisuallyHidden.Root>
 
-        <QuickAddInput onSubmit={handleSubmit} isLoading={status === "loading"} />
+        {isResultVisible && (
+          <div className="flex items-center justify-between px-3.5 py-2 border-b border-border/40 bg-muted/15">
+            <span className="text-primary text-xs font-medium">
+              {t.quickAdd.aiParsed || "AI đã trích xuất"}
+            </span>
 
-        {status === "idle" && <QuickAddSuggestions onSelect={handleSuggestionSelect} />}
-
-        {isResultVisible && !isEditing && (
-          <QuickAddPreview
-            result={result}
-            categories={categories}
-            goals={goals}
-            onConfirm={handleConfirm}
-            onEdit={() => setIsEditing(true)}
-            onToggleType={toggleType}
-            isCreating={status === "creating"}
-          />
-        )}
-
-        {isResultVisible && isEditing && (
-          <QuickAddForm
-            initialData={result}
-            onSuccess={() => {
-              toast.success(result?.type === "event" ? t.quickAdd.createdEvent : t.quickAdd.created);
-              handleClose();
-            }}
-            onCancel={() => setIsEditing(false)}
-          />
-        )}
-
-        {status === "error" && (
-          <div className="px-4 py-4 text-center space-y-2">
-            <p className="text-sm font-medium text-red-400">{t.quickAdd.errorTitle}</p>
-            <p className="text-xs text-muted-foreground">{error || t.quickAdd.errorDesc}</p>
+            {/* Type Toggle Switcher */}
+            <div className="flex items-center rounded-lg bg-muted/60 p-0.5 text-xs font-medium border border-border/50">
+              <button
+                type="button"
+                onClick={() => result?.type !== "task" && toggleType()}
+                className={cn(
+                  "px-2.5 py-0.5 rounded-md transition-all cursor-pointer text-xs font-medium",
+                  result?.type === "task"
+                    ? "bg-background text-foreground font-semibold shadow-xs border border-border/50"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {t.quickAdd.typeTask}
+              </button>
+              <button
+                type="button"
+                onClick={() => result?.type !== "event" && toggleType()}
+                className={cn(
+                  "px-2.5 py-0.5 rounded-md transition-all cursor-pointer text-xs font-medium",
+                  result?.type === "event"
+                    ? "bg-background text-foreground font-semibold shadow-xs border border-border/50"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {t.quickAdd.typeEvent}
+              </button>
+            </div>
           </div>
+        )}
+
+        {isResultVisible ? (
+          result?.type === "task" ? (
+            <SunsamaTaskInput
+              key={`task-${result.title}-${result.dueDate || ""}`}
+              initialTitle={result.title}
+              initialNotes={result.notes || undefined}
+              initialEstimatedMinutes={result.estimatedMinutes || undefined}
+              initialDueDate={
+                result.dueDate ? new Date(result.dueDate) : undefined
+              }
+              initialDueTime={
+                result.dueDate && result.dueDate.includes("T")
+                  ? result.dueDate.split("T")[1].substring(0, 5)
+                  : "23:59"
+              }
+              initialCategoryId={result.categoryId || undefined}
+              initialGoalId={result.goalId || undefined}
+              initialUrgent={result.isUrgent}
+              initialImportant={result.isImportant}
+              initialChecklists={
+                result.checklists
+                  ? result.checklists.map((c) => c.title)
+                  : undefined
+              }
+              onSuccess={handleClose}
+              onCancel={handleClose}
+              autoFocus={true}
+            />
+          ) : (
+            <SunsamaEventInput
+              key={`event-${result.title}-${result.eventDate || ""}`}
+              initialTitle={result.title}
+              initialNotes={result.notes || undefined}
+              initialEventDate={
+                result.eventDate ? new Date(result.eventDate) : new Date()
+              }
+              initialStartTime={result.startTime || "09:00"}
+              initialEndTime={result.endTime || "10:00"}
+              initialIsAllDay={Boolean(result.isAllDay)}
+              initialCategoryId={result.categoryId || undefined}
+              initialRecurrenceType={result.recurrenceType || "NONE"}
+              onSuccess={handleClose}
+              onCancel={handleClose}
+              autoFocus={true}
+            />
+          )
+        ) : (
+          <>
+            <QuickAddInput onSubmit={handleSubmit} isLoading={status === "loading"} />
+
+            {status === "idle" && (
+              <QuickAddSuggestions onSelect={(text) => handleSubmit(text)} />
+            )}
+
+            {status === "error" && (
+              <div className="px-4 py-4 text-center space-y-2">
+                <p className="text-sm font-medium text-rose-500">{t.quickAdd.errorTitle}</p>
+                <p className="text-xs text-muted-foreground">{error || t.quickAdd.errorDesc}</p>
+              </div>
+            )}
+          </>
         )}
       </DialogContent>
     </Dialog>
   );
 }
-
