@@ -161,9 +161,42 @@ export function useSunsamaTaskInput(options?: UseSunsamaTaskInputOptions) {
     const cleanTitle = title.trim();
     if (!cleanTitle || isLoading) return false;
 
+    if (cleanTitle.length > 255) {
+      toast.warning("Tên công việc không được vượt quá 255 ký tự");
+      return false;
+    }
+
     if (options?.requireDuration && !estimatedMinutes) {
       toast.warning(t.sunsamaForm.requireDurationPrompt);
       return false;
+    }
+
+    if (isSplittable) {
+      const est = estimatedMinutes ? Number(estimatedMinutes) : 0;
+      if (!est || est < 15) {
+        toast.warning("Thời gian ước tính phải từ 15 phút trở lên mới có thể chia nhỏ");
+        return false;
+      }
+      const minChunk = minChunkMinutes ? Number(minChunkMinutes) : 30;
+      if (minChunk < 15) {
+        toast.warning("Thời lượng 1 block tối thiểu phải từ 15 phút");
+        return false;
+      }
+      if (est > 0 && minChunk > est) {
+        toast.warning(`Thời lượng 1 block (${minChunk}m) không được lớn hơn tổng thời gian công việc (${est}m)`);
+        return false;
+      }
+      if (maxDailyDuration) {
+        const maxDaily = Number(maxDailyDuration);
+        if (maxDaily > 720) {
+          toast.warning("Thời lượng tối đa 1 ngày không được vượt quá 12 tiếng (720 phút)");
+          return false;
+        }
+        if (maxDaily < minChunk) {
+          toast.warning(`Thời lượng tối đa 1 ngày (${maxDaily}m) không được nhỏ hơn thời lượng 1 block (${minChunk}m)`);
+          return false;
+        }
+      }
     }
 
     setIsLoading(true);

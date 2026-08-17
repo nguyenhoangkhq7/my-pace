@@ -39,7 +39,6 @@ export function TaskList({ taskList, gId, gStatus }: TaskListProps) {
         title,
         goalId: gId,
         status: 'Icebox',
-        estimatedMinutes: 0,
         isImportant: true,
         isUrgent: false
       } as Partial<Task>);

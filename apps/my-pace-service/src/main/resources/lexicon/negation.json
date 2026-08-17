@@ -1,0 +1,21 @@
+{
+  "NOT_IMPORTANT": [
+    "khong quan trong", "không quan trọng", "not important", "khong can thiet", "không cần thiết",
+    "not necessary", "no need", "khong can", "không cần", "don't need to", "does not need",
+    "not required", "khong bat buoc", "không bắt buộc", "optional", "tuy chon", "tùy chọn",
+    "khong can lam ngay", "không cần làm ngay", "khong can lam", "không cần làm",
+    "khong can nop", "không cần nộp"
+  ],
+  "NOT_URGENT": [
+    "khong gap", "không gấp", "not urgent", "khong khan cap", "không khẩn cấp",
+    "no rush", "tu tu lam", "từ từ làm", "chua can", "chưa cần", "chua can lam", "chưa cần làm",
+    "de sau", "để sau", "khi nao ranh", "khi nào rảnh", "luc ranh", "lúc rảnh",
+    "neu co thoi gian", "nếu có thời gian", "whenever possible", "when convenient",
+    "sometime later", "later", "no deadline", "khong phai deadline", "không phải deadline",
+    "not a deadline"
+  ],
+  "JUST_FOR_FUN": [
+    "cho vui", "choi cho vui", "chơi cho vui", "for fun", "just for fun", "casual",
+    "non critical", "giai tri", "giải trí"
+  ]
+}

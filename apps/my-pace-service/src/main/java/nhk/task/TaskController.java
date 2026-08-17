@@ -30,7 +30,7 @@ public class TaskController {
 
     @PutMapping("/{taskId}")
     public TaskDto updateTask(@PathVariable UUID taskId,
-                              @RequestBody TaskUpdateRequest request,
+                              @Valid @RequestBody TaskUpdateRequest request,
                               @AuthenticationPrincipal UserDetailsCustom userDetails) {
         return taskService.updateTask(taskId, request, userDetails.user().getId());
     }
@@ -53,7 +53,7 @@ public class TaskController {
     @PutMapping("/{taskId}/checklists/{checklistId}")
     public TaskChecklistItemDto updateChecklistItem(@PathVariable UUID taskId,
                                                     @PathVariable UUID checklistId,
-                                                    @RequestBody TaskChecklistItemRequest request,
+                                                    @Valid @RequestBody TaskChecklistItemRequest request,
                                                     @AuthenticationPrincipal UserDetailsCustom userDetails) {
         return taskService.updateChecklistItem(taskId, checklistId, request, userDetails.user().getId());
     }

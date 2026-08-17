@@ -1,0 +1,63 @@
+{
+  "GOAL": [
+    "muc tieu", "mục tiêu", "goal", "kpi", "okr", "kltn", "khoa luan", "do an", "đồ án"
+  ],
+  "HEALTH": [
+    "suc khoe", "sức khỏe", "health", "benh vien", "bệnh viện", "bac si", "bác sĩ",
+    "kham", "khám", "uong thuoc", "uống thuốc", "prescription", "kham rang", "khám răng",
+    "dentist", "medicine", "pharmacy", "medical"
+  ],
+  "FINANCE": [
+    "tai chinh", "tài chính", "finance", "tien", "tiền", "thanh toan", "thanh toán",
+    "dong tien", "đóng tiền", "pay", "payment", "invoice", "hoa don", "hóa đơn", "bill",
+    "banking", "ngan hang", "ngân hàng", "tax", "thue", "thuế", "vat", "tncn", "tndn",
+    "investment", "dau tu", "đầu tư", "insurance", "bao hiem", "bảo hiểm", "bhyt", "bhxh"
+  ],
+  "WORK": [
+    "cong viec", "công việc", "work", "hop", "họp", "meeting", "bao cao", "báo cáo",
+    "report", "du an", "dự án", "project", "khach hang", "khách hàng", "client",
+    "sep", "sếp", "boss", "portfolio", "review", "nop", "nộp", "submit", "phong van", "phỏng vấn",
+    "interview", "resume", "cv", "hop dong", "hợp đồng", "contract", "sop", "sla",
+    "career", "nghe nghiep", "nghề nghiệp", "business", "kinh doanh", "management", "quan ly", "quản lý"
+  ],
+  "TECHNOLOGY": [
+    "code", "viet code", "viết code", "fix bug", "sua bug", "sửa bug", "fix loi", "fix lỗi",
+    "deploy", "trien khai", "triển khai", "test", "kiem thu", "kiểm thử", "qa",
+    "database", "db", "sql", "api", "ui", "ux", "aws", "gcp", "azure", "ci/cd",
+    "software", "phan mem", "phần mềm", "engineering", "ky thuat", "kỹ thuật",
+    "programming", "lap trinh", "lập trình", "data", "du lieu", "dữ liệu",
+    "security", "bao mat", "bảo mật", "backup", "sao luu", "sao lưu", "frontend", "backend"
+  ],
+  "EDUCATION": [
+    "hoc", "học", "education", "giao duc", "giáo dục", "study", "hoc tap", "học tập",
+    "research", "nghien cuu", "nghiên cứu", "thi", "kiem tra", "kiểm tra",
+    "on thi", "ôn thi", "luyen thi", "luyện thi", "bai tap", "bài tập",
+    "doc sach", "đọc sách", "ielts", "toeic", "toefl", "sat", "gre", "gmat",
+    "university", "dai hoc", "đại học", "school", "truong", "trường"
+  ],
+  "FAMILY": [
+    "gia dinh", "gia đình", "family", "con cai", "con cái", "childcare",
+    "bo me", "bố mẹ", "ba ma", "ba má", "eldercare", "relationship", "quan he", "quan hệ"
+  ],
+  "LEGAL": [
+    "phap ly", "pháp lý", "legal", "compliance", "hanh chinh", "hành chính", "government",
+    "documentation", "ho so", "hồ sơ", "giay to", "giấy tờ", "cccd", "mst"
+  ],
+  "HOME": [
+    "nha cua", "nhà cửa", "home", "maintenance", "bao tri", "bảo trì", "vehicle", "xe co", "xe cộ"
+  ],
+  "TRAVEL": [
+    "du lich", "du lịch", "travel", "cong tac", "công tác", "visa", "passport", "ho chieu", "hộ chiếu"
+  ],
+  "PRODUCTIVITY": [
+    "productivity", "nang suat", "năng suất", "lap ke hoach", "lập kế hoạch", "planning", "ke hoach", "kế hoạch",
+    "personal development", "phat trien ban than", "phát triển bản thân", "ky nang", "kỹ năng"
+  ],
+  "FITNESS": [
+    "fitness", "the chat", "thể chất", "luyen tap", "luyện tập", "tap the duc", "tập thể dục",
+    "gym", "chay bo", "chạy bộ", "nutrition", "dinh duong", "dinh dưỡng"
+  ],
+  "COMMUNITY": [
+    "community", "cong dong", "cộng đồng", "social responsibility", "trach nhiem xa hoi", "trách nhiệm xã hội"
+  ]
+}

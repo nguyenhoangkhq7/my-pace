@@ -232,4 +232,111 @@ class AutoScheduleIntegrationTest extends BaseIntegrationTest {
         assertThat(res.slackTimes()).containsKey(task1.getId());
         assertThat(res.slackTimes()).containsKey(task2.getId());
     }
+
+    @Test
+    @DisplayName("Integration Test: Locked Blocks Are Preserved and Never Deleted")
+    void testLockedBlocksPreserved() {
+        LocalDate todayDate = LocalDate.now(java.time.ZoneId.of(testUser.getTimezone()));
+        LocalDate tomorrowDate = todayDate.plusDays(1);
+
+        Task lockedTask = new Task();
+        lockedTask.setUserId(testUser.getId());
+        lockedTask.setTitle("Locked Meeting/Task");
+        lockedTask.setEstimatedMinutes(60);
+        lockedTask.setStatus("Backlog");
+        lockedTask = taskRepository.save(lockedTask);
+
+        TaskTimeBlock lockedBlock = new TaskTimeBlock();
+        lockedBlock.setTaskId(lockedTask.getId());
+        lockedBlock.setStartTime(tomorrowDate.atTime(14, 0));
+        lockedBlock.setEndTime(tomorrowDate.atTime(15, 0));
+        lockedBlock.setPartIndex(1);
+        lockedBlock.setTotalParts(1);
+        lockedBlock.setAvailabilityStatus("FREE");
+        lockedBlock.setIsLocked(true);
+        lockedBlock = timeBlockRepository.save(lockedBlock);
+
+        // Another task that wants to be scheduled
+        Task otherTask = new Task();
+        otherTask.setUserId(testUser.getId());
+        otherTask.setTitle("Important Other Task");
+        otherTask.setEstimatedMinutes(180);
+        otherTask.setIsImportant(true);
+        otherTask.setIsUrgent(true);
+        otherTask.setStatus("Backlog");
+        taskRepository.save(otherTask);
+
+        // Run auto schedule
+        autoScheduleService.autoSchedule(testUser.getId(), 0, false);
+
+        // Verify locked block still exists with exact same times
+        TaskTimeBlock reloadedLocked = timeBlockRepository.findById(lockedBlock.getId()).orElse(null);
+        assertThat(reloadedLocked).isNotNull();
+        assertThat(reloadedLocked.getStartTime()).isEqualTo(tomorrowDate.atTime(14, 0));
+        assertThat(reloadedLocked.getEndTime()).isEqualTo(tomorrowDate.atTime(15, 0));
+        assertThat(reloadedLocked.getIsLocked()).isTrue();
+    }
+
+    @Test
+    @DisplayName("Integration Test: Multi-day Splittable Task Has Consistent TotalParts")
+    void testMultiDayTotalPartsConsistency() {
+        LocalDate todayDate = LocalDate.now(java.time.ZoneId.of(testUser.getTimezone()));
+
+        // Create 4-hour task with max 120 mins per day
+        Task multiDayTask = new Task();
+        multiDayTask.setUserId(testUser.getId());
+        multiDayTask.setTitle("Multi-Day Project");
+        multiDayTask.setEstimatedMinutes(240);
+        multiDayTask.setIsSplittable(true);
+        multiDayTask.setMaxDailyDuration(120);
+        multiDayTask.setIsImportant(true);
+        multiDayTask.setIsUrgent(true);
+        multiDayTask.setStatus("Backlog");
+        multiDayTask = taskRepository.save(multiDayTask);
+
+        // Run auto schedule
+        autoScheduleService.autoSchedule(testUser.getId(), 0, false);
+
+        List<TaskTimeBlock> blocks = timeBlockRepository.findByTaskId(multiDayTask.getId());
+        assertThat(blocks).hasSize(2);
+        for (TaskTimeBlock b : blocks) {
+            assertThat(b.getTotalParts()).isEqualTo(2);
+        }
+    }
+
+    @Test
+    @DisplayName("Integration Test: Eisenhower Q1 Low Risk Beats Q2")
+    void testEisenhowerPriorityQ1LowRiskBeatsQ2() {
+        LocalDate todayDate = LocalDate.now(java.time.ZoneId.of(testUser.getTimezone()));
+
+        // Q1 task due in 5 days (low risk)
+        Task q1Task = new Task();
+        q1Task.setUserId(testUser.getId());
+        q1Task.setTitle("Q1 Low Risk Task");
+        q1Task.setEstimatedMinutes(60);
+        q1Task.setIsUrgent(true);
+        q1Task.setIsImportant(true);
+        q1Task.setDueDate(todayDate.plusDays(5).atTime(23, 59));
+        q1Task.setStatus("Backlog");
+        q1Task = taskRepository.save(q1Task);
+
+        // Q2 task (important, not urgent, no due date)
+        Task q2Task = new Task();
+        q2Task.setUserId(testUser.getId());
+        q2Task.setTitle("Q2 Task");
+        q2Task.setEstimatedMinutes(60);
+        q2Task.setIsUrgent(false);
+        q2Task.setIsImportant(true);
+        q2Task.setStatus("Backlog");
+        q2Task = taskRepository.save(q2Task);
+
+        autoScheduleService.autoSchedule(testUser.getId(), 0, false);
+
+        List<TaskTimeBlock> q1Blocks = timeBlockRepository.findByTaskId(q1Task.getId());
+        List<TaskTimeBlock> q2Blocks = timeBlockRepository.findByTaskId(q2Task.getId());
+
+        assertThat(q1Blocks).isNotEmpty();
+        assertThat(q2Blocks).isNotEmpty();
+        assertThat(q1Blocks.get(0).getStartTime()).isBefore(q2Blocks.get(0).getStartTime());
+    }
 }

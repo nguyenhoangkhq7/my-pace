@@ -32,6 +32,23 @@ public class AutoSchedulePersister {
     ) {
         Map<LocalDate, List<TaskTimeBlockDto>> responseMap = new LinkedHashMap<>();
 
+        // Compute global max parts for each task across the entire schedule
+        Map<UUID, Integer> globalTaskMaxParts = new HashMap<>();
+        for (List<TaskTimeBlock> rawBlocks : generatedBlocksPerDate.values()) {
+            for (TaskTimeBlock b : rawBlocks) {
+                int pIndex = b.getPartIndex() != null ? b.getPartIndex() : 1;
+                globalTaskMaxParts.put(b.getTaskId(), Math.max(globalTaskMaxParts.getOrDefault(b.getTaskId(), 0), pIndex));
+            }
+        }
+        for (List<TaskTimeBlock> blocks : ctx.taskTimeBlocksByDate().values()) {
+            for (TaskTimeBlock b : blocks) {
+                if ("BUSY".equalsIgnoreCase(b.getAvailabilityStatus()) || Boolean.TRUE.equals(b.getIsLocked())) {
+                    int pIndex = b.getPartIndex() != null ? b.getPartIndex() : 1;
+                    globalTaskMaxParts.put(b.getTaskId(), Math.max(globalTaskMaxParts.getOrDefault(b.getTaskId(), 0), pIndex));
+                }
+            }
+        }
+
         for (Map.Entry<LocalDate, List<TaskTimeBlock>> entry : generatedBlocksPerDate.entrySet()) {
             LocalDate date = entry.getKey();
             List<TaskTimeBlock> rawBlocks = entry.getValue();
@@ -59,16 +76,17 @@ public class AutoSchedulePersister {
                 
                 List<TaskTimeBlock> allExistingBlocks = timeBlockRepository.findByUserIdAndDateRange(ctx.userId(), start, end);
 
-                List<TaskTimeBlock> existingBusyBlocks = allExistingBlocks.stream()
-                        .filter(b -> "BUSY".equalsIgnoreCase(b.getAvailabilityStatus()))
+                // Preserve both BUSY and isLocked blocks without modification
+                List<TaskTimeBlock> existingPreservedBlocks = allExistingBlocks.stream()
+                        .filter(b -> "BUSY".equalsIgnoreCase(b.getAvailabilityStatus()) || Boolean.TRUE.equals(b.getIsLocked()))
                         .collect(Collectors.toList());
 
-                List<TaskTimeBlock> existingFreeBlocks = allExistingBlocks.stream()
-                        .filter(b -> !"BUSY".equalsIgnoreCase(b.getAvailabilityStatus()))
+                List<TaskTimeBlock> existingModifiableFreeBlocks = allExistingBlocks.stream()
+                        .filter(b -> !"BUSY".equalsIgnoreCase(b.getAvailabilityStatus()) && !Boolean.TRUE.equals(b.getIsLocked()))
                         .collect(Collectors.toList());
 
                 Map<String, TaskTimeBlock> existingFreeMap = new HashMap<>();
-                for (TaskTimeBlock b : existingFreeBlocks) {
+                for (TaskTimeBlock b : existingModifiableFreeBlocks) {
                     int pIndex = b.getPartIndex() != null ? b.getPartIndex() : 1;
                     existingFreeMap.put(b.getTaskId() + "_" + pIndex, b);
                 }
@@ -84,32 +102,35 @@ public class AutoSchedulePersister {
 
                     if (existing != null) {
                         matchedExistingIds.add(existing.getId());
-                        if (!existing.getStartTime().equals(raw.getStartTime()) || !existing.getEndTime().equals(raw.getEndTime())) {
+                        boolean timeChanged = !existing.getStartTime().equals(raw.getStartTime()) || !existing.getEndTime().equals(raw.getEndTime());
+                        boolean partIndexChanged = !Objects.equals(existing.getPartIndex(), raw.getPartIndex());
+                        int totalParts = globalTaskMaxParts.getOrDefault(raw.getTaskId(), 1);
+                        boolean totalPartsChanged = !Objects.equals(existing.getTotalParts(), totalParts);
+
+                        if (timeChanged || partIndexChanged || totalPartsChanged) {
                             existing.setStartTime(raw.getStartTime());
                             existing.setEndTime(raw.getEndTime());
                             existing.setPartIndex(raw.getPartIndex());
+                            existing.setTotalParts(totalParts);
                             blocksToSave.add(existing);
                         }
                         finalFreeBlocks.add(existing);
                     } else {
+                        raw.setTotalParts(globalTaskMaxParts.getOrDefault(raw.getTaskId(), 1));
                         blocksToSave.add(raw);
                         finalFreeBlocks.add(raw);
                     }
                 }
 
-                List<TaskTimeBlock> allBlocksToCalculate = new ArrayList<>(existingBusyBlocks);
-                allBlocksToCalculate.addAll(finalFreeBlocks);
-
-                Map<UUID, Integer> taskMaxParts = new HashMap<>();
-                for (TaskTimeBlock b : allBlocksToCalculate) {
-                    int pIndex = b.getPartIndex() != null ? b.getPartIndex() : 1;
-                    taskMaxParts.put(b.getTaskId(), Math.max(taskMaxParts.getOrDefault(b.getTaskId(), 0), pIndex));
-                }
-                for (TaskTimeBlock b : allBlocksToCalculate) {
-                    b.setTotalParts(taskMaxParts.get(b.getTaskId()));
+                for (TaskTimeBlock b : existingPreservedBlocks) {
+                    int totalParts = globalTaskMaxParts.getOrDefault(b.getTaskId(), 1);
+                    if (!Objects.equals(b.getTotalParts(), totalParts)) {
+                        b.setTotalParts(totalParts);
+                        blocksToSave.add(b);
+                    }
                 }
 
-                List<TaskTimeBlock> blocksToDelete = existingFreeBlocks.stream()
+                List<TaskTimeBlock> blocksToDelete = existingModifiableFreeBlocks.stream()
                         .filter(b -> !matchedExistingIds.contains(b.getId()))
                         .collect(Collectors.toList());
 
@@ -133,11 +154,7 @@ public class AutoSchedulePersister {
                     }
                 }
 
-                // Theo Option B: KHÔNG TỰ ĐỘNG NHÉT TASK VÀO DAILY PLAN
-                // Do đó loại bỏ toàn bộ phần logic tạo DailyPlanTask ở đây.
-                // Việc Pick Task vào Daily Plan sẽ do User làm thủ công (Drag & Drop từ Backlog).
-
-                List<TaskTimeBlock> allBlocks = new ArrayList<>(existingBusyBlocks);
+                List<TaskTimeBlock> allBlocks = new ArrayList<>(existingPreservedBlocks);
                 allBlocks.addAll(finalFreeBlocks);
                 allBlocks.sort(Comparator.comparing(TaskTimeBlock::getStartTime));
 
@@ -185,14 +202,14 @@ public class AutoSchedulePersister {
 
         List<String> schedulingWarnings = new ArrayList<>();
         int overflowMinutes = 0;
+        Set<UUID> countedOverflowTaskIds = new HashSet<>();
+
         for (List<TaskQueueItem> queue : queues.dateTaskQueues().values()) {
             for (TaskQueueItem item : queue) {
-                if (item.remainingMinutes > 0) {
+                if (item.remainingMinutes > 0 && countedOverflowTaskIds.add(item.task.getId())) {
                     overflowMinutes += item.remainingMinutes;
-                    if ("INFEASIBLE".equals(item.statusWarning) || item.remainingMinutes > 0) {
-                        int est = item.task.getEstimatedMinutes() != null ? item.task.getEstimatedMinutes() : 0;
-                        schedulingWarnings.add("Task '" + item.task.getTitle() + "' chỉ xếp được " + (est - item.remainingMinutes) + "/" + est + " phút.");
-                    }
+                    int est = item.task.getEstimatedMinutes() != null ? item.task.getEstimatedMinutes() : 0;
+                    schedulingWarnings.add("Task '" + item.task.getTitle() + "' chỉ xếp được " + (est - item.remainingMinutes) + "/" + est + " phút.");
                 }
             }
         }
@@ -206,7 +223,7 @@ public class AutoSchedulePersister {
 
         if (scheduledBacklog) {
             for (TaskQueueItem item : queues.backlogQueue()) {
-                if (item.remainingMinutes > 0) {
+                if (item.remainingMinutes > 0 && countedOverflowTaskIds.add(item.task.getId())) {
                     overflowMinutes += item.remainingMinutes;
                     int est = item.task.getEstimatedMinutes() != null ? item.task.getEstimatedMinutes() : 0;
                     schedulingWarnings.add("Task '" + item.task.getTitle() + "' chỉ xếp được " + (est - item.remainingMinutes) + "/" + est + " phút.");

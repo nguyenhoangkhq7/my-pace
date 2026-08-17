@@ -1,37 +1,64 @@
 package nhk.quickadd;
 
 import java.time.LocalTime;
+import java.util.List;
 
 /**
  * Classifies whether a parsed extraction represents a "task" or "event".
  *
- * Decision is based entirely on RESOLVED DATA, not on LLM's literal "type" or "intent" field.
- *
- * Rules (evaluated in order):
- *   1. startTime resolved successfully    → "event" (time block)
- *   2. allDayHint = true                 → "event" (all-day event)
- *   3. timeExpression present but failed → "event" (intent is clear)
- *   4. Default                           → "task"
- *
- * Rationale: LLM 8B models frequently misclassify task vs event. Basing the decision on
- * concrete resolved signals (startTime, allDayHint) is 100% deterministic.
+ * Decision logic:
+ *   1. allDayHint = true                      → "event" (all-day event)
+ *   2. Deadline markers present ("trước", "hạn chót", "deadline", "by") → "task" (with dueDate)
+ *   3. Specific start time resolved ("lúc 7h", "3h chiều", range)      → "event" (calendar timeblock)
+ *   4. Start time markers present ("lúc", "vào lúc", "at")             → "event"
+ *   5. Explicit time_block intent without deadline markers            → "event"
+ *   6. Default                                                        → "task"
  */
 class IntentClassifier {
 
-    String classify(AiExtraction extraction, LocalTime resolvedStartTime) {
-        // Primary: a resolved startTime is the strongest signal
-        if (resolvedStartTime != null) return "event";
+    private static final List<String> DEADLINE_MARKERS = List.of(
+            "truoc", "trước", "han chot", "hạn chót", "deadline", "xong truoc", "xong trước",
+            "tre nhat", "trễ nhất", "muon nhat", "muộn nhất", "by", "before", "due by"
+    );
 
-        // All-day event: user explicitly said "cả ngày", "nghỉ lễ", "all day" etc.
+    private static final List<String> START_TIME_MARKERS = List.of(
+            "luc", "lúc", "vao luc", "vào lúc", "bat dau", "bắt đầu", "at", "starts at"
+    );
+
+    String classify(AiExtraction extraction, LocalTime resolvedStartTime, String rawText) {
+        // 1. All-day event: user explicitly said "cả ngày", "nghỉ lễ", "all day" etc.
         if (extraction.allDayHint()) return "event";
 
-        // Secondary: user wrote a time expression even if we couldn't parse it
-        if (hasTimeExpression(extraction)) return "event";
+        String normRaw = rawText != null ? DateResolver.normalizeVietnamese(rawText.toLowerCase()) : "";
+        String intent = extraction.intent() != null ? extraction.intent().toLowerCase() : "";
+
+        boolean hasDeadlineMarker = containsAny(normRaw, DEADLINE_MARKERS);
+        boolean hasStartTimeMarker = containsAny(normRaw, START_TIME_MARKERS);
+
+        // 2. If user explicitly provided deadline markers ("trước 17h", "hạn chót", "deadline"), it is a task
+        if (hasDeadlineMarker) {
+            return "task";
+        }
+
+        // 3. If intent was explicitly classified as deadline (and no start time marker), treat as task
+        if ("deadline".equalsIgnoreCase(intent) && !hasStartTimeMarker) {
+            return "task";
+        }
+
+        // 4. If a specific start time was resolved (e.g. "tối nay tìm việc lúc 7 giờ", "3h chiều", "6am - 7am")
+        if (resolvedStartTime != null || hasStartTimeMarker || "time_block".equalsIgnoreCase(intent)) {
+            return "event";
+        }
 
         return "task";
     }
 
-    private boolean hasTimeExpression(AiExtraction extraction) {
-        return extraction.timeExpression() != null && !extraction.timeExpression().isBlank();
+    private boolean containsAny(String text, List<String> markers) {
+        if (text == null || text.isBlank()) return false;
+        for (String m : markers) {
+            String norm = DateResolver.normalizeVietnamese(m);
+            if (text.contains(norm)) return true;
+        }
+        return false;
     }
 }

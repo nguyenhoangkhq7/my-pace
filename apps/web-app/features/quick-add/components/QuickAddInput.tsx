@@ -36,7 +36,7 @@ export function QuickAddInput({ onSubmit, isLoading }: QuickAddInputProps) {
         onKeyDown={handleKeyDown}
         placeholder={t.quickAdd.placeholder}
         disabled={isLoading}
-        maxLength={300}
+        maxLength={255}
         className="flex-1 bg-transparent border-none outline-none text-[14px] sm:text-[15px] font-normal text-foreground placeholder:text-muted-foreground/45 disabled:opacity-50 selection:bg-primary/20"
         autoComplete="off"
         spellCheck={false}

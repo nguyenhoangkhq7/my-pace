@@ -117,11 +117,23 @@ export function SunsamaTaskInput({
             onKeyDown={handleKeyDown}
             placeholder={inputPlaceholder}
             disabled={isLoading || isDeleting || (options.requireDuration && !!options.initialTitle)}
-            maxLength={300}
+            maxLength={255}
             className="w-full bg-transparent border-none outline-none text-base font-medium text-foreground placeholder:text-muted-foreground/60 disabled:opacity-75"
             autoComplete="off"
             spellCheck={false}
           />
+          {title.length >= 200 && (
+            <span
+              className={cn(
+                "text-[10px] font-mono shrink-0 px-1 py-0.5 rounded",
+                title.length >= 255
+                  ? "text-rose-500 bg-rose-500/10 font-bold"
+                  : "text-amber-500 bg-amber-500/10"
+              )}
+            >
+              {title.length}/255
+            </span>
+          )}
           {isLoading && <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />}
         </div>
 
@@ -130,19 +142,32 @@ export function SunsamaTaskInput({
           <div className="space-y-1 animate-in fade-in slide-in-from-top-1 duration-150">
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span className="font-medium">{t.sunsamaForm.notesLabel}</span>
-              <button
-                type="button"
-                onClick={() => setShowNotes(false)}
-                className="text-muted-foreground hover:text-foreground cursor-pointer"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
+              <div className="flex items-center gap-2">
+                {notes.length >= 4500 && (
+                  <span
+                    className={cn(
+                      "text-[10px] font-mono px-1 rounded",
+                      notes.length >= 5000 ? "text-rose-500 font-bold" : "text-amber-500"
+                    )}
+                  >
+                    {notes.length}/5000
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowNotes(false)}
+                  className="text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder={t.sunsamaForm.notesPlaceholder}
               rows={2}
+              maxLength={5000}
               className="w-full text-xs p-2 rounded-lg bg-muted/30 border border-border/50 text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-primary/50 resize-y"
             />
           </div>
@@ -189,6 +214,7 @@ export function SunsamaTaskInput({
               onMinChunkChange={setMinChunkMinutes}
               maxDailyDuration={maxDailyDuration}
               onMaxDailyChange={setMaxDailyDuration}
+              estimatedMinutes={estimatedMinutes}
             />
             <button
               type="button"

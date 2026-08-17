@@ -178,7 +178,7 @@ class TaskServiceImplTest {
 
             assertThatThrownBy(() -> taskService.createTask(request, userId))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("Chỉ có thể liên kết Task với Goal đang In Progress hoặc Done.");
+                    .hasMessage("Chỉ có thể liên kết Task với Goal đang ở trạng thái In Progress.");
         }
 
         @Test
@@ -192,7 +192,81 @@ class TaskServiceImplTest {
 
             assertThatThrownBy(() -> taskService.createTask(request, userId))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("Chỉ có thể liên kết Task với Goal đang In Progress hoặc Done.");
+                    .hasMessage("Chỉ có thể liên kết Task với Goal đang ở trạng thái In Progress.");
+        }
+
+        @Test
+        @DisplayName("Should throw IllegalArgumentException when goal status is Done")
+        void createTask_GoalDone_ThrowsException() {
+            sampleGoal.setStatus("Done");
+            TaskCreateRequest request = new TaskCreateRequest(
+                    "Task Title", goalId, null, 30, null, null, null, null, null, null, null, null, null
+            );
+            when(goalRepository.findById(goalId)).thenReturn(Optional.of(sampleGoal));
+
+            assertThatThrownBy(() -> taskService.createTask(request, userId))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Chỉ có thể liên kết Task với Goal đang ở trạng thái In Progress.");
+        }
+
+        @Test
+        @DisplayName("Should throw IllegalArgumentException when splittable task has estimatedMinutes < 15")
+        void createTask_SplittableEstLessThan15_ThrowsException() {
+            TaskCreateRequest request = new TaskCreateRequest(
+                    "Task Title", null, null, 10, null, null, true, 15, null, null, null, null, null
+            );
+
+            assertThatThrownBy(() -> taskService.createTask(request, userId))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Thời gian ước tính phải từ 15 phút trở lên mới có thể chia nhỏ.");
+        }
+
+        @Test
+        @DisplayName("Should throw IllegalArgumentException when splittable task has minChunk < 15")
+        void createTask_SplittableMinChunkLessThan15_ThrowsException() {
+            TaskCreateRequest request = new TaskCreateRequest(
+                    "Task Title", null, null, 60, null, null, true, 10, null, null, null, null, null
+            );
+
+            assertThatThrownBy(() -> taskService.createTask(request, userId))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Thời lượng 1 block tối thiểu phải từ 15 phút.");
+        }
+
+        @Test
+        @DisplayName("Should throw IllegalArgumentException when splittable task has minChunk > estimatedMinutes")
+        void createTask_SplittableMinChunkGreaterThanEst_ThrowsException() {
+            TaskCreateRequest request = new TaskCreateRequest(
+                    "Task Title", null, null, 30, null, null, true, 45, null, null, null, null, null
+            );
+
+            assertThatThrownBy(() -> taskService.createTask(request, userId))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Thời lượng 1 block (45m) không được lớn hơn tổng thời gian công việc (30m).");
+        }
+
+        @Test
+        @DisplayName("Should throw IllegalArgumentException when splittable task has maxDaily > 720")
+        void createTask_SplittableMaxDailyGreaterThan720_ThrowsException() {
+            TaskCreateRequest request = new TaskCreateRequest(
+                    "Task Title", null, null, 800, null, null, true, 30, 800, null, null, null, null
+            );
+
+            assertThatThrownBy(() -> taskService.createTask(request, userId))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Thời lượng tối đa 1 ngày không được vượt quá 12 tiếng (720 phút).");
+        }
+
+        @Test
+        @DisplayName("Should throw IllegalArgumentException when splittable task has maxDaily < minChunk")
+        void createTask_SplittableMaxDailyLessThanMinChunk_ThrowsException() {
+            TaskCreateRequest request = new TaskCreateRequest(
+                    "Task Title", null, null, 120, null, null, true, 60, 30, null, null, null, null
+            );
+
+            assertThatThrownBy(() -> taskService.createTask(request, userId))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Thời lượng tối đa 1 ngày (30m) không được nhỏ hơn thời lượng 1 block (60m).");
         }
 
         @Test
@@ -374,7 +448,7 @@ class TaskServiceImplTest {
 
             assertThatThrownBy(() -> taskService.updateTask(taskId, request, userId))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("Chỉ có thể liên kết Task với Goal đang In Progress hoặc Done.");
+                    .hasMessage("Chỉ có thể liên kết Task với Goal đang ở trạng thái In Progress.");
         }
 
         @Test
@@ -549,6 +623,43 @@ class TaskServiceImplTest {
             assertThat(sampleTask.getChecklists().get(0).getTitle()).isEqualTo("Updated Title");
             assertThat(sampleTask.getChecklists().get(0).getIsCompleted()).isTrue();
             assertThat(sampleTask.getChecklists().get(1).getTitle()).isEqualTo("Brand New Subtask");
+        }
+
+        @Test
+        @DisplayName("Should throw IllegalArgumentException when title is blank")
+        void updateTask_BlankTitle_ThrowsException() {
+            TaskUpdateRequest request = new TaskUpdateRequest(
+                    "   ", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null
+            );
+
+            assertThatThrownBy(() -> taskService.updateTask(taskId, request, userId))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Title cannot be blank");
+        }
+
+        @Test
+        @DisplayName("Should successfully update task when title is null and preserve existing title")
+        void updateTask_PartialUpdate_PreservesExistingTitle() {
+            TaskUpdateRequest request = new TaskUpdateRequest(
+                    null, null, null, null, null, false, true, null, null, null, null, null, null, null, null, null, null
+            );
+
+            when(taskRepository.findById(taskId)).thenReturn(Optional.of(sampleTask));
+            doAnswer(invocation -> {
+                sampleTask.setIsUrgent(false);
+                sampleTask.setIsImportant(true);
+                return null;
+            }).when(taskMapper).updateFromRequest(request, sampleTask);
+            when(taskRepository.save(sampleTask)).thenReturn(sampleTask);
+            when(taskMapper.toDto(sampleTask)).thenReturn(sampleTaskDto);
+
+            TaskDto result = taskService.updateTask(taskId, request, userId);
+
+            assertThat(result).isNotNull();
+            assertThat(sampleTask.getTitle()).isEqualTo("Test Task");
+            assertThat(sampleTask.getIsUrgent()).isFalse();
+            assertThat(sampleTask.getIsImportant()).isTrue();
+            verify(taskRepository, times(1)).save(sampleTask);
         }
     }
 

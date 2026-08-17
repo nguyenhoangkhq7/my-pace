@@ -24,6 +24,8 @@ export function QuickAddGoalButton({ goalId, onChange }: QuickAddGoalButtonProps
     setOpen(false);
   };
 
+  const inProgressGoals = goals.filter((g) => g.status === "In Progress");
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -54,7 +56,7 @@ export function QuickAddGoalButton({ goalId, onChange }: QuickAddGoalButtonProps
             <span className="text-muted-foreground">{t.sunsamaForm.noGoal}</span>
             {!goalId && <Check className="h-3.5 w-3.5 text-primary" />}
           </Button>
-          {goals.map((g) => (
+          {inProgressGoals.map((g) => (
             <Button
               key={g.id}
               variant="ghost"

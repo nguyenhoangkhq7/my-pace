@@ -18,4 +18,4 @@ app:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,https://my-pace-h27b.vercel.app,https://hoangkhaq.site,https://www.hoangkhaq.site}
   groq:
     api-key: ${GROQ_API_KEY:}
-    model: ${GROQ_MODEL:llama-3.1-8b-instant}
+    model: ${GROQ_MODEL:qwen/qwen3.6-27b}

@@ -31,13 +31,18 @@ export function QuickAddPalette() {
     reset,
   } = useQuickAdd();
 
-  // Global "/" shortcut — only when not focused on input/textarea
+  // Global "/" shortcut — only when not focused on input/textarea and no other modal is open
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
       const isEditable = tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement)?.isContentEditable;
 
-      if (e.key === "/" && !isEditable && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      const hasOtherOpenDialog = Boolean(
+        document.querySelector('[role="dialog"][data-state="open"]') ||
+        document.querySelector('[role="alertdialog"][data-state="open"]')
+      );
+
+      if (e.key === "/" && !isEditable && !e.ctrlKey && !e.metaKey && !e.altKey && !isOpen && !hasOtherOpenDialog) {
         e.preventDefault();
         open();
       }
@@ -45,7 +50,7 @@ export function QuickAddPalette() {
 
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [open]);
+  }, [open, isOpen]);
 
   const handleClose = useCallback(() => {
     reset();
