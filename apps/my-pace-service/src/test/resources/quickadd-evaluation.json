@@ -1,0 +1,140 @@
+[
+  {
+    "input": "Nộp báo cáo trước thứ 6 gấp",
+    "expectedQuadrant": "Q1",
+    "expectedIntent": "task",
+    "description": "Urgent deadline task with explicit urgency keyword"
+  },
+  {
+    "input": "fix bug tren production gap",
+    "expectedQuadrant": "Q1",
+    "expectedIntent": "task",
+    "description": "Production bug with urgent keyword"
+  },
+  {
+    "input": "di kham bac si ngay lap tuc",
+    "expectedQuadrant": "Q1",
+    "expectedIntent": "event",
+    "description": "Urgent medical appointment"
+  },
+  {
+    "input": "thanh toan hoa don ngay",
+    "expectedQuadrant": "Q1",
+    "expectedIntent": "task",
+    "description": "Financial bill payment immediately"
+  },
+  {
+    "input": "họp khách hàng gấp",
+    "expectedQuadrant": "Q1",
+    "expectedIntent": "event",
+    "description": "Urgent client meeting"
+  },
+  {
+    "input": "Học Redis để cải thiện backend",
+    "expectedQuadrant": "Q2",
+    "expectedIntent": "task",
+    "description": "Education / skill development task"
+  },
+  {
+    "input": "học IELTS 30 phút mỗi tối",
+    "expectedQuadrant": "Q2",
+    "expectedIntent": "task",
+    "description": "Language learning routine"
+  },
+  {
+    "input": "lập kế hoạch tài chính năm sau",
+    "expectedQuadrant": "Q2",
+    "expectedIntent": "task",
+    "description": "Strategic financial planning"
+  },
+  {
+    "input": "phát triển bản thân",
+    "expectedQuadrant": "Q2",
+    "expectedIntent": "task",
+    "description": "Self development goal"
+  },
+  {
+    "input": "nghiên cứu khoa học",
+    "expectedQuadrant": "Q2",
+    "expectedIntent": "task",
+    "description": "Scientific research"
+  },
+  {
+    "input": "tập thể dục mỗi ngày",
+    "expectedQuadrant": "Q2",
+    "expectedIntent": "task",
+    "description": "Daily fitness routine"
+  },
+  {
+    "input": "mua bim bim gấp",
+    "expectedQuadrant": "Q3",
+    "expectedIntent": "task",
+    "description": "Casual purchase with urgent marker"
+  },
+  {
+    "input": "đi siêu thị mua đồ ăn ngay bây giờ",
+    "expectedQuadrant": "Q3",
+    "expectedIntent": "task",
+    "description": "Errand chore needed immediately"
+  },
+  {
+    "input": "trả lời email không quan trọng gấp",
+    "expectedQuadrant": "Q3",
+    "expectedIntent": "task",
+    "description": "Urgent task explicitly marked not important"
+  },
+  {
+    "input": "sếp nhờ in tài liệu gấp cho cuộc họp nhưng tài liệu không quan trọng",
+    "expectedQuadrant": "Q3",
+    "expectedIntent": "task",
+    "description": "Interruption / delegated chore with urgency but not important"
+  },
+  {
+    "input": "Xem phim tối nay",
+    "expectedQuadrant": "Q4",
+    "expectedIntent": "event",
+    "description": "Entertainment movie"
+  },
+  {
+    "input": "tối nay chơi game",
+    "expectedQuadrant": "Q4",
+    "expectedIntent": "task",
+    "description": "Gaming leisure"
+  },
+  {
+    "input": "lướt mạng xã hội giết thời gian",
+    "expectedQuadrant": "Q4",
+    "expectedIntent": "task",
+    "description": "Procrastination social media"
+  },
+  {
+    "input": "doomscrolling on tiktok",
+    "expectedQuadrant": "Q4",
+    "expectedIntent": "task",
+    "description": "Time wasting activity"
+  },
+  {
+    "input": "không quan trọng",
+    "expectedQuadrant": "Q4",
+    "expectedIntent": "task",
+    "description": "Explicit negation of importance"
+  },
+  {
+    "input": "khong gap",
+    "expectedQuadrant": "Q4",
+    "expectedIntent": "task",
+    "description": "Explicit negation of urgency"
+  },
+  {
+    "input": "khi nào rảnh thì làm",
+    "expectedQuadrant": "Q4",
+    "expectedIntent": "task",
+    "description": "Someday / low priority task"
+  },
+  {
+    "input": "just for fun",
+    "expectedQuadrant": "Q4",
+    "expectedIntent": "task",
+    "description": "Casual fun"
+  }
+]

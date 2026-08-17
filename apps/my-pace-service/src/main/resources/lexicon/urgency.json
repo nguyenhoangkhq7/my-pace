@@ -6,12 +6,6 @@
   "OVERDUE": [
     "tre roi", "trễ rồi", "muon roi", "muộn rồi", "qua han", "quá hạn", "overdue"
   ],
-  "TODAY": [
-    "hom nay", "hôm nay", "ngay trong ngay", "ngay hom nay", "ngày hôm nay", "today"
-  ],
-  "TOMORROW": [
-    "mai", "ngay mai", "ngày mai", "tomorrow"
-  ],
   "IMMEDIATE": [
     "gap", "gấp", "khan", "khẩn", "khan cap", "khẩn cấp", "urgent", "asap", 
     "ngay lap tuc", "ngay lập tức", "gap len", "gấp lên", "hoa toc", "hỏa tốc",
@@ -21,14 +15,6 @@
   ],
   "CRITICAL": [
     "critical", "emergency", "time sensitive", "expiring", "nguy cap", "nguy cấp"
-  ],
-  "WAITING": [
-    "dang doi", "đang đợi", "waiting", "someone waiting", "client waiting", 
-    "boss waiting", "team waiting"
-  ],
-  "APPOINTMENT": [
-    "appointment", "meeting soon", "event soon", "cuoc hen", "cuộc hẹn", 
-    "sap hop", "sắp họp", "chuan bi hop", "chuẩn bị họp"
   ],
   "INCIDENT": [
     "incident", "outage", "failure", "su co", "sự cố", "loi production", "lỗi production",

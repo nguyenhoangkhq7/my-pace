@@ -1,6 +1,6 @@
 {
   "GOAL": [
-    "muc tieu", "mục tiêu", "goal", "kpi", "okr", "kltn", "khoa luan", "do an", "đồ án"
+    "muc tieu", "mục tiêu", "goal", "kpi", "okr", "kltn", "khoa luan", "do an tot nghiep", "đồ án tốt nghiệp", "do an mon hoc", "đồ án môn học", "bao cao do an", "báo cáo đồ án"
   ],
   "HEALTH": [
     "suc khoe", "sức khỏe", "health", "benh vien", "bệnh viện", "bac si", "bác sĩ",
@@ -22,7 +22,7 @@
   ],
   "TECHNOLOGY": [
     "code", "viet code", "viết code", "fix bug", "sua bug", "sửa bug", "fix loi", "fix lỗi",
-    "deploy", "trien khai", "triển khai", "test", "kiem thu", "kiểm thử", "qa",
+    "deploy", "trien khai", "triển khai", "test", "kiem thu", "kiểm thử", "qa", "docker", "tutorial",
     "database", "db", "sql", "api", "ui", "ux", "aws", "gcp", "azure", "ci/cd",
     "software", "phan mem", "phần mềm", "engineering", "ky thuat", "kỹ thuật",
     "programming", "lap trinh", "lập trình", "data", "du lieu", "dữ liệu",
@@ -30,7 +30,7 @@
   ],
   "EDUCATION": [
     "hoc", "học", "education", "giao duc", "giáo dục", "study", "hoc tap", "học tập",
-    "research", "nghien cuu", "nghiên cứu", "thi", "kiem tra", "kiểm tra",
+    "research", "nghien cuu", "nghiên cứu", "ky thi", "kỳ thi", "cuoc thi", "cuộc thi", "bai thi", "bài thi", "thi cu", "thi cử", "kiem tra", "kiểm tra",
     "on thi", "ôn thi", "luyen thi", "luyện thi", "bai tap", "bài tập",
     "doc sach", "đọc sách", "ielts", "toeic", "toefl", "sat", "gre", "gmat",
     "university", "dai hoc", "đại học", "school", "truong", "trường"
