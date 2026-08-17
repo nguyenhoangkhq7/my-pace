@@ -41,7 +41,7 @@ EXTRACTION RULES:
 - checklists: Array of distinct item strings ONLY when the user explicitly lists actionable sub-items / shopping items (e.g. "mua sữa, trứng, bánh mì" -> ["Mua sữa", "Mua trứng", "Mua bánh mì"]).
   - NEVER extract attendee names ("Họp với Nam, Tuấn, Lan") or platform/technology names ("Test trên Chrome, Safari") into checklists. Return null for checklists in those cases.
 - isAllDay: true ONLY when user explicitly states "cả ngày", "all day", "nghỉ lễ", "cả buổi". false otherwise.
-- recurrenceExpression: Copy the exact repetition phrase (e.g., "hàng tuần thứ 2, thứ 4, thứ 6", "mỗi ngày", "mỗi thứ 3"). null if absent.
+- recurrenceExpression: Copy the exact repetition phrase (e.g., "hàng tuần thứ 2, thứ 4, thứ 6", "mỗi ngày", "mỗi thứ 3", "mỗi tối thứ 3", "mỗi 2 4 6", "mỗi 3 5 7", "thứ 2 đến thứ 6 hàng tuần", "mỗi cuối tuần", "daily", "every week"). Always strip recurrence phrases out of title. null if absent.
 - i: Importance score from 0.0 to 1.0 (1.0 = High leverage / deep work / health / finance; 0.0 = low value / trivial / casual chores).
 - u: Urgency score from 0.0 to 1.0 (1.0 = Immediate deadline / emergency / critical; 0.0 = no time pressure / distant).
 - Never hallucinate non-existent fields. Return null for missing fields.

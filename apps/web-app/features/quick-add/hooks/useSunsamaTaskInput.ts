@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useTasks } from "@/features/board/hooks/useTasks";
@@ -73,51 +73,6 @@ export function useSunsamaTaskInput(options?: UseSunsamaTaskInputOptions) {
       setCategoryId(null);
     }
   }, [goals]);
-
-  useEffect(() => {
-    setTitle(options?.initialTitle || "");
-    setNotes(options?.initialNotes || "");
-    setShowNotes(!!options?.initialNotes);
-    setDueDate(options?.initialDueDate !== undefined ? options.initialDueDate : null);
-    setDueTime(options?.initialDueTime || "23:59");
-    setEstimatedMinutes(options?.initialEstimatedMinutes !== undefined ? options.initialEstimatedMinutes : null);
-    
-    const currentGoalId = options?.initialGoalId || null;
-    setGoalIdState(currentGoalId);
-    if (currentGoalId) {
-      const g = goals.find((item) => item.id === currentGoalId);
-      if (g?.categoryId) {
-        setCategoryId(g.categoryId);
-      } else {
-        setCategoryId(options?.initialCategoryId || null);
-      }
-    } else {
-      setCategoryId(options?.initialCategoryId || null);
-    }
-
-    setIsUrgent(options?.initialUrgent || false);
-    setIsImportant(options?.initialImportant || false);
-    setIsSplittable(options?.initialIsSplittable || false);
-    setMinChunkMinutes(options?.initialMinChunkMinutes || 30);
-    setMaxDailyDuration(options?.initialMaxDailyDuration || null);
-    setChecklists(options?.initialChecklists || []);
-  }, [
-    options?.taskId,
-    options?.initialTitle,
-    options?.initialNotes,
-    options?.initialDueDate,
-    options?.initialDueTime,
-    options?.initialEstimatedMinutes,
-    options?.initialCategoryId,
-    options?.initialGoalId,
-    options?.initialUrgent,
-    options?.initialImportant,
-    options?.initialIsSplittable,
-    options?.initialMinChunkMinutes,
-    options?.initialMaxDailyDuration,
-    options?.initialChecklists,
-    goals,
-  ]);
 
   const reset = useCallback(() => {
     setTitle(options?.initialTitle || "");

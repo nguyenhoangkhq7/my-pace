@@ -66,7 +66,7 @@ class InputComplexityAnalyzerTest {
     @Test
     @DisplayName("Recurrence triggers RECURRENCE signal")
     void testRecurrence() {
-        ComplexityAnalysis result = analyzer.analyze("Họp standup mỗi tuần thứ 2");
+        ComplexityAnalysis result = analyzer.analyze("Họp standup định kỳ hàng tháng");
         assertThat(result.isComplex()).isTrue();
         assertThat(result.detectedSignals()).contains("RECURRENCE");
     }

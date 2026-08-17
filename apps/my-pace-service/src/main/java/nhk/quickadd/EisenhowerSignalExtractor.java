@@ -94,6 +94,39 @@ public class EisenhowerSignalExtractor {
         // 6. Evidence flags
         boolean negatedUrgency = negations.stream().anyMatch(m -> "NOT_URGENT".equals(m.category()));
         boolean negatedImportance = negations.stream().anyMatch(m -> "NOT_IMPORTANT".equals(m.category()) || "JUST_FOR_FUN".equals(m.category()));
+
+        // 7. Explicit Priority Shortcuts (!q1, !q2, !q3, !q4, !p1, !p2, !p3, !p4, !high, !low)
+        if (rawText != null) {
+            boolean explicitQ1 = rawText.matches(".*(?i)!(?:q1|p1|high|do_first)\\b.*");
+            boolean explicitQ2 = rawText.matches(".*(?i)!(?:q2|p2|schedule)\\b.*");
+            boolean explicitQ3 = rawText.matches(".*(?i)!(?:q3|p3|delegate)\\b.*");
+            boolean explicitQ4 = rawText.matches(".*(?i)!(?:q4|p4|low|eliminate)\\b.*");
+
+            if (explicitQ1) {
+                strongImportanceSignals = new ArrayList<>(strongImportanceSignals);
+                strongImportanceSignals.add(new CategoryMatch("EXPLICIT_Q1", "!q1", 100));
+                urgencySignals = new ArrayList<>(urgencySignals);
+                urgencySignals.add(new CategoryMatch("EXPLICIT_Q1", "!q1", 100));
+            } else if (explicitQ2) {
+                strongImportanceSignals = new ArrayList<>(strongImportanceSignals);
+                strongImportanceSignals.add(new CategoryMatch("EXPLICIT_Q2", "!q2", 100));
+                negatedUrgency = true;
+                urgencySignals = List.of();
+            } else if (explicitQ3) {
+                notImportantSignals = new ArrayList<>(notImportantSignals);
+                notImportantSignals.add(new CategoryMatch("EXPLICIT_Q3", "!q3", 100));
+                urgencySignals = new ArrayList<>(urgencySignals);
+                urgencySignals.add(new CategoryMatch("EXPLICIT_Q3", "!q3", 100));
+                negatedImportance = true;
+            } else if (explicitQ4) {
+                notImportantSignals = new ArrayList<>(notImportantSignals);
+                notImportantSignals.add(new CategoryMatch("EXPLICIT_Q4", "!q4", 100));
+                negatedImportance = true;
+                negatedUrgency = true;
+                urgencySignals = List.of();
+            }
+        }
+
         boolean urgentKeywordDetected = !urgencySignals.isEmpty();
         boolean importantKeywordDetected = !strongImportanceSignals.isEmpty() || !domainSignals.isEmpty();
 

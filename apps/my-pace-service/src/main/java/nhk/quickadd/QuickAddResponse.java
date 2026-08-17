@@ -24,5 +24,6 @@ public record QuickAddResponse(
         Boolean isAllDay,
         String recurrenceType,
         List<Integer> recurrenceDaysOfWeek,
-        String recurrenceEndDate
+        String recurrenceEndDate,
+        String source
 ) {}

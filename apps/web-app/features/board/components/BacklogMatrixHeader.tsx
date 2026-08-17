@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PlusSignIcon, FilterIcon } from "@hugeicons/core-free-icons";
 import { useTranslation } from "@/hooks/use-translation";
@@ -17,10 +19,24 @@ export function BacklogMatrixHeader({ categories, selectedFilterId, setFilter, o
 
   return (
     <div className="flex items-center justify-between">
-      <div className="flex items-center">
+      <div className="flex items-center gap-2">
         <h2 className="text-lg font-bold text-foreground">
           {t.eisenhower.matrixName}
         </h2>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Link
+              href="/eisenhower"
+              className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-muted/80 hover:bg-primary/15 text-muted-foreground hover:text-primary transition-all duration-200 text-xs font-semibold hover:scale-105 active:scale-95 border border-border/50 hover:border-primary/30"
+              aria-label={t.eisenhower.learnMore}
+            >
+              ?
+            </Link>
+          </TooltipTrigger>
+          <TooltipContent side="right">
+            <span>{t.eisenhower.learnMore}</span>
+          </TooltipContent>
+        </Tooltip>
       </div>
       <div className="flex space-x-2">
         <Select 

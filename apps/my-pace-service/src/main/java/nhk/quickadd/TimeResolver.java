@@ -256,6 +256,11 @@ class TimeResolver {
             }
         }
 
+        // 8. Fallback: If timeExpression is blank, but context has period (e.g. "tomorrow afternoon", "chiều mai", "tối nay")
+        if (normMain.isBlank() && extractedPeriod != null) {
+            return resolvePeriodOnly(extractedPeriod);
+        }
+
         return null;
     }
 
@@ -294,29 +299,36 @@ class TimeResolver {
     }
 
     private String extractPeriod(String normText) {
-        if (normText.contains("sang") || normText.matches(".*\\bam\\b.*")) return "sang";
-        if (normText.contains("chieu") || normText.contains("xe") || normText.matches(".*\\bpm\\b.*")) return "chieu";
-        if (normText.contains("toi")) return "toi";
-        if (normText.contains("dem")) return "dem";
-        if (normText.contains("trua")) return "trua";
+        if (normText.matches(".*\\b(sang|morning|am)\\b.*")) return "sang";
+        if (normText.matches(".*\\b(chieu|afternoon|pm|xe\\s+chieu)\\b.*")) return "chieu";
+        if (normText.matches(".*\\b(toi|evening|tonight)\\b.*")) return "toi";
+        if (normText.matches(".*\\b(dem|night|midnight)\\b.*")) return "dem";
+        if (normText.matches(".*\\b(trua|noon|midday)\\b.*")) return "trua";
         return null;
     }
 
     private LocalTime resolvePeriodOnly(String normExpr) {
-        if (normExpr.contains("dau gio sang")) return LocalTime.of(8, 0);
-        if (normExpr.contains("dau gio chieu")) return LocalTime.of(13, 30);
-        if (normExpr.contains("cuoi gio chieu")) return LocalTime.of(17, 0);
-        if (normExpr.contains("giua trua")) return LocalTime.of(12, 0);
-        if (normExpr.contains("cuoi ngay") || normExpr.contains("het ngay")) return LocalTime.of(23, 59);
+        if (normExpr == null || normExpr.isBlank()) return null;
+        if (normExpr.matches(".*\\d.*")) return null;
 
-        return switch (normExpr) {
-            case "sang" -> LocalTime.of(8, 0);
-            case "trua" -> LocalTime.of(12, 0);
-            case "chieu" -> LocalTime.of(14, 0);
-            case "toi" -> LocalTime.of(19, 0);
-            case "dem" -> LocalTime.of(21, 0);
-            default -> null;
-        };
+        if (normExpr.contains("dau gio sang") || normExpr.contains("early morning")) return LocalTime.of(8, 0);
+        if (normExpr.contains("dau gio chieu") || normExpr.contains("early afternoon")) return LocalTime.of(13, 30);
+        if (normExpr.contains("cuoi gio chieu") || normExpr.contains("late afternoon")) return LocalTime.of(17, 0);
+        if (normExpr.contains("giua trua") || normExpr.contains("midday") || normExpr.contains("noon")) return LocalTime.of(12, 0);
+        if (normExpr.contains("cuoi ngay") || normExpr.contains("het ngay") || normExpr.contains("end of day")) return LocalTime.of(23, 59);
+
+        String period = extractPeriod(normExpr);
+        if (period != null) {
+            return switch (period) {
+                case "sang" -> LocalTime.of(8, 0);
+                case "trua" -> LocalTime.of(12, 0);
+                case "chieu" -> LocalTime.of(14, 0);
+                case "toi" -> LocalTime.of(19, 0);
+                case "dem" -> LocalTime.of(21, 0);
+                default -> null;
+            };
+        }
+        return null;
     }
 
     /**

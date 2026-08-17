@@ -87,26 +87,6 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string) {
       });
     }
   }, [tasks, batchSlack]);
-
-  const getTaskDailyCost = (t?: { estimatedMinutes?: number | null; actualMinutes?: number | null; isSplittable?: boolean; maxDailyDuration?: number | null }) => {
-    if (!t) return 0;
-    const est = t.estimatedMinutes || 0;
-    const act = t.actualMinutes || 0;
-    const rem = Math.max(0, est - act);
-    if (t.isSplittable && t.maxDailyDuration && t.maxDailyDuration > 0) {
-      return Math.min(t.maxDailyDuration, rem > 0 ? rem : est);
-    }
-    return rem > 0 ? rem : est;
-  };
-
-  const checkTimeLimit = (taskOrMinutes: Task | number) => {
-    if (isTargetStarted) {
-      toast.error(t.board.planLockedError);
-      return false;
-    }
-    return true;
-  };
-
   const handleCreateTask = async (data: Partial<Task>) => {
     let newTask;
     if (editingTask) {
@@ -125,7 +105,7 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string) {
   const handleTaskClick = (task: Task) => {
     if (isPlanningMode) {
       if (isTargetStarted) {
-        toast.error("Kế hoạch đã chốt và đang thực thi, không thể chỉnh sửa.");
+        toast.error(t.board.planLockedError);
         return;
       }
       if (plannedTaskIds.includes(task.id)) {

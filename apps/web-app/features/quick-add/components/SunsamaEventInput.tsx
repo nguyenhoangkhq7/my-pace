@@ -13,6 +13,27 @@ import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import type { CreateEventPayload } from "@/features/calendar/types";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Calendar03Icon } from "@hugeicons/core-free-icons";
+import { X } from "lucide-react";
+
+function formatRecurrenceLabel(recurrenceType: string, days?: number[]): string {
+  if (recurrenceType === "DAILY") return "Lặp hàng ngày";
+  if (recurrenceType === "WEEKLY") {
+    if (!days || days.length === 0) return "Lặp hàng tuần";
+    const dayNames: Record<number, string> = {
+      1: "T2",
+      2: "T3",
+      3: "T4",
+      4: "T5",
+      5: "T6",
+      6: "T7",
+      7: "CN",
+    };
+    return `Lặp: ${days.map((d) => dayNames[d] || `T${d}`).join(", ")}`;
+  }
+  return "Định kỳ";
+}
 
 interface SunsamaEventInputProps {
   initialTitle?: string;
@@ -23,6 +44,8 @@ interface SunsamaEventInputProps {
   initialIsAllDay?: boolean;
   initialCategoryId?: string;
   initialRecurrenceType?: string;
+  initialRecurrenceDaysOfWeek?: number[];
+  initialRecurrenceEndDate?: string;
   onSuccess?: () => void;
   onCancel?: () => void;
   autoFocus?: boolean;
@@ -39,6 +62,8 @@ export function SunsamaEventInput({
   initialIsAllDay = false,
   initialCategoryId,
   initialRecurrenceType = "NONE",
+  initialRecurrenceDaysOfWeek,
+  initialRecurrenceEndDate,
   onSuccess,
   onCancel,
   autoFocus = true,
@@ -58,6 +83,9 @@ export function SunsamaEventInput({
   const [endTime, setEndTime] = useState(initialEndTime);
   const [isAllDay, setIsAllDay] = useState(initialIsAllDay);
   const [categoryId, setCategoryId] = useState<string | null>(initialCategoryId || null);
+  const [recurrenceType, setRecurrenceType] = useState<string>(initialRecurrenceType || "NONE");
+  const [recurrenceDaysOfWeek, setRecurrenceDaysOfWeek] = useState<number[]>(initialRecurrenceDaysOfWeek || []);
+  const recurrenceEndDate = initialRecurrenceEndDate || "";
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -81,7 +109,9 @@ export function SunsamaEventInput({
         endTime: isAllDay ? undefined : `${endTime}:00`,
         eventDate: dateStr,
         isAllDay,
-        recurrenceType: (initialRecurrenceType as CreateEventPayload["recurrenceType"]) || "NONE",
+        recurrenceType: (recurrenceType as CreateEventPayload["recurrenceType"]) || "NONE",
+        recurrenceDaysOfWeek: recurrenceDaysOfWeek.length > 0 ? recurrenceDaysOfWeek : undefined,
+        recurrenceEndDate: recurrenceEndDate || undefined,
         categoryId: categoryId || undefined,
       };
 
@@ -176,6 +206,23 @@ export function SunsamaEventInput({
             categoryId={categoryId}
             onChange={setCategoryId}
           />
+          {recurrenceType && recurrenceType !== "NONE" && (
+            <div className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-blue-500/10 text-blue-500 dark:text-blue-400 border border-blue-500/20">
+              <HugeiconsIcon icon={Calendar03Icon} className="h-3 w-3" />
+              <span>{formatRecurrenceLabel(recurrenceType, recurrenceDaysOfWeek)}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setRecurrenceType("NONE");
+                  setRecurrenceDaysOfWeek([]);
+                }}
+                className="ml-0.5 hover:text-rose-500 cursor-pointer"
+                title="Hủy lặp"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
           <button
             type="button"
             title={t.sunsamaForm.notesBtn || "Ghi chú"}

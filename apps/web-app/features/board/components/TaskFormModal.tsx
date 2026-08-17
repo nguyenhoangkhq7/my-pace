@@ -37,10 +37,11 @@ export function TaskFormModal(props: TaskFormModalProps) {
       }
       return null;
     }
+    const d = new Date();
     if (props.planningTarget === "tomorrow") {
-      return new Date(Date.now() + 86400000);
+      d.setDate(d.getDate() + 1);
     }
-    return new Date();
+    return d;
   };
 
   const getInitialDueTime = (): string => {
@@ -64,6 +65,7 @@ export function TaskFormModal(props: TaskFormModalProps) {
             </DialogTitle>
           </VisuallyHidden.Root>
           <SunsamaTaskInput
+            key={props.initialData?.id || "new-task"}
             taskId={props.initialData?.id}
             requireDuration={props.requireDuration}
             onSubmit={props.onSubmit}
