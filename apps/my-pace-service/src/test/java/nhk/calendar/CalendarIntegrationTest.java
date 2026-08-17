@@ -308,16 +308,16 @@ class CalendarIntegrationTest extends BaseIntegrationTest {
         @Test
         @DisplayName("Checkin should save DB record, auto-create Goal tasks, and schedule time blocks around fixed events")
         void checkin_AutoSchedule_Integration() throws Exception {
-            LocalDate checkinDate = LocalDate.of(2026, 8, 3); // Monday (1)
+            LocalDate checkinDate = LocalDate.now(java.time.ZoneId.of(testUserA.getTimezone()));
 
-            // Save active Time-boxed Goal in H2 DB
+            // Save active Time-boxed Goal in DB
             Goal goal = new Goal();
             goal.setUserId(testUserA.getId());
             goal.setTitle("Learn Microservices");
             goal.setStatus("In Progress");
             goal.setAutoCreateTask(true);
             goal.setGoalType("Time-boxed");
-            goal.setDaysOfWeek("1,2,3,4,5"); // Mon - Fri
+            goal.setDaysOfWeek("1,2,3,4,5,6,7");
             goal.setDurationMinutes(60);
             goal.setPreferTime(LocalTime.of(10, 0));
             goalRepository.save(goal);
@@ -336,7 +336,7 @@ class CalendarIntegrationTest extends BaseIntegrationTest {
 
             // Perform Check-in via API
             mockMvcUserA.perform(post("/api/calendar/checkin")
-                            .param("date", "2026-08-03")
+                            .param("date", checkinDate.toString())
                             .param("checkinTime", "08:00"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.checkedIn").value(true))

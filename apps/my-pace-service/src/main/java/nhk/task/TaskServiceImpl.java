@@ -45,17 +45,42 @@ public class TaskServiceImpl implements TaskService {
             Goal goal = goalRepository.findById(goalId)
                     .filter(g -> g.getUserId().equals(userId))
                     .orElseThrow(() -> new EntityNotFoundException("Goal not found"));
-            if ("Freeze".equals(goal.getStatus()) || "Archived".equals(goal.getStatus())) {
-                throw new IllegalArgumentException("Chỉ có thể liên kết Task với Goal đang In Progress hoặc Done.");
+            if (!"In Progress".equals(goal.getStatus())) {
+                throw new IllegalArgumentException("Chỉ có thể liên kết Task với Goal đang ở trạng thái In Progress.");
             }
             return goal;
         }
         return null;
     }
 
+    private void validateSplittable(Boolean isSplittable, Integer estimatedMinutes, Integer minChunkMinutes, Integer maxDailyDuration) {
+        if (Boolean.TRUE.equals(isSplittable)) {
+            if (estimatedMinutes == null || estimatedMinutes < 15) {
+                throw new IllegalArgumentException("Thời gian ước tính phải từ 15 phút trở lên mới có thể chia nhỏ.");
+            }
+            if (minChunkMinutes != null) {
+                if (minChunkMinutes < 15) {
+                    throw new IllegalArgumentException("Thời lượng 1 block tối thiểu phải từ 15 phút.");
+                }
+                if (minChunkMinutes > estimatedMinutes) {
+                    throw new IllegalArgumentException(String.format("Thời lượng 1 block (%dm) không được lớn hơn tổng thời gian công việc (%dm).", minChunkMinutes, estimatedMinutes));
+                }
+                if (maxDailyDuration != null) {
+                    if (maxDailyDuration > 720) {
+                        throw new IllegalArgumentException("Thời lượng tối đa 1 ngày không được vượt quá 12 tiếng (720 phút).");
+                    }
+                    if (maxDailyDuration < minChunkMinutes) {
+                        throw new IllegalArgumentException(String.format("Thời lượng tối đa 1 ngày (%dm) không được nhỏ hơn thời lượng 1 block (%dm).", maxDailyDuration, minChunkMinutes));
+                    }
+                }
+            }
+        }
+    }
+
     @Override
     @Transactional
     public TaskDto createTask(TaskCreateRequest request, UUID userId) {
+        validateSplittable(request.isSplittable(), request.estimatedMinutes(), request.minChunkMinutes(), request.maxDailyDuration());
         Goal goal = validateGoal(request.goalId(), userId);
         
         Task task = taskMapper.toEntity(request);
@@ -111,6 +136,10 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional
     public TaskDto updateTask(UUID taskId, TaskUpdateRequest request, UUID userId) {
+        if (request.title() != null && request.title().trim().isEmpty()) {
+            throw new IllegalArgumentException("Title cannot be blank");
+        }
+
         Goal goal = null;
         if (request.goalId() != null) {
             goal = validateGoal(request.goalId(), userId);
@@ -124,6 +153,7 @@ public class TaskServiceImpl implements TaskService {
         int oldActualMinutes = task.getActualMinutes() != null ? task.getActualMinutes() : 0;
         
         taskMapper.updateFromRequest(request, task);
+        validateSplittable(task.getIsSplittable(), task.getEstimatedMinutes(), task.getMinChunkMinutes(), task.getMaxDailyDuration());
         
         if (Boolean.TRUE.equals(request.clearDueDate())) {
             task.setDueDate(null);
@@ -138,7 +168,9 @@ public class TaskServiceImpl implements TaskService {
 
         if (task.getGoalId() != null) {
             if (goal == null) {
-                goal = validateGoal(task.getGoalId(), userId);
+                goal = goalRepository.findById(task.getGoalId())
+                        .filter(g -> g.getUserId().equals(userId))
+                        .orElse(null);
             }
             if (goal != null) {
                 task.setCategoryId(goal.getCategoryId());

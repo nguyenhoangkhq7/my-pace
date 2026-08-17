@@ -42,7 +42,7 @@ export function useFlowEmptyState() {
 
     try {
       await planMyDay({
-        availableMinutes: dailyPlanToday.availableMinutes,
+        availableMinutes: dataToday?.availableMinutes || dailyPlanToday.availableMinutes || 0,
         tasks: tasksPayload,
       });
       await queryClient.invalidateQueries({ queryKey: ["dailyPlan", todayStr] });

@@ -3,7 +3,7 @@ package nhk.quickadd;
 import java.util.List;
 
 /**
- * Internal DTO representing ONLY what the user explicitly expressed.
+ * Internal DTO representing what the user expressed along with AI semantic hints.
  * Never exposed outside the quickadd package.
  * Contains raw expressions — no computed values, no UUIDs.
  */
@@ -18,5 +18,7 @@ record AiExtraction(
         String notes,               // location, attendees, extra context
         List<String> checklists,    // raw checklist item strings
         boolean allDayHint,         // true when user said "cả ngày", "all day", "nghỉ"
-        String recurrenceExpression // e.g. "hàng tuần", "hàng tuần thứ 2 thứ 4", null
+        String recurrenceExpression,// e.g. "hàng tuần", "hàng tuần thứ 2 thứ 4", null
+        Double i,                   // LLM importance score fallback (0.0 to 1.0)
+        Double u                    // LLM urgency score fallback (0.0 to 1.0)
 ) {}

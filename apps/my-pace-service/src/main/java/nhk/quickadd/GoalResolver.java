@@ -29,15 +29,29 @@ class GoalResolver {
         for (Goal g : goals) {
             if (DateResolver.normalizeVietnamese(g.getTitle().toLowerCase()).equals(normHint)) return g.getId();
         }
-        // 4. Contains
-        for (Goal g : goals) {
-            String normTitle = DateResolver.normalizeVietnamese(g.getTitle().toLowerCase());
-            if (normTitle.contains(normHint) || normHint.contains(normTitle)) return g.getId();
-        }
-        // 5. Acronym / Initials match (e.g. "KLTN" -> "Khóa luận tốt nghiệp")
+        // 4. Acronym / Initials match (e.g. "KLTN" -> "Khóa luận tốt nghiệp")
         for (Goal g : goals) {
             String acronym = CategoryResolver.buildAcronym(g.getTitle());
             if (!acronym.isEmpty() && acronym.equalsIgnoreCase(normHint)) return g.getId();
+        }
+        // 5. Longest / Best substring match (prioritize highest coverage length)
+        UUID bestMatchId = null;
+        int maxMatchLen = 0;
+        for (Goal g : goals) {
+            String normTitle = DateResolver.normalizeVietnamese(g.getTitle().toLowerCase());
+            int matchLen = 0;
+            if (normTitle.contains(normHint)) {
+                matchLen = normHint.length();
+            } else if (normHint.contains(normTitle)) {
+                matchLen = normTitle.length();
+            }
+            if (matchLen > maxMatchLen && matchLen >= 2) {
+                maxMatchLen = matchLen;
+                bestMatchId = g.getId();
+            }
+        }
+        if (bestMatchId != null) {
+            return bestMatchId;
         }
 
         return null;

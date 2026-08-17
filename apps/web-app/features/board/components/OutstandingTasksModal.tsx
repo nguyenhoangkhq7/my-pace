@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import {
   Dialog,
@@ -12,6 +14,8 @@ import { DailyPlan } from "../types";
 import { useReviewPlan } from "../hooks/useReviewPlan";
 import { toast } from "sonner";
 import { useTranslation } from "@/hooks/use-translation";
+import { RolloverTaskItem } from "./RolloverTaskItem";
+import { Sparkles, CheckCheck } from "lucide-react";
 
 interface OutstandingTasksModalProps {
   isOpen: boolean;
@@ -23,20 +27,33 @@ export function OutstandingTasksModal({ isOpen, unreviewedPlan, currentDate }: O
   const { reviewPlan, isReviewing } = useReviewPlan();
   const { t } = useTranslation();
 
-  // Only show tasks that are not yet completed
   const uncompletedPlanTasks = unreviewedPlan.tasks?.filter(pt => pt.task?.status !== "Done") || [];
 
-  // Per-task choice: 'today' (default) | 'backlog' | 'delete'
-  const [choices, setChoices] = useState<Record<string, "today" | "backlog" | "delete">>(() => {
-    const initial: Record<string, "today" | "backlog" | "delete"> = {};
+  const [choices, setChoices] = useState<Record<string, "today" | "backlog" | "done" | "delete">>(() => {
+    const initial: Record<string, "today" | "backlog" | "done" | "delete"> = {};
     uncompletedPlanTasks.forEach(pt => {
       if (pt.task?.id) initial[pt.task.id] = "today";
     });
     return initial;
   });
 
-  const handleChoiceChange = (taskId: string, choice: "today" | "backlog" | "delete") => {
+  const inProgressTasks = uncompletedPlanTasks.filter(
+    pt => pt.task && (pt.task.isSplittable || (pt.task.actualMinutes && pt.task.actualMinutes > 0))
+  );
+  const unstartedTasks = uncompletedPlanTasks.filter(
+    pt => pt.task && !pt.task.isSplittable && (!pt.task.actualMinutes || pt.task.actualMinutes === 0)
+  );
+
+  const handleChoiceChange = (taskId: string, choice: "today" | "backlog" | "done" | "delete") => {
     setChoices(prev => ({ ...prev, [taskId]: choice }));
+  };
+
+  const handleSelectAllToday = () => {
+    const updated: Record<string, "today" | "backlog" | "done" | "delete"> = {};
+    uncompletedPlanTasks.forEach(pt => {
+      if (pt.task?.id) updated[pt.task.id] = "today";
+    });
+    setChoices(updated);
   };
 
   const handleSubmit = async () => {
@@ -45,7 +62,7 @@ export function OutstandingTasksModal({ isOpen, unreviewedPlan, currentDate }: O
         .map(pt => {
           const taskId = pt.task?.id;
           if (!taskId) return null;
-          const choice = choices[taskId];
+          const choice = choices[taskId] || "today";
           return { taskId, action: choice.toUpperCase() };
         })
         .filter((item): item is { taskId: string; action: string } => item !== null);
@@ -62,98 +79,80 @@ export function OutstandingTasksModal({ isOpen, unreviewedPlan, currentDate }: O
 
   return (
     <Dialog open={isOpen} onOpenChange={() => {}}>
-      <DialogContent className="bg-card text-card-foreground border-border sm:max-w-[600px] max-h-[85vh] flex flex-col p-6 overflow-hidden rounded-2xl shadow-2xl">
+      <DialogContent className="bg-card text-card-foreground border-border sm:max-w-[620px] max-h-[85vh] flex flex-col p-6 overflow-hidden rounded-2xl shadow-2xl">
         <DialogHeader>
           <div className="flex items-center space-x-3 mb-1">
-            <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center text-xl">
+            <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center text-xl shrink-0">
               ☀️
             </div>
-            <DialogTitle className="text-lg font-bold text-foreground">
-              {t.outstanding.title}
-            </DialogTitle>
+            <div className="flex-1">
+              <DialogTitle className="text-lg font-bold text-foreground">
+                {t.outstanding.title}
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground text-xs leading-relaxed pt-0.5">
+                {t.outstanding.description(unreviewedPlan.planDate)}
+              </DialogDescription>
+            </div>
           </div>
-          <DialogDescription className="text-muted-foreground text-xs leading-relaxed pt-1">
-            {t.outstanding.description(unreviewedPlan.planDate)}
-          </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto mt-4 pr-1 space-y-3.5 scrollbar-thin">
-          {uncompletedPlanTasks.map(pt => {
-            const task = pt.task;
-            if (!task) return null;
-            const currentChoice = choices[task.id] ?? "today";
-
-            return (
-              <div
-                key={task.id}
-                className="p-4 bg-muted/40 border border-border rounded-xl flex flex-col gap-3 hover:border-border/80 transition-all"
-              >
-                <div className="flex justify-between items-start gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-sm text-foreground truncate" title={task.title}>
-                      {task.title}
-                    </div>
-                    {task.category && (
-                      <span
-                        className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border mt-1.5"
-                        style={{
-                          backgroundColor: `${task.category.color}10`,
-                          color: task.category.color,
-                          borderColor: `${task.category.color}25`,
-                        }}
-                      >
-                        {task.category.name}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2">
-                  {/* Move to Today */}
-                  <button
-                    type="button"
-                    onClick={() => handleChoiceChange(task.id, "today")}
-                    className={`py-1.5 px-3 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
-                      currentChoice === "today"
-                        ? "bg-emerald-600/10 text-emerald-400 border-emerald-500/30"
-                        : "bg-muted border-border text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-                    }`}
-                  >
-                    {t.outstanding.moveToToday}
-                  </button>
-
-                  {/* Return to Backlog */}
-                  <button
-                    type="button"
-                    onClick={() => handleChoiceChange(task.id, "backlog")}
-                    className={`py-1.5 px-3 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
-                      currentChoice === "backlog"
-                        ? "bg-blue-600/10 text-blue-400 border-blue-500/30"
-                        : "bg-muted border-border text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-                    }`}
-                  >
-                    {t.outstanding.moveToBacklog}
-                  </button>
-
-                  {/* Delete */}
-                  <button
-                    type="button"
-                    onClick={() => handleChoiceChange(task.id, "delete")}
-                    className={`py-1.5 px-3 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
-                      currentChoice === "delete"
-                        ? "bg-red-600/10 text-red-400 border-red-500/30"
-                        : "bg-muted border-border text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-                    }`}
-                  >
-                    {t.outstanding.delete}
-                  </button>
-                </div>
+        <div className="flex-1 overflow-y-auto mt-3 pr-1 space-y-4 scrollbar-thin">
+          {/* In progress section */}
+          {inProgressTasks.length > 0 && (
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>{t.outstanding.inProgressSection}</span>
               </div>
-            );
-          })}
+              <div className="space-y-2.5">
+                {inProgressTasks.map(pt => pt.task && (
+                  <RolloverTaskItem
+                    key={pt.task.id}
+                    task={pt.task}
+                    isInProgress={true}
+                    currentChoice={choices[pt.task.id] || "today"}
+                    onChoiceChange={(choice) => handleChoiceChange(pt.task.id, choice)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Unstarted section */}
+          {unstartedTasks.length > 0 && (
+            <div className="space-y-2.5">
+              {inProgressTasks.length > 0 && (
+                <div className="text-xs font-semibold text-muted-foreground pt-1">
+                  {t.outstanding.unstartedSection}
+                </div>
+              )}
+              <div className="space-y-2.5">
+                {unstartedTasks.map(pt => pt.task && (
+                  <RolloverTaskItem
+                    key={pt.task.id}
+                    task={pt.task}
+                    isInProgress={false}
+                    currentChoice={choices[pt.task.id] || "today"}
+                    onChoiceChange={(choice) => handleChoiceChange(pt.task.id, choice)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        <DialogFooter className="mt-5 border-t border-border pt-4 shrink-0 flex items-center justify-end gap-3">
+        <DialogFooter className="mt-4 border-t border-border pt-4 shrink-0 flex items-center justify-between gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleSelectAllToday}
+            className="text-xs text-muted-foreground hover:text-foreground cursor-pointer flex items-center gap-1.5 h-8"
+          >
+            <CheckCheck className="w-3.5 h-3.5" />
+            <span>{t.outstanding.continueAll}</span>
+          </Button>
+
           <Button
             disabled={isReviewing}
             className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold h-9 px-5 rounded-xl text-xs cursor-pointer shadow-lg shadow-primary/10 transition-all"

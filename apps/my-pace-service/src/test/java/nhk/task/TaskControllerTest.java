@@ -183,6 +183,24 @@ class TaskControllerTest {
 
             verify(taskService, times(1)).updateTask(eq(taskId), any(TaskUpdateRequest.class), eq(userId));
         }
+
+        @Test
+        @DisplayName("Should return 200 OK when partial update request without title is sent")
+        void updateTask_PartialUpdate_Success() throws Exception {
+            TaskUpdateRequest request = new TaskUpdateRequest(
+                    null, null, null, null, null, false, true, null, null, null, null, null, null, null, null, null, null
+            );
+
+            when(taskService.updateTask(eq(taskId), any(TaskUpdateRequest.class), eq(userId))).thenReturn(sampleTaskDto);
+
+            mockMvc.perform(put("/api/tasks/{taskId}", taskId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id", is(taskId.toString())));
+
+            verify(taskService, times(1)).updateTask(eq(taskId), any(TaskUpdateRequest.class), eq(userId));
+        }
     }
 
     @Nested

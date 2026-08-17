@@ -51,10 +51,11 @@ public class TaskPriorityScorer {
             int est = t.getEstimatedMinutes();
             int act = t.getActualMinutes() != null ? t.getActualMinutes() : 0;
 
+            LocalDateTime nowLdt = LocalDateTime.now(ctx.zoneId());
             List<TaskTimeBlock> existingTaskBlocks = ctx.taskTimeBlocksByTaskId().getOrDefault(t.getId(), Collections.emptyList());
             int busyMinutes = 0;
             for (TaskTimeBlock b : existingTaskBlocks) {
-                if ("BUSY".equalsIgnoreCase(b.getAvailabilityStatus()) && !b.getStartTime().toLocalDate().isBefore(ctx.startDate())) {
+                if ("BUSY".equalsIgnoreCase(b.getAvailabilityStatus()) && b.getEndTime().isAfter(nowLdt)) {
                     busyMinutes += (int) java.time.Duration.between(b.getStartTime(), b.getEndTime()).toMinutes();
                 }
             }
@@ -71,11 +72,11 @@ public class TaskPriorityScorer {
 
             int priorityRank;
             if (isUrgent && isImportant) {
-                // Rank 0: High Risk Q1, Rank 2: Low Risk Q1
-                priorityRank = isHighRisk ? 0 : 2;
+                // Rank 0: High Risk Q1, Rank 1: Low Risk / Standard Q1
+                priorityRank = isHighRisk ? 0 : 1;
             } else if (!isUrgent && isImportant) {
-                // Rank 1: Standard Q2
-                priorityRank = 1;
+                // Rank 2: Standard Q2
+                priorityRank = 2;
             } else if (isUrgent && !isImportant) {
                 if (isHighRisk) {
                     priorityRank = 0; // Rank 0: Escalated Q3
@@ -105,7 +106,18 @@ public class TaskPriorityScorer {
             }
         }
 
-        Comparator<TaskQueueItem> queueComparator = (a, b) -> {
+        Comparator<TaskQueueItem> queueComparator = getQueueComparator(ctx);
+
+        for (List<TaskQueueItem> queue : dateTaskQueues.values()) {
+            queue.sort(queueComparator);
+        }
+        backlogQueue.sort(queueComparator);
+
+        return new TaskQueueResult(dateTaskQueues, backlogQueue, datesWithDailyPlan, userTaskMap);
+    }
+
+    public static Comparator<TaskQueueItem> getQueueComparator(ScheduleContext ctx) {
+        return (a, b) -> {
             if (a.priorityRank != b.priorityRank) return Integer.compare(a.priorityRank, b.priorityRank);
             
             // Soft deadline cho task Gấp nhưng không có Hạn chót: 23:59 Chủ Nhật của tuần lập lịch hiện tại
@@ -124,13 +136,6 @@ public class TaskPriorityScorer {
             // "Task nào tốn ít thời gian (Remaining Minutes) hơn thì làm trước" -> Ascending order
             return Integer.compare(a.remainingMinutes, b.remainingMinutes);
         };
-
-        for (List<TaskQueueItem> queue : dateTaskQueues.values()) {
-            queue.sort(queueComparator);
-        }
-        backlogQueue.sort(queueComparator);
-
-        return new TaskQueueResult(dateTaskQueues, backlogQueue, datesWithDailyPlan, userTaskMap);
     }
 
     public Map<LocalDate, Integer> calculateCumulativeFreeTimeMap(ScheduleContext ctx) {

@@ -81,10 +81,17 @@ public class AutoScheduleDataLoader {
             planIds.add(plan.getId());
         }
 
+        java.time.LocalDateTime endDateTime;
+        if (sleepMin < wakeMin) {
+            endDateTime = endDate.plusDays(1).atStartOfDay().plusMinutes(sleepMin);
+        } else {
+            endDateTime = endDate.atTime(LocalTime.MAX);
+        }
+
         List<TaskTimeBlock> allBlocksInRange = timeBlockRepository.findByUserIdAndDateRange(
                 userId,
                 startDate.atStartOfDay(),
-                endDate.atTime(LocalTime.MAX)
+                endDateTime
         );
         Map<LocalDate, List<TaskTimeBlock>> blocksByDate = allBlocksInRange.stream()
                 .collect(Collectors.groupingBy(b -> b.getStartTime().toLocalDate()));
@@ -106,7 +113,7 @@ public class AutoScheduleDataLoader {
             List<TaskTimeBlock> taskBlocks = timeBlockRepository.findByTaskIdInAndDateRange(
                     taskIds,
                     startDate.atStartOfDay(),
-                    endDate.atTime(LocalTime.MAX)
+                    endDateTime
             );
             blocksByTaskId = taskBlocks.stream().collect(Collectors.groupingBy(TaskTimeBlock::getTaskId));
         }

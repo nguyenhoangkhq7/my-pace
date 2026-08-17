@@ -79,6 +79,11 @@ export interface Translations {
     editTomorrow: string;
     planConfirmed: string;
     allDoneToday: string;
+    planLockedError: string;
+    savePlanSuccess: string;
+    savePlanError: string;
+    excessTasksRemovedSuccess: (count: number) => string;
+    excessTasksNone: string;
   };
   planning: {
     remainingTime: string;
@@ -92,6 +97,9 @@ export interface Translations {
     clickToAdd: string;
     scheduledTitle: (used: string) => string;
     remainingTitle: (rem: string) => string;
+    overloadWarning: string;
+    estimatedPrefix: string;
+    maxPerDay: (amount: string) => string;
   };
   execution: {
     totalAvailable: string;
@@ -103,6 +111,17 @@ export interface Translations {
     availableToWork: string;
     availableTitle: (val: string) => string;
     bufferTitle: (pct: number, val: string) => string;
+    exceedsSleepTitle: string;
+    exceedsSleepDesc: (time?: string | null) => string;
+    removeExcessBtn: string;
+  };
+  overload: {
+    title: string;
+    description: (timeStr: string) => string;
+    noDuration: string;
+    removeBtn: string;
+    keepEditing: string;
+    saveAnyway: string;
   };
   startMyDay: {
     title: string;
@@ -159,9 +178,14 @@ export interface Translations {
   outstanding: {
     title: string;
     description: (date: string) => string;
+    inProgressSection: string;
+    unstartedSection: string;
     moveToToday: string;
     moveToBacklog: string;
+    markDone: string;
     delete: string;
+    continueAll: string;
+    progressLabel: (actual: string, estimated: string, remaining: string) => string;
     confirmBtn: string;
     processing: string;
     successMessage: string;
@@ -282,12 +306,8 @@ export interface Translations {
     statusFree: string;
     autoScheduleHelpTitle: string;
     autoScheduleHelpDesc: string;
-    autoScheduleHelpQ1: string;
-    autoScheduleHelpQ2: string;
-    autoScheduleHelpQ3: string;
-    autoScheduleHelpQ4: string;
+    autoScheduleHelpPriority: string;
     autoScheduleHelpException: string;
-    autoScheduleHelpRules: string;
   };
   availableTime: {
     remaining: string;

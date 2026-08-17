@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Layers } from "lucide-react";
+import { Layers, AlertCircle } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ interface QuickAddSplittableButtonProps {
   onMinChunkChange: (val: number | null) => void;
   maxDailyDuration: number | null;
   onMaxDailyChange: (val: number | null) => void;
+  estimatedMinutes?: number | null;
 }
 
 const MIN_CHUNK_PRESETS = [
@@ -32,35 +33,68 @@ export function QuickAddSplittableButton({
   onMinChunkChange,
   maxDailyDuration,
   onMaxDailyChange,
+  estimatedMinutes,
 }: QuickAddSplittableButtonProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
   const maxDailyPresets = [
     { label: "2h", value: 120 },
-    { label: "3h", value: 180 },
     { label: "4h", value: 240 },
     { label: "6h", value: 360 },
+    { label: "8h", value: 480 },
+    { label: "12h", value: 720 },
     { label: t.sunsamaForm.unlimited, value: null },
   ];
+
+  const currentMinChunk = minChunkMinutes || 30;
+  const isMissingEst = isSplittable && (!estimatedMinutes || estimatedMinutes < 15);
+  const isChunkTooBig = isSplittable && !!estimatedMinutes && currentMinChunk > estimatedMinutes;
+  const isMaxDailyTooSmall = isSplittable && !!maxDailyDuration && maxDailyDuration < currentMinChunk;
+  const hasConflict = isMissingEst || isChunkTooBig || isMaxDailyTooSmall;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
           type="button"
-          title={t.sunsamaForm.splittableTitle}
+          title={hasConflict ? "Cần điều chỉnh cấu hình chia nhỏ" : t.sunsamaForm.splittableTitle}
           className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer border ${
-            isSplittable
+            hasConflict
+              ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/40 hover:bg-amber-500/25"
+              : isSplittable
               ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20"
               : "text-muted-foreground border-transparent hover:bg-muted/40 hover:text-foreground"
           }`}
         >
-          <Layers className="h-3.5 w-3.5 opacity-80" />
+          {hasConflict ? (
+            <AlertCircle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+          ) : (
+            <Layers className="h-3.5 w-3.5 opacity-80 shrink-0" />
+          )}
           {isSplittable && <span className="text-[11px] font-semibold">{t.sunsamaForm.splittableBadge}</span>}
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-80 p-3 space-y-3 bg-popover text-popover-foreground border-border shadow-lg" align="start">
+        {/* Real-time inline conflict warnings */}
+        {isMissingEst && (
+          <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-[11px] flex items-center gap-1.5 leading-tight">
+            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+            <span>Thời gian ước tính cần từ 15 phút trở lên để chia nhỏ.</span>
+          </div>
+        )}
+        {isChunkTooBig && (
+          <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-[11px] flex items-center gap-1.5 leading-tight">
+            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+            <span>Block tối thiểu ({currentMinChunk}p) lớn hơn tổng thời gian ({estimatedMinutes}p).</span>
+          </div>
+        )}
+        {isMaxDailyTooSmall && (
+          <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-[11px] flex items-center gap-1.5 leading-tight">
+            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+            <span>Thời lượng tối đa 1 ngày ({maxDailyDuration}p) nhỏ hơn 1 block ({currentMinChunk}p).</span>
+          </div>
+        )}
         {/* Toggle header */}
         <div className="space-y-1 pb-2 border-b border-border/50">
           <div className="flex items-center space-x-2">

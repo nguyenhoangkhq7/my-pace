@@ -72,7 +72,7 @@ export function BacklogMatrix({
     
     try {
       await planMyDay({
-        availableMinutes: targetPlan.availableMinutes || totalAvailable,
+        availableMinutes: totalAvailable || targetPlan?.availableMinutes || 0,
         tasks: newTasks
       });
       setSwapUrgentTask(null);
