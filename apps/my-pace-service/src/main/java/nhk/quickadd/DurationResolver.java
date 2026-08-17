@@ -9,21 +9,22 @@ import java.util.regex.Pattern;
  * No AI — pure regex + arithmetic.
  *
  * Examples:
- *   "2 tiếng"       → 120
- *   "30 phút"       → 30
- *   "45p", "45ph"   → 45
- *   "1h30", "1h30p" → 90
- *   "1.5h", "2,5h"  → 90 / 150
- *   "nửa tiếng"     → 30
- *   "tiếng rưỡi"    → 90
- *   "2 tiếng rưỡi"  → 150
- *   "tầm 45 phút"   → 45
+ *   "2 tiếng"               → 120
+ *   "30 phút"               → 30
+ *   "45p", "45ph"           → 45
+ *   "1h30", "1h30p"         → 90
+ *   "1.5h", "2,5h"          → 90 / 150
+ *   "nửa tiếng"             → 30
+ *   "tiếng rưỡi"            → 90
+ *   "hai tiếng rưỡi"        → 150
+ *   "mười lăm phút"         → 15
+ *   "tầm 45 phút"           → 45
  */
 class DurationResolver {
 
     // Matches: "2 tieng ruoi", "2 gio ruoi", "2h ruoi", "2g ruoi"
     private static final Pattern HOUR_RUOI_PATTERN = Pattern.compile(
-            "(\\d+)\\s*(?:tieng|gio|g|h(?:r|rs|our|ours)?)\\s*ruoi",
+            "(\\d+(?:\\.\\d+)?)\\s*(?:tieng|gio|g|h(?:r|rs|our|ours)?)\\s*ruoi",
             Pattern.CASE_INSENSITIVE
     );
 
@@ -42,7 +43,8 @@ class DurationResolver {
     Integer resolve(String expression) {
         if (expression == null || expression.isBlank()) return null;
 
-        String norm = DateResolver.normalizeVietnamese(expression.trim().toLowerCase()).replaceAll("\\s+", " ");
+        String normalized = VietnameseTextNormalizer.normalize(expression);
+        String norm = DateResolver.normalizeVietnamese(normalized.trim().toLowerCase()).replaceAll("\\s+", " ");
 
         // 1. Half-hour idioms: "nua tieng", "nua gio", "nua h"
         if (norm.contains("nua tieng") || norm.contains("nua gio") || norm.contains("nua h")) {
@@ -52,11 +54,10 @@ class DurationResolver {
         // 2. Standalone "tieng ruoi", "gio ruoi" (without preceding number -> defaults to 1.5 hours = 90 mins)
         if (norm.equals("tieng ruoi") || norm.equals("gio ruoi") ||
             norm.endsWith(" tieng ruoi") || norm.endsWith(" gio ruoi")) {
-            // Check if there is a number before it first
             Matcher ruoiMatcher = HOUR_RUOI_PATTERN.matcher(norm);
             if (ruoiMatcher.find()) {
-                int hours = Integer.parseInt(ruoiMatcher.group(1));
-                return hours * 60 + 30;
+                double hours = Double.parseDouble(ruoiMatcher.group(1));
+                return (int) Math.round(hours * 60 + 30);
             }
             return 90;
         }
@@ -64,8 +65,8 @@ class DurationResolver {
         // 3. "X tieng ruoi", "X gio ruoi", "Xh ruoi" (e.g. "2 tieng ruoi" -> 150)
         Matcher ruoiMatcher = HOUR_RUOI_PATTERN.matcher(norm);
         if (ruoiMatcher.find()) {
-            int hours = Integer.parseInt(ruoiMatcher.group(1));
-            return hours * 60 + 30;
+            double hours = Double.parseDouble(ruoiMatcher.group(1));
+            return (int) Math.round(hours * 60 + 30);
         }
 
         // 4. Hours + optional minutes: "2 tieng", "1.5h", "1h45", "1h45p", "2 gio 30 phut"

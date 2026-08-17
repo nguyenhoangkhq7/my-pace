@@ -90,6 +90,7 @@ public class GlobalExceptionHandler {
 
    @ExceptionHandler(IllegalArgumentException.class)
    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
+      log.error("IllegalArgumentException occurred: ", ex);
       return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
    }
 

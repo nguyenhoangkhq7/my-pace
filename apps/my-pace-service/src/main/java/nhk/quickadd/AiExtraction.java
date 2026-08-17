@@ -8,6 +8,7 @@ import java.util.List;
  * Contains raw expressions — no computed values, no UUIDs.
  */
 record AiExtraction(
+        String reasoning,           // CoT reasoning
         String intent,              // "time_block" | "deadline" | "open_task"
         String title,
         String dateExpression,      // e.g. "mai", "thứ 6", "cuối tuần"

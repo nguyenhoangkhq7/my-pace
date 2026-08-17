@@ -1,13 +1,13 @@
 package nhk.quickadd;
 
 import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * Deterministic parser for Vietnamese/English time expressions.
  * Converts raw strings into LocalTime.
- * No AI — pure string matching + arithmetic.
  *
  * Period resolution:
  *   "sáng"          → 08:00 default
@@ -26,9 +26,9 @@ class TimeResolver {
 
     public record TimeRange(LocalTime startTime, LocalTime endTime, Integer durationMinutes) {}
 
-    // Matches: "9-11 giờ tối", "9 - 11h", "9h30 - 11h tối", "14:00 - 16:30", "9-11 gio toi", "6am - 7am"
+    // Matches: "9-11 giờ tối", "9 - 11h", "9h30 - 11h tối", "14:00 - 16:30", "9-11 gio toi", "6am - 7am", "22h - 6h", "22h đến 6h", "9h sáng đến 11h", "10h sáng - 2h chiều"
     private static final Pattern RANGE_PATTERN = Pattern.compile(
-            "(\\d{1,2})(?:[h:](\\d{2}))?\\s*(?:[h:]|gio|g|am|pm)?\\s*[-–—]\\s*(\\d{1,2})(?:[h:](\\d{2}))?\\s*(?:[h:]|gio|g|am|pm)?\\s*(sang|chieu|toi|trua|dem|am|pm)?",
+            "(\\d{1,2})(?:[h:](\\d{2}))?\\s*(?:[h:]|gio|g)?\\s*(sang|chieu|toi|trua|dem|am|pm)?\\s*(?:[-–—]|den|đến|toi|tới)\\s*(\\d{1,2})(?:[h:](\\d{2}))?\\s*(?:[h:]|gio|g)?\\s*(sang|chieu|toi|trua|dem|am|pm)?",
             Pattern.CASE_INSENSITIVE
     );
 
@@ -56,17 +56,36 @@ class TimeResolver {
             Pattern.CASE_INSENSITIVE
     );
 
+    // Matches relative offsets requiring prefix "sau" / "in" / "after": "sau 15 phut", "sau 1h", "in 30 mins"
+    private static final Pattern RELATIVE_OFFSET_PREFIX_PATTERN = Pattern.compile(
+            "\\b(?:sau|after|in)\\s+(\\d+(?:\\.\\d+)?)\\s*(phut|ph|p|min|mins|tieng|gio|g|h)\\b",
+            Pattern.CASE_INSENSITIVE
+    );
+
+    // Matches relative offsets requiring suffix "nua" / "later": "15 phut nua", "2 tieng nua", "30 mins later"
+    private static final Pattern RELATIVE_OFFSET_SUFFIX_PATTERN = Pattern.compile(
+            "\\b(\\d+(?:\\.\\d+)?)\\s*(phut|ph|p|min|mins|tieng|gio|g|h)\\s*(?:nua|later|from\\s+now)\\b",
+            Pattern.CASE_INSENSITIVE
+    );
+
     private static final Pattern BARE_HOUR_PATTERN = Pattern.compile(
             "\\b(\\d{1,2})\\b"
     );
 
     public TimeRange resolveRange(String expression, String contextExpression) {
+        return resolveRange(expression, contextExpression, null);
+    }
+
+    public TimeRange resolveRange(String expression, String contextExpression, ZonedDateTime now) {
         if ((expression == null || expression.isBlank()) && (contextExpression == null || contextExpression.isBlank())) {
             return null;
         }
 
-        String mainText = expression != null ? expression.trim() : "";
-        String contextText = contextExpression != null ? contextExpression.trim() : "";
+        String normExpr = VietnameseTextNormalizer.normalize(expression);
+        String normCtx = VietnameseTextNormalizer.normalize(contextExpression);
+
+        String mainText = normExpr != null ? normExpr.trim() : "";
+        String contextText = normCtx != null ? normCtx.trim() : "";
         String combined = (mainText + " " + contextText).trim();
 
         if (combined.isBlank()) return null;
@@ -77,19 +96,35 @@ class TimeResolver {
         String extractedPeriod = extractPeriod(normCombined);
 
         Matcher rangeMatcher = RANGE_PATTERN.matcher(normMain);
-        if (rangeMatcher.find()) {
+        if (rangeMatcher.find() && rangeMatcher.group(1) != null && rangeMatcher.group(4) != null) {
             int startH = Integer.parseInt(rangeMatcher.group(1));
             int startM = rangeMatcher.group(2) != null ? Integer.parseInt(rangeMatcher.group(2)) : 0;
-            int endH = Integer.parseInt(rangeMatcher.group(3));
-            int endM = rangeMatcher.group(4) != null ? Integer.parseInt(rangeMatcher.group(4)) : 0;
+            String startPeriod = rangeMatcher.group(3) != null ? rangeMatcher.group(3).toLowerCase() : null;
 
-            String period = rangeMatcher.group(5) != null ? rangeMatcher.group(5).toLowerCase() : extractedPeriod;
+            int endH = Integer.parseInt(rangeMatcher.group(4));
+            int endM = rangeMatcher.group(5) != null ? Integer.parseInt(rangeMatcher.group(5)) : 0;
+            String endPeriod = rangeMatcher.group(6) != null ? rangeMatcher.group(6).toLowerCase() : null;
 
-            if (period != null) {
-                startH = applyPeriod(startH, period);
-                endH = applyPeriod(endH, period);
+            if (startPeriod == null && endPeriod != null) {
+                startPeriod = endPeriod;
+            }
+            if (endPeriod == null && startPeriod != null) {
+                endPeriod = startPeriod;
+            }
+            if (startPeriod == null && extractedPeriod != null) {
+                startPeriod = extractedPeriod;
+                endPeriod = extractedPeriod;
+            }
+
+            if (startPeriod != null) {
+                startH = applyPeriod(startH, startPeriod);
             } else {
                 startH = applyAmbiguousHeuristic(startH);
+            }
+
+            if (endPeriod != null) {
+                endH = applyPeriod(endH, endPeriod);
+            } else {
                 endH = applyAmbiguousHeuristic(endH);
             }
 
@@ -97,7 +132,14 @@ class TimeResolver {
             LocalTime end = safeTime(endH, endM);
 
             if (start != null && end != null) {
-                long duration = java.time.Duration.between(start, end).toMinutes();
+                long duration;
+                if (end.isBefore(start) || end.equals(start)) {
+                    // Cross-midnight range (e.g. 22:00 -> 06:00 is 8 hours = 480 minutes)
+                    duration = (24L * 60 - (start.getHour() * 60 + start.getMinute())) + (end.getHour() * 60 + end.getMinute());
+                } else {
+                    duration = java.time.Duration.between(start, end).toMinutes();
+                }
+
                 if (duration <= 0) {
                     duration = 60;
                     end = start.plusMinutes(60);
@@ -106,22 +148,29 @@ class TimeResolver {
             }
         }
 
-        LocalTime singleStart = resolve(expression, contextExpression);
+        LocalTime singleStart = resolve(expression, contextExpression, now);
         if (singleStart == null) return null;
         return new TimeRange(singleStart, null, null);
     }
 
     LocalTime resolve(String expression) {
-        return resolve(expression, null);
+        return resolve(expression, null, null);
     }
 
     LocalTime resolve(String expression, String contextExpression) {
+        return resolve(expression, contextExpression, null);
+    }
+
+    LocalTime resolve(String expression, String contextExpression, ZonedDateTime now) {
         if ((expression == null || expression.isBlank()) && (contextExpression == null || contextExpression.isBlank())) {
             return null;
         }
 
-        String mainText = expression != null ? expression.trim() : "";
-        String contextText = contextExpression != null ? contextExpression.trim() : "";
+        String normExpr = VietnameseTextNormalizer.normalize(expression);
+        String normCtx = VietnameseTextNormalizer.normalize(contextExpression);
+
+        String mainText = normExpr != null ? normExpr.trim() : "";
+        String contextText = normCtx != null ? normCtx.trim() : "";
         String combined = (mainText + " " + contextText).trim();
 
         if (combined.isBlank()) return null;
@@ -129,7 +178,13 @@ class TimeResolver {
         String normMain = DateResolver.normalizeVietnamese(mainText.toLowerCase());
         String normCombined = DateResolver.normalizeVietnamese(combined.toLowerCase());
 
-        // 1. Period-only shorthand ("sang", "chieu", "toi", "trua", "dem", "dau gio chieu", "cuoi ngay")
+        // 1. Relative time offset from now (MUST require "sau ..." or "... nữa/tới/later")
+        if (now != null) {
+            LocalTime relativeTime = resolveRelativeOffset(normMain, now);
+            if (relativeTime != null) return relativeTime;
+        }
+
+        // 2. Period-only shorthand ("sang", "chieu", "toi", "trua", "dem", "dau gio chieu", "cuoi ngay")
         if (!normMain.isBlank()) {
             LocalTime periodOnly = resolvePeriodOnly(normMain);
             if (periodOnly != null) return periodOnly;
@@ -138,10 +193,10 @@ class TimeResolver {
         // Extract period keyword if present in main text or context
         String extractedPeriod = extractPeriod(normCombined);
 
-        // 2. Pattern "X ruoi" ("8 ruoi", "8 ruoi sang", "7 ruoi toi")
+        // 3. Pattern "X ruoi" ("8 ruoi", "8 ruoi sang", "7 ruoi toi")
         if (!normMain.isBlank()) {
             Matcher ruoiMatcher = RUOI_TIME_PATTERN.matcher(normMain);
-            if (ruoiMatcher.find()) {
+            if (ruoiMatcher.find() && ruoiMatcher.group(1) != null) {
                 int hour = Integer.parseInt(ruoiMatcher.group(1));
                 String period = ruoiMatcher.group(2) != null ? ruoiMatcher.group(2).toLowerCase() : extractedPeriod;
                 hour = period != null ? applyPeriod(hour, period) : applyAmbiguousHeuristic(hour);
@@ -149,10 +204,10 @@ class TimeResolver {
             }
         }
 
-        // 3. Pattern "X kem Y" ("8h kem 15", "8 gio kem 15")
+        // 4. Pattern "X kem Y" ("8h kem 15", "8 gio kem 15")
         if (!normMain.isBlank()) {
             Matcher kemMatcher = KEM_TIME_PATTERN.matcher(normMain);
-            if (kemMatcher.find()) {
+            if (kemMatcher.find() && kemMatcher.group(1) != null && kemMatcher.group(2) != null) {
                 int hour = Integer.parseInt(kemMatcher.group(1));
                 int kemMins = Integer.parseInt(kemMatcher.group(2));
                 String period = kemMatcher.group(3) != null ? kemMatcher.group(3).toLowerCase() : extractedPeriod;
@@ -164,21 +219,23 @@ class TimeResolver {
             }
         }
 
-        // 4. Pattern: "8 gio toi", "3 gio chieu", "3pm"
+        // 5. Pattern: "8 gio toi", "3 gio chieu", "3pm"
         if (!normMain.isBlank()) {
             Matcher hourPeriod = HOUR_PERIOD_PATTERN.matcher(normMain);
-            if (hourPeriod.find()) {
+            if (hourPeriod.find() && hourPeriod.group(1) != null) {
                 int hour = Integer.parseInt(hourPeriod.group(1));
-                String period = hourPeriod.group(2).toLowerCase();
-                hour = applyPeriod(hour, period);
+                String period = hourPeriod.group(2) != null ? hourPeriod.group(2).toLowerCase() : null;
+                if (period != null) {
+                    hour = applyPeriod(hour, period);
+                }
                 return safeTime(hour, 0);
             }
         }
 
-        // 5. Pattern: Standard / Flexible time pattern: "3h", "15:30", "3h30", "8 giờ", "8g", "3pm"
+        // 6. Pattern: Standard / Flexible time pattern: "3h", "15:30", "3h30", "8 giờ", "8g", "3pm"
         if (!normMain.isBlank()) {
             Matcher timeMatcher = TIME_PATTERN.matcher(normMain);
-            if (timeMatcher.find()) {
+            if (timeMatcher.find() && timeMatcher.group(1) != null) {
                 int hour = Integer.parseInt(timeMatcher.group(1));
                 int minute = timeMatcher.group(2) != null ? Integer.parseInt(timeMatcher.group(2)) : 0;
                 String trailingPeriod = timeMatcher.group(3);
@@ -189,16 +246,43 @@ class TimeResolver {
             }
         }
 
-        // 6. Fallback: If timeExpression only has bare hour (e.g. "8") and extractedPeriod is present
+        // 7. Fallback: If timeExpression only has bare hour (e.g. "8") and extractedPeriod is present
         if (!normMain.isBlank() && extractedPeriod != null) {
             Matcher bareMatcher = BARE_HOUR_PATTERN.matcher(normMain);
-            if (bareMatcher.find()) {
+            if (bareMatcher.find() && bareMatcher.group(1) != null) {
                 int hour = Integer.parseInt(bareMatcher.group(1));
                 hour = applyPeriod(hour, extractedPeriod);
                 return safeTime(hour, 0);
             }
         }
 
+        return null;
+    }
+
+    private LocalTime resolveRelativeOffset(String normMain, ZonedDateTime now) {
+        if (normMain.contains("lat nua") || normMain.contains("ti nua") || normMain.contains("chut nua")) {
+            return now.plusMinutes(30).toLocalTime().withSecond(0).withNano(0);
+        }
+
+        Matcher matcher = RELATIVE_OFFSET_PREFIX_PATTERN.matcher(normMain);
+        if (!matcher.find() || matcher.group(1) == null || matcher.group(2) == null) {
+            matcher = RELATIVE_OFFSET_SUFFIX_PATTERN.matcher(normMain);
+            if (!matcher.find() || matcher.group(1) == null || matcher.group(2) == null) {
+                return null;
+            }
+        }
+
+        double amount = Double.parseDouble(matcher.group(1));
+        String unit = matcher.group(2).toLowerCase();
+        int minutes;
+        if (unit.startsWith("tieng") || unit.startsWith("gio") || unit.equals("g") || unit.equals("h")) {
+            minutes = (int) Math.round(amount * 60);
+        } else {
+            minutes = (int) Math.round(amount);
+        }
+        if (minutes > 0) {
+            return now.plusMinutes(minutes).toLocalTime().withSecond(0).withNano(0);
+        }
         return null;
     }
 

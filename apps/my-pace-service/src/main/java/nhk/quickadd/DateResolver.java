@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
  *   "ngày mốt", "ngày kia"  → today + 2
  *   "3 ngày nữa"            → today + 3
  *   "sau 5 ngày"            → today + 5
- *   "thứ 6"                 → next Friday
+ *   "thứ 6"                 → this Friday (if not passed) or today (if today is Friday)
  *   "thứ 4 tuần sau"        → Wednesday of next week
  *   "cuối tuần"             → next Saturday
  *   "cuối tuần sau"         → Saturday of next week
@@ -71,7 +71,8 @@ class DateResolver {
         if (expression == null || expression.isBlank()) return null;
 
         LocalDate today = now.toLocalDate();
-        String norm = normalizeVietnamese(expression.trim().toLowerCase()).replaceAll("\\s+", " ");
+        String normalized = VietnameseTextNormalizer.normalize(expression);
+        String norm = normalizeVietnamese(normalized.trim().toLowerCase()).replaceAll("\\s+", " ");
 
         // 1. Relative day keywords
         if (matchesAny(norm, TODAY_CANDIDATES)) return today;
@@ -85,14 +86,30 @@ class DateResolver {
                 int days = Integer.parseInt(daysMatcher.group(1));
                 return today.plusDays(days);
             }
+            // Check for specific weekday in 2+ weeks (e.g. "thứ 2 sau 2 tuần", "t3 2 tuần nữa")
             Matcher weeksMatcher = RELATIVE_WEEKS_PATTERN.matcher(norm);
             if (weeksMatcher.find()) {
                 int weeks = Integer.parseInt(weeksMatcher.group(1));
+                DayOfWeek dow = parseDayOfWeek(norm);
+                if (dow != null) {
+                    return today.plusWeeks(weeks).with(dow);
+                }
                 return today.plusWeeks(weeks);
             }
         }
 
-        // 3. Next week specific weekdays ("thu 2 tuan sau", "t3 tuan toi", "thu sau tuan sau")
+        // 3. Next next week: "tuan sau nua" (e.g. "thu 2 tuan sau nua", "cuoi tuan sau nua")
+        if (norm.contains("tuan sau nua") || norm.contains("tuan toi nua")) {
+            DayOfWeek dow = parseDayOfWeek(norm);
+            if (dow != null) {
+                return today.plusWeeks(2).with(dow);
+            }
+            if (norm.contains("cuoi tuan")) return today.plusWeeks(2).with(DayOfWeek.SATURDAY);
+            if (norm.contains("dau tuan")) return today.plusWeeks(2).with(DayOfWeek.MONDAY);
+            return today.plusWeeks(2);
+        }
+
+        // 4. Next week specific weekdays ("thu 2 tuan sau", "t3 tuan toi", "thu sau tuan sau")
         boolean isNextWeek = norm.contains("tuan sau") || norm.contains("tuan toi") || norm.contains("next week");
         if (isNextWeek) {
             DayOfWeek dow = parseDayOfWeek(norm);
@@ -104,20 +121,34 @@ class DateResolver {
             return today.plusWeeks(1);
         }
 
-        // 4. Days of week for current/upcoming cycle — always returns NEXT occurrence
-        DayOfWeek dow = parseDayOfWeek(norm);
-        if (dow != null) {
-            return nextWeekday(today, dow);
+        // 5. This week specific weekdays ("thu 6 tuan nay", "t2 tuan nay")
+        boolean isThisWeek = norm.contains("tuan nay") || norm.contains("this week");
+        if (isThisWeek) {
+            DayOfWeek dow = parseDayOfWeek(norm);
+            if (dow != null) {
+                return today.with(dow);
+            }
         }
 
-        // 5. Week / month boundaries
-        if (matchesAny(norm, "cuoi tuan", "weekend", "cuoi tuan nay")) return nextWeekday(today, DayOfWeek.SATURDAY);
-        if (matchesAny(norm, "dau tuan", "dau tuan nay")) return nextWeekday(today, DayOfWeek.MONDAY);
+        // 6. Days of week without explicit week indicator
+        DayOfWeek dow = parseDayOfWeek(norm);
+        if (dow != null) {
+            return resolveWeekday(today, dow);
+        }
+
+        // 7. Week / month boundaries
+        if (matchesAny(norm, "cuoi tuan", "weekend", "cuoi tuan nay")) {
+            if (today.getDayOfWeek() == DayOfWeek.SATURDAY || today.getDayOfWeek() == DayOfWeek.SUNDAY) {
+                return today;
+            }
+            return today.with(DayOfWeek.SATURDAY);
+        }
+        if (matchesAny(norm, "dau tuan", "dau tuan nay")) return resolveWeekday(today, DayOfWeek.MONDAY);
         if (matchesAny(norm, "cuoi thang", "cuoi thang nay")) return today.with(TemporalAdjusters.lastDayOfMonth());
         if (matchesAny(norm, "dau thang sau", "dau thang toi")) return today.plusMonths(1).with(TemporalAdjusters.firstDayOfMonth());
         if (matchesAny(norm, "thang sau", "thang toi")) return today.plusMonths(1);
 
-        // 6. Explicit date format: "ngay 20 thang 10" or "20 thang 10"
+        // 7. Explicit date format: "ngay 20 thang 10" or "20 thang 10"
         Matcher dateTextMatcher = DATE_TEXT_PATTERN.matcher(norm);
         if (dateTextMatcher.find()) {
             int day = Integer.parseInt(dateTextMatcher.group(1));
@@ -126,7 +157,7 @@ class DateResolver {
             return safeDate(year, month, day);
         }
 
-        // 7. Explicit date format: "ngay 15/8", "15/08", "15-8-2026"
+        // 8. Explicit date format: "ngay 15/8", "15/08", "15-8-2026"
         Matcher dateSlashMatcher = DATE_SLASH_PATTERN.matcher(norm);
         if (dateSlashMatcher.find()) {
             int day = Integer.parseInt(dateSlashMatcher.group(1));
@@ -135,7 +166,7 @@ class DateResolver {
             return safeDate(year, month, day);
         }
 
-        // 8. ISO date fallback: YYYY-MM-DD
+        // 9. ISO date fallback: YYYY-MM-DD
         return tryParseIso(expression.trim());
     }
 
@@ -165,10 +196,18 @@ class DateResolver {
         return y;
     }
 
-    /** Returns next occurrence of target weekday. If today IS that day → 7 days forward. */
-    private LocalDate nextWeekday(LocalDate today, DayOfWeek target) {
+    /**
+     * Resolves weekday:
+     * - If today IS that day → return today
+     * - If target is later in the current week → return this week's occurrence
+     * - If target already passed this week → return next week's occurrence
+     */
+    private LocalDate resolveWeekday(LocalDate today, DayOfWeek target) {
         if (today.getDayOfWeek() == target) {
-            return today.plusDays(7);
+            return today;
+        }
+        if (today.getDayOfWeek().getValue() < target.getValue()) {
+            return today.with(target);
         }
         return today.with(TemporalAdjusters.next(target));
     }

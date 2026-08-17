@@ -115,8 +115,8 @@ public class LexiconManager {
         return switch (category) {
             case "MANDATORY", "CRITICAL_CONSEQUENCE", "EXPLICIT_IMPORTANT" -> 100;
             case "GOAL" -> 50;
-            case "HEALTH", "FINANCE", "WORK", "EDUCATION", "TECHNOLOGY" -> 30;
-            case "PRODUCTIVITY", "FITNESS", "COMMUNITY" -> 25;
+            case "HEALTH", "FINANCE", "WORK", "EDUCATION", "TECHNOLOGY" -> 50;
+            case "PRODUCTIVITY", "FITNESS", "COMMUNITY" -> 50;
             case "TRAVEL" -> 20;
             
             case "DEADLINE", "OVERDUE", "TODAY", "IMMEDIATE", "CRITICAL" -> 100;

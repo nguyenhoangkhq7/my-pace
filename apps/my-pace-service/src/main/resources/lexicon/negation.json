@@ -4,7 +4,8 @@
     "not necessary", "no need", "khong can", "không cần", "don't need to", "does not need",
     "not required", "khong bat buoc", "không bắt buộc", "optional", "tuy chon", "tùy chọn",
     "khong can lam ngay", "không cần làm ngay", "khong can lam", "không cần làm",
-    "khong can nop", "không cần nộp"
+    "khong can nop", "không cần nộp", "chua can nop", "chưa cần nộp", "khi nao ranh thi lam", "khi nào rảnh thì làm",
+    "khi nao ranh", "khi nào rảnh"
   ],
   "NOT_URGENT": [
     "khong gap", "không gấp", "not urgent", "khong khan cap", "không khẩn cấp",
