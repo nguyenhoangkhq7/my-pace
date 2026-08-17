@@ -12,22 +12,30 @@ import type { CreateEventPayload } from "@/features/calendar/types";
 
 export function useQuickAdd() {
   const [result, setResult] = useState<QuickAddResult | null>(null);
+  const [rawText, setRawText] = useState<string>("");
   const [status, setStatus] = useState<QuickAddStatus>("idle");
+  const [isReporting, setIsReporting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const { createTask } = useTasks();
   const { triggerAutoSchedule } = useAutoSchedule();
   const queryClient = useQueryClient();
 
-  const parseText = async (text: string): Promise<QuickAddResult | null> => {
+  const parseText = async (
+    text: string,
+    options?: { forceAi?: boolean }
+  ): Promise<QuickAddResult | null> => {
     if (!text.trim()) return null;
 
     setStatus("loading");
     setError(null);
-    setResult(null);
+    setRawText(text);
 
     try {
-      const res = await fetchClient.post<QuickAddResult>("quick-add", { text });
+      const res = await fetchClient.post<QuickAddResult>("quick-add", {
+        text,
+        forceAi: Boolean(options?.forceAi),
+      });
 
       setResult(res.data);
       setStatus("preview");
@@ -36,6 +44,56 @@ export function useQuickAdd() {
       setError(getApiErrorMessage(err, "Network error"));
       setStatus("error");
       return null;
+    }
+  };
+
+  const reportError = async (feedbackNote?: string): Promise<boolean> => {
+    if (!result || !rawText) return false;
+
+    setIsReporting(true);
+    const prevSource = result.source;
+    const note = typeof feedbackNote === "string" ? feedbackNote : "User reported incorrect parsing";
+
+    try {
+      // 1. Send feedback payload to system with clean plain object
+      await fetchClient.post("feedbacks", {
+        category: "QUICK_ADD_ERROR",
+        content: JSON.stringify({
+          rawText,
+          source: prevSource || "UNKNOWN",
+          parsedResult: {
+            type: result.type,
+            title: result.title,
+            dueDate: result.type === "task" ? result.dueDate : undefined,
+            eventDate: result.type === "event" ? result.eventDate : undefined,
+            startTime: result.type === "event" ? result.startTime : undefined,
+            endTime: result.type === "event" ? result.endTime : undefined,
+            notes: result.notes,
+            estimatedMinutes: result.estimatedMinutes,
+          },
+          note,
+          timestamp: new Date().toISOString(),
+        }),
+      });
+
+      // 2. If it was Fast Path, automatically re-extract using AI Mode behind the scenes
+      if (prevSource === "FAST_PATH") {
+        toast.info("Đang gửi báo cáo...", { duration: 1500 });
+        const aiResult = await parseText(rawText, { forceAi: true });
+        if (aiResult) {
+          toast.success("Đã ghi nhận báo cáo và cập nhật lại!");
+          return true;
+        }
+      } else {
+        toast.success("Đã ghi nhận báo cáo lỗi để cải thiện hệ thống!");
+        return true;
+      }
+      return false;
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Không thể gửi báo cáo"));
+      return false;
+    } finally {
+      setIsReporting(false);
     }
   };
 
@@ -153,9 +211,12 @@ export function useQuickAdd() {
 
   return {
     result,
+    rawText,
     status,
+    isReporting,
     error,
     parseText,
+    reportError,
     confirmCreate,
     toggleType,
     reset,

@@ -62,8 +62,8 @@ public class IntentClassifier {
     );
 
     public String classify(AiExtraction extraction, LocalTime resolvedStartTime, String rawText) {
-        // 1. All-day event: user explicitly said "cả ngày", "nghỉ lễ", "all day", etc.
-        if (extraction.allDayHint()) {
+        // 1. All-day event or Recurring event
+        if (extraction.allDayHint() || (extraction.recurrenceExpression() != null && !extraction.recurrenceExpression().isBlank())) {
             return "event";
         }
 

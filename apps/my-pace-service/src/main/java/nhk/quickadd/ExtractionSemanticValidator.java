@@ -30,6 +30,7 @@ public class ExtractionSemanticValidator {
     public AiExtraction validate(AiExtraction extraction, String rawText) {
         if (extraction == null) return null;
 
+        String sanitizedTitle = sanitizeTitle(extraction.title());
         String sanitizedDuration = sanitizeDuration(extraction.durationExpression());
         String sanitizedRecurrence = sanitizeRecurrence(extraction.recurrenceExpression());
         String sanitizedDate = sanitizeExpression(extraction.dateExpression());
@@ -46,10 +47,13 @@ public class ExtractionSemanticValidator {
             }
         }
 
+        double clampedI = clampScore(extraction.i(), 0.5);
+        double clampedU = clampScore(extraction.u(), 0.5);
+
         return new AiExtraction(
                 extraction.reasoning(),
                 extraction.intent(),
-                extraction.title(),
+                sanitizedTitle,
                 sanitizedDate,
                 sanitizedTime,
                 sanitizedDuration,
@@ -59,9 +63,22 @@ public class ExtractionSemanticValidator {
                 extraction.checklists(),
                 allDay,
                 sanitizedRecurrence,
-                extraction.i(),
-                extraction.u()
+                clampedI,
+                clampedU
         );
+    }
+
+    private String sanitizeTitle(String title) {
+        if (title == null || title.isBlank()) return title;
+        return title.trim()
+                .replaceAll("^(?:cho việc|để|vào lúc)\\s+", "")
+                .replaceAll("\\s+(?:vào lúc|vào|lúc|at)$", "")
+                .trim();
+    }
+
+    private double clampScore(Double score, double defaultValue) {
+        if (score == null || Double.isNaN(score)) return defaultValue;
+        return Math.max(0.0, Math.min(1.0, score));
     }
 
     private String sanitizeDuration(String expr) {

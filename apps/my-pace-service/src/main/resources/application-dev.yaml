@@ -15,4 +15,4 @@ spring:
 app:
   groq:
     api-key: ${GROQ_API_KEY}
-    model: ${GROQ_MODEL:qwen/qwen3.6-27b}
+    model: ${GROQ_MODEL:openai/gpt-oss-20b}

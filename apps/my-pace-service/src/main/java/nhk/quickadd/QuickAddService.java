@@ -94,7 +94,7 @@ public class QuickAddService {
             ExtractionSemanticValidator semanticValidator,
             FastPathParser fastPathParser,
             @Value("${app.groq.api-key:}") String apiKey,
-            @Value("${app.groq.model:llama-3.1-8b-instant}") String model,
+            @Value("${app.groq.model:openai/gpt-oss-20b}") String model,
             @Value("classpath:prompts/quickadd.txt") Resource promptResource
     ) {
         this(
@@ -174,7 +174,7 @@ public class QuickAddService {
         this.schemaValidator     = schemaValidator != null ? schemaValidator : new ExtractionSchemaValidator();
         this.semanticValidator   = semanticValidator != null ? semanticValidator : new ExtractionSemanticValidator();
         this.apiKey             = apiKey;
-        this.groqClient         = new GroqClient(restClient, apiKey, model != null ? model : "llama-3.1-8b-instant");
+        this.groqClient         = new GroqClient(restClient, apiKey, model != null ? model : "openai/gpt-oss-20b");
         this.fastPathParser     = fastPathParser;
         try {
             if (promptResource != null && promptResource.exists()) {
@@ -200,12 +200,12 @@ public class QuickAddService {
         PreClassificationState preState = eisenhowerClassifier.preEvaluate(request.text(), goals, now);
 
         // 2. Fast-Path evaluation (Zero-LLM Latency for simple, unambiguous tasks)
-        if (fastPathParser != null) {
+        if (fastPathParser != null && !Boolean.TRUE.equals(request.forceAi())) {
             Optional<AiExtraction> fastExtraction = fastPathParser.tryFastParse(request.text());
             if (fastExtraction.isPresent()) {
                 log.debug("QuickAdd fast-path hit for query: '{}'", request.text());
                 AiExtraction validated = semanticValidator.validate(fastExtraction.get(), request.text());
-                return resolve(validated, request.text(), categories, goals, now, preState);
+                return resolve(validated, request.text(), categories, goals, now, preState, "FAST_PATH");
             }
         }
 
@@ -216,7 +216,7 @@ public class QuickAddService {
         // 3. Versioned LRU Cache Check (O(1) version retrieval)
         long contextVersion = userContextVersionService.getVersion(userId);
         String cacheKey = quickAddCache.buildKey(userId, contextVersion, request.text());
-        Optional<AiExtraction> cachedExtraction = quickAddCache.get(cacheKey);
+        Optional<AiExtraction> cachedExtraction = Boolean.TRUE.equals(request.forceAi()) ? Optional.empty() : quickAddCache.get(cacheKey);
 
         AiExtraction extraction;
         if (cachedExtraction.isPresent()) {
@@ -233,7 +233,7 @@ public class QuickAddService {
             }
         }
 
-        return resolve(extraction, request.text(), categories, goals, now, preState);
+        return resolve(extraction, request.text(), categories, goals, now, preState, "AI");
     }
 
     /** Clear in-memory extraction cache (e.g. for maintenance or testing). */
@@ -278,7 +278,8 @@ public class QuickAddService {
             List<Category> categories,
             List<Goal> goals,
             ZonedDateTime now,
-            PreClassificationState preState
+            PreClassificationState preState,
+            String source
     ) {
         Integer   durationMinutes    = durationResolver.resolve(extraction.durationExpression());
         LocalDate resolvedDate       = dateResolver.resolve(extraction.dateExpression(), now);
@@ -339,6 +340,12 @@ public class QuickAddService {
                 ? recurrenceResolver.resolve(extraction.recurrenceExpression(), eventDate)
                 : RecurrenceResult.none();
 
+        // 6b. Align eventDate to first matching occurrence if weekly/daily recurrence is present and date was not explicitly specified
+        if ("event".equals(type) && extraction.dateExpression() == null) {
+            LocalDate base = (eventDate != null) ? eventDate : now.toLocalDate();
+            eventDate = alignEventDateForRecurrence(base, recurrence, effectiveStart, now);
+        }
+
         // 7. Build checklists
         List<QuickAddChecklistResponse> checklists = buildChecklists(extraction.checklists());
 
@@ -368,7 +375,8 @@ public class QuickAddService {
                 isAllDay,
                 recurrence.recurrenceType(),
                 recurrence.recurrenceDays(),
-                recurrence.recurrenceEndDate() != null ? recurrence.recurrenceEndDate().format(DATE_FORMATTER) : null
+                recurrence.recurrenceEndDate() != null ? recurrence.recurrenceEndDate().format(DATE_FORMATTER) : null,
+                source
         );
     }
 
@@ -455,7 +463,21 @@ public class QuickAddService {
                         "Now: 2026-08-05 (Thứ 4)\nTimezone: Asia/Ho_Chi_Minh\nUser: \"Ngày mai nghỉ lễ cả ngày\""),
                 Map.of("role", "assistant", "content",
                         """
-                        {"intent":"open_task","title":"Nghỉ lễ","dateExpression":"mai","timeExpression":null,"durationExpression":null,"categoryHint":null,"goalHint":null,"notes":null,"checklists":null,"isAllDay":true,"recurrenceExpression":null,"i":0.1,"u":0.1}""")
+                        {"intent":"open_task","title":"Nghỉ lễ","dateExpression":"mai","timeExpression":null,"durationExpression":null,"categoryHint":null,"goalHint":null,"notes":null,"checklists":null,"isAllDay":true,"recurrenceExpression":null,"i":0.1,"u":0.1}"""),
+
+                // 6. recurring event — weekly multi-day workout (Event)
+                Map.of("role", "user", "content",
+                        "Now: 2026-08-05 (Thứ 4)\nTimezone: Asia/Ho_Chi_Minh\nUser: \"Mỗi 2 4 6 tập gym lúc 18h 1 tiếng\""),
+                Map.of("role", "assistant", "content",
+                        """
+                        {"intent":"time_block","title":"Tập gym","dateExpression":null,"timeExpression":"18h","durationExpression":"1 tiếng","categoryHint":null,"goalHint":null,"notes":null,"checklists":null,"isAllDay":false,"recurrenceExpression":"mỗi 2 4 6","i":0.7,"u":0.4}"""),
+
+                // 7. recurring event — weekly meeting on specific night (Event)
+                Map.of("role", "user", "content",
+                        "Now: 2026-08-05 (Thứ 4)\nTimezone: Asia/Ho_Chi_Minh\nUser: \"Mỗi tối thứ 3 lúc 7 giờ họp câu lạc bộ sách\""),
+                Map.of("role", "assistant", "content",
+                        """
+                        {"intent":"time_block","title":"Họp câu lạc bộ sách","dateExpression":null,"timeExpression":"7 giờ tối","durationExpression":null,"categoryHint":null,"goalHint":null,"notes":null,"checklists":null,"isAllDay":false,"recurrenceExpression":"mỗi tối thứ 3","i":0.5,"u":0.4}""")
         );
     }
 
@@ -498,5 +520,37 @@ public class QuickAddService {
             case SATURDAY  -> "Thứ 7";
             case SUNDAY    -> "Chủ nhật";
         };
+    }
+
+    private LocalDate alignEventDateForRecurrence(
+            LocalDate baseDate,
+            RecurrenceResult recurrence,
+            LocalTime startTime,
+            ZonedDateTime now
+    ) {
+        if (recurrence == null) return baseDate;
+
+        if ("WEEKLY".equals(recurrence.recurrenceType()) && recurrence.recurrenceDays() != null && !recurrence.recurrenceDays().isEmpty()) {
+            List<Integer> days = recurrence.recurrenceDays();
+            LocalDate today = now.toLocalDate();
+            LocalTime currentTime = now.toLocalTime();
+
+            for (int i = 0; i < 7; i++) {
+                LocalDate candidate = today.plusDays(i);
+                int candidateDay = candidate.getDayOfWeek().getValue(); // 1=Mon..7=Sun
+                if (days.contains(candidateDay)) {
+                    if (i == 0 && startTime != null && currentTime.isAfter(startTime)) {
+                        continue;
+                    }
+                    return candidate;
+                }
+            }
+        } else if ("DAILY".equals(recurrence.recurrenceType()) && startTime != null) {
+            if (now.toLocalTime().isAfter(startTime)) {
+                return now.toLocalDate().plusDays(1);
+            }
+        }
+
+        return baseDate;
     }
 }

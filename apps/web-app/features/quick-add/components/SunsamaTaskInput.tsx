@@ -11,7 +11,7 @@ import { QuickAddChecklistButton } from "./QuickAddChecklistButton";
 import { QuickAddSplittableButton } from "./QuickAddSplittableButton";
 import { ConfirmDeleteDialog } from "@/components/feedback/ConfirmDeleteDialog";
 import { useGoals } from "@/features/board/hooks/useGoals";
-import { Loader2, FileText, X, Trash2, Sparkles } from "lucide-react";
+import { Loader2, FileText, X, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
@@ -21,7 +21,6 @@ interface SunsamaTaskInputProps extends UseSunsamaTaskInputOptions {
   autoFocus?: boolean;
   placeholder?: string;
   className?: string;
-  aiParsed?: boolean;
 }
 
 export function SunsamaTaskInput({
@@ -30,7 +29,6 @@ export function SunsamaTaskInput({
   autoFocus = true,
   placeholder,
   className,
-  aiParsed = false,
   ...options
 }: SunsamaTaskInputProps) {
   const { t } = useTranslation();

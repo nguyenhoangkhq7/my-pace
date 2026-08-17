@@ -18,6 +18,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
+import { Flag, Loader2 } from "lucide-react";
 import type { QuickAddResult } from "../types";
 import type { Category } from "@/features/board/types";
 import type { Goal } from "@/features/goal/types";
@@ -29,7 +30,9 @@ interface QuickAddPreviewProps {
   onConfirm: () => void;
   onEdit: () => void;
   onToggleType: () => void;
+  onReportError?: () => void;
   isCreating: boolean;
+  isReporting?: boolean;
   hideTypeHeader?: boolean;
 }
 
@@ -40,7 +43,9 @@ export function QuickAddPreview({
   onConfirm,
   onEdit,
   onToggleType,
+  onReportError,
   isCreating,
+  isReporting = false,
   hideTypeHeader = false,
 }: QuickAddPreviewProps) {
   const { t } = useTranslation();
@@ -71,12 +76,37 @@ export function QuickAddPreview({
 
   return (
     <div className="p-4 sm:p-5 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
-      {/* Header: Type Switcher (only shown if not hidden) */}
+      {/* Header: Type Switcher & Report Action */}
       {!hideTypeHeader && (
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            {t.quickAdd.aiParsed || "Preview"}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-primary text-xs font-medium tracking-tight select-none">
+              {t.quickAdd.aiParsed || "AI đã trích xuất"}
+            </span>
+
+            {onReportError && (
+              <button
+                type="button"
+                onClick={() => onReportError()}
+                disabled={isReporting}
+                title={t.quickAdd.report || "Báo lỗi"}
+                className={cn(
+                  "group inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium tracking-tight",
+                  "text-muted-foreground/80 hover:text-rose-500 bg-muted/40 hover:bg-rose-500/10 border border-border/50 hover:border-rose-500/30",
+                  "transition-all duration-150 cursor-pointer select-none active:scale-[0.98]",
+                  "focus:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                  isReporting && "opacity-80 cursor-wait bg-muted/60"
+                )}
+              >
+                {isReporting ? (
+                  <Loader2 className="h-3 w-3 animate-spin text-rose-500" />
+                ) : (
+                  <Flag className="h-3 w-3 text-muted-foreground group-hover:text-rose-500 transition-colors" />
+                )}
+                <span>{isReporting ? t.quickAdd.reporting : t.quickAdd.report}</span>
+              </button>
+            )}
+          </div>
 
           {/* Type Toggle Pills */}
           <div className="flex items-center rounded-lg bg-muted/60 p-0.5 text-xs font-medium border border-border/50">
@@ -192,7 +222,11 @@ export function QuickAddPreview({
           {result.type === "event" && result.recurrenceType && result.recurrenceType !== "NONE" && (
             <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-500 dark:text-blue-400 border border-blue-500/20 font-medium">
               <HugeiconsIcon icon={Calendar03Icon} className="h-3 w-3" />
-              {result.recurrenceType === "DAILY" ? "Lặp hàng ngày" : "Lặp hàng tuần"}
+              {result.recurrenceType === "DAILY"
+                ? "Lặp hàng ngày"
+                : result.recurrenceDaysOfWeek && result.recurrenceDaysOfWeek.length > 0
+                ? `Lặp hàng tuần (${formatPreviewDays(result.recurrenceDaysOfWeek)})`
+                : "Lặp hàng tuần"}
             </span>
           )}
         </div>
@@ -278,5 +312,19 @@ function InfoBadge({
       </div>
     </div>
   );
+}
+
+function formatPreviewDays(days?: number[] | null): string {
+  if (!days || days.length === 0) return "";
+  const dayNames: Record<number, string> = {
+    1: "T2",
+    2: "T3",
+    3: "T4",
+    4: "T5",
+    5: "T6",
+    6: "T7",
+    7: "CN",
+  };
+  return days.map((d) => dayNames[d] || `T${d}`).join(", ");
 }
 

@@ -1,31 +1,29 @@
 "use client";
 
-import { useEffect, useCallback, useState } from "react";
+import { useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { VisuallyHidden } from "radix-ui";
 import { useTranslation } from "@/hooks/use-translation";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import { QuickAddInput } from "./QuickAddInput";
 import { QuickAddSuggestions } from "./QuickAddSuggestions";
 import { SunsamaTaskInput } from "./SunsamaTaskInput";
 import { SunsamaEventInput } from "./SunsamaEventInput";
+import { QuickAddResultHeader } from "./QuickAddResultHeader";
 import { useQuickAdd } from "../hooks/useQuickAdd";
 import { useQuickAddUIStore } from "../store/quickAddUI.store";
-import { useCategories } from "@/features/board/hooks/useCategories";
-import { useGoals } from "@/features/board/hooks/useGoals";
 
 export function QuickAddPalette() {
   const { isOpen, open, close, autoConfirm } = useQuickAddUIStore();
   const { t } = useTranslation();
-  const { categories } = useCategories();
-  const { goals } = useGoals();
 
   const {
     result,
     status,
+    isReporting,
     error,
     parseText,
+    reportError,
     confirmCreate,
     toggleType,
     reset,
@@ -81,39 +79,12 @@ export function QuickAddPalette() {
         </VisuallyHidden.Root>
 
         {isResultVisible && (
-          <div className="flex items-center justify-between px-3.5 py-2 border-b border-border/40 bg-muted/15">
-            <span className="text-primary text-xs font-medium">
-              {t.quickAdd.aiParsed || "AI đã trích xuất"}
-            </span>
-
-            {/* Type Toggle Switcher */}
-            <div className="flex items-center rounded-lg bg-muted/60 p-0.5 text-xs font-medium border border-border/50">
-              <button
-                type="button"
-                onClick={() => result?.type !== "task" && toggleType()}
-                className={cn(
-                  "px-2.5 py-0.5 rounded-md transition-all cursor-pointer text-xs font-medium",
-                  result?.type === "task"
-                    ? "bg-background text-foreground font-semibold shadow-xs border border-border/50"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {t.quickAdd.typeTask}
-              </button>
-              <button
-                type="button"
-                onClick={() => result?.type !== "event" && toggleType()}
-                className={cn(
-                  "px-2.5 py-0.5 rounded-md transition-all cursor-pointer text-xs font-medium",
-                  result?.type === "event"
-                    ? "bg-background text-foreground font-semibold shadow-xs border border-border/50"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {t.quickAdd.typeEvent}
-              </button>
-            </div>
-          </div>
+          <QuickAddResultHeader
+            result={result}
+            isReporting={isReporting}
+            onReportError={reportError}
+            onToggleType={toggleType}
+          />
         )}
 
         {isResultVisible ? (
@@ -157,6 +128,8 @@ export function QuickAddPalette() {
               initialIsAllDay={Boolean(result.isAllDay)}
               initialCategoryId={result.categoryId || undefined}
               initialRecurrenceType={result.recurrenceType || "NONE"}
+              initialRecurrenceDaysOfWeek={result.recurrenceDaysOfWeek || undefined}
+              initialRecurrenceEndDate={result.recurrenceEndDate || undefined}
               onSuccess={handleClose}
               onCancel={handleClose}
               autoFocus={true}
