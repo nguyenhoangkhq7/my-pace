@@ -361,9 +361,22 @@
         value: "isAllDay"
         expected: true
       - type: select-json
-        value: "notes"
-        expected: "gọi điện vào buổi tối"
-
-
-
-
+  # ── 49. Đánh cầu 1-3 giờ chiều (Time range without false date parsing) 
+  - vars:
+      text: "Đánh cầu 1-3 giờ chiều"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "13:00"
+      - type: select-json
+        value: "endTime"
+        expected: "15:00"
+      - type: select-json
+        value: "estimatedMinutes"
+        expected: 120
+      - type: select-json
+        value: "title"
+        expected: "Đánh cầu"

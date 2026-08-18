@@ -504,5 +504,61 @@ class FastPathParserTest {
         Optional<AiExtraction> result = fastPathParser.tryFastParse("Nếu trời mưa thì hoãn đá bóng chuyển sang mai");
         assertThat(result).isEmpty();
     }
+
+    @Test
+    @DisplayName("Event with time range: Đánh cầu 1-3 giờ chiều")
+    void testEventRange_DanhCau1Den3GioChieu() {
+        Optional<AiExtraction> result = fastPathParser.tryFastParse("Đánh cầu 1-3 giờ chiều");
+        assertThat(result).isPresent();
+        assertThat(result.get().intent()).isEqualTo("time_block");
+        assertThat(result.get().title()).isEqualTo("Đánh cầu");
+        assertThat(result.get().timeExpression()).isEqualTo("1-3 giờ chiều");
+        assertThat(result.get().dateExpression()).isNull();
+    }
+
+    @Test
+    @DisplayName("Event with time range and date: Đá bóng 15h-17h chiều mai")
+    void testEventRange_DaBong15h17hChieuMai() {
+        Optional<AiExtraction> result = fastPathParser.tryFastParse("Đá bóng 15h-17h chiều mai");
+        assertThat(result).isPresent();
+        assertThat(result.get().intent()).isEqualTo("time_block");
+        assertThat(result.get().title()).isEqualTo("Đá bóng");
+        assertThat(result.get().timeExpression()).isEqualTo("15h-17h chiều");
+        assertThat(result.get().dateExpression()).isEqualTo("mai");
+    }
+
+    @Test
+    @DisplayName("Event with date first and time range: Sáng mai 9h-11h họp team")
+    void testEventRange_SangMai9h11hHopTeam() {
+        Optional<AiExtraction> result = fastPathParser.tryFastParse("Sáng mai 9h-11h họp team");
+        assertThat(result).isPresent();
+        assertThat(result.get().intent()).isEqualTo("time_block");
+        assertThat(result.get().title()).isEqualTo("Họp team");
+        assertThat(result.get().timeExpression()).isEqualTo("9h-11h");
+        assertThat(result.get().dateExpression()).isEqualTo("Sáng mai");
+    }
+
+    @Test
+    @DisplayName("Hashtag with underscores and priority: #Project_cá_nhân !q1")
+    void testHashtagWithUnderscores() {
+        Optional<AiExtraction> result = fastPathParser.tryFastParse("Làm báo cáo 2 tiếng chiều mai #Project_cá_nhân !q1");
+        assertThat(result).isPresent();
+        assertThat(result.get().categoryHint()).isEqualTo("Project_cá_nhân");
+        assertThat(result.get().title()).isEqualTo("Làm báo cáo");
+        assertThat(result.get().i()).isEqualTo(0.9);
+        assertThat(result.get().u()).isEqualTo(0.9);
+    }
+
+    @Test
+    @DisplayName("At goal mention with underscores: @KLTN_2026 #Học_tập !q2")
+    void testGoalMentionWithUnderscores() {
+        Optional<AiExtraction> result = fastPathParser.tryFastParse("Nộp báo cáo trước thứ 6 @KLTN_2026 #Học_tập !q2");
+        assertThat(result).isPresent();
+        assertThat(result.get().goalHint()).isEqualTo("KLTN_2026");
+        assertThat(result.get().categoryHint()).isEqualTo("Học_tập");
+        assertThat(result.get().title()).isEqualTo("Nộp báo cáo");
+        assertThat(result.get().i()).isEqualTo(0.9);
+        assertThat(result.get().u()).isEqualTo(0.1);
+    }
 }
 

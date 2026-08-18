@@ -32,14 +32,17 @@ public class FastPathParser {
             Pattern.CASE_INSENSITIVE
     );
     private static final Pattern HASHTAG_PATTERN = Pattern.compile(
-            "#([\\p{L}\\d_-]+)"
+            "#(?:\"([^\"]+)\"|([\\p{L}\\d_-]+))"
+    );
+    private static final Pattern AT_GOAL_PATTERN = Pattern.compile(
+            "@(?:\"([^\"]+)\"|([\\p{L}\\d_-]+))"
     );
     private static final Pattern NOTE_PATTERN = Pattern.compile(
             "(?:\\s+|^)(?:note|ghi chú|ghi chu)\\s*[:;-]\\s*(.+)$",
             Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE
     );
-    private static final Pattern GOAL_PATTERN = Pattern.compile(
-            "(?:\\s+|^)(?:mục tiêu|muc tieu|goal)\\s*[:;-]\\s*([\\p{L}\\d\\s_-]+?)(?=(?:\\s+(?:note|ghi chú|ghi chu|#|!)|$))",
+    private static final Pattern GOAL_EXPLICIT_PATTERN = Pattern.compile(
+            "(?:\\s+|^)(?:mục tiêu|muc tieu|goal)\\s*[:;-]\\s*([\\p{L}\\d\\s_-]+?)(?=(?:\\s+(?:note|ghi chú|ghi chu|#|!|@)|$))",
             Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE
     );
 
@@ -105,9 +108,18 @@ public class FastPathParser {
             Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE
     );
 
-    // Event Range: "Họp team 9h - 10h sáng mai", "Họp phòng 14:00 - 15:30 mai"
+    private static final String TIME_RANGE_REGEX =
+            "(?:(?:từ|tu)\\s+)?(?:\\d{1,2}(?:[h:]\\d{2}|\\s*(?:giờ|gio)\\s*\\d{1,2}|[h:g]|\\s*(?:giờ|gio))?\\s*(?:sang|sáng|chieu|chiều|toi|tối|trua|trưa|dem|đêm|am|pm)?\\s*(?:[-–—]|den|đến|toi|tới|to)\\s*\\d{1,2}(?:[h:]\\d{2}|\\s*(?:giờ|gio)\\s*\\d{1,2}|[h:g]|\\s*(?:giờ|gio))?(?:\\s*(?:sang|sáng|chieu|chiều|toi|tối|trua|trưa|dem|đêm|am|pm))?)";
+
+    // Event Range: "Đánh cầu 1-3 giờ chiều", "Họp team 9h - 10h sáng mai", "Họp phòng 14:00 - 15:30 mai", "Chơi đá bóng 15h-17h"
     private static final Pattern CLEAN_EVENT_RANGE_PATTERN = Pattern.compile(
-            "^(hop|họp|meeting|call|phỏng vấn|phong van)\\s+([\\p{L}\\d\\s.-]+?)\\s+(\\d{1,2}(?:h|:\\d{2})\\s*(?:-|đến|–|to)\\s*\\d{1,2}(?:h|:\\d{2})(?:\\s*(?:sang|sáng|chieu|chiều|toi|tối|am|pm))?)(?:\\s*(" + DATE_REGEX + "))?$",
+            "^([\\p{L}\\d\\s.-]+?)\\s+(" + TIME_RANGE_REGEX + ")(?:\\s+(" + DATE_REGEX + "))?$",
+            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE
+    );
+
+    // Event Range with Date First: "Sáng mai 9h-11h họp team", "Chiều mai 1-3 giờ đánh cầu"
+    private static final Pattern CLEAN_EVENT_DATE_RANGE_PATTERN = Pattern.compile(
+            "^(" + DATE_REGEX + ")\\s+(" + TIME_RANGE_REGEX + ")\\s+([\\p{L}\\d\\s.-]+?)$",
             Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE
     );
 
@@ -347,15 +359,22 @@ public class FastPathParser {
             return Optional.empty();
         }
 
-        // 6. Clean Event with Range (e.g. "Họp team 9h - 10h sáng mai")
+        // 6. Clean Event with Range (e.g. "Đánh cầu 1-3 giờ chiều", "Họp team 9h - 10h sáng mai")
         Matcher eventRangeMatcher = CLEAN_EVENT_RANGE_PATTERN.matcher(cleaned);
         if (eventRangeMatcher.matches()) {
-            String keyword = eventRangeMatcher.group(1).trim();
-            String name = eventRangeMatcher.group(2).trim();
-            String range = eventRangeMatcher.group(3).trim();
-            String date = eventRangeMatcher.group(4) != null ? eventRangeMatcher.group(4).trim() : null;
-            String title = capitalizeFirst(keyword + " " + name);
+            String title = cleanEventTitle(eventRangeMatcher.group(1));
+            String range = eventRangeMatcher.group(2).trim();
+            String date = eventRangeMatcher.group(3) != null ? eventRangeMatcher.group(3).trim() : null;
             return Optional.of(buildExtraction("Fast-path: Calendar event range", "time_block", title, date, range, null, meta));
+        }
+
+        // 6b. Clean Event with Date First and Range (e.g. "Sáng mai 9h-11h họp team", "Chiều mai 1-3 giờ đánh cầu")
+        Matcher eventDateRangeMatcher = CLEAN_EVENT_DATE_RANGE_PATTERN.matcher(cleaned);
+        if (eventDateRangeMatcher.matches()) {
+            String date = eventDateRangeMatcher.group(1).trim();
+            String range = eventDateRangeMatcher.group(2).trim();
+            String title = cleanEventTitle(eventDateRangeMatcher.group(3));
+            return Optional.of(buildExtraction("Fast-path: Calendar event date and range", "time_block", title, date, range, null, meta));
         }
 
         // 7. Clean Deadline (e.g. "Nộp báo cáo trước 17h", "Nộp bài trước 17h chiều mai", "Nộp đồ án trước thứ 6")
@@ -611,18 +630,31 @@ public class FastPathParser {
             current = current.substring(0, noteMatcher.start()).trim();
         }
 
-        // Check goal
-        Matcher goalMatcher = GOAL_PATTERN.matcher(current);
+        // Check goal explicit ("mục tiêu: ...", "goal: ...")
+        Matcher goalMatcher = GOAL_EXPLICIT_PATTERN.matcher(current);
         if (goalMatcher.find()) {
             goalHint = goalMatcher.group(1).trim();
             current = current.substring(0, goalMatcher.start()).trim();
         }
 
-        // Check hashtags
+        // Check @goal mention ("@Marathon", "@Project_A", @"Marathon 2026")
+        Matcher atGoalMatcher = AT_GOAL_PATTERN.matcher(current);
+        if (atGoalMatcher.find()) {
+            String val = atGoalMatcher.group(1) != null ? atGoalMatcher.group(1) : atGoalMatcher.group(2);
+            if (val != null && !val.isBlank()) {
+                goalHint = val.trim();
+            }
+            current = current.replaceAll("@(?:\"[^\"]+\"|[\\p{L}\\d_-]+)", "").replaceAll("\\s+", " ").trim();
+        }
+
+        // Check hashtags ("#work", "#Project_cá_nhân", #"Project cá nhân")
         Matcher hashtagMatcher = HASHTAG_PATTERN.matcher(current);
         if (hashtagMatcher.find()) {
-            categoryHint = hashtagMatcher.group(1).trim();
-            current = current.replaceAll("#[\\p{L}\\d_-]+", "").replaceAll("\\s+", " ").trim();
+            String val = hashtagMatcher.group(1) != null ? hashtagMatcher.group(1) : hashtagMatcher.group(2);
+            if (val != null && !val.isBlank()) {
+                categoryHint = val.trim();
+            }
+            current = current.replaceAll("#(?:\"[^\"]+\"|[\\p{L}\\d_-]+)", "").replaceAll("\\s+", " ").trim();
         }
 
         return new ParsedMetadata(current, isUrgent, customI, customU, categoryHint, goalHint, notes);

@@ -223,10 +223,10 @@ export function QuickAddPreview({
             <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-500 dark:text-blue-400 border border-blue-500/20 font-medium">
               <HugeiconsIcon icon={Calendar03Icon} className="h-3 w-3" />
               {result.recurrenceType === "DAILY"
-                ? "Lặp hàng ngày"
+                ? t.quickAdd.recurrenceDaily
                 : result.recurrenceDaysOfWeek && result.recurrenceDaysOfWeek.length > 0
-                ? `Lặp hàng tuần (${formatPreviewDays(result.recurrenceDaysOfWeek)})`
-                : "Lặp hàng tuần"}
+                ? `${t.quickAdd.recurrenceWeekly} (${formatPreviewDays(result.recurrenceDaysOfWeek)})`
+                : t.quickAdd.recurrenceWeekly}
             </span>
           )}
         </div>
@@ -279,7 +279,7 @@ export function QuickAddPreview({
             {isCreating
               ? t.quickAdd.creating
               : isEvent
-              ? `Tạo ${t.quickAdd.typeEvent}`
+              ? t.quickAdd.createEvent
               : t.quickAdd.createTask}
           </span>
           <kbd className="px-1 py-0.2 rounded bg-primary-foreground/20 text-[9px] font-mono leading-none">

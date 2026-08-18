@@ -24,20 +24,22 @@ class CategoryResolver {
     UUID resolve(String hint, List<Category> categories) {
         if (hint == null || hint.isBlank() || categories == null || categories.isEmpty()) return null;
 
-        String trimmed = hint.trim();
-        String normHint = DateResolver.normalizeVietnamese(trimmed.toLowerCase());
+        String trimmed = hint.trim().replaceFirst("^#+", "").trim();
+        String deUnderscored = trimmed.replace('_', ' ').replace('-', ' ').trim();
+        String normHint = DateResolver.normalizeVietnamese(deUnderscored.toLowerCase());
 
         // 1. Exact match
         for (Category c : categories) {
-            if (c.getName().equals(trimmed)) return c.getId();
+            if (c.getName().equals(trimmed) || c.getName().equals(deUnderscored)) return c.getId();
         }
         // 2. Case-insensitive
         for (Category c : categories) {
-            if (c.getName().equalsIgnoreCase(trimmed)) return c.getId();
+            if (c.getName().equalsIgnoreCase(trimmed) || c.getName().equalsIgnoreCase(deUnderscored)) return c.getId();
         }
         // 3. Diacritic-insensitive
         for (Category c : categories) {
-            if (DateResolver.normalizeVietnamese(c.getName().toLowerCase()).equals(normHint)) return c.getId();
+            String normName = DateResolver.normalizeVietnamese(c.getName().toLowerCase());
+            if (normName.equals(normHint)) return c.getId();
         }
         // 4. Acronym / Initials match (e.g. "KLTN" -> "Khóa luận tốt nghiệp")
         for (Category c : categories) {

@@ -29,6 +29,7 @@ import java.util.List;
 public class SecurityConfig {
 
    private final JwtAuthFilter jwtAuthFilter;
+   private final nhk.quickadd.RateLimitFilter rateLimitFilter;
    private final List<SecurityRules> featureSecurityRules;
 
    @Value("${app.cors.allowed-origins}")
@@ -55,6 +56,7 @@ public class SecurityConfig {
                       }
               )
               .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+              .addFilterAfter(rateLimitFilter, JwtAuthFilter.class)
               .exceptionHandling(c -> {
                  c.accessDeniedHandler((req, rsp, e)
                          -> rsp.sendError(HttpStatus.FORBIDDEN.value()));

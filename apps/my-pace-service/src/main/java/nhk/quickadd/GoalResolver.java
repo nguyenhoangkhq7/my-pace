@@ -15,20 +15,22 @@ class GoalResolver {
     UUID resolve(String hint, List<Goal> goals) {
         if (hint == null || hint.isBlank() || goals == null || goals.isEmpty()) return null;
 
-        String trimmed = hint.trim();
-        String normHint = DateResolver.normalizeVietnamese(trimmed.toLowerCase());
+        String trimmed = hint.trim().replaceFirst("^@+", "").trim();
+        String deUnderscored = trimmed.replace('_', ' ').replace('-', ' ').trim();
+        String normHint = DateResolver.normalizeVietnamese(deUnderscored.toLowerCase());
 
         // 1. Exact match
         for (Goal g : goals) {
-            if (g.getTitle().equals(trimmed)) return g.getId();
+            if (g.getTitle().equals(trimmed) || g.getTitle().equals(deUnderscored)) return g.getId();
         }
         // 2. Case-insensitive
         for (Goal g : goals) {
-            if (g.getTitle().equalsIgnoreCase(trimmed)) return g.getId();
+            if (g.getTitle().equalsIgnoreCase(trimmed) || g.getTitle().equalsIgnoreCase(deUnderscored)) return g.getId();
         }
         // 3. Diacritic-insensitive
         for (Goal g : goals) {
-            if (DateResolver.normalizeVietnamese(g.getTitle().toLowerCase()).equals(normHint)) return g.getId();
+            String normTitle = DateResolver.normalizeVietnamese(g.getTitle().toLowerCase());
+            if (normTitle.equals(normHint)) return g.getId();
         }
         // 4. Acronym / Initials match (e.g. "KLTN" -> "Khóa luận tốt nghiệp")
         for (Goal g : goals) {

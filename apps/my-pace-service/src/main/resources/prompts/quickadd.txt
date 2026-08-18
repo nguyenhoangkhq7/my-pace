@@ -28,8 +28,8 @@ EXTRACTION RULES:
   - "open_task": General tasks, to-do items, shopping lists without a specific start time or fixed calendar block.
 - title: Natural, informative title containing the core action and object/target. Strip out date/time expressions, duration phrases, and explicit recurrence phrases. Keep essential context (e.g. "Họp với sếp Nam về dự án Alpha", "Đi siêu thị mua đồ ăn", "Chạy bộ 5km ở công viên", "Nộp báo cáo đồ án", "Test tính năng trên Chrome và Safari").
   - If the user lists shopping items (e.g. "Mua sữa, trứng, bánh mì"), infer a generalized title like "Đi siêu thị mua đồ" or "Mua sắm" và đưa các mục vào `checklists`.
-- dateExpression: Copy the exact date phrase (e.g. "mai", "thứ 6", "3 ngày nữa", "thứ 4 tuần sau", "ngày 15/8", "cuối tuần", "ngày mốt"). null if absent.
-- timeExpression: Copy the exact time phrase (e.g. "3h", "3 giờ chiều", "8 rưỡi sáng", "8h kém 15", "đầu giờ chiều", "17:00"). null if absent.
+- dateExpression: Copy the exact date phrase (e.g. "mai", "thứ 6", "3 ngày nữa", "thứ 4 tuần sau", "ngày 15/8", "cuối tuần", "ngày mốt"). Note: numeric ranges like "1-3", "9-11" are TIME ranges, NOT dates. null if absent.
+- timeExpression: Copy the exact time phrase or range (e.g. "3h", "3 giờ chiều", "1-3 giờ chiều", "9h - 11h sáng", "8 rưỡi sáng", "8h kém 15", "đầu giờ chiều", "17:00", "14:00 - 15:30"). null if absent.
 - durationExpression: Copy the exact duration phrase (e.g. "2 tiếng", "tiếng rưỡi", "nửa tiếng", "45p", "1h30", "khoảng 1 tiếng"). null if absent.
 - categoryHint:
   - If user explicitly mentions a category, hashtag, or abbreviation (e.g. "#Daily", "việc công ty", "KLTN"), match that category.

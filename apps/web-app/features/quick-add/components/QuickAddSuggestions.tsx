@@ -10,7 +10,8 @@ export function QuickAddSuggestions({ onSelect }: QuickAddSuggestionsProps) {
   const { t } = useTranslation();
 
   const examples = [
-    t.quickAdd.suggestion1 || "họp team 1 tiếng chiều mai",
+    t.quickAdd.suggestion1 || "họp team 1 tiếng chiều mai #work",
+    t.quickAdd.suggestion3 || "nộp báo cáo trước thứ 6 gấp !q1",
     t.quickAdd.suggestion2 || "đọc sách 30 phút tối nay",
   ];
 
@@ -19,10 +20,10 @@ export function QuickAddSuggestions({ onSelect }: QuickAddSuggestionsProps) {
       {/* Left: Minimal Formula Hint */}
       <div className="flex items-center gap-1.5 truncate">
         <span className="font-medium text-primary">Task</span>
-        <span className="text-muted-foreground/60">= việc có hạn chót</span>
+        <span className="text-muted-foreground/60">{t.quickAdd.hintTaskDesc}</span>
         <span className="text-muted-foreground/30">·</span>
         <span className="font-medium text-foreground/80">Event</span>
-        <span className="text-muted-foreground/60">= lịch cố định</span>
+        <span className="text-muted-foreground/60">{t.quickAdd.hintEventDesc}</span>
       </div>
 
       {/* Right: Quick Suggestion Chips */}
