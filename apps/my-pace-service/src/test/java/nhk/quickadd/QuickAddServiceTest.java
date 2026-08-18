@@ -222,6 +222,23 @@ class QuickAddServiceTest {
         assertThat(r.estimatedMinutes()).isEqualTo(120);
     }
 
+    @Test
+    @DisplayName("time_block with '1-3 giờ chiều' in timeExpression → startTime=13:00, endTime=15:00, not March 1st")
+    void parseTimeBlock_TimeRange1To3Afternoon_NotParsedAsMarch1st() {
+        mockGroqResponse(json("time_block", "Đánh cầu", null, "1-3 giờ chiều", null, null, null, null, null, false, null));
+        stubRepositories();
+
+        QuickAddResponse r = quickAddService.parse(new QuickAddRequest("Đánh cầu 1-3 giờ chiều"), USER_ID, "Asia/Ho_Chi_Minh");
+
+        assertThat(r.type()).isEqualTo("event");
+        assertThat(r.title()).isEqualTo("Đánh cầu");
+        assertThat(r.startTime()).isEqualTo("13:00");
+        assertThat(r.endTime()).isEqualTo("15:00");
+        assertThat(r.estimatedMinutes()).isEqualTo(120);
+        // eventDate should be today or tomorrow (not March 1st 2026-03-01)
+        assertThat(r.eventDate()).isNotEqualTo("2026-03-01");
+    }
+
     // ── All-day event ─────────────────────────────────────────────────────────────
 
     @Test

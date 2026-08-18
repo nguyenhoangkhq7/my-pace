@@ -17,7 +17,10 @@ class CustomApiProvider {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ text: prompt }),
+        body: JSON.stringify({
+          text: prompt,
+          userTimezone: 'Asia/Ho_Chi_Minh'
+        }),
       });
 
       const statusCode = response.status;

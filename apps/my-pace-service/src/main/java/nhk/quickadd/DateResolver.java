@@ -55,9 +55,21 @@ class DateResolver {
             Pattern.CASE_INSENSITIVE
     );
 
-    // Matches: "ngay 15/8", "15/08", "15-8", "15/8/2026", "ngay 15-08-2026"
-    private static final Pattern DATE_SLASH_PATTERN = Pattern.compile(
-            "(?:ngay\\s*)?(\\d{1,2})[/-](\\d{1,2})(?:[/-](\\d{2,4}))?",
+    // Matches: "ngay 15/8", "ngay 15-8", "ngay 1/3", "ngay 1-3", "ngay 15-08-2026"
+    private static final Pattern DATE_SLASH_PREFIX_PATTERN = Pattern.compile(
+            "(?:ngay|ngày)\\s+(\\d{1,2})[/-](\\d{1,2})(?:[/-](\\d{2,4}))?",
+            Pattern.CASE_INSENSITIVE
+    );
+
+    // Matches 3-part dates: "15/08/2026", "15-08-2026", "15/8/2026", "1/3/2026"
+    private static final Pattern DATE_3_PART_PATTERN = Pattern.compile(
+            "\\b(\\d{1,2})[/-](\\d{1,2})[/-](\\d{2,4})\\b",
+            Pattern.CASE_INSENSITIVE
+    );
+
+    // Matches standalone 2-part dates with slash only: "15/8", "15/08", "01/03" (NOT with hyphen, NOT followed by time units)
+    private static final Pattern DATE_SLASH_2_PART_PATTERN = Pattern.compile(
+            "\\b(\\d{1,2})/(\\d{1,2})\\b(?!\\s*(?:[h:g]|gio|phut|tieng|p\\b|sang|chieu|toi|trua|dem|am|pm))",
             Pattern.CASE_INSENSITIVE
     );
 
@@ -157,13 +169,30 @@ class DateResolver {
             return safeDate(year, month, day);
         }
 
-        // 8. Explicit date format: "ngay 15/8", "15/08", "15-8-2026"
-        Matcher dateSlashMatcher = DATE_SLASH_PATTERN.matcher(norm);
-        if (dateSlashMatcher.find()) {
-            int day = Integer.parseInt(dateSlashMatcher.group(1));
-            int month = Integer.parseInt(dateSlashMatcher.group(2));
-            int year = dateSlashMatcher.group(3) != null ? parseYear(dateSlashMatcher.group(3), today.getYear()) : today.getYear();
+        // 8. Explicit date format: "ngay 15/8", "ngay 15-8", "ngay 1/3", "ngay 1-3"
+        Matcher prefixSlashMatcher = DATE_SLASH_PREFIX_PATTERN.matcher(norm);
+        if (prefixSlashMatcher.find()) {
+            int day = Integer.parseInt(prefixSlashMatcher.group(1));
+            int month = Integer.parseInt(prefixSlashMatcher.group(2));
+            int year = prefixSlashMatcher.group(3) != null ? parseYear(prefixSlashMatcher.group(3), today.getYear()) : today.getYear();
             return safeDate(year, month, day);
+        }
+
+        // 8b. Full 3-part date: "15/08/2026", "15-08-2026", "1/3/2026"
+        Matcher date3PartMatcher = DATE_3_PART_PATTERN.matcher(norm);
+        if (date3PartMatcher.find()) {
+            int day = Integer.parseInt(date3PartMatcher.group(1));
+            int month = Integer.parseInt(date3PartMatcher.group(2));
+            int year = parseYear(date3PartMatcher.group(3), today.getYear());
+            return safeDate(year, month, day);
+        }
+
+        // 8c. Standalone 2-part slash date: "15/8", "15/08" (slash only, not hyphen)
+        Matcher slash2PartMatcher = DATE_SLASH_2_PART_PATTERN.matcher(norm);
+        if (slash2PartMatcher.find()) {
+            int day = Integer.parseInt(slash2PartMatcher.group(1));
+            int month = Integer.parseInt(slash2PartMatcher.group(2));
+            return safeDate(today.getYear(), month, day);
         }
 
         // 9. ISO date fallback: YYYY-MM-DD

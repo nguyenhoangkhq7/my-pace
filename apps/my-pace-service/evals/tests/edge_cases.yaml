@@ -246,3 +246,46 @@
         value: "title"
         expected: "Làm bài tập lớn môn CNTT"
 
+
+  # ── 91. Tự điều chỉnh thời lượng (Duration correction) ────────────────
+  - vars:
+      text: "Học bài 2 tiếng, thôi 1 tiếng thôi"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "task"
+      - type: select-json
+        value: "estimatedMinutes"
+        expected: 60
+
+
+  # ── 92. Phủ định hành động (Negation with task) ───────────────────────
+  - vars:
+      text: "Không cần họp sáng mai, chỉ cần gửi email"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "task"
+
+
+  # ── 93. Tự điều chỉnh thứ trong tuần (Day correction) ─────────────────
+  - vars:
+      text: "Nộp báo cáo thứ 5, nhầm, thứ 6 mới đúng"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "task"
+
+
+  # ── 94. Điều chỉnh giờ hẹn (Time correction) ──────────────────────────
+  - vars:
+      text: "Đi gym lúc 5h, à không 6h chiều đi"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "18:00"
+
+

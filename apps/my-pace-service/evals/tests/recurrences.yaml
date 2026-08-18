@@ -94,3 +94,67 @@
         expected: [1, 3, 5]
 
 
+  # ── 88. Sự kiện lặp thứ 2 đến thứ 6 (Weekday range) ───────────────────
+  - vars:
+      text: "Tập gym mỗi thứ 2 đến thứ 6 lúc 6h sáng"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "06:00"
+      - type: select-json
+        value: "recurrenceType"
+        expected: "WEEKLY"
+
+
+  # ── 89. Uống thuốc mỗi ngày sáng tối ──────────────────────────────────
+  - vars:
+      text: "Uống thuốc mỗi ngày lúc 8h sáng"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "08:00"
+      - type: select-json
+        value: "recurrenceType"
+        expected: "DAILY"
+
+
+  # ── 90. Đi bơi mỗi cuối tuần ──────────────────────────────────────────
+  - vars:
+      text: "Đi bơi mỗi cuối tuần 1 tiếng"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "recurrenceType"
+        expected: "WEEKLY"
+      - type: select-json
+        value: "estimatedMinutes"
+        expected: 60
+
+
+  # ── 91. Dọn dẹp nhà mỗi chủ nhật ──────────────────────────────────────
+  - vars:
+      text: "Dọn dẹp nhà cửa mỗi chủ nhật lúc 9h sáng 2 tiếng"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "09:00"
+      - type: select-json
+        value: "recurrenceType"
+        expected: "WEEKLY"
+      - type: select-json
+        value: "estimatedMinutes"
+        expected: 120
+
+
+
