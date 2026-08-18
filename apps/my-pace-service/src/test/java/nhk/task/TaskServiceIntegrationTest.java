@@ -169,7 +169,7 @@ class TaskServiceIntegrationTest extends BaseIntegrationTest {
 
             assertThatThrownBy(() -> taskService.createTask(request, sampleUser.getId()))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("Chỉ có thể liên kết Task với Goal đang In Progress hoặc Done.");
+                    .hasMessage("Chỉ có thể liên kết Task với Goal đang ở trạng thái In Progress.");
         }
 
         @Test

@@ -9,6 +9,10 @@ public record QuickAddResponse(
         Integer estimatedMinutes,
         Boolean isUrgent,
         Boolean isImportant,
+        String quadrant,
+        Integer importanceScore,
+        Integer urgencyScore,
+        String classificationReason,
         String dueDate,
         String eventDate,
         String startTime,
@@ -20,5 +24,6 @@ public record QuickAddResponse(
         Boolean isAllDay,
         String recurrenceType,
         List<Integer> recurrenceDaysOfWeek,
-        String recurrenceEndDate
+        String recurrenceEndDate,
+        String source
 ) {}

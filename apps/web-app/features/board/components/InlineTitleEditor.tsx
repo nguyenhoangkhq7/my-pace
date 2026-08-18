@@ -64,6 +64,7 @@ export function InlineTitleEditor({ initialTitle, onSave, className, inputClassN
         onChange={(e) => setTitle(e.target.value)}
         onBlur={handleSave}
         onKeyDown={handleKeyDown}
+        maxLength={255}
         className={inputClassName}
         onClick={stopEventPropagation}
         onMouseDown={stopEventPropagation}

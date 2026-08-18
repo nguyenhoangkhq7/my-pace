@@ -94,9 +94,9 @@ export function ExecutionModeView({
           <div className="flex items-start gap-2.5">
             <span className="text-lg">⚠️</span>
             <div className="flex-1 space-y-1">
-              <h4 className="text-sm font-semibold text-red-200">Lịch trình vượt quá giờ đi ngủ</h4>
+              <h4 className="text-sm font-semibold text-red-200">{t.execution.exceedsSleepTitle}</h4>
               <p className="text-xs text-red-300/80 leading-relaxed">
-                Thời gian kết thúc của các công việc hiện tại đang muộn hơn giờ đi ngủ dự kiến của bạn ({user?.sleepTime}).
+                {t.execution.exceedsSleepDesc(user?.sleepTime)}
               </p>
             </div>
           </div>
@@ -106,7 +106,7 @@ export function ExecutionModeView({
             size="sm"
             className="w-full border-red-500/20 bg-red-950/30 hover:bg-red-900/30 text-red-200 hover:text-white text-xs h-8.5 rounded-lg cursor-pointer"
           >
-            Đẩy công việc thừa về Backlog
+            {t.execution.removeExcessBtn}
           </Button>
         </div>
       )}

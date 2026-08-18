@@ -1,22 +1,21 @@
-import type {Metadata} from "next";
-import {Geist_Mono, Inter} from "next/font/google";
+import type { Metadata } from "next";
+import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "sonner/dist/styles.css";
-import {cn} from "@/lib/utils";
-import {AppToastHost} from "@/components/feedback/toast-host";
-import {AuthProvider} from "@/features/auth";
-import {TooltipProvider} from "@/components/ui/tooltip";
-import {ReactQueryProvider} from "@/components/providers/react-query-provider";
+import { AppToastHost } from "@/components/feedback/toast-host";
+import { AuthProvider } from "@/features/auth";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { ReactQueryProvider } from "@/components/providers/react-query-provider";
 import React from "react";
 
 const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
-  variable: "--font-sans",
 });
 
 const geistMono = Geist_Mono({
-  subsets: ["latin"],
   variable: "--font-geist-mono",
+  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
@@ -30,10 +29,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={cn("h-full antialiased", inter.variable, geistMono.variable)}
-    >
+    <html lang="en" className={`h-full antialiased ${inter.variable} ${geistMono.variable}`}>
       <head>
         <script
           dangerouslySetInnerHTML={{

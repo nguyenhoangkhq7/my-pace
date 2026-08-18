@@ -42,3 +42,52 @@
         value: "dueDate"
         expected: ".*T23:59:00"
 
+
+  # ── 75. Chat rủ đi cafe ───────────────────────────────────────────────
+  - vars:
+      text: "ê mai đi cafe nha 3h chiều"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "event"
+      - type: select-json
+        value: "startTime"
+        expected: "15:00"
+
+
+  # ── 76. Teencode hôm nay nộp bài ──────────────────────────────────────
+  - vars:
+      text: "hnay có bài tập cần nộp gấp"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "task"
+      - type: select-json
+        value: "isUrgent"
+        expected: true
+
+
+  # ── 77. Emoji kết hợp chữ ─────────────────────────────────────────────
+  - vars:
+      text: "gym 1 tiếng chiều nay"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "task"
+      - type: select-json
+        value: "estimatedMinutes"
+        expected: 60
+
+
+  # ── 78. Deadline viết tắt cv gấp ──────────────────────────────────────
+  - vars:
+      text: "cv gấp deadline mai 5h chiều"
+    assert:
+      - type: select-json
+        value: "type"
+        expected: "task"
+      - type: select-json
+        value: "isUrgent"
+        expected: true
+
+

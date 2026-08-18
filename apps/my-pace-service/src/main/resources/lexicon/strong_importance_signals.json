@@ -1,0 +1,13 @@
+{
+  "MANDATORY": [
+    "bat buoc", "bắt buộc", "mandatory", "must do", "khong the bo qua", "không thể bỏ qua"
+  ],
+  "CRITICAL_CONSEQUENCE": [
+    "nghiem trong", "nghiêm trọng", "hau qua nghiem trong", "hậu quả nghiêm trọng", 
+    "sa thai", "đuổi việc", "phat tien", "phạt tiền", "penalty"
+  ],
+  "EXPLICIT_IMPORTANT": [
+    "quan trong", "quan trọng", "important", "vital", "crucial", "uu tien hang dau", "ưu tiên hàng đầu",
+    "trong diem", "trọng điểm"
+  ]
+}

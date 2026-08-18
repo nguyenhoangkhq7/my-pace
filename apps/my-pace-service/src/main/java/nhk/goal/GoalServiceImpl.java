@@ -66,9 +66,14 @@ public class GoalServiceImpl implements GoalService {
             }
         }
 
+        UUID oldCategoryId = goal.getCategoryId();
         goalMapper.updateFromRequest(request, goal);
 
         Goal saved = goalRepository.save(goal);
+        
+        if (saved.getCategoryId() != null && !saved.getCategoryId().equals(oldCategoryId)) {
+            taskRepository.updateCategoryIdByGoalId(saved.getId(), saved.getCategoryId());
+        }
         
         recalculateBinaryGoalProgress(saved.getId());
         

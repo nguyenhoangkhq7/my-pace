@@ -106,10 +106,11 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
                     int est = t.getEstimatedMinutes() != null ? t.getEstimatedMinutes() : 0;
                     int act = t.getActualMinutes() != null ? t.getActualMinutes() : 0;
                     
+                    LocalDateTime nowLdt = LocalDateTime.now(ctx.zoneId());
                     List<TaskTimeBlock> existingTaskBlocks = ctx.taskTimeBlocksByTaskId().getOrDefault(t.getId(), Collections.emptyList());
                     int busyMinutes = 0;
                     for (TaskTimeBlock b : existingTaskBlocks) {
-                        if ("BUSY".equalsIgnoreCase(b.getAvailabilityStatus()) && !b.getStartTime().toLocalDate().isBefore(ctx.startDate())) {
+                        if ("BUSY".equalsIgnoreCase(b.getAvailabilityStatus()) && b.getEndTime().isAfter(nowLdt)) {
                             busyMinutes += (int) java.time.Duration.between(b.getStartTime(), b.getEndTime()).toMinutes();
                         }
                     }
@@ -138,6 +139,7 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
                 }
             });
         }
+        bitmapScheduler.cleanPastSchedules(ctx.userId(), ctx.startDate());
 
         for (LocalDate date : ctx.dateRange()) {
             bitmapScheduler.clearSchedule(ctx.userId(), date);
@@ -173,15 +175,14 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
 
         for (LocalDate date : ctx.dateRange()) {
             DailyPlan plan = ctx.planMap().get(date);
-            if (plan != null) {
-                List<TaskTimeBlock> existingBlocks = ctx.taskTimeBlocksByDate().getOrDefault(date, new ArrayList<>());
-                for (TaskTimeBlock tb : existingBlocks) {
-                    if (Boolean.TRUE.equals(plan.getIsConfirmed()) || "BUSY".equalsIgnoreCase(tb.getAvailabilityStatus()) || Boolean.TRUE.equals(tb.getIsLocked())) {
-                        int sMin = tb.getStartTime().getHour() * 60 + tb.getStartTime().getMinute();
-                        int eMin = tb.getEndTime().getHour() * 60 + tb.getEndTime().getMinute();
-                        if (eMin <= sMin) eMin += 1440;
-                        bitmapScheduler.markRangeBusy(ctx.userId(), date, sMin, eMin + ctx.bufferMinutes());
-                    }
+            boolean isConfirmed = plan != null && Boolean.TRUE.equals(plan.getIsConfirmed());
+            List<TaskTimeBlock> existingBlocks = ctx.taskTimeBlocksByDate().getOrDefault(date, Collections.emptyList());
+            for (TaskTimeBlock tb : existingBlocks) {
+                if (isConfirmed || "BUSY".equalsIgnoreCase(tb.getAvailabilityStatus()) || Boolean.TRUE.equals(tb.getIsLocked())) {
+                    int sMin = tb.getStartTime().getHour() * 60 + tb.getStartTime().getMinute();
+                    int eMin = tb.getEndTime().getHour() * 60 + tb.getEndTime().getMinute();
+                    if (eMin <= sMin) eMin += 1440;
+                    bitmapScheduler.markRangeBusy(ctx.userId(), date, sMin, eMin + ctx.bufferMinutes());
                 }
             }
         }
@@ -210,14 +211,19 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
             // AutoSchedulePersister will know to run garbage collection (delete ghost blocks) on this date.
             datesActuallyProcessed.add(date);
 
-            List<TaskQueueItem> activeQueue;
+            List<TaskQueueItem> activeQueue = new ArrayList<>();
             if (queues.datesWithDailyPlan().contains(date)) {
                 List<TaskQueueItem> dateQueue = queues.dateTaskQueues().get(date);
-                if (dateQueue == null || dateQueue.isEmpty()) continue;
-                activeQueue = new ArrayList<>(dateQueue);
-            } else {
-                if (queues.backlogQueue().isEmpty()) continue;
-                activeQueue = new ArrayList<>(queues.backlogQueue());
+                if (dateQueue != null && !dateQueue.isEmpty()) {
+                    activeQueue.addAll(dateQueue);
+                }
+            }
+            if (!queues.backlogQueue().isEmpty()) {
+                for (TaskQueueItem bItem : queues.backlogQueue()) {
+                    if (!activeQueue.contains(bItem)) {
+                        activeQueue.add(bItem);
+                    }
+                }
             }
 
             if (activeQueue.isEmpty()) continue;
@@ -238,20 +244,23 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
             System.out.println("AUTO-SCHEDULE DEBUG: Date=" + date + ", startOfDayMin=" + startOfDayMin + ", endOfDayMin=" + endOfDayMin + ", sleepMin=" + ctx.sleepMin() + ", wakeMin=" + ctx.wakeMin() + ", nowMin=" + (currentTime.getHour() * 60 + currentTime.getMinute()));
 
             // Pass 1: Strict Time Context
-            runTimelineAllocation(activeQueue, date, ctx, generatedBlocksPerDate, true, startOfDayMin, endOfDayMin);
+            Map<UUID, Integer> dailyAllocatedMinutes = new HashMap<>();
+            Set<TaskQueueItem> dailyProcessedItems = new LinkedHashSet<>(activeQueue);
+
+            runTimelineAllocation(activeQueue, date, ctx, generatedBlocksPerDate, true, startOfDayMin, endOfDayMin, dailyAllocatedMinutes);
 
             // Pass 2: Relaxed Time Context (Fallback)
             if (!activeQueue.isEmpty()) {
-                runTimelineAllocation(activeQueue, date, ctx, generatedBlocksPerDate, false, startOfDayMin, endOfDayMin);
+                runTimelineAllocation(activeQueue, date, ctx, generatedBlocksPerDate, false, startOfDayMin, endOfDayMin, dailyAllocatedMinutes);
             }
 
             // Cleanup active queues
             queues.backlogQueue().removeIf(i -> i.remainingMinutes <= 0);
             queues.dateTaskQueues().values().forEach(q -> q.removeIf(i -> i.remainingMinutes <= 0));
 
-            // Smart Spillover: Visa check
-            for (int i = activeQueue.size() - 1; i >= 0; i--) {
-                TaskQueueItem item = activeQueue.get(i);
+            // Smart Spillover: Visa check for all items processed today that still have remaining time
+            boolean hasSpillover = false;
+            for (TaskQueueItem item : dailyProcessedItems) {
                 if (item.remainingMinutes > 0) {
                     boolean allowSpillover = true;
                     if (item.task.getGoalId() != null) {
@@ -266,7 +275,8 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
 
                     if (allowSpillover) {
                         if (!queues.backlogQueue().contains(item)) {
-                            queues.backlogQueue().add(0, item);
+                            queues.backlogQueue().add(item);
+                            hasSpillover = true;
                         }
                     } else {
                         // Denied Visa: Must remove from backlog queue to prevent it from snowballing
@@ -274,6 +284,10 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
                         item.remainingMinutes = 0; // mark as done essentially
                     }
                 }
+            }
+
+            if (hasSpillover) {
+                queues.backlogQueue().sort(TaskPriorityScorer.getQueueComparator(ctx));
             }
         }
 
@@ -287,7 +301,8 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
             Map<LocalDate, List<TaskTimeBlock>> generatedBlocksPerDate,
             boolean strictTimeContext,
             int startOfDayMin,
-            int endOfDayMin
+            int endOfDayMin,
+            Map<UUID, Integer> dailyAllocatedMinutes
     ) {
         int cursorMin = startOfDayMin;
         while (cursorMin < endOfDayMin && !activeQueue.isEmpty()) {
@@ -327,14 +342,21 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
 
             TaskQueueItem selectedItem = null;
             int maxAvailableForItem = 0;
+            int selectedItemDailyBudget = Integer.MAX_VALUE;
             
             for (int i = 0; i < activeQueue.size(); i++) {
                 TaskQueueItem item = activeQueue.get(i);
-                LocalDateTime due = item.task.getDueDate();
-                if (due != null && date.isAfter(due.toLocalDate())) {
-                    continue; // Skip past-due tasks
-                }
                 
+                int dailyBudget = Integer.MAX_VALUE;
+                if (Boolean.TRUE.equals(item.task.getIsSplittable()) && item.task.getMaxDailyDuration() != null && item.task.getMaxDailyDuration() > 0) {
+                    int alreadyAllocated = dailyAllocatedMinutes.getOrDefault(item.task.getId(), 0);
+                    dailyBudget = Math.max(0, item.task.getMaxDailyDuration() - alreadyAllocated);
+                }
+
+                if (dailyBudget <= 0) {
+                    continue; // Reached daily limit for today
+                }
+
                 int availableFromContext = getValidAvailableMinutes(item, date, cursorMin, ctx, strictTimeContext);
                 
                 int requiredMinChunk = 30;
@@ -347,9 +369,10 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
                 
                 requiredMinChunk = Math.min(requiredMinChunk, item.remainingMinutes);
 
-                if (freeLength >= requiredMinChunk && availableFromContext >= requiredMinChunk) {
+                if (freeLength >= requiredMinChunk && availableFromContext >= requiredMinChunk && dailyBudget >= requiredMinChunk) {
                     selectedItem = item;
                     maxAvailableForItem = availableFromContext;
+                    selectedItemDailyBudget = dailyBudget;
                     break;
                 }
             }
@@ -368,6 +391,7 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
 
             int allocateSize = Math.min(selectedItem.remainingMinutes, Math.min(freeLength, maxChunk));
             allocateSize = Math.min(allocateSize, maxAvailableForItem);
+            allocateSize = Math.min(allocateSize, selectedItemDailyBudget);
             
             // Align to 15m chunks ONLY if we are splitting the task (not the final chunk)
             if (allocateSize < selectedItem.remainingMinutes) {
@@ -405,9 +429,14 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
             generatedBlocksPerDate.get(date).add(block);
             bitmapScheduler.markRangeBusy(ctx.userId(), date, cursorMin, cursorMin + allocateSize + ctx.bufferMinutes());
 
+            dailyAllocatedMinutes.merge(selectedItem.task.getId(), allocateSize, Integer::sum);
             selectedItem.remainingMinutes -= allocateSize;
             
-            if (selectedItem.remainingMinutes <= 0) {
+            boolean hitDailyLimit = Boolean.TRUE.equals(selectedItem.task.getIsSplittable())
+                    && selectedItem.task.getMaxDailyDuration() != null
+                    && dailyAllocatedMinutes.getOrDefault(selectedItem.task.getId(), 0) >= selectedItem.task.getMaxDailyDuration();
+
+            if (selectedItem.remainingMinutes <= 0 || hitDailyLimit) {
                 activeQueue.remove(selectedItem);
             }
             

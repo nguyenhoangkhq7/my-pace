@@ -42,10 +42,13 @@ export function InitialSetupForm() {
 
   const onSubmit = async (data: InitialSetupFormValues) => {
     setError(null);
+    const timezone = user?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Ho_Chi_Minh";
     const payload = {
       wakeTime: data.wakeTime.length === 5 ? `${data.wakeTime}:00` : data.wakeTime,
       sleepTime: data.sleepTime.length === 5 ? `${data.sleepTime}:00` : data.sleepTime,
       bufferPct: buffer,
+      bufferMinutes: user?.bufferMinutes ?? 10,
+      timezone,
     };
     try {
       const responseData = await updateProfile(payload);
@@ -53,7 +56,16 @@ export function InitialSetupForm() {
         await syncTimezoneCookie(responseData.timezone);
       }
       if (user) {
-        setSession({ user: { ...user, ...payload } });
+        setSession({
+          user: {
+            ...user,
+            wakeTime: payload.wakeTime,
+            sleepTime: payload.sleepTime,
+            bufferPct: payload.bufferPct,
+            bufferMinutes: payload.bufferMinutes,
+            timezone: responseData?.timezone || payload.timezone,
+          },
+        });
         appToast.success(t.auth.setupSuccess, { description: t.auth.setupSuccessDesc });
       }
     } catch (err) {

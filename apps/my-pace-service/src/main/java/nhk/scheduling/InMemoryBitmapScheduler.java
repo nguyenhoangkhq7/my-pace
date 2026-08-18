@@ -52,6 +52,25 @@ public class InMemoryBitmapScheduler {
         store.remove(key);
     }
 
+    /**
+     * Clears all bitmap schedules for a user before a given date.
+     */
+    public void cleanPastSchedules(UUID userId, LocalDate beforeDate) {
+        String prefix = "user:" + userId + ":schedule:";
+        store.keySet().removeIf(key -> {
+            if (key.startsWith(prefix)) {
+                try {
+                    String dateStr = key.substring(prefix.length());
+                    LocalDate date = LocalDate.parse(dateStr);
+                    return date.isBefore(beforeDate);
+                } catch (Exception e) {
+                    return true;
+                }
+            }
+            return false;
+        });
+    }
+
     public boolean isBusy(UUID userId, LocalDate date, int min) {
         if (min < 0) return true;
         if (min >= 1440) {

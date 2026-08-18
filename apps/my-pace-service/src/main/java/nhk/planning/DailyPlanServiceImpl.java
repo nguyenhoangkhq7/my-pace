@@ -360,6 +360,17 @@ public class DailyPlanServiceImpl implements DailyPlanService {
                     if (goalId != null) {
                         goalService.updateGoalProgress(goalId);
                     }
+                } else if ("DONE".equalsIgnoreCase(action)) {
+                    task.setStatus("Done");
+                    User user = userRepo.findById(userId)
+                            .orElseThrow(() -> new UserNotFoundException("User not found"));
+                    String tz = user.getTimezone();
+                    ZoneId zoneId = ZoneId.of(tz != null && !tz.isBlank() ? tz : "UTC");
+                    task.setDoneAt(OffsetDateTime.now(zoneId));
+                    taskRepository.save(task);
+                    if (task.getGoalId() != null) {
+                        goalService.updateGoalProgress(task.getGoalId());
+                    }
                 } else if ("BACKLOG".equalsIgnoreCase(action)) {
                     task.setStatus("Backlog");
                     taskRepository.save(task);

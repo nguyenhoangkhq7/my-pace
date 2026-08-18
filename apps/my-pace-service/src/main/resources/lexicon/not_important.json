@@ -1,0 +1,30 @@
+{
+  "ENTERTAINMENT": [
+    "giai tri", "giải trí", "entertainment", "xem phim", "phim", "movie", "tv show", "series",
+    "netflix", "youtube", "phim giai tri", "phim giải trí", "xem linh tinh"
+  ],
+  "GAMING": [
+    "choi game", "chơi game", "game", "gaming", "play games", "video games", "mobile games",
+    "choi dien tu", "chơi điện tử", "lien minh", "liên minh", "lol", "pubg"
+  ],
+  "SOCIAL_MEDIA": [
+    "facebook", "tiktok", "instagram", "twitter", "reddit", "x", "luot web", "lướt web",
+    "luot mang", "lướt mạng", "mang xa hoi", "mạng xã hội", "social media", "doomscrolling",
+    "scroll", "browse web", "doc linh tinh", "đọc linh tinh"
+  ],
+  "GOSSIP": [
+    "gossip", "hong chuyen", "hóng chuyện", "tam chuyen", "tám chuyện", "buon chuyen", "buôn chuyện",
+    "tin don", "tin đồn", "celebrity gossip"
+  ],
+  "PROCRASTINATION": [
+    "tri hoan", "trì hoãn", "procrastinate", "giet thoi gian", "giết thời gian", "kill time",
+    "wasting time", "time wasting", "idle activity", "an khong ngoi roi", "ăn không ngồi rồi"
+  ],
+  "PARTY": [
+    "nhau", "nhậu", "tiec", "tiệc", "karaoke", "party", "di choi", "đi chơi"
+  ],
+  "LOW_VALUE_REQUEST": [
+    "minor admin", "interruptions", "non critical notification", "unnecessary meeting",
+    "unnecessary call", "low value request"
+  ]
+}

@@ -72,7 +72,7 @@ export function BacklogMatrix({
     
     try {
       await planMyDay({
-        availableMinutes: targetPlan.availableMinutes || totalAvailable,
+        availableMinutes: totalAvailable || targetPlan?.availableMinutes || 0,
         tasks: newTasks
       });
       setSwapUrgentTask(null);
@@ -82,7 +82,7 @@ export function BacklogMatrix({
   };
 
   return (
-    <div className="h-full flex flex-col space-y-2">
+    <div className="h-full flex flex-col space-y-2.5">
       <BacklogMatrixHeader 
         categories={categories}
         selectedFilterId={selectedFilterId}

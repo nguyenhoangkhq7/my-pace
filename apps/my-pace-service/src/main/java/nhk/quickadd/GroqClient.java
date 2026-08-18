@@ -39,21 +39,33 @@ class GroqClient {
                 "response_format", Map.of("type", "json_object")
         );
 
-        try {
-            Map<?, ?> response = restClient.post()
-                    .uri(GROQ_API_URL)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .header("Authorization", "Bearer " + apiKey)
-                    .body(payload)
-                    .retrieve()
-                    .body(Map.class);
+        int maxAttempts = 2;
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                Map<?, ?> response = restClient.post()
+                        .uri(GROQ_API_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + apiKey)
+                        .body(payload)
+                        .retrieve()
+                        .body(Map.class);
 
-            return unwrapContent(response);
-        } catch (QuickAddExternalServiceException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new QuickAddExternalServiceException("AI service unavailable", e);
+                return unwrapContent(response);
+            } catch (QuickAddExternalServiceException e) {
+                if (attempt == maxAttempts) throw e;
+            } catch (Exception e) {
+                if (attempt == maxAttempts) {
+                    throw new QuickAddExternalServiceException("AI service unavailable: " + e.getMessage(), e);
+                }
+                try {
+                    Thread.sleep(300);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new QuickAddExternalServiceException("AI service request interrupted", ie);
+                }
+            }
         }
+        throw new QuickAddExternalServiceException("AI service unavailable");
     }
 
     private String unwrapContent(Map<?, ?> response) {

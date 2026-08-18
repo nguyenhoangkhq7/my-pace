@@ -12,6 +12,7 @@ import { useDailyPlan } from "./useDailyPlan";
 import { useTaskTimeBlocks } from "./useTaskTimeBlocks";
 import { useBatchSlack } from "./useAutoScheduleSlack";
 import { useEffect } from "react";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface UseExecutionBoardProps {
   currentDate: string;
@@ -19,6 +20,7 @@ interface UseExecutionBoardProps {
 }
 
 export function useExecutionBoard({ currentDate, tomorrowDate }: UseExecutionBoardProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
 
@@ -84,14 +86,25 @@ export function useExecutionBoard({ currentDate, tomorrowDate }: UseExecutionBoa
   const baseAvailable = availableData?.availableMinutes || 0;
 
   const currentAvailable = useMemo(() => {
+    const getTaskDailyUsage = (t?: { estimatedMinutes?: number | null; actualMinutes?: number | null; isSplittable?: boolean; maxDailyDuration?: number | null }) => {
+      if (!t) return 0;
+      const est = t.estimatedMinutes || 0;
+      const act = t.actualMinutes || 0;
+      const rem = Math.max(0, est - act);
+      if (t.isSplittable && t.maxDailyDuration && t.maxDailyDuration > 0) {
+        return Math.min(t.maxDailyDuration, rem > 0 ? rem : est);
+      }
+      return rem > 0 ? rem : est;
+    };
+
     let usedTime = 0;
     if (isPlanningMode) {
       const plannedTasks = tasks.filter(t => plannedTaskIds.includes(t.id));
-      usedTime = plannedTasks.reduce((acc, t) => acc + (t.estimatedMinutes || 0), 0);
+      usedTime = plannedTasks.reduce((acc, t) => acc + getTaskDailyUsage(t), 0);
     } else {
       // In execution mode (overview/confirmed), deduct the tasks in the plan
       const planTasks = currentPlan?.tasks || [];
-      usedTime = planTasks.reduce((acc, pt) => acc + (pt.task?.estimatedMinutes || 0), 0);
+      usedTime = planTasks.reduce((acc, pt) => acc + getTaskDailyUsage(pt.task), 0);
     }
     return baseAvailable - usedTime;
   }, [isPlanningMode, baseAvailable, plannedTaskIds, tasks, currentPlan]);
@@ -119,7 +132,7 @@ export function useExecutionBoard({ currentDate, tomorrowDate }: UseExecutionBoa
       });
 
       const data = await activePlanHook.savePlan({
-        availableMinutes: Math.max(0, currentAvailable),
+        availableMinutes: baseAvailable,
         tasks: planTasks,
       });
 
@@ -128,10 +141,10 @@ export function useExecutionBoard({ currentDate, tomorrowDate }: UseExecutionBoa
       if (activeTab === "today") {
         useBoardStore.setState({ isStarted: data?.isConfirmed ?? false });
       }
-      toast.success("Lưu kế hoạch thành công!");
+      toast.success(t.board.savePlanSuccess);
     } catch (err) {
       console.error(err);
-      const message = err instanceof Error ? err.message : "Không thể lưu kế hoạch. Vui lòng thử lại!";
+      const message = err instanceof Error ? err.message : t.board.savePlanError;
       toast.error(message);
     }
   };
@@ -177,7 +190,7 @@ export function useExecutionBoard({ currentDate, tomorrowDate }: UseExecutionBoa
     });
 
     if (excessTaskIds.size === 0) {
-      toast.info("Không có công việc nào vượt quá giờ đi ngủ.");
+      toast.info(t.board.excessTasksNone);
       return;
     }
 
@@ -210,10 +223,10 @@ export function useExecutionBoard({ currentDate, tomorrowDate }: UseExecutionBoa
       queryClient.invalidateQueries({ queryKey: ["dailyPlan", targetDate] });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
 
-      toast.success(`Đã tự động đẩy ${excessTaskIds.size} công việc thừa về Backlog.`);
+      toast.success(t.board.excessTasksRemovedSuccess(excessTaskIds.size));
     } catch (err) {
       console.error(err);
-      toast.error("Không thể xử lý công việc thừa. Vui lòng thử lại.");
+      toast.error(t.board.savePlanError);
     }
   };
 

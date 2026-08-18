@@ -92,7 +92,7 @@ public class TaskPriorityScorerTest {
                 ctx.taskTimeBlocksByDate(), ctx.dailyPlanTasksByPlanId(), Collections.emptyMap(), List.of(t1, t2), ctx.taskTimeBlocksByTaskId(), ctx.fixedEvents());
 
         TaskQueueResult res = scorer.buildTaskQueues(ctx);
-        assertEquals("Q2", res.backlogQueue().get(0).task.getTitle(), "Q2 (Rank 1) must beat Q1 Low Risk (Rank 2)");
+        assertEquals("Q1 Low Risk", res.backlogQueue().get(0).task.getTitle(), "Q1 Low Risk (Rank 1) must beat Q2 (Rank 2)");
     }
 
     @Test
@@ -105,7 +105,7 @@ public class TaskPriorityScorerTest {
                 ctx.taskTimeBlocksByDate(), ctx.dailyPlanTasksByPlanId(), Collections.emptyMap(), List.of(t1, t2), ctx.taskTimeBlocksByTaskId(), ctx.fixedEvents());
 
         TaskQueueResult res = scorer.buildTaskQueues(ctx);
-        assertEquals("Q3 High Risk", res.backlogQueue().get(0).task.getTitle(), "Q3 High Risk (Rank 0) must beat Q2 (Rank 1)");
+        assertEquals("Q3 High Risk", res.backlogQueue().get(0).task.getTitle(), "Q3 High Risk (Rank 0) must beat Q2 (Rank 2)");
     }
 
     @Test
@@ -118,7 +118,31 @@ public class TaskPriorityScorerTest {
                 ctx.taskTimeBlocksByDate(), ctx.dailyPlanTasksByPlanId(), Collections.emptyMap(), List.of(t1, t2), ctx.taskTimeBlocksByTaskId(), ctx.fixedEvents());
 
         TaskQueueResult res = scorer.buildTaskQueues(ctx);
-        assertEquals("Q1 Low Risk", res.backlogQueue().get(0).task.getTitle(), "Q1 Low Risk (Rank 2) must beat Q3 Standard (Rank 3)");
+        assertEquals("Q1 Low Risk", res.backlogQueue().get(0).task.getTitle(), "Q1 Low Risk (Rank 1) must beat Q3 Standard (Rank 3)");
+    }
+
+    @Test
+    void testPartialActualMinutes_NoDoubleDeduction() {
+        // Task has 120m estimated, 60m actual worked earlier today (08:00 - 09:00, which has already ended)
+        Task t1 = createTask("Task with Past Progress", true, true, today.plusDays(1).atTime(23, 59), 120);
+        t1.setActualMinutes(60);
+
+        TaskTimeBlock pastBlock = new TaskTimeBlock();
+        pastBlock.setId(UUID.randomUUID());
+        pastBlock.setTaskId(t1.getId());
+        pastBlock.setStartTime(LocalDateTime.now().minusHours(3));
+        pastBlock.setEndTime(LocalDateTime.now().minusHours(2));
+        pastBlock.setAvailabilityStatus("BUSY");
+
+        Map<UUID, List<TaskTimeBlock>> blocksByTaskId = Map.of(t1.getId(), List.of(pastBlock));
+
+        ctx = new ScheduleContext(userId, ctx.zoneId(), ctx.startDate(), ctx.endDate(), ctx.dateRange(), 
+                ctx.bufferPct(), ctx.bufferMinutes(), ctx.wakeMin(), ctx.sleepMin(), ctx.categoryMap(), ctx.planMap(), 
+                ctx.taskTimeBlocksByDate(), ctx.dailyPlanTasksByPlanId(), Collections.emptyMap(), List.of(t1), blocksByTaskId, ctx.fixedEvents());
+
+        TaskQueueResult res = scorer.buildTaskQueues(ctx);
+        assertEquals(1, res.backlogQueue().size());
+        assertEquals(60, res.backlogQueue().get(0).remainingMinutes, "Past BUSY block must NOT be subtracted again when actualMinutes is already 60");
     }
 
     @Test

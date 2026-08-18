@@ -15,6 +15,7 @@ export interface QuickAddTaskResult {
   goalId: string | null;
   notes: string | null;
   checklists: QuickAddChecklist[] | null;
+  source?: "FAST_PATH" | "AI";
 }
 
 export interface QuickAddEventResult {
@@ -30,6 +31,7 @@ export interface QuickAddEventResult {
   recurrenceDaysOfWeek?: number[] | null;
   recurrenceEndDate?: string | null;
   estimatedMinutes?: number | null;
+  source?: "FAST_PATH" | "AI";
 }
 
 export type QuickAddResult = QuickAddTaskResult | QuickAddEventResult;

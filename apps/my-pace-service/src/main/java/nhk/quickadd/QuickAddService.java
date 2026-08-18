@@ -2,15 +2,20 @@ package nhk.quickadd;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import nhk.category.Category;
 import nhk.category.CategoryRepository;
 import nhk.goal.Goal;
 import nhk.goal.GoalRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.util.FileCopyUtils;
 import org.springframework.web.client.RestClient;
 
+import java.nio.charset.StandardCharsets;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -21,22 +26,24 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
  * Orchestrator for the QuickAdd pipeline.
  *
  * Pipeline:
- *   1. Call Groq with a lean extraction-only prompt  → AiExtraction
- *   2. Resolve raw expressions to typed values (deterministic Java)
- *   3. Classify intent (task vs event) from resolved data
- *   4. Evaluate urgency and importance (keyword rules)
- *   5. Resolve recurrence
- *   6. Assemble QuickAddResponse
- *
- * Business logic is distributed into dedicated resolver/evaluator classes.
- * This service contains NO business logic beyond orchestration.
+ *   1. Pre-evaluate signals locally (Eisenhower lexicon & domain signals)
+ *   2. Fast-Path evaluation with lightweight complexity analysis (< 1ms, 0 tokens)
+ *   3. Versioned LRU Extraction Cache check (O(1) version retrieval)
+ *   4. Groq LLM semantic extraction prompt -> Raw JSON
+ *   5. Validation Layer (SchemaValidator -> SemanticValidator) -> AiExtraction
+ *   6. Deterministic Resolvers (Duration, Date, Time, Category, Goal, Recurrence)
+ *   7. Intent Classification (Task vs Event combining action verbs & external markers)
+ *   8. Deterministic Eisenhower Scoring & Classification with DecisionTrace
+ *   9. Assemble QuickAddResponse
  */
+@Slf4j
 @Service
 public class QuickAddService {
 
@@ -44,44 +51,18 @@ public class QuickAddService {
     private static final DateTimeFormatter DT_FORMATTER   = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
     private static final DateTimeFormatter DATE_FORMATTER  = DateTimeFormatter.ISO_LOCAL_DATE;
     private static final DateTimeFormatter TIME_FORMATTER  = DateTimeFormatter.ofPattern("HH:mm");
-    private static final DateTimeFormatter NOW_FORMATTER   = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
     private static final ObjectMapper      OBJECT_MAPPER   = new ObjectMapper();
 
     // ── System prompt ─────────────────────────────────────────────────────────────
-    private static final String SYSTEM_PROMPT = """
-            You are a Vietnamese NLP extractor for a productivity app.
-            Extract ONLY what the user explicitly expressed. Do NOT calculate. Do NOT infer. Do NOT guess IDs.
-            Respond with a single strict JSON object. No markdown, no code fences, no explanation.
+    private final String systemPromptTemplate;
 
-            OUTPUT FORMAT:
-            {
-              "intent": "time_block" | "deadline" | "open_task",
-              "title": string,
-              "dateExpression": string | null,
-              "timeExpression": string | null,
-              "durationExpression": string | null,
-              "categoryHint": string | null,
-              "goalHint": string | null,
-              "notes": string | null,
-              "checklists": [string] | null,
-              "isAllDay": boolean,
-              "recurrenceExpression": string | null
-            }
+    // ── Cache & Versioning ────────────────────────────────────────────────────────
+    private final QuickAddCache              quickAddCache;
+    private final UserContextVersionService  userContextVersionService;
 
-            FIELD RULES:
-            - intent: "time_block" if user states a start time. "deadline" if only a date/deadline. "open_task" otherwise.
-            - title: core action only. Strip time, date, duration, urgency words, location, and recurrence from title.
-            - dateExpression: copy EXACTLY as user said ("mai", "thứ 6", "cuối tuần"). null if absent.
-            - timeExpression: copy EXACTLY as user said ("3h", "3 giờ chiều", "sáng"). null if absent.
-            - durationExpression: copy EXACTLY as user said ("2 tiếng", "30 phút", "1h"). null if absent.
-            - categoryHint: category name or abbreviation (e.g. "KLTN" for "Khóa luận tốt nghiệp", "CNTT") ONLY if clearly mentioned by user. Prefer exact category name from Categories list if recognizable. null otherwise.
-            - goalHint: goal or project name or abbreviation ONLY if clearly mentioned by user. Prefer exact goal title from Goals list if recognizable. null otherwise.
-            - notes: location, attendees, conditions, or context NOT included in the title. null if absent.
-            - checklists: array of strings ONLY when user explicitly lists sub-items. null otherwise.
-            - isAllDay: true ONLY when user explicitly says "cả ngày", "all day", "nghỉ lễ", "cả buổi", or similar whole-day markers. false otherwise.
-            - recurrenceExpression: copy EXACTLY what user said about repetition ("hàng tuần", "mỗi ngày", "hàng tuần thứ 2 thứ 4 thứ 6"). null if no recurrence.
-            - If a field is not present in the user's input → null (or false for isAllDay). Never invent values.
-            """;
+    // ── Validators ────────────────────────────────────────────────────────────────
+    private final ExtractionSchemaValidator   schemaValidator;
+    private final ExtractionSemanticValidator semanticValidator;
 
     // ── Dependencies ──────────────────────────────────────────────────────────────
     private final CategoryRepository  categoryRepository;
@@ -90,15 +71,15 @@ public class QuickAddService {
     private final String              apiKey;
 
     // ── Stateless resolvers & evaluators ─────────────────────────────────────────
+    private final FastPathParser      fastPathParser;
     private final DurationResolver    durationResolver    = new DurationResolver();
     private final DateResolver        dateResolver        = new DateResolver();
     private final TimeResolver        timeResolver        = new TimeResolver();
     private final CategoryResolver    categoryResolver    = new CategoryResolver();
     private final GoalResolver        goalResolver        = new GoalResolver();
     private final IntentClassifier    intentClassifier    = new IntentClassifier();
-    private final UrgencyEvaluator    urgencyEvaluator    = new UrgencyEvaluator();
-    private final ImportanceEvaluator importanceEvaluator = new ImportanceEvaluator();
     private final RecurrenceResolver  recurrenceResolver  = new RecurrenceResolver();
+    private final EisenhowerClassifier eisenhowerClassifier;
 
     // ── Constructors ──────────────────────────────────────────────────────────────
 
@@ -106,52 +87,184 @@ public class QuickAddService {
     public QuickAddService(
             CategoryRepository categoryRepository,
             GoalRepository goalRepository,
+            EisenhowerClassifier eisenhowerClassifier,
+            QuickAddCache quickAddCache,
+            UserContextVersionService userContextVersionService,
+            ExtractionSchemaValidator schemaValidator,
+            ExtractionSemanticValidator semanticValidator,
+            FastPathParser fastPathParser,
             @Value("${app.groq.api-key:}") String apiKey,
-            @Value("${app.groq.model:llama-3.1-8b-instant}") String model
+            @Value("${app.groq.model:openai/gpt-oss-20b}") String model,
+            @Value("classpath:prompts/quickadd.txt") Resource promptResource
     ) {
-        this(categoryRepository, goalRepository, apiKey, model, RestClient.builder().build());
+        this(
+                categoryRepository,
+                goalRepository,
+                eisenhowerClassifier,
+                quickAddCache,
+                userContextVersionService,
+                schemaValidator,
+                semanticValidator,
+                apiKey,
+                model,
+                createOptimizedRestClient(),
+                promptResource,
+                fastPathParser
+        );
     }
 
-    /** Package-private constructor for unit testing with a mocked RestClient. */
+    private static RestClient createOptimizedRestClient() {
+        var factory = new org.springframework.http.client.JdkClientHttpRequestFactory(
+                java.net.http.HttpClient.newBuilder()
+                        .version(java.net.http.HttpClient.Version.HTTP_2)
+                        .connectTimeout(java.time.Duration.ofSeconds(3))
+                        .build()
+        );
+        factory.setReadTimeout(java.time.Duration.ofSeconds(8));
+        return RestClient.builder()
+                .requestFactory(factory)
+                .build();
+    }
+
+    /** Package-private constructor for unit testing with a mocked RestClient (bypasses fast-path by default). */
     QuickAddService(
             CategoryRepository categoryRepository,
             GoalRepository goalRepository,
+            EisenhowerClassifier eisenhowerClassifier,
             String apiKey,
             String model,
             RestClient restClient
     ) {
+        this(
+                categoryRepository,
+                goalRepository,
+                eisenhowerClassifier,
+                new QuickAddCache(),
+                new UserContextVersionService(),
+                new ExtractionSchemaValidator(),
+                new ExtractionSemanticValidator(),
+                apiKey,
+                model,
+                restClient,
+                null,
+                null
+        );
+    }
+
+    /** Package-private constructor for unit testing with a mocked RestClient and custom prompt. */
+    QuickAddService(
+            CategoryRepository categoryRepository,
+            GoalRepository goalRepository,
+            EisenhowerClassifier eisenhowerClassifier,
+            QuickAddCache quickAddCache,
+            UserContextVersionService userContextVersionService,
+            ExtractionSchemaValidator schemaValidator,
+            ExtractionSemanticValidator semanticValidator,
+            String apiKey,
+            String model,
+            RestClient restClient,
+            Resource promptResource,
+            FastPathParser fastPathParser
+    ) {
         this.categoryRepository = categoryRepository;
         this.goalRepository     = goalRepository;
+        this.eisenhowerClassifier = eisenhowerClassifier;
+        this.quickAddCache       = quickAddCache != null ? quickAddCache : new QuickAddCache();
+        this.userContextVersionService = userContextVersionService != null ? userContextVersionService : new UserContextVersionService();
+        this.schemaValidator     = schemaValidator != null ? schemaValidator : new ExtractionSchemaValidator();
+        this.semanticValidator   = semanticValidator != null ? semanticValidator : new ExtractionSemanticValidator();
         this.apiKey             = apiKey;
-        this.groqClient         = new GroqClient(restClient, apiKey, model);
+        this.groqClient         = new GroqClient(restClient, apiKey, model != null ? model : "openai/gpt-oss-20b");
+        this.fastPathParser     = fastPathParser;
+        try {
+            if (promptResource != null && promptResource.exists()) {
+                this.systemPromptTemplate = new String(FileCopyUtils.copyToByteArray(promptResource.getInputStream()), StandardCharsets.UTF_8);
+            } else {
+                Resource fallback = new ClassPathResource("prompts/quickadd.txt");
+                this.systemPromptTemplate = fallback.exists() ? new String(FileCopyUtils.copyToByteArray(fallback.getInputStream()), StandardCharsets.UTF_8) : "";
+            }
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("Failed to load prompt template", e);
+        }
     }
 
     // ── Public API ────────────────────────────────────────────────────────────────
 
     public QuickAddResponse parse(QuickAddRequest request, UUID userId, String timezone) {
-        if (apiKey == null || apiKey.isBlank()) {
-            throw new QuickAddExternalServiceException("GROQ_API_KEY is not configured");
-        }
-
         ZoneId        zoneId     = safeZoneId(timezone);
         ZonedDateTime now        = ZonedDateTime.now(zoneId);
         List<Category> categories = categoryRepository.findByUserIdOrderByNameAsc(userId);
         List<Goal>     goals      = goalRepository.findByUserIdAndStatus(userId, "In Progress");
 
-        List<Map<String, Object>> messages = buildMessages(now, zoneId.getId(), categories, goals, request.text());
-        AiExtraction extraction = callWithRetry(messages);
+        // 1. Pre-evaluate signals locally (Hybrid Pipeline)
+        PreClassificationState preState = eisenhowerClassifier.preEvaluate(request.text(), goals, now);
 
-        return resolve(extraction, request.text(), categories, goals, now);
+        // 2. Fast-Path evaluation (Zero-LLM Latency for simple, unambiguous tasks)
+        if (fastPathParser != null && !Boolean.TRUE.equals(request.forceAi())) {
+            Optional<AiExtraction> fastExtraction = fastPathParser.tryFastParse(request.text());
+            if (fastExtraction.isPresent()) {
+                log.debug("QuickAdd fast-path hit for query: '{}'", request.text());
+                AiExtraction validated = semanticValidator.validate(fastExtraction.get(), request.text());
+                return resolve(validated, request.text(), categories, goals, now, preState, "FAST_PATH");
+            }
+        }
+
+        if (apiKey == null || apiKey.isBlank()) {
+            throw new QuickAddExternalServiceException("GROQ_API_KEY is not configured");
+        }
+
+        // 3. Versioned LRU Cache Check (O(1) version retrieval)
+        long contextVersion = userContextVersionService.getVersion(userId);
+        String cacheKey = quickAddCache.buildKey(userId, contextVersion, request.text());
+        Optional<AiExtraction> cachedExtraction = Boolean.TRUE.equals(request.forceAi()) ? Optional.empty() : quickAddCache.get(cacheKey);
+
+        AiExtraction extraction;
+        if (cachedExtraction.isPresent()) {
+            log.debug("QuickAdd cache hit for query: '{}'", request.text());
+            extraction = cachedExtraction.get();
+        } else {
+            List<Map<String, Object>> messages = buildMessages(now, zoneId.getId(), categories, goals, request.text(), preState);
+            try {
+                extraction = callWithRetry(messages, request.text());
+                quickAddCache.put(cacheKey, extraction);
+            } catch (QuickAddExternalServiceException e) {
+                log.warn("Groq AI extraction failed for query '{}', using minimal fallback: {}", request.text(), e.getMessage());
+                throw e;
+            }
+        }
+
+        return resolve(extraction, request.text(), categories, goals, now, preState, "AI");
+    }
+
+    /** Clear in-memory extraction cache (e.g. for maintenance or testing). */
+    public void clearCache() {
+        quickAddCache.clear();
+        userContextVersionService.reset();
     }
 
     // ── Pipeline steps ────────────────────────────────────────────────────────────
 
     /** Calls Groq; on parse failure retries once at temperature 0.0. */
-    private AiExtraction callWithRetry(List<Map<String, Object>> messages) {
+    private AiExtraction callWithRetry(List<Map<String, Object>> messages, String rawText) {
         try {
-            return parseExtraction(groqClient.complete(messages, 0.1));
+            return parseAndValidate(groqClient.complete(messages, 0.1), rawText);
         } catch (QuickAddParseException e) {
-            return parseExtraction(groqClient.complete(messages, 0.0));
+            return parseAndValidate(groqClient.complete(messages, 0.0), rawText);
+        }
+    }
+
+    /**
+     * Parses raw JSON string from Groq and applies Schema and Semantic validation.
+     */
+    private AiExtraction parseAndValidate(String content, String rawText) {
+        try {
+            JsonNode node = OBJECT_MAPPER.readTree(content);
+            AiExtraction structural = schemaValidator.validate(node);
+            return semanticValidator.validate(structural, rawText);
+        } catch (QuickAddParseException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new QuickAddParseException("Failed to parse AI extraction", e);
         }
     }
 
@@ -164,7 +277,9 @@ public class QuickAddService {
             String rawText,
             List<Category> categories,
             List<Goal> goals,
-            ZonedDateTime now
+            ZonedDateTime now,
+            PreClassificationState preState,
+            String source
     ) {
         Integer   durationMinutes    = durationResolver.resolve(extraction.durationExpression());
         LocalDate resolvedDate       = dateResolver.resolve(extraction.dateExpression(), now);
@@ -172,19 +287,39 @@ public class QuickAddService {
             // Fallback: users often include day markers inside time phrases, e.g. "8 giờ tối nay".
             resolvedDate = dateResolver.resolve(extraction.timeExpression(), now);
         }
-        TimeResolver.TimeRange timeRange = timeResolver.resolveRange(extraction.timeExpression(), extraction.dateExpression());
+        String timeContext = (extraction.dateExpression() != null ? extraction.dateExpression() + " " : "") + rawText;
+        TimeResolver.TimeRange timeRange = timeResolver.resolveRange(extraction.timeExpression(), timeContext, now);
         LocalTime resolvedStartTime  = timeRange != null ? timeRange.startTime() : null;
+
+        // Smart Date Rollover: If no date provided but time has passed today, move to tomorrow
+        if (resolvedDate == null && resolvedStartTime != null) {
+            if (resolvedStartTime.isBefore(now.toLocalTime())) {
+                resolvedDate = now.toLocalDate().plusDays(1);
+            } else {
+                resolvedDate = now.toLocalDate();
+            }
+        }
+
         if (durationMinutes == null && timeRange != null && timeRange.durationMinutes() != null) {
             durationMinutes = timeRange.durationMinutes();
+        } else if (durationMinutes == null && "time_block".equals(extraction.intent())) {
+            durationMinutes = 60; // Default 1 hour for meetings/events if not specified
         }
         LocalTime resolvedEndTime    = (timeRange != null && timeRange.endTime() != null)
                 ? timeRange.endTime()
                 : timeResolver.resolveEndTime(resolvedStartTime, durationMinutes);
-        UUID      categoryId         = categoryResolver.resolve(extraction.categoryHint(), categories);
         UUID      goalId             = goalResolver.resolve(extraction.goalHint(), goals);
+        UUID      categoryId         = categoryResolver.resolve(extraction.categoryHint(), categories);
+        if (goalId != null) {
+            categoryId = goals.stream()
+                    .filter(g -> g.getId().equals(goalId) && g.getCategoryId() != null)
+                    .map(Goal::getCategoryId)
+                    .findFirst()
+                    .orElse(categoryId);
+        }
 
-        // 2. Classify intent from resolved data (NOT from LLM's literal "type" field)
-        String type = intentClassifier.classify(extraction, resolvedStartTime);
+        // 2. Classify intent from resolved data & context
+        String type = intentClassifier.classify(extraction, resolvedStartTime, rawText);
 
         // 3. Compute type-specific date/time fields
         boolean   isAllDay  = "event".equals(type) && extraction.allDayHint();
@@ -195,24 +330,40 @@ public class QuickAddService {
         LocalTime effectiveStart = (isAllDay) ? null : resolvedStartTime;
         LocalTime effectiveEnd   = (isAllDay) ? null : resolvedEndTime;
 
-        // 5. Evaluate business signals deterministically
-        boolean isUrgent    = urgencyEvaluator.evaluate(rawText, dueDate, now);
-        boolean isImportant = importanceEvaluator.evaluate(extraction.title(), extraction.categoryHint());
+        // 5. Evaluate business signals deterministically + AI semantic hints
+        ClassificationResult classification = eisenhowerClassifier.postEvaluate(
+                preState, extraction.i(), extraction.u(), dueDate, now
+        );
 
-        // 6. Resolve recurrence (only meaningful for events)
+        // 6. Resolve recurrence (only meaningful for events per domain model)
         RecurrenceResult recurrence = "event".equals(type)
                 ? recurrenceResolver.resolve(extraction.recurrenceExpression(), eventDate)
                 : RecurrenceResult.none();
 
+        // 6b. Align eventDate to first matching occurrence if weekly/daily recurrence is present and date was not explicitly specified
+        if ("event".equals(type) && extraction.dateExpression() == null) {
+            LocalDate base = (eventDate != null) ? eventDate : now.toLocalDate();
+            eventDate = alignEventDateForRecurrence(base, recurrence, effectiveStart, now);
+        }
+
         // 7. Build checklists
         List<QuickAddChecklistResponse> checklists = buildChecklists(extraction.checklists());
+
+        if (classification.trace() != null) {
+            log.debug("QuickAdd decision trace for '{}': quadrant={}, importance={}, urgency={}, signals={}",
+                    rawText, classification.quadrant(), classification.importanceScore(), classification.urgencyScore(), classification.trace().signals());
+        }
 
         return new QuickAddResponse(
                 type,
                 extraction.title(),
                 durationMinutes,
-                isUrgent,
-                isImportant,
+                classification.isUrgent(),
+                classification.isImportant(),
+                classification.quadrant(),
+                classification.importanceScore(),
+                classification.urgencyScore(),
+                classification.reason(),
                 dueDate    != null ? dueDate.format(DT_FORMATTER)       : null,
                 eventDate  != null ? eventDate.format(DATE_FORMATTER)    : null,
                 effectiveStart != null && "event".equals(type) ? effectiveStart.format(TIME_FORMATTER) : null,
@@ -224,54 +375,9 @@ public class QuickAddService {
                 isAllDay,
                 recurrence.recurrenceType(),
                 recurrence.recurrenceDays(),
-                recurrence.recurrenceEndDate() != null ? recurrence.recurrenceEndDate().format(DATE_FORMATTER) : null
+                recurrence.recurrenceEndDate() != null ? recurrence.recurrenceEndDate().format(DATE_FORMATTER) : null,
+                source
         );
-    }
-
-    // ── Extraction parsing ────────────────────────────────────────────────────────
-
-    /**
-     * Parses raw JSON string from Groq into an AiExtraction.
-     * Structural validation only — no business logic here.
-     */
-    private AiExtraction parseExtraction(String content) {
-        try {
-            JsonNode node = OBJECT_MAPPER.readTree(content);
-
-            String title = readText(node, "title");
-            if (title == null || title.isBlank()) {
-                throw new QuickAddParseException("AI failed to extract title");
-            }
-
-            List<String> checklists = new ArrayList<>();
-            JsonNode checklistsNode = node.get("checklists");
-            if (checklistsNode != null && checklistsNode.isArray()) {
-                for (JsonNode item : checklistsNode) {
-                    String text = item.isTextual() ? item.asText(null) : readText(item, "title");
-                    if (text != null && !text.isBlank()) checklists.add(text);
-                }
-            }
-
-            boolean allDayHint = readBoolean(node, "isAllDay");
-
-            return new AiExtraction(
-                    readText(node, "intent"),
-                    title,
-                    readText(node, "dateExpression"),
-                    readText(node, "timeExpression"),
-                    readText(node, "durationExpression"),
-                    readText(node, "categoryHint"),
-                    readText(node, "goalHint"),
-                    readText(node, "notes"),
-                    checklists.isEmpty() ? null : checklists,
-                    allDayHint,
-                    readText(node, "recurrenceExpression")
-            );
-        } catch (QuickAddParseException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new QuickAddParseException("Failed to parse AI extraction", e);
-        }
     }
 
     // ── Prompt builders ───────────────────────────────────────────────────────────
@@ -279,22 +385,22 @@ public class QuickAddService {
     private List<Map<String, Object>> buildMessages(
             ZonedDateTime now, String timezone,
             List<Category> categories, List<Goal> goals,
-            String userText
+            String userText, PreClassificationState preState
     ) {
         List<Map<String, Object>> messages = new ArrayList<>();
-        messages.add(Map.of("role", "system", "content", SYSTEM_PROMPT));
+        messages.add(Map.of("role", "system", "content", systemPromptTemplate));
         messages.addAll(buildFewShots());
-        messages.add(Map.of("role", "user", "content", buildUserPrompt(now, timezone, categories, goals, userText)));
+        messages.add(Map.of("role", "user", "content", buildUserPrompt(now, timezone, categories, goals, userText, preState)));
         return messages;
     }
 
     private String buildUserPrompt(
             ZonedDateTime now, String timezone,
             List<Category> categories, List<Goal> goals,
-            String text
+            String text, PreClassificationState preState
     ) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Now: ").append(now.toLocalDateTime().format(NOW_FORMATTER))
+        sb.append("Now: ").append(now.toLocalDate().toString())
                 .append(" (").append(dayOfWeekLabel(now.getDayOfWeek())).append(")\n");
         sb.append("Timezone: ").append(timezone).append("\n");
 
@@ -309,58 +415,79 @@ public class QuickAddService {
                     .append("\n");
         }
 
+        if (!preState.domainSignals().isEmpty()) {
+            sb.append("Detected Domain Signals: ")
+                    .append(String.join(", ", preState.domainSignals().stream().map(nhk.quickadd.lexicon.CategoryMatch::category).distinct().toList()))
+                    .append("\n");
+        }
+
         sb.append("\nUser: \"").append(text.replace("\"", "\\\"")).append("\"");
         return sb.toString();
     }
 
     /**
-     * Five representative few-shot examples covering all intent types.
-     * Snapshots use a fixed "Now" so they don't drift.
+     * Representative few-shot examples covering task and event intent types.
      */
     private List<Map<String, Object>> buildFewShots() {
         return List.of(
-                // 1. time_block — meeting with location and duration
+                // 1. time_block — meeting with location and duration (Event)
                 Map.of("role", "user", "content",
-                        "Now: 2026-08-05T09:00:00 (Thứ 4)\nUser: \"Mai 3h họp team backend ở B2 khoảng 2 tiếng\""),
+                        "Now: 2026-08-05 (Thứ 4)\nTimezone: Asia/Ho_Chi_Minh\nUser: \"Mai 3h chiều họp team backend ở phòng B2 khoảng tiếng rưỡi\""),
                 Map.of("role", "assistant", "content",
                         """
-                        {"intent":"time_block","title":"Họp team backend","dateExpression":"mai","timeExpression":"3h","durationExpression":"2 tiếng","categoryHint":null,"goalHint":null,"notes":"B2","checklists":null,"isAllDay":false,"recurrenceExpression":null}"""),
+                        {"intent":"time_block","title":"Họp team backend","dateExpression":"mai","timeExpression":"3h chiều","durationExpression":"tiếng rưỡi","categoryHint":null,"goalHint":null,"notes":"phòng B2","checklists":null,"isAllDay":false,"recurrenceExpression":null,"i":0.8,"u":0.8}"""),
 
-                // 2. deadline — urgent task linked to a goal
+                // 2. deadline — urgent task linked to a goal with relative date (Task)
                 Map.of("role", "user", "content",
-                        "Now: 2026-08-05T09:00:00 (Thứ 4)\nUser: \"Cuối tuần nộp báo cáo đồ án gấp\""),
+                        "Now: 2026-08-05 (Thứ 4)\nTimezone: Asia/Ho_Chi_Minh\nUser: \"3 ngày nữa nộp báo cáo đồ án trước 17h gấp\""),
                 Map.of("role", "assistant", "content",
                         """
-                        {"intent":"deadline","title":"Nộp báo cáo đồ án","dateExpression":"cuối tuần","timeExpression":null,"durationExpression":null,"categoryHint":null,"goalHint":"đồ án","notes":null,"checklists":null,"isAllDay":false,"recurrenceExpression":null}"""),
+                        {"intent":"deadline","title":"Nộp báo cáo đồ án","dateExpression":"3 ngày nữa","timeExpression":"17h","durationExpression":null,"categoryHint":null,"goalHint":"đồ án","notes":null,"checklists":null,"isAllDay":false,"recurrenceExpression":null,"i":0.9,"u":0.9}"""),
 
-                // 3. open_task — shopping list with checklists
+                // 3. time_block — personal scheduled task (Task)
                 Map.of("role", "user", "content",
-                        "Now: 2026-08-05T09:00:00 (Thứ 4)\nUser: \"Đi siêu thị mua sữa, trứng, rau cải\""),
+                        "Now: 2026-08-05 (Thứ 4)\nTimezone: Asia/Ho_Chi_Minh\nUser: \"Tối nay 8h học tiếng Anh 1 tiếng\""),
                 Map.of("role", "assistant", "content",
                         """
-                        {"intent":"open_task","title":"Đi siêu thị","dateExpression":null,"timeExpression":null,"durationExpression":null,"categoryHint":null,"goalHint":null,"notes":null,"checklists":["Mua sữa","Mua trứng","Mua rau cải"],"isAllDay":false,"recurrenceExpression":null}"""),
+                        {"intent":"time_block","title":"Học tiếng Anh","dateExpression":"tối nay","timeExpression":"8h","durationExpression":"1 tiếng","categoryHint":null,"goalHint":null,"notes":null,"checklists":null,"isAllDay":false,"recurrenceExpression":null,"i":0.7,"u":0.4}"""),
 
-                // 4. all-day event — holiday / day off
+                // 4. open_task — routine shopping list (Task with checklists)
                 Map.of("role", "user", "content",
-                        "Now: 2026-08-05T09:00:00 (Thứ 4)\nUser: \"Ngày mai nghỉ lễ cả ngày\""),
+                        "Now: 2026-08-05 (Thứ 4)\nTimezone: Asia/Ho_Chi_Minh\nUser: \"Đi siêu thị mua sữa tươi, trứng gà, rau cải\""),
                 Map.of("role", "assistant", "content",
                         """
-                        {"intent":"open_task","title":"Nghỉ lễ","dateExpression":"mai","timeExpression":null,"durationExpression":null,"categoryHint":null,"goalHint":null,"notes":null,"checklists":null,"isAllDay":true,"recurrenceExpression":null}"""),
+                        {"intent":"open_task","title":"Đi siêu thị","dateExpression":null,"timeExpression":null,"durationExpression":null,"categoryHint":null,"goalHint":null,"notes":null,"checklists":["Mua sữa tươi","Mua trứng gà","Mua rau cải"],"isAllDay":false,"recurrenceExpression":null,"i":0.2,"u":0.3}"""),
 
-                // 5. recurring time_block — weekly standup
+                // 5. all-day event — holiday / day off (Event)
                 Map.of("role", "user", "content",
-                        "Now: 2026-08-05T09:00:00 (Thứ 4)\nUser: \"Họp standup lúc 9h sáng hàng tuần thứ 2, thứ 4, thứ 6\""),
+                        "Now: 2026-08-05 (Thứ 4)\nTimezone: Asia/Ho_Chi_Minh\nUser: \"Ngày mai nghỉ lễ cả ngày\""),
                 Map.of("role", "assistant", "content",
                         """
-                        {"intent":"time_block","title":"Họp standup","dateExpression":null,"timeExpression":"9h sáng","durationExpression":null,"categoryHint":null,"goalHint":null,"notes":null,"checklists":null,"isAllDay":false,"recurrenceExpression":"hàng tuần thứ 2, thứ 4, thứ 6"}""")
+                        {"intent":"open_task","title":"Nghỉ lễ","dateExpression":"mai","timeExpression":null,"durationExpression":null,"categoryHint":null,"goalHint":null,"notes":null,"checklists":null,"isAllDay":true,"recurrenceExpression":null,"i":0.1,"u":0.1}"""),
+
+                // 6. recurring event — weekly multi-day workout (Event)
+                Map.of("role", "user", "content",
+                        "Now: 2026-08-05 (Thứ 4)\nTimezone: Asia/Ho_Chi_Minh\nUser: \"Mỗi 2 4 6 tập gym lúc 18h 1 tiếng\""),
+                Map.of("role", "assistant", "content",
+                        """
+                        {"intent":"time_block","title":"Tập gym","dateExpression":null,"timeExpression":"18h","durationExpression":"1 tiếng","categoryHint":null,"goalHint":null,"notes":null,"checklists":null,"isAllDay":false,"recurrenceExpression":"mỗi 2 4 6","i":0.7,"u":0.4}"""),
+
+                // 7. recurring event — weekly meeting on specific night (Event)
+                Map.of("role", "user", "content",
+                        "Now: 2026-08-05 (Thứ 4)\nTimezone: Asia/Ho_Chi_Minh\nUser: \"Mỗi tối thứ 3 lúc 7 giờ họp câu lạc bộ sách\""),
+                Map.of("role", "assistant", "content",
+                        """
+                        {"intent":"time_block","title":"Họp câu lạc bộ sách","dateExpression":null,"timeExpression":"7 giờ tối","durationExpression":null,"categoryHint":null,"goalHint":null,"notes":null,"checklists":null,"isAllDay":false,"recurrenceExpression":"mỗi tối thứ 3","i":0.5,"u":0.4}""")
         );
     }
 
     // ── Small utilities ───────────────────────────────────────────────────────────
 
     private LocalDateTime buildDueDate(LocalDate date, LocalTime time) {
-        if (date == null) return null;
-        return date.atTime(time != null ? time : LocalTime.of(23, 59));
+        if (date == null && time == null) return null;
+        LocalDate effectiveDate = date != null ? date : LocalDate.now();
+        LocalTime effectiveTime = time != null ? time : LocalTime.of(23, 59);
+        return effectiveDate.atTime(effectiveTime);
     }
 
     private List<QuickAddChecklistResponse> buildChecklists(List<String> items) {
@@ -373,18 +500,6 @@ public class QuickAddService {
             }
         }
         return result;
-    }
-
-    private String readText(JsonNode node, String field) {
-        JsonNode f = node.get(field);
-        if (f == null || f.isNull()) return null;
-        String value = f.asText(null);
-        return value != null && !value.isBlank() ? value : null;
-    }
-
-    private boolean readBoolean(JsonNode node, String field) {
-        JsonNode f = node.get(field);
-        return f != null && !f.isNull() && f.asBoolean(false);
     }
 
     private ZoneId safeZoneId(String timezone) {
@@ -405,5 +520,37 @@ public class QuickAddService {
             case SATURDAY  -> "Thứ 7";
             case SUNDAY    -> "Chủ nhật";
         };
+    }
+
+    private LocalDate alignEventDateForRecurrence(
+            LocalDate baseDate,
+            RecurrenceResult recurrence,
+            LocalTime startTime,
+            ZonedDateTime now
+    ) {
+        if (recurrence == null) return baseDate;
+
+        if ("WEEKLY".equals(recurrence.recurrenceType()) && recurrence.recurrenceDays() != null && !recurrence.recurrenceDays().isEmpty()) {
+            List<Integer> days = recurrence.recurrenceDays();
+            LocalDate today = now.toLocalDate();
+            LocalTime currentTime = now.toLocalTime();
+
+            for (int i = 0; i < 7; i++) {
+                LocalDate candidate = today.plusDays(i);
+                int candidateDay = candidate.getDayOfWeek().getValue(); // 1=Mon..7=Sun
+                if (days.contains(candidateDay)) {
+                    if (i == 0 && startTime != null && currentTime.isAfter(startTime)) {
+                        continue;
+                    }
+                    return candidate;
+                }
+            }
+        } else if ("DAILY".equals(recurrence.recurrenceType()) && startTime != null) {
+            if (now.toLocalTime().isAfter(startTime)) {
+                return now.toLocalDate().plusDays(1);
+            }
+        }
+
+        return baseDate;
     }
 }

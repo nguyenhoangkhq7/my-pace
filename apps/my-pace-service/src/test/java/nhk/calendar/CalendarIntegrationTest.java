@@ -87,6 +87,17 @@ class CalendarIntegrationTest extends BaseIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        taskTimeBlockRepository.deleteAll();
+        dailyPlanTaskRepository.deleteAll();
+        dailyPlanRepository.deleteAll();
+        taskRepository.deleteAll();
+        goalRepository.deleteAll();
+        dailyCheckinRepository.deleteAll();
+        fixedEventExceptionRepository.deleteAll();
+        fixedEventRepository.deleteAll();
+        categoryRepository.deleteAll();
+        userRepository.deleteAll();
+
         objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
 
@@ -308,16 +319,16 @@ class CalendarIntegrationTest extends BaseIntegrationTest {
         @Test
         @DisplayName("Checkin should save DB record, auto-create Goal tasks, and schedule time blocks around fixed events")
         void checkin_AutoSchedule_Integration() throws Exception {
-            LocalDate checkinDate = LocalDate.of(2026, 8, 3); // Monday (1)
+            LocalDate checkinDate = LocalDate.of(2026, 8, 3);
 
-            // Save active Time-boxed Goal in H2 DB
+            // Save active Time-boxed Goal in DB
             Goal goal = new Goal();
             goal.setUserId(testUserA.getId());
             goal.setTitle("Learn Microservices");
             goal.setStatus("In Progress");
             goal.setAutoCreateTask(true);
             goal.setGoalType("Time-boxed");
-            goal.setDaysOfWeek("1,2,3,4,5"); // Mon - Fri
+            goal.setDaysOfWeek("1,2,3,4,5,6,7");
             goal.setDurationMinutes(60);
             goal.setPreferTime(LocalTime.of(10, 0));
             goalRepository.save(goal);
@@ -336,7 +347,7 @@ class CalendarIntegrationTest extends BaseIntegrationTest {
 
             // Perform Check-in via API
             mockMvcUserA.perform(post("/api/calendar/checkin")
-                            .param("date", "2026-08-03")
+                            .param("date", checkinDate.toString())
                             .param("checkinTime", "08:00"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.checkedIn").value(true))
@@ -352,7 +363,7 @@ class CalendarIntegrationTest extends BaseIntegrationTest {
             assertThat(generatedTask.getTitle()).isEqualTo("Learn Microservices");
 
             // 3. Verify TaskTimeBlock shifted due to conflict at 10:00 -> auto-scheduled at 11:00 to 12:00
-            List<TaskTimeBlock> blocks = taskTimeBlockRepository.findAll();
+            List<TaskTimeBlock> blocks = taskTimeBlockRepository.findByUserIdAndDateRange(testUserA.getId(), checkinDate.atStartOfDay(), checkinDate.atTime(23, 59));
             assertThat(blocks).hasSize(1);
             assertThat(blocks.get(0).getStartTime()).isEqualTo(checkinDate.atTime(11, 0));
             assertThat(blocks.get(0).getEndTime()).isEqualTo(checkinDate.atTime(12, 0));

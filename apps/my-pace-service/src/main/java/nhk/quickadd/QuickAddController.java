@@ -28,9 +28,9 @@ public class QuickAddController {
         UUID userId = (userDetails != null && userDetails.user() != null)
                 ? userDetails.user().getId()
                 : FALLBACK_USER_ID;
-        String timezone = (userDetails != null && userDetails.user() != null)
+        String timezone = (userDetails != null && userDetails.user() != null && userDetails.user().getTimezone() != null)
                 ? userDetails.user().getTimezone()
-                : "Asia/Ho_Chi_Minh";
+                : (request.userTimezone() != null && !request.userTimezone().isBlank() ? request.userTimezone() : "Asia/Ho_Chi_Minh");
 
         return quickAddService.parse(request, userId, timezone);
     }

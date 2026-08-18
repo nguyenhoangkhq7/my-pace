@@ -8,8 +8,10 @@ import { useTasks } from "./useTasks";
 import { useDailyPlan } from "./useDailyPlan";
 import { useCategories } from "./useCategories";
 import { useBatchSlack } from "./useAutoScheduleSlack";
+import { useTranslation } from "@/hooks/use-translation";
 
 export function useBacklogMatrix(currentDate: string, tomorrowDate: string) {
+  const { t } = useTranslation();
   const {
     isPlanningMode,
     plannedTaskIds,
@@ -85,27 +87,6 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string) {
       });
     }
   }, [tasks, batchSlack]);
-
-  const checkTimeLimit = (newEstimatedMinutes: number) => {
-    const customAvailable = targetPlan?.availableMinutes || 0;
-    const effectiveAvailable = customAvailable > 0 ? customAvailable : totalAvailable;
-    
-    const plannedTasks = tasks.filter(t => plannedTaskIds.includes(t.id));
-    const usedTime = plannedTasks.reduce((acc, t) => acc + (t.estimatedMinutes || 0), 0);
-
-    if (usedTime >= effectiveAvailable) {
-      toast.error("Quỹ thời gian trống đã cạn kiệt! Bạn có thể chọn thêm sau khi hoàn thành các công việc đã xếp lịch.");
-      return false; // Not allowed
-    }
-
-    if (usedTime + newEstimatedMinutes > effectiveAvailable) {
-      toast.error(`Thời gian rảnh của bạn chỉ còn ${effectiveAvailable - usedTime} phút, không đủ cho công việc này. Bạn có thể chọn thêm sau khi hoàn thành các công việc đã xếp lịch!`);
-      return false; // Not allowed
-    }
-
-    return true; // Allowed
-  };
-
   const handleCreateTask = async (data: Partial<Task>) => {
     let newTask;
     if (editingTask) {
@@ -114,9 +95,7 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string) {
       newTask = await createTask(data);
       if (isPlanningMode && newTask) {
         if (newTask.estimatedMinutes) {
-          if (checkTimeLimit(newTask.estimatedMinutes)) {
-            addPlannedTaskLocally(newTask);
-          }
+          addPlannedTaskLocally(newTask);
         }
       }
     }
@@ -126,7 +105,7 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string) {
   const handleTaskClick = (task: Task) => {
     if (isPlanningMode) {
       if (isTargetStarted) {
-        toast.error("Kế hoạch đã chốt và đang thực thi, không thể chỉnh sửa.");
+        toast.error(t.board.planLockedError);
         return;
       }
       if (plannedTaskIds.includes(task.id)) {
@@ -135,9 +114,7 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string) {
         if (!task.estimatedMinutes) {
           setRequireDurationForTask(task);
         } else {
-          if (checkTimeLimit(task.estimatedMinutes)) {
-            addPlannedTaskLocally(task);
-          }
+          addPlannedTaskLocally(task);
         }
       }
     } else {
@@ -152,11 +129,7 @@ export function useBacklogMatrix(currentDate: string, tomorrowDate: string) {
   const handleMissingDurationSubmit = async (data: Partial<Task>) => {
     if (requireDurationForTask) {
       const updatedTask = await updateTask({ id: requireDurationForTask.id, data });
-      if (updatedTask && updatedTask.estimatedMinutes) {
-        if (checkTimeLimit(updatedTask.estimatedMinutes)) {
-          addPlannedTaskLocally(updatedTask);
-        }
-      } else {
+      if (updatedTask) {
         addPlannedTaskLocally(updatedTask);
       }
       setRequireDurationForTask(null);

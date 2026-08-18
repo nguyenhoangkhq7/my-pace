@@ -1,0 +1,23 @@
+{
+  "DEADLINE": [
+    "deadline", "han chot", "hạn chót", "phai xong hom nay", "phải xong hôm nay", 
+    "sap het han", "sắp hết hạn", "gan deadline", "gần deadline", "due date"
+  ],
+  "OVERDUE": [
+    "tre roi", "trễ rồi", "muon roi", "muộn rồi", "qua han", "quá hạn", "overdue"
+  ],
+  "IMMEDIATE": [
+    "gap", "gấp", "khan", "khẩn", "khan cap", "khẩn cấp", "urgent", "asap", 
+    "ngay lap tuc", "ngay lập tức", "gap len", "gấp lên", "hoa toc", "hỏa tốc",
+    "cuc gap", "cực gấp", "som nhat", "sớm nhất", "ngay bay gio", "ngay bây giờ",
+    "ngay va luon", "ngay và luôn", "chay deadline", "chạy deadline", 
+    "khong duoc tre", "không được trễ", "uu tien cao", "ưu tiên cao"
+  ],
+  "CRITICAL": [
+    "critical", "emergency", "time sensitive", "expiring", "nguy cap", "nguy cấp"
+  ],
+  "INCIDENT": [
+    "incident", "outage", "failure", "su co", "sự cố", "loi production", "lỗi production",
+    "sap server", "sập server", "mat mang", "mất mạng"
+  ]
+}
