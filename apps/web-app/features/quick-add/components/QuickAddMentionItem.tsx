@@ -19,8 +19,21 @@ export function QuickAddMentionItem({
   const itemRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    if (isSelected) {
-      itemRef.current?.scrollIntoView({ block: "nearest" });
+    if (isSelected && itemRef.current) {
+      const item = itemRef.current;
+      const container = item.closest(".overflow-y-auto") as HTMLElement | null;
+      if (container) {
+        const itemTop = item.offsetTop;
+        const itemBottom = itemTop + item.offsetHeight;
+        const containerTop = container.scrollTop;
+        const containerBottom = containerTop + container.clientHeight;
+
+        if (itemTop < containerTop) {
+          container.scrollTop = itemTop;
+        } else if (itemBottom > containerBottom) {
+          container.scrollTop = itemBottom - container.clientHeight;
+        }
+      }
     }
   }, [isSelected]);
 

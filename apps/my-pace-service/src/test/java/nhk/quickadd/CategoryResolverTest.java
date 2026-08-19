@@ -50,4 +50,51 @@ class CategoryResolverTest {
         UUID id = categoryResolver.resolve("project_ca_nhan", List.of(projectCaNhan, hocTap));
         assertThat(id).isEqualTo(projectCaNhan.getId());
     }
+
+    @Test
+    @DisplayName("In-text scan: Name in sentence → Học tập UUID")
+    void testResolveFromText() {
+        UUID id = categoryResolver.resolveFromText("Thời gian dành cho Học tập hôm nay", List.of(projectCaNhan, hocTap));
+        assertThat(id).isEqualTo(hocTap.getId());
+    }
+
+    @Test
+    @DisplayName("Domain fallback: HEALTH signal → Sức khỏe Category UUID")
+    void testResolveFromDomainHealth() {
+        Category sucKhoe = new Category();
+        sucKhoe.setId(UUID.randomUUID());
+        sucKhoe.setName("Sức khỏe");
+        sucKhoe.setColor("#ef4444");
+
+        UUID id = categoryResolver.resolveFromDomain(
+                List.of(new nhk.quickadd.lexicon.CategoryMatch("HEALTH", "khám răng", 50)),
+                List.of(projectCaNhan, hocTap, sucKhoe)
+        );
+        assertThat(id).isEqualTo(sucKhoe.getId());
+    }
+
+    @Test
+    @DisplayName("Domain fallback: EDUCATION signal → Học tập Category UUID")
+    void testResolveFromDomainEducation() {
+        UUID id = categoryResolver.resolveFromDomain(
+                List.of(new nhk.quickadd.lexicon.CategoryMatch("EDUCATION", "ôn bài", 50)),
+                List.of(projectCaNhan, hocTap)
+        );
+        assertThat(id).isEqualTo(hocTap.getId());
+    }
+
+    @Test
+    @DisplayName("Domain fallback: WORK signal → Project cá nhân or Work Category UUID")
+    void testResolveFromDomainWork() {
+        Category congViec = new Category();
+        congViec.setId(UUID.randomUUID());
+        congViec.setName("Công việc");
+        congViec.setColor("#3b82f6");
+
+        UUID id = categoryResolver.resolveFromDomain(
+                List.of(new nhk.quickadd.lexicon.CategoryMatch("WORK", "họp team", 50)),
+                List.of(projectCaNhan, hocTap, congViec)
+        );
+        assertThat(id).isEqualTo(congViec.getId());
+    }
 }

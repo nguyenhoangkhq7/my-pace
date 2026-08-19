@@ -85,7 +85,8 @@ public class LexiconManager {
                 Matcher matcher = pattern.matcher(remainingText);
                 
                 while (matcher.find()) {
-                    matches.add(new CategoryMatch(category, phrase, getBaseScore(category)));
+                    int originalStart = matcher.start();
+                    matches.add(new CategoryMatch(category, phrase, getBaseScore(category), originalStart));
                     // Mask the matched phrase so it's not matched again by shorter phrases
                     remainingText = remainingText.substring(0, matcher.start()) + 
                                     " ".repeat(phrase.length()) + 
@@ -94,6 +95,14 @@ public class LexiconManager {
                 }
             }
         }
+
+        // Sort matches by appearance in text (earliest first, longest match first)
+        matches.sort((a, b) -> {
+            int cmp = Integer.compare(a.startIndex(), b.startIndex());
+            if (cmp != 0) return cmp;
+            return Integer.compare(b.matchedPhrase().length(), a.matchedPhrase().length());
+        });
+
         return matches;
     }
 

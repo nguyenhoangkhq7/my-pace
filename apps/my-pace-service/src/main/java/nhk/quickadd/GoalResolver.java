@@ -58,6 +58,54 @@ class GoalResolver {
         return null;
     }
 
+    /**
+     * Resolves a Goal directly by scanning the raw input text for acronyms or full/substring titles.
+     */
+    UUID resolveFromText(String rawText, List<Goal> goals) {
+        if (rawText == null || rawText.isBlank() || goals == null || goals.isEmpty()) return null;
+
+        String normRawText = DateResolver.normalizeVietnamese(rawText.toLowerCase());
+
+        // 1. Acronym match (e.g. "KLTN" in "Làm slide KLTN tối nay")
+        for (Goal g : goals) {
+            if (g.getTitle() == null || g.getTitle().isBlank()) continue;
+            String acronym = CategoryResolver.buildAcronym(g.getTitle());
+            if (!acronym.isEmpty() && isWordBoundaryMatch(normRawText, acronym.toLowerCase())) {
+                return g.getId();
+            }
+        }
+
+        // 2. Full title or multi-word substring match in rawText (longest title first)
+        UUID bestMatchId = null;
+        int maxMatchLen = 0;
+        for (Goal g : goals) {
+            if (g.getTitle() == null || g.getTitle().isBlank()) continue;
+            String normTitle = DateResolver.normalizeVietnamese(g.getTitle().toLowerCase().trim());
+            if (normTitle.length() < 3) continue; // Avoid short false positives
+            if (isWordBoundaryMatch(normRawText, normTitle)) {
+                if (normTitle.length() > maxMatchLen) {
+                    maxMatchLen = normTitle.length();
+                    bestMatchId = g.getId();
+                }
+            }
+        }
+        if (bestMatchId != null) return bestMatchId;
+
+        // 3. Significant keyword token match (e.g. "IELTS" in Goal "IELTS 7.5", "Marathon" in "Chạy Marathon 2026")
+        for (Goal g : goals) {
+            if (g.getTitle() == null || g.getTitle().isBlank()) continue;
+            String normTitle = DateResolver.normalizeVietnamese(g.getTitle().toLowerCase().trim());
+            String[] tokens = normTitle.split("\\s+");
+            for (String token : tokens) {
+                if (token.length() >= 4 && isWordBoundaryMatch(normRawText, token)) {
+                    return g.getId();
+                }
+            }
+        }
+
+        return null;
+    }
+
     private boolean isWordBoundaryMatch(String text, String target) {
         if (text == null || target == null || target.isBlank()) return false;
         return text.matches(".*\\b" + Pattern.quote(target) + "\\b.*");

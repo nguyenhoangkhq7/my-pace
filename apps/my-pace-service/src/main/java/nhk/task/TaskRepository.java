@@ -30,6 +30,12 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     long countByGoalId(UUID goalId);
     long countByGoalIdAndStatus(UUID goalId, String status);
 
+    @Query("SELECT COUNT(t) FROM Task t WHERE t.userId = :userId AND t.status != 'Done' AND t.dueDate < :now")
+    long countOverdueTasks(@Param("userId") UUID userId, @Param("now") java.time.LocalDateTime now);
+
+    @Query("SELECT t FROM Task t WHERE t.userId = :userId AND t.status != 'Done' AND t.dueDate < :now")
+    List<Task> findOverdueTasks(@Param("userId") UUID userId, @Param("now") java.time.LocalDateTime now);
+
     @org.springframework.data.jpa.repository.Modifying
     @Query("UPDATE Task t SET t.categoryId = :categoryId, t.updatedAt = CURRENT_TIMESTAMP WHERE t.goalId = :goalId")
     int updateCategoryIdByGoalId(@Param("goalId") UUID goalId, @Param("categoryId") UUID categoryId);

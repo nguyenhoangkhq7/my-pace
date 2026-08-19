@@ -104,6 +104,14 @@ export function SunsamaTaskInput({
             💡 {t.sunsamaForm.requireDurationPrompt}
           </p>
         )}
+        
+        {/* Planned Start Time Badge */}
+        {options.initialPlannedStartTime && (
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 rounded-md text-xs font-medium animate-in fade-in zoom-in-95 duration-200">
+            <span className="flex-shrink-0">💡</span>
+            <span>Sẽ được tự động xếp lịch vào lúc <strong>{options.initialPlannedStartTime.split('T')[1]?.substring(0, 5) || options.initialPlannedStartTime}</strong></span>
+          </div>
+        )}
 
         {/* Title Input */}
         <div className="flex items-center gap-2">

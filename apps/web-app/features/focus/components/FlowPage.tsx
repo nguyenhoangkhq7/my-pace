@@ -4,7 +4,6 @@ import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import { useFlowPageData } from "@/features/focus/hooks/useFlowPageData";
-import { useAppVisibility } from "@/features/available-time";
 import { FlowTodoList } from "@/features/focus/components/FlowTodoList";
 import { FlowPomodoro } from "@/features/focus/components/FlowPomodoro";
 import { FloatingPomodoroWidget } from "@/features/focus/components/FloatingPomodoroWidget";
@@ -31,7 +30,6 @@ import { Clock01Icon } from "@hugeicons/core-free-icons";
 import { useTranslation } from "@/hooks/use-translation";
 
 export function FlowPage() {
-  useAppVisibility();
   const { t } = useTranslation();
   usePomodoro();
   const pomodoroState = useFocusStore((s) => s.pomodoroState);

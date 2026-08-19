@@ -27,6 +27,7 @@ public class TaskServiceImpl implements TaskService {
     private final nhk.goal.GoalService goalService;
     private final UserRepository userRepository;
     private final nhk.planning.DailyPlanTaskRepository dailyPlanTaskRepository;
+    private final nhk.planning.DailyPlanRepository dailyPlanRepository;
     private final nhk.timeblock.TaskTimeBlockRepository timeBlockRepository;
     private final nhk.category.CategoryRepository categoryRepository;
     private final ApplicationEventPublisher eventPublisher;
@@ -129,6 +130,37 @@ public class TaskServiceImpl implements TaskService {
         if (saved.getGoalId() != null) {
             goalService.updateGoalProgress(saved.getGoalId());
         }
+
+        if (request.plannedStartTime() != null) {
+            java.time.LocalDate planDate = request.plannedStartTime().toLocalDate();
+            nhk.planning.DailyPlan plan = dailyPlanRepository.findByUserIdAndPlanDate(userId, planDate)
+                    .orElseGet(() -> {
+                        nhk.planning.DailyPlan newPlan = new nhk.planning.DailyPlan();
+                        newPlan.setUserId(userId);
+                        newPlan.setPlanDate(planDate);
+                        newPlan.setAvailableMinutes(0);
+                        newPlan.setIsConfirmed(false);
+                        return dailyPlanRepository.save(newPlan);
+                    });
+
+            nhk.planning.DailyPlanTask pt = new nhk.planning.DailyPlanTask();
+            pt.setDailyPlanId(plan.getId());
+            pt.setTask(saved);
+            pt.setSortOrder(999);
+            dailyPlanTaskRepository.save(pt);
+
+            nhk.timeblock.TaskTimeBlock tb = new nhk.timeblock.TaskTimeBlock();
+            tb.setTaskId(saved.getId());
+            tb.setStartTime(request.plannedStartTime());
+            int duration = (request.plannedDuration() != null && request.plannedDuration() > 0) 
+                           ? request.plannedDuration() : (request.estimatedMinutes() != null ? request.estimatedMinutes() : 60);
+            tb.setEndTime(request.plannedStartTime().plusMinutes(duration));
+            tb.setIsLocked(true);
+            tb.setAvailabilityStatus("BUSY");
+            timeBlockRepository.save(tb);
+
+        }
+
         eventPublisher.publishEvent(new TaskMutatedEvent(userId, saved.getId(), java.time.LocalDate.now()));
         return taskMapper.toDto(saved);
     }

@@ -16,7 +16,7 @@ export function QuickAddSuggestions({ onSelect }: QuickAddSuggestionsProps) {
   ];
 
   return (
-    <div className="px-3.5 py-2 sm:px-4 sm:py-2 bg-muted/20 border-t border-border/40 flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground/75">
+    <div className="px-3.5 py-3 sm:px-4 sm:py-2.5 bg-muted/20 border-t border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-2 text-[11px] text-muted-foreground/75 w-full rounded-b-xl">
       {/* Left: Minimal Formula Hint */}
       <div className="flex items-center gap-1.5 truncate">
         <span className="font-medium text-primary">Task</span>

@@ -25,17 +25,14 @@ public class TaskPriorityScorer {
         Set<LocalDate> datesWithDailyPlan = new HashSet<>();
         Map<UUID, LocalDate> taskIdToPickedDateMap = new HashMap<>();
 
-        for (LocalDate d : ctx.dateRange()) {
-            DailyPlan dp = ctx.planMap().get(d);
-            if (dp != null) {
-                List<DailyPlanTask> dpts = ctx.dailyPlanTasksByPlanId().getOrDefault(dp.getId(), Collections.emptyList());
-                boolean hasTasks = false;
-                for (DailyPlanTask dpt : dpts) {
-                    taskIdToPickedDateMap.put(dpt.getTask().getId(), d);
-                    hasTasks = true;
-                }
-                if (hasTasks || Boolean.TRUE.equals(dp.getIsConfirmed())) {
-                    datesWithDailyPlan.add(d);
+        for (Map.Entry<UUID, List<DailyPlanTask>> entry : ctx.dailyPlanTasksByPlanId().entrySet()) {
+            DailyPlan p = ctx.planMap().values().stream()
+                    .filter(plan -> plan.getId().equals(entry.getKey()))
+                    .findFirst().orElse(null);
+            if (p != null) {
+                datesWithDailyPlan.add(p.getPlanDate());
+                for (DailyPlanTask pt : entry.getValue()) {
+                    taskIdToPickedDateMap.put(pt.getTask().getId(), p.getPlanDate());
                 }
             }
         }

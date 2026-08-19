@@ -202,10 +202,8 @@ export const useFocusStore = create<FocusState>()(
       focusSessionStartedAt: null,
       focusSessionStartAccumulatedTime: 0,
       
-      youtubeUrl: "https://www.youtube.com/live/X4VbdwhkE10?si=gV884ky2WVfhPwQQ",
-      youtubeHistory: [
-        { url: "https://www.youtube.com/live/X4VbdwhkE10?si=gV884ky2WVfhPwQQ", title: "Lofi Girl" }
-      ],
+      youtubeUrl: "",
+      youtubeHistory: [],
 
       isPlaying: false,
       volume: 50,
@@ -213,9 +211,9 @@ export const useFocusStore = create<FocusState>()(
       duration: 0,
       isLooping: false,
       isShuffle: false,
-      activeVideoTitle: "Lofi Girl",
-      activeVideoAuthor: "Lofi Girl",
-      activeVideoId: "X4VbdwhkE10",
+      activeVideoTitle: "",
+      activeVideoAuthor: "",
+      activeVideoId: "",
 
       isSettingsOpen: false,
       isZenFull: false,

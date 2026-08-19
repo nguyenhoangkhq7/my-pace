@@ -14,6 +14,8 @@ import { useBatchSlack } from "./useAutoScheduleSlack";
 import { useEffect } from "react";
 import { useTranslation } from "@/hooks/use-translation";
 
+import { useUnreviewedPlan } from "./useUnreviewedPlan";
+
 interface UseExecutionBoardProps {
   currentDate: string;
   tomorrowDate: string;
@@ -41,6 +43,9 @@ export function useExecutionBoard({ currentDate, tomorrowDate }: UseExecutionBoa
   const { tasks } = useTasks();
   const todayPlan = useDailyPlan(currentDate);
   const tomorrowPlan = useDailyPlan(tomorrowDate);
+  const { unreviewedPlan } = useUnreviewedPlan(currentDate);
+
+  const hasUncompletedPrevPlan = !!unreviewedPlan && unreviewedPlan.tasks?.some(pt => pt.task?.status !== "Done");
 
   const dailyPlanToday = todayPlan.dailyPlan;
   const dailyPlanTomorrow = tomorrowPlan.dailyPlan;
@@ -57,6 +62,29 @@ export function useExecutionBoard({ currentDate, tomorrowDate }: UseExecutionBoa
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isStartMyDayOpen, setIsStartMyDayOpen] = useState(false);
   const [isOverloadModalOpen, setIsOverloadModalOpen] = useState(false);
+  const [isBriefingOpen, setIsBriefingOpen] = useState(false);
+
+  // Auto-show briefing once per day if plan is created (DRAFT) and not confirmed yet,
+  // and user is not currently in the middle of resolving outstanding tasks from yesterday
+  useEffect(() => {
+    if (
+      activeTab === "today" &&
+      !hasUncompletedPrevPlan &&
+      dailyPlanToday &&
+      !dailyPlanToday.isConfirmed &&
+      dailyPlanToday.tasks?.length > 0
+    ) {
+      const storageKey = `briefing-auto-shown-${currentDate}`;
+      const alreadyShown = typeof window !== "undefined" ? sessionStorage.getItem(storageKey) : "true";
+      if (!alreadyShown) {
+        sessionStorage.setItem(storageKey, "true");
+        const timer = setTimeout(() => {
+          setIsBriefingOpen(true);
+        }, 0);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [activeTab, dailyPlanToday, currentDate, hasUncompletedPrevPlan]);
 
   const activePlanHook = useMemo(() => {
     if (activeTab === "today") return todayPlan;
@@ -230,6 +258,35 @@ export function useExecutionBoard({ currentDate, tomorrowDate }: UseExecutionBoa
     }
   };
 
+  const handleUseThisPlan = async (suggestedTasks: { id: string; isMit?: boolean }[]) => {
+    try {
+      const planTasks = suggestedTasks.map((st, index) => {
+        const task = tasks.find(t => t.id === st.id);
+        return {
+          taskId: st.id,
+          isMit: Boolean(st.isMit || task?.isImportant),
+          sortOrder: index,
+        };
+      });
+
+      await todayPlan.savePlan({
+        availableMinutes: baseAvailable,
+        tasks: planTasks,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["dailyPlan", currentDate] });
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["timeBlocks"] });
+
+      setIsBriefingOpen(false);
+      toast.success(t.briefing.usePlanSuccess);
+    } catch (err) {
+      console.error(err);
+      const message = err instanceof Error ? err.message : "Không thể tạo kế hoạch";
+      toast.error(message);
+    }
+  };
+
   return {
     tasks,
     dailyPlanToday,
@@ -248,6 +305,8 @@ export function useExecutionBoard({ currentDate, tomorrowDate }: UseExecutionBoa
     setIsStartMyDayOpen,
     isOverloadModalOpen,
     setIsOverloadModalOpen,
+    isBriefingOpen,
+    setIsBriefingOpen,
     currentPlan,
     currentTimeBlocks,
     targetDate,
@@ -259,5 +318,7 @@ export function useExecutionBoard({ currentDate, tomorrowDate }: UseExecutionBoa
     doSavePlan,
     handleCancelPlan,
     handleRemoveExcessTasks,
+    handleUseThisPlan,
   };
 }
+
