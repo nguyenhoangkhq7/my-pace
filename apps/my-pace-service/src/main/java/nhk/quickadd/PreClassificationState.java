@@ -11,5 +11,6 @@ public record PreClassificationState(
         List<CategoryMatch> domainSignals,
         List<CategoryMatch> strongImportanceSignals,
         List<CategoryMatch> urgencySignals,
+        List<CategoryMatch> notImportantSignals,
         String reason
 ) {}

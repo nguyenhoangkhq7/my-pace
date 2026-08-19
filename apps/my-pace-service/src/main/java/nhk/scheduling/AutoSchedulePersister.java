@@ -32,6 +32,9 @@ public class AutoSchedulePersister {
     ) {
         Map<LocalDate, List<TaskTimeBlockDto>> responseMap = new LinkedHashMap<>();
 
+        Map<UUID, Task> taskMap = ctx.activeTasks().stream()
+                .collect(Collectors.toMap(Task::getId, t -> t, (a, b) -> a));
+
         // Compute global max parts for each task across the entire schedule
         Map<UUID, Integer> globalTaskMaxParts = new HashMap<>();
         for (List<TaskTimeBlock> rawBlocks : generatedBlocksPerDate.values()) {
@@ -55,15 +58,22 @@ public class AutoSchedulePersister {
 
             DailyPlan existingPlan = ctx.planMap().get(date);
             
-            // Theo Option B: KHÔNG TỰ ĐỘNG TẠO DAILY PLAN.
-            // Nếu ngày hôm đó chưa có Daily Plan (existingPlan == null), 
-            // hoặc đã có nhưng chưa được chốt (isConfirmed == false), thì được phép lưu TimeBlocks.
-            // Nếu đã chốt, tuyệt đối không được ghi đè TimeBlocks.
             boolean isConfirmed = existingPlan != null && Boolean.TRUE.equals(existingPlan.getIsConfirmed());
             LocalDate today = LocalDate.now(ctx.zoneId());
             boolean allowOverride = forceRescheduleToday && date.equals(today);
 
             if ((!isConfirmed || allowOverride) && datesActuallyProcessed.contains(date)) {
+                
+                // Option A: Tự động tạo DailyPlan nếu chưa có
+                if (existingPlan == null) {
+                    existingPlan = new DailyPlan();
+                    existingPlan.setUserId(ctx.userId());
+                    existingPlan.setPlanDate(date);
+                    existingPlan.setAvailableMinutes(0);
+                    existingPlan.setIsConfirmed(false);
+                    existingPlan = dailyPlanRepository.save(existingPlan);
+                    ctx.planMap().put(date, existingPlan);
+                }
                 java.time.LocalDateTime start;
                 java.time.LocalDateTime end;
                 if (ctx.sleepMin() < ctx.wakeMin()) {
@@ -157,6 +167,40 @@ public class AutoSchedulePersister {
                 List<TaskTimeBlock> allBlocks = new ArrayList<>(existingPreservedBlocks);
                 allBlocks.addAll(finalFreeBlocks);
                 allBlocks.sort(Comparator.comparing(TaskTimeBlock::getStartTime));
+
+                // Synchronize DailyPlanTasks for Option A (only if this date did not have an explicit daily plan)
+                if (!queues.datesWithDailyPlan().contains(date)) {
+                    Set<UUID> scheduledTaskIds = allBlocks.stream().map(TaskTimeBlock::getTaskId).collect(Collectors.toSet());
+                    List<DailyPlanTask> existingTasks = dailyPlanTaskRepository.findByDailyPlanIdOrderBySortOrderAsc(existingPlan.getId());
+                    Map<UUID, DailyPlanTask> existingTaskMap = existingTasks.stream()
+                            .collect(Collectors.toMap(pt -> pt.getTask().getId(), pt -> pt, (a, b) -> a));
+
+                    List<DailyPlanTask> planTasksToSave = new ArrayList<>();
+                    List<DailyPlanTask> planTasksToDelete = existingTasks.stream()
+                            .filter(pt -> !scheduledTaskIds.contains(pt.getTask().getId()))
+                            .collect(Collectors.toList());
+
+                    for (UUID tId : scheduledTaskIds) {
+                        if (!existingTaskMap.containsKey(tId)) {
+                            Task task = taskMap.get(tId);
+                            if (task != null) {
+                                DailyPlanTask newPt = new DailyPlanTask();
+                                newPt.setDailyPlanId(existingPlan.getId());
+                                newPt.setTask(task);
+                                newPt.setIsMit(false);
+                                newPt.setSortOrder(999);
+                                planTasksToSave.add(newPt);
+                            }
+                        }
+                    }
+
+                    if (!planTasksToDelete.isEmpty()) {
+                        dailyPlanTaskRepository.deleteAll(planTasksToDelete);
+                    }
+                    if (!planTasksToSave.isEmpty()) {
+                        dailyPlanTaskRepository.saveAll(planTasksToSave);
+                    }
+                }
 
                 List<TaskTimeBlockDto> dtos = allBlocks.stream()
                         .map(b -> new TaskTimeBlockDto(

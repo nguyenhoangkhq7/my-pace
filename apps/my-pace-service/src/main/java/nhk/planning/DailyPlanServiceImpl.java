@@ -111,7 +111,7 @@ public class DailyPlanServiceImpl implements DailyPlanService {
                     taskRepository.save(task);
                 }
                 
-                if (isConfirmedSwap && isUncompleted) {
+                if (isRemoved && isUncompleted) {
                     java.time.LocalDateTime startOfDay = plan.getPlanDate().atStartOfDay();
                     java.time.LocalDateTime endOfDay = plan.getPlanDate().plusDays(1).atStartOfDay();
                     List<TaskTimeBlock> blocks = timeBlockRepository.findByUserIdAndDateRange(userId, startOfDay, endOfDay);

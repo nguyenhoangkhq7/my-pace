@@ -22,7 +22,7 @@ export function QuickAddResultHeader({
   const isTask = result?.type === "task";
 
   return (
-    <div className="flex items-center justify-between px-3.5 py-2 border-b border-border/40 bg-muted/15">
+    <div className="flex items-center justify-between px-3.5 py-2 border-b border-border/40 bg-muted/15 rounded-t-xl">
       {/* Left: Mode Badge & Report Action */}
       <div className="flex items-center gap-2">
         <span className="text-primary text-xs font-medium tracking-tight select-none">

@@ -54,20 +54,20 @@ export function SlideEisenhower() {
                 <div className="grid grid-cols-2 gap-2">
                   <div className="p-2.5 rounded-xl bg-rose-500/5 border border-rose-500/10 space-y-0.5">
                     <p className="font-semibold text-rose-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />{t.eisenhower.q1Label}: {t.eisenhower.q1Action}</p>
-                    <p className="text-[11px] text-muted-foreground/80">{t.eisenhower.q1Sub} &amp; Quan trọng.</p>
+                    <p className="text-[11px] text-muted-foreground/80">{t.eisenhower.q1Sub}</p>
                   </div>
                   <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-0.5 relative">
                     <p className="font-semibold text-emerald-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />{t.eisenhower.q2Label}: {t.eisenhower.q2Action}</p>
-                    <p className="text-[11px] text-muted-foreground/80 font-medium">Quan trọng, không gấp.</p>
+                    <p className="text-[11px] text-muted-foreground/80 font-medium">{t.eisenhower.q2Sub}</p>
                     <span className="absolute top-1.5 right-1.5 text-[7px] bg-emerald-500/15 text-emerald-400 font-bold px-1 rounded">{t.eisenhower.focus}</span>
                   </div>
                   <div className="p-2.5 rounded-xl bg-amber-500/5 border border-amber-500/10 space-y-0.5">
                     <p className="font-semibold text-amber-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-400" />{t.eisenhower.q3Label}: {t.eisenhower.q3Action}</p>
-                    <p className="text-[11px] text-muted-foreground/80">Gấp, không quan trọng.</p>
+                    <p className="text-[11px] text-muted-foreground/80">{t.eisenhower.q3Sub}</p>
                   </div>
                   <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
                     <p className="font-semibold text-slate-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-slate-400" />{t.eisenhower.q4Label}: {t.eisenhower.q4Action}</p>
-                    <p className="text-[11px] text-muted-foreground/80 font-medium">Không gấp, không quan trọng.</p>
+                    <p className="text-[11px] text-muted-foreground/80 font-medium">{t.eisenhower.q4Sub}</p>
                   </div>
                 </div>
                 <p className="text-[11px] text-primary/70 italic text-center">{t.eisenhower.autoPriorityTip}</p>
@@ -77,7 +77,7 @@ export function SlideEisenhower() {
                 {selectedQ === "Q1" && (
                   <div className="bg-rose-500/5 border border-rose-500/20 rounded-2xl p-4 space-y-2.5 text-left">
                     <div className="flex items-center justify-between">
-                      <h4 className="font-bold text-rose-400 flex items-center gap-1.5 text-sm"><span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />{t.eisenhower.q1Label} — {t.eisenhower.q1Sub} &amp; Quan trọng</h4>
+                      <h4 className="font-bold text-rose-400 flex items-center gap-1.5 text-sm"><span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />{t.eisenhower.q1Label} — {t.eisenhower.q1Sub}</h4>
                       <button type="button" onClick={() => setSelectedQ(null)} className="text-[10px] font-bold text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded cursor-pointer">✕</button>
                     </div>
                     <p className="text-[11.5px] text-muted-foreground leading-relaxed">{t.eisenhower.q1Desc}</p>
@@ -95,7 +95,7 @@ export function SlideEisenhower() {
                 {selectedQ === "Q2" && (
                   <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-4 space-y-2.5 text-left">
                     <div className="flex items-center justify-between">
-                      <h4 className="font-bold text-emerald-400 flex items-center gap-1.5 text-sm"><span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />{t.eisenhower.q2Label} — Quan trọng, chưa gấp <span className="text-[9px] bg-emerald-500/20 px-1.5 py-0.5 rounded font-bold">{t.eisenhower.focus}</span></h4>
+                      <h4 className="font-bold text-emerald-400 flex items-center gap-1.5 text-sm"><span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />{t.eisenhower.q2Label} — {t.eisenhower.q2Sub} <span className="text-[9px] bg-emerald-500/20 px-1.5 py-0.5 rounded font-bold">{t.eisenhower.focus}</span></h4>
                       <button type="button" onClick={() => setSelectedQ(null)} className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded cursor-pointer">✕</button>
                     </div>
                     <p className="text-[11.5px] text-muted-foreground leading-relaxed">{t.eisenhower.q2Desc}</p>
@@ -113,7 +113,7 @@ export function SlideEisenhower() {
                 {selectedQ === "Q3" && (
                   <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4 space-y-2.5 text-left">
                     <div className="flex items-center justify-between">
-                      <h4 className="font-bold text-amber-400 flex items-center gap-1.5 text-sm"><span className="w-2 h-2 rounded-full bg-amber-400" />{t.eisenhower.q3Label} — {t.eisenhower.q3Sub}, không quan trọng</h4>
+                      <h4 className="font-bold text-amber-400 flex items-center gap-1.5 text-sm"><span className="w-2 h-2 rounded-full bg-amber-400" />{t.eisenhower.q3Label} — {t.eisenhower.q3Sub}</h4>
                       <button type="button" onClick={() => setSelectedQ(null)} className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded cursor-pointer">✕</button>
                     </div>
                     <p className="text-[11.5px] text-muted-foreground leading-relaxed">{t.eisenhower.q3Desc}</p>
@@ -131,7 +131,7 @@ export function SlideEisenhower() {
                 {selectedQ === "Q4" && (
                   <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2.5 text-left">
                     <div className="flex items-center justify-between">
-                      <h4 className="font-bold text-slate-400 flex items-center gap-1.5 text-sm"><span className="w-2 h-2 rounded-full bg-slate-500" />{t.eisenhower.q4Label} — {t.eisenhower.q4Sub}, không quan trọng</h4>
+                      <h4 className="font-bold text-slate-400 flex items-center gap-1.5 text-sm"><span className="w-2 h-2 rounded-full bg-slate-500" />{t.eisenhower.q4Label} — {t.eisenhower.q4Sub}</h4>
                       <button type="button" onClick={() => setSelectedQ(null)} className="text-[10px] font-bold text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded cursor-pointer">✕</button>
                     </div>
                     <p className="text-[11.5px] text-muted-foreground leading-relaxed">{t.eisenhower.q4Desc}</p>

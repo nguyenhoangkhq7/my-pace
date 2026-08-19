@@ -13,6 +13,7 @@ import { usePathname } from "next/navigation";
 import { useFocusStore } from "@/features/focus/store/focus.store";
 import { cn } from "@/lib/utils";
 
+import { useAppVisibility } from "@/features/available-time";
 import { StickyNotesOverlay } from "@/features/sticky-notes/components/StickyNotesOverlay";
 
 export default function AppLayout({
@@ -20,6 +21,7 @@ export default function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
+  useAppVisibility();
   const user = useAuthStore((s) => s.user);
   const pathname = usePathname();
   const isFlowFullscreen = useFocusStore((s) => s.isFlowFullscreen);

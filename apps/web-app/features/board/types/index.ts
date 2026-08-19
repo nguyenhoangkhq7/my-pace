@@ -96,3 +96,56 @@ export interface DailyPlanSummary {
   totalEstimatedMinutes: number;
   totalActualMinutes: number;
 }
+
+export interface BriefingAlert {
+  type: 'OVERDUE' | 'DUE_TODAY' | 'DUE_SOON' | 'GOAL_BEHIND' | 'OVERLOADED' | string;
+  severity: 'critical' | 'warning' | 'info';
+  message: string;
+  count: number;
+  goalTitle?: string | null;
+}
+
+export interface GoalProgression {
+  goalId: string;
+  goalTitle: string;
+  currentPct: number;
+  projectedPct: number;
+  todayTaskCount: number;
+  endDate?: string | null;
+  daysRemaining: number;
+}
+
+export interface BriefingTaskItem {
+  id: string;
+  title: string;
+  estimatedMinutes: number;
+  totalEstimatedMinutes?: number;
+  isUrgent: boolean;
+  isImportant: boolean;
+  categoryName?: string | null;
+  categoryColor?: string | null;
+  goalTitle?: string | null;
+  dueDate?: string | null;
+  isMit: boolean;
+  taskType: string;
+  isSplittable?: boolean;
+  maxDailyDuration?: number | null;
+  fitsToday?: boolean;
+}
+
+export interface DailyBriefingResponse {
+  date: string;
+  availableMinutes: number;
+  scheduledMinutes: number;
+  fillPercentage: number;
+  taskCount: number;
+  mitCount: number;
+  habitSessionCount: number;
+  tasks: BriefingTaskItem[];
+  alerts: BriefingAlert[];
+  currentStreak: number;
+  goalProgressions: GoalProgression[];
+  willClearAllOverdue: boolean;
+}
+
+

@@ -212,16 +212,21 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
             datesActuallyProcessed.add(date);
 
             List<TaskQueueItem> activeQueue = new ArrayList<>();
+            Set<UUID> dailyPlanTaskIds = new HashSet<>();
             if (queues.datesWithDailyPlan().contains(date)) {
                 List<TaskQueueItem> dateQueue = queues.dateTaskQueues().get(date);
                 if (dateQueue != null && !dateQueue.isEmpty()) {
                     activeQueue.addAll(dateQueue);
+                    for (TaskQueueItem item : dateQueue) {
+                        dailyPlanTaskIds.add(item.task.getId());
+                    }
                 }
-            }
-            if (!queues.backlogQueue().isEmpty()) {
-                for (TaskQueueItem bItem : queues.backlogQueue()) {
-                    if (!activeQueue.contains(bItem)) {
-                        activeQueue.add(bItem);
+            } else {
+                if (!queues.backlogQueue().isEmpty()) {
+                    for (TaskQueueItem bItem : queues.backlogQueue()) {
+                        if (!activeQueue.contains(bItem)) {
+                            activeQueue.add(bItem);
+                        }
                     }
                 }
             }
@@ -247,11 +252,11 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
             Map<UUID, Integer> dailyAllocatedMinutes = new HashMap<>();
             Set<TaskQueueItem> dailyProcessedItems = new LinkedHashSet<>(activeQueue);
 
-            runTimelineAllocation(activeQueue, date, ctx, generatedBlocksPerDate, true, startOfDayMin, endOfDayMin, dailyAllocatedMinutes);
+            runTimelineAllocation(activeQueue, date, ctx, generatedBlocksPerDate, true, startOfDayMin, endOfDayMin, dailyAllocatedMinutes, dailyPlanTaskIds);
 
             // Pass 2: Relaxed Time Context (Fallback)
             if (!activeQueue.isEmpty()) {
-                runTimelineAllocation(activeQueue, date, ctx, generatedBlocksPerDate, false, startOfDayMin, endOfDayMin, dailyAllocatedMinutes);
+                runTimelineAllocation(activeQueue, date, ctx, generatedBlocksPerDate, false, startOfDayMin, endOfDayMin, dailyAllocatedMinutes, dailyPlanTaskIds);
             }
 
             // Cleanup active queues
@@ -302,7 +307,8 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
             boolean strictTimeContext,
             int startOfDayMin,
             int endOfDayMin,
-            Map<UUID, Integer> dailyAllocatedMinutes
+            Map<UUID, Integer> dailyAllocatedMinutes,
+            Set<UUID> dailyPlanTaskIds
     ) {
         int cursorMin = startOfDayMin;
         while (cursorMin < endOfDayMin && !activeQueue.isEmpty()) {
@@ -359,15 +365,7 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
 
                 int availableFromContext = getValidAvailableMinutes(item, date, cursorMin, ctx, strictTimeContext);
                 
-                int requiredMinChunk = 30;
-                if (item.task.getMinChunkMinutes() != null && item.task.getMinChunkMinutes() > 0) {
-                    requiredMinChunk = item.task.getMinChunkMinutes();
-                }
-                if (Boolean.FALSE.equals(item.task.getIsSplittable())) {
-                    requiredMinChunk = item.remainingMinutes;
-                }
-                
-                requiredMinChunk = Math.min(requiredMinChunk, item.remainingMinutes);
+                int requiredMinChunk = calculateRequiredMinChunk(item);
 
                 if (freeLength >= requiredMinChunk && availableFromContext >= requiredMinChunk && dailyBudget >= requiredMinChunk) {
                     selectedItem = item;
@@ -381,6 +379,24 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
                 // No task can be scheduled at this time. Advance cursor.
                 cursorMin += 5;
                 continue;
+            }
+
+            // === Displacement-Aware Check (Intra-Quadrant Swap) ===
+            TaskQueueItem swappedItem = tryDisplacementSwap(
+                    selectedItem, activeQueue, date, ctx, strictTimeContext,
+                    cursorMin, freeLength, endOfDayMin, dailyAllocatedMinutes, dailyPlanTaskIds
+            );
+            if (swappedItem != selectedItem) {
+                selectedItem = swappedItem;
+                // Recalculate allocation parameters for the swapped task
+                maxAvailableForItem = getValidAvailableMinutes(selectedItem, date, cursorMin, ctx, strictTimeContext);
+                selectedItemDailyBudget = Integer.MAX_VALUE;
+                if (Boolean.TRUE.equals(selectedItem.task.getIsSplittable())
+                        && selectedItem.task.getMaxDailyDuration() != null
+                        && selectedItem.task.getMaxDailyDuration() > 0) {
+                    int alreadyAllocated = dailyAllocatedMinutes.getOrDefault(selectedItem.task.getId(), 0);
+                    selectedItemDailyBudget = Math.max(0, selectedItem.task.getMaxDailyDuration() - alreadyAllocated);
+                }
             }
 
             // Greedy allocation
@@ -398,16 +414,7 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
                 allocateSize = (allocateSize / 15) * 15;
             }
             
-            int requiredMinChunkForSelected = 30;
-            if (selectedItem.task.getMinChunkMinutes() != null && selectedItem.task.getMinChunkMinutes() > 0) {
-                requiredMinChunkForSelected = selectedItem.task.getMinChunkMinutes();
-            }
-            if (Boolean.FALSE.equals(selectedItem.task.getIsSplittable())) {
-                requiredMinChunkForSelected = selectedItem.remainingMinutes; // The initial remaining before this allocation
-            }
-            
-            // Cap the required min chunk so we don't demand a 30m gap for a 10m task
-            requiredMinChunkForSelected = Math.min(requiredMinChunkForSelected, selectedItem.remainingMinutes);
+            int requiredMinChunkForSelected = calculateRequiredMinChunk(selectedItem);
 
             if (allocateSize < requiredMinChunkForSelected) {
                 cursorMin += 5;
@@ -442,6 +449,162 @@ public class AutoScheduleServiceImpl implements AutoScheduleService {
             
             // Cursor moves to end of block
             cursorMin += allocateSize;
+        }
+    }
+
+    /**
+     * Calculates the required minimum chunk size for a task.
+     */
+    private int calculateRequiredMinChunk(TaskQueueItem item) {
+        int requiredMinChunk = 30;
+        if (item.task.getMinChunkMinutes() != null && item.task.getMinChunkMinutes() > 0) {
+            requiredMinChunk = item.task.getMinChunkMinutes();
+        }
+        if (Boolean.FALSE.equals(item.task.getIsSplittable())) {
+            requiredMinChunk = item.remainingMinutes;
+        }
+        return Math.min(requiredMinChunk, item.remainingMinutes);
+    }
+
+    /**
+     * Returns the Eisenhower quadrant (1-4) based on urgent/important flags.
+     * Q1: urgent+important, Q2: !urgent+important, Q3: urgent+!important, Q4: !urgent+!important
+     */
+    private int getEisenhowerQuadrant(nhk.task.Task task) {
+        boolean urgent = Boolean.TRUE.equals(task.getIsUrgent());
+        boolean important = Boolean.TRUE.equals(task.getIsImportant());
+        if (urgent && important) return 1;
+        if (!urgent && important) return 2;
+        if (urgent) return 3;
+        return 4;
+    }
+
+    /**
+     * Displacement-Aware Swap: checks if placing selectedItem in the current gap would displace
+     * another daily-plan task. If displacement is detected AND both tasks are in the same
+     * Eisenhower quadrant AND selectedItem can fit in an alternative gap, returns the
+     * displaced task (so it gets placed here instead). Otherwise returns selectedItem unchanged.
+     */
+    private TaskQueueItem tryDisplacementSwap(
+            TaskQueueItem selectedItem,
+            List<TaskQueueItem> activeQueue,
+            LocalDate date,
+            ScheduleContext ctx,
+            boolean strictTimeContext,
+            int currentGapStart,
+            int currentGapLength,
+            int endOfDayMin,
+            Map<UUID, Integer> dailyAllocatedMinutes,
+            Set<UUID> dailyPlanTaskIds
+    ) {
+        if (dailyPlanTaskIds == null || dailyPlanTaskIds.isEmpty()) return selectedItem;
+
+        int selectedQuadrant = getEisenhowerQuadrant(selectedItem.task);
+
+        // Calculate how much of the current gap selectedItem would consume
+        int maxChunk = 120;
+        if (Boolean.FALSE.equals(selectedItem.task.getIsSplittable())) {
+            maxChunk = selectedItem.remainingMinutes;
+        }
+        int selectedDailyBudget = Integer.MAX_VALUE;
+        if (Boolean.TRUE.equals(selectedItem.task.getIsSplittable())
+                && selectedItem.task.getMaxDailyDuration() != null
+                && selectedItem.task.getMaxDailyDuration() > 0) {
+            int alreadyAllocated = dailyAllocatedMinutes.getOrDefault(selectedItem.task.getId(), 0);
+            selectedDailyBudget = Math.max(0, selectedItem.task.getMaxDailyDuration() - alreadyAllocated);
+        }
+        int selectedAvailCtx = getValidAvailableMinutes(selectedItem, date, currentGapStart, ctx, strictTimeContext);
+        int wouldAllocate = Math.min(selectedItem.remainingMinutes,
+                Math.min(currentGapLength, Math.min(maxChunk, Math.min(selectedAvailCtx, selectedDailyBudget))));
+        if (wouldAllocate < selectedItem.remainingMinutes) {
+            wouldAllocate = (wouldAllocate / 15) * 15;
+        }
+        int consumedWithBuffer = wouldAllocate + ctx.bufferMinutes();
+
+        // Remaining portion of the current gap after allocation
+        int remainingGapLength = currentGapLength - consumedWithBuffer;
+
+        // Collect all free gaps AFTER the consumed portion of the current gap
+        int searchStart = currentGapStart + consumedWithBuffer;
+        List<InMemoryBitmapScheduler.ScheduleGap> futureGaps =
+                bitmapScheduler.findFreeGaps(ctx.userId(), date, searchStart, endOfDayMin, 15);
+
+        // If there's a usable remainder of the current gap, prepend it
+        List<InMemoryBitmapScheduler.ScheduleGap> availableGapsAfter = new ArrayList<>();
+        if (remainingGapLength >= 15) {
+            availableGapsAfter.add(new InMemoryBitmapScheduler.ScheduleGap(
+                    currentGapStart + consumedWithBuffer,
+                    currentGapStart + currentGapLength,
+                    remainingGapLength));
+        }
+        availableGapsAfter.addAll(futureGaps);
+
+        // Check each task in the queue for displacement
+        for (TaskQueueItem otherItem : activeQueue) {
+            if (otherItem == selectedItem) continue;
+            if (otherItem.remainingMinutes <= 0) continue;
+
+            // Same quadrant check (must be same to allow swap)
+            if (getEisenhowerQuadrant(otherItem.task) != selectedQuadrant) continue;
+
+            // Check: would otherItem be displaced if selectedItem takes this gap?
+            int otherRequired = calculateRequiredMinChunk(otherItem);
+            boolean canFitInRemainingGaps = canTaskFitInGaps(otherItem, otherRequired, availableGapsAfter);
+
+            if (!canFitInRemainingGaps) {
+                // otherItem would be displaced! Check if selectedItem can fit elsewhere.
+                // "Elsewhere" = all gaps except the current one (which would go to otherItem)
+                int selectedRequired = calculateRequiredMinChunk(selectedItem);
+                // For selectedItem's alternative, we look at gaps AFTER the current gap entirely
+                boolean selectedCanFitElsewhere = canTaskFitInGaps(selectedItem, selectedRequired, futureGaps);
+
+                if (selectedCanFitElsewhere) {
+                    // Verify the displaced task actually fits in the CURRENT gap
+                    int otherAvailCtx = getValidAvailableMinutes(otherItem, date, currentGapStart, ctx, strictTimeContext);
+                    int otherDailyBudget = Integer.MAX_VALUE;
+                    if (Boolean.TRUE.equals(otherItem.task.getIsSplittable())
+                            && otherItem.task.getMaxDailyDuration() != null
+                            && otherItem.task.getMaxDailyDuration() > 0) {
+                        int alreadyAllocated = dailyAllocatedMinutes.getOrDefault(otherItem.task.getId(), 0);
+                        otherDailyBudget = Math.max(0, otherItem.task.getMaxDailyDuration() - alreadyAllocated);
+                    }
+
+                    if (currentGapLength >= otherRequired
+                            && otherAvailCtx >= otherRequired
+                            && otherDailyBudget >= otherRequired) {
+                        // SWAP: place otherItem here, selectedItem will be picked up in a later gap
+                        return otherItem;
+                    }
+                }
+            }
+        }
+
+        return selectedItem; // No swap needed
+    }
+
+    /**
+     * Checks whether a task can fit into at least one of the provided gaps.
+     * Non-splittable tasks need a single contiguous gap >= remainingMinutes.
+     * Splittable tasks need total gap time >= remainingMinutes (each gap >= minChunk).
+     */
+    private boolean canTaskFitInGaps(TaskQueueItem item, int minChunkRequired, List<InMemoryBitmapScheduler.ScheduleGap> gaps) {
+        if (Boolean.FALSE.equals(item.task.getIsSplittable())) {
+            // Non-splittable: need one gap >= full remaining
+            for (InMemoryBitmapScheduler.ScheduleGap gap : gaps) {
+                if (gap.durationMin() >= item.remainingMinutes) {
+                    return true;
+                }
+            }
+            return false;
+        } else {
+            // Splittable: total usable gap time (each gap must be >= minChunk) must cover remaining
+            int totalUsable = 0;
+            for (InMemoryBitmapScheduler.ScheduleGap gap : gaps) {
+                if (gap.durationMin() >= minChunkRequired) {
+                    totalUsable += gap.durationMin();
+                }
+            }
+            return totalUsable >= item.remainingMinutes;
         }
     }
 

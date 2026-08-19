@@ -1,6 +1,8 @@
 package nhk.quickadd;
 
+import nhk.category.Category;
 import nhk.category.CategoryRepository;
+import nhk.goal.Goal;
 import nhk.goal.GoalRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -1130,6 +1132,52 @@ class QuickAddServiceTest {
         QuickAddResponse r = serviceWithFastPath.parse(new QuickAddRequest("mua sữa", true), USER_ID, "Asia/Ho_Chi_Minh");
         assertThat(r.source()).isEqualTo("AI");
         assertThat(r.title()).isEqualTo("Mua sữa");
+    }
+
+    @Test
+    @DisplayName("FastPath in-text goal acronym match resolves goal and inherits category")
+    void parseFastPath_InTextGoalAcronym_ResolvesGoalAndInheritsCategory() {
+        Category hocTap = new Category();
+        hocTap.setId(UUID.randomUUID());
+        hocTap.setName("Học tập");
+
+        Goal kltn = new Goal();
+        kltn.setId(UUID.randomUUID());
+        kltn.setTitle("Khóa luận tốt nghiệp");
+        kltn.setCategoryId(hocTap.getId());
+
+        when(categoryRepository.findByUserIdOrderByNameAsc(USER_ID)).thenReturn(List.of(hocTap));
+        when(goalRepository.findByUserIdAndStatus(USER_ID, "In Progress")).thenReturn(List.of(kltn));
+
+        QuickAddService service = new QuickAddService(
+                categoryRepository, goalRepository, new EisenhowerClassifier(new nhk.quickadd.lexicon.LexiconManager()),
+                new QuickAddCache(), new UserContextVersionService(), new ExtractionSchemaValidator(), new ExtractionSemanticValidator(),
+                new FastPathParser(), "test-key", "test-model", null);
+
+        QuickAddResponse r = service.parse(new QuickAddRequest("Làm slide KLTN tối nay 2 tiếng"), USER_ID, "Asia/Ho_Chi_Minh");
+        assertThat(r.source()).isEqualTo("FAST_PATH");
+        assertThat(r.goalId()).isEqualTo(kltn.getId());
+        assertThat(r.categoryId()).isEqualTo(hocTap.getId());
+    }
+
+    @Test
+    @DisplayName("FastPath domain fallback resolves category from domain signals (e.g. khám răng → Sức khỏe)")
+    void parseFastPath_DomainSignalFallback_ResolvesCategory() {
+        Category sucKhoe = new Category();
+        sucKhoe.setId(UUID.randomUUID());
+        sucKhoe.setName("Sức khỏe");
+
+        when(categoryRepository.findByUserIdOrderByNameAsc(USER_ID)).thenReturn(List.of(sucKhoe));
+        when(goalRepository.findByUserIdAndStatus(USER_ID, "In Progress")).thenReturn(List.of());
+
+        QuickAddService service = new QuickAddService(
+                categoryRepository, goalRepository, new EisenhowerClassifier(new nhk.quickadd.lexicon.LexiconManager()),
+                new QuickAddCache(), new UserContextVersionService(), new ExtractionSchemaValidator(), new ExtractionSemanticValidator(),
+                new FastPathParser(), "test-key", "test-model", null);
+
+        QuickAddResponse r = service.parse(new QuickAddRequest("Khám răng lúc 8h sáng mai"), USER_ID, "Asia/Ho_Chi_Minh");
+        assertThat(r.source()).isEqualTo("FAST_PATH");
+        assertThat(r.categoryId()).isEqualTo(sucKhoe.getId());
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────────

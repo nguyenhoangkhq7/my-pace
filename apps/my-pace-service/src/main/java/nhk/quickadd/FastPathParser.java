@@ -27,6 +27,14 @@ public class FastPathParser {
             "\\s+(?:gấp|urgent|khẩn cấp|gấp!|urgent!|khẩn cấp!)$",
             Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE
     );
+    private static final Pattern NOT_URGENT_PREFIX = Pattern.compile(
+            "^(?:không gấp|khong gap|không vội|khong voi|từ từ|tu tu|not urgent|no rush)\\s*[:;,-]?\\s*",
+            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE | Pattern.UNICODE_CHARACTER_CLASS
+    );
+    private static final Pattern NOT_URGENT_SUFFIX = Pattern.compile(
+            "\\s+(?:không gấp|khong gap|không vội|khong voi|từ từ|tu tu|not urgent|no rush)$",
+            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE | Pattern.UNICODE_CHARACTER_CLASS
+    );
     private static final Pattern PRIORITY_SHORTCUT_PATTERN = Pattern.compile(
             "!(?:q([1-4])|p([1-4])|urgent|important|high|low|do_first|schedule|delegate|eliminate)\\b",
             Pattern.CASE_INSENSITIVE
@@ -586,6 +594,20 @@ public class FastPathParser {
         String categoryHint = null;
         String goalHint = null;
         String notes = null;
+
+        // Check not urgent prefix (must be before urgent to avoid substring collision)
+        Matcher notUrgentPrefix = NOT_URGENT_PREFIX.matcher(current);
+        if (notUrgentPrefix.find()) {
+            customU = 0.1;
+            current = current.substring(notUrgentPrefix.end()).trim();
+        }
+
+        // Check not urgent suffix (must be before urgent to avoid substring collision)
+        Matcher notUrgentSuffix = NOT_URGENT_SUFFIX.matcher(current);
+        if (notUrgentSuffix.find()) {
+            customU = 0.1;
+            current = current.substring(0, notUrgentSuffix.start()).trim();
+        }
 
         // Check urgent prefix
         Matcher urgentPrefix = URGENT_PREFIX.matcher(current);

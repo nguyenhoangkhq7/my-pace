@@ -3,7 +3,6 @@
 import { useAuthStore, InitialSetupForm } from "@/features/auth";
 import { BacklogMatrix } from "@/features/board/components/BacklogMatrix";
 import { ExecutionBoard } from "@/features/board/components/ExecutionBoard";
-import { useAppVisibility } from "@/features/available-time";
 import dynamic from "next/dynamic";
 
 const OutstandingTasksModal = dynamic(() => import("./OutstandingTasksModal").then(m => m.OutstandingTasksModal), { ssr: false });
@@ -37,7 +36,6 @@ function isPastSleepTime(sleepTime?: string | null): boolean {
 export function DashboardPage({ 
   initialData: { currentDate, tomorrowDate } 
 }: DashboardPageProps) {
-  useAppVisibility();
   const user = useAuthStore((s) => s.user);
 
   const { isLoading: isLoadingTasks } = useTasks();

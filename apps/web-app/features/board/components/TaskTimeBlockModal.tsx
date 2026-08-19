@@ -1,6 +1,6 @@
 "use client";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar01Icon, Clock01Icon } from "@hugeicons/core-free-icons";
@@ -45,6 +45,8 @@ export function TaskTimeBlockModal({
   const startTimeStr = new Date(block.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   const endTimeStr = new Date(block.endTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   const dateStr = new Date(block.startTime).toLocaleDateString([], { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  
+  const isToday = new Date(block.startTime).toDateString() === new Date().toDateString();
 
   const handleUnschedule = () => {
     onUnschedule(task.id);
@@ -63,85 +65,96 @@ export function TaskTimeBlockModal({
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="sm:max-w-md bg-card text-card-foreground border-border">
         <DialogHeader>
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
-            {isMit && (
-              <Badge className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 text-[10px]">
-                MIT
-              </Badge>
-            )}
-            {task.goalId && (
-              <Badge className="bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 text-[10px]">
-                Goal
-              </Badge>
-            )}
-            {category && (
-              <Badge
-                className="hover:brightness-110 text-[10px]"
-                style={{
-                  backgroundColor: `${category.color}15`,
-                  color: category.color,
-                  borderColor: `${category.color}30`,
-                }}
-                variant="outline"
-              >
-                {category.name}
-              </Badge>
-            )}
-            {isChunked && (
-              <Badge variant="secondary" className="text-[10px]">
-                {t.timeblock.part(block.partIndex, block.totalParts)}
-              </Badge>
-            )}
-          </div>
-          <DialogTitle className="text-xl font-bold leading-snug break-all">{task.title}</DialogTitle>
-          <DialogDescription className="text-muted-foreground text-sm">
-            {t.timeblock.detailDesc}
-          </DialogDescription>
+          <DialogTitle className="text-lg font-bold leading-snug">{t.timeblock.detailDesc || "Timeblock Details"}</DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4 py-3 w-full min-w-0 overflow-hidden">
-          {/* Thời gian */}
-          <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-xl border border-border">
-            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
-              <HugeiconsIcon icon={Clock01Icon} size={18} />
-            </div>
-            <div>
-              <div className="font-semibold text-foreground">
-                {startTimeStr} - {endTimeStr}
+        <div className="flex flex-col gap-5 py-1 w-full min-w-0 overflow-hidden">
+          
+          {/* Thông tin Task cơ bản */}
+          <div className="space-y-2.5">
+            <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Task Information</h4>
+            <div className="p-3.5 bg-muted/30 rounded-xl border border-border space-y-3">
+              <div className="font-semibold text-sm text-foreground leading-snug break-all">
+                {task.title}
               </div>
-              <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-                <HugeiconsIcon icon={Calendar01Icon} size={12} />
-                {dateStr}
+              
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {isMit && (
+                  <Badge className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 text-[10px] px-1.5 py-0">
+                    MIT
+                  </Badge>
+                )}
+                {task.goalId && (
+                  <Badge className="bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 text-[10px] px-1.5 py-0">
+                    Goal
+                  </Badge>
+                )}
+                {category && (
+                  <Badge
+                    className="hover:brightness-110 text-[10px] px-1.5 py-0"
+                    style={{
+                      backgroundColor: `${category.color}15`,
+                      color: category.color,
+                      borderColor: `${category.color}30`,
+                    }}
+                    variant="outline"
+                  >
+                    {category.name}
+                  </Badge>
+                )}
+                {isChunked && (
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                    {t.timeblock.part(block.partIndex, block.totalParts)}
+                  </Badge>
+                )}
               </div>
+
+              <div className="flex justify-between items-center text-[13px] pt-2 border-t border-border/50">
+                <span className="text-muted-foreground">{t.timeblock.estimatedTime}</span>
+                <span className="font-medium text-foreground">{task.estimatedMinutes || 0} phút</span>
+              </div>
+
+              {task.notes && (
+                <div className="text-[13px] pt-2 border-t border-border/50">
+                  <span className="text-muted-foreground block mb-1">{t.timeblock.notes}</span>
+                  <p className="text-foreground/90 whitespace-pre-wrap break-all leading-relaxed">
+                    {task.notes}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Ghi chú và Ước lượng */}
-          <div className="space-y-3">
-            <div className="text-sm">
-              <span className="text-xs font-medium text-muted-foreground">{t.timeblock.estimatedTime}</span>
-              <span className="text-foreground">{task.estimatedMinutes || 0} phút</span>
+          {/* Thông tin Timeblock */}
+          <div className="space-y-2.5">
+            <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Timeblock Allocation</h4>
+            
+            <div className="flex items-center gap-3 p-3.5 bg-primary/5 rounded-xl border border-primary/20">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0 shadow-sm">
+                <HugeiconsIcon icon={Clock01Icon} size={16} />
+              </div>
+              <div className="flex-1">
+                <div className="font-semibold text-foreground text-sm tracking-tight leading-none mb-1">
+                  {startTimeStr} - {endTimeStr}
+                </div>
+                <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <HugeiconsIcon icon={Calendar01Icon} size={12} />
+                  {dateStr}
+                </div>
+              </div>
             </div>
 
-            {task.notes && (
-              <div className="flex flex-col gap-1 w-full min-w-0 overflow-hidden">
-                <span className="text-sm text-muted-foreground font-medium">{t.timeblock.notes}</span>
-                <p className="text-sm text-foreground/90 bg-muted/40 p-3 rounded-lg border border-border whitespace-pre-wrap break-all">
-                  {task.notes}
-                </p>
-              </div>
-            )}
-
             {isChunked && (
-              <p className="text-xs text-amber-600 dark:text-amber-400/90 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2.5 leading-relaxed">
+              <p className="text-[11px] text-amber-600 dark:text-amber-400/90 bg-amber-500/10 border border-amber-500/20 rounded-lg px-2.5 py-2 leading-relaxed font-medium">
                 {t.timeblock.chunkedWarning}
               </p>
             )}
           </div>
+
         </div>
 
         <DialogFooter className="flex gap-2 flex-wrap">
-          {!isConfirmed && onToggleLock && block.id && (
+          {!isConfirmed && isToday && onToggleLock && block.id && (
             <Button
               variant="outline"
               size="sm"
@@ -152,7 +165,7 @@ export function TaskTimeBlockModal({
               {block.availabilityStatus === 'BUSY' ? 'Mở khóa (Unlock)' : 'Khóa (Lock)'}
             </Button>
           )}
-          {!isConfirmed && (
+          {!isConfirmed && isToday && (
             <Button
               variant="destructive"
               size="sm"

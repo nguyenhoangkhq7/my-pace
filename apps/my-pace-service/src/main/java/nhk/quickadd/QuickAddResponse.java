@@ -25,5 +25,6 @@ public record QuickAddResponse(
         String recurrenceType,
         List<Integer> recurrenceDaysOfWeek,
         String recurrenceEndDate,
+        String plannedStartTime,
         String source
 ) {}

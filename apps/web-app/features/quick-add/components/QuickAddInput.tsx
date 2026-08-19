@@ -51,9 +51,9 @@ export function QuickAddInput({ onSubmit, isLoading }: QuickAddInputProps) {
   };
 
   return (
-    <div className="relative flex flex-col gap-2 p-3 sm:p-3.5">
+    <div className="relative flex flex-col gap-2 p-3 sm:p-3.5 rounded-t-xl">
       {/* Input row */}
-      <div className="flex items-center gap-2.5">
+      <div className="relative flex items-center gap-2.5">
         <input
           ref={inputRef}
           type="text"
@@ -90,17 +90,17 @@ export function QuickAddInput({ onSubmit, isLoading }: QuickAddInputProps) {
             <span className="text-[11px]">{t.quickAdd.autoConfirm}</span>
           </button>
         )}
-      </div>
 
-      {/* Mention Popup when triggered */}
-      {mention.isOpen && mention.activeTriggerType && (
-        <QuickAddMentionPopup
-          type={mention.activeTriggerType}
-          items={mention.items}
-          selectedIndex={mention.selectedIndex}
-          onSelect={mention.applyMention}
-        />
-      )}
+        {/* Mention Popup when triggered */}
+        {mention.isOpen && mention.activeTriggerType && (
+          <QuickAddMentionPopup
+            type={mention.activeTriggerType}
+            items={mention.items}
+            selectedIndex={mention.selectedIndex}
+            onSelect={mention.applyMention}
+          />
+        )}
+      </div>
 
       {/* Shortcut Badges row */}
       {!isLoading && (

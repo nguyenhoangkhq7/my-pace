@@ -71,7 +71,7 @@ export function QuickAddPalette() {
   return (
     <Dialog open={isOpen} onOpenChange={(v) => (v ? open() : handleClose())}>
       <DialogContent
-        className="sm:max-w-[560px] !top-[18%] !-translate-y-0 p-0 gap-0 rounded-xl bg-card/95 backdrop-blur-xl border border-border/80 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] transition-all duration-200"
+        className="sm:max-w-[560px] overflow-visible flex flex-col !top-[18%] !-translate-y-0 p-0 gap-0 rounded-xl bg-card/95 backdrop-blur-xl border border-border/80 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] transition-all duration-200"
         showCloseButton={false}
       >
         <VisuallyHidden.Root>
@@ -111,6 +111,7 @@ export function QuickAddPalette() {
                   ? result.checklists.map((c) => c.title)
                   : undefined
               }
+              initialPlannedStartTime={result.plannedStartTime || undefined}
               onSuccess={handleClose}
               onCancel={handleClose}
               autoFocus={true}

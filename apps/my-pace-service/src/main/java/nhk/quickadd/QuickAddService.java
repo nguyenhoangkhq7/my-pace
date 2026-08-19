@@ -308,14 +308,28 @@ public class QuickAddService {
         LocalTime resolvedEndTime    = (timeRange != null && timeRange.endTime() != null)
                 ? timeRange.endTime()
                 : timeResolver.resolveEndTime(resolvedStartTime, durationMinutes);
-        UUID      goalId             = goalResolver.resolve(extraction.goalHint(), goals);
-        UUID      categoryId         = categoryResolver.resolve(extraction.categoryHint(), categories);
-        if (goalId != null) {
+        UUID resolvedGoalId = goalResolver.resolve(extraction.goalHint(), goals);
+        if (resolvedGoalId == null) {
+            resolvedGoalId = goalResolver.resolveFromText(rawText, goals);
+        }
+        final UUID goalId = resolvedGoalId;
+
+        UUID categoryId = categoryResolver.resolve(extraction.categoryHint(), categories);
+        if (categoryId == null && goalId != null) {
             categoryId = goals.stream()
                     .filter(g -> g.getId().equals(goalId) && g.getCategoryId() != null)
                     .map(Goal::getCategoryId)
                     .findFirst()
-                    .orElse(categoryId);
+                    .orElse(null);
+        }
+        if (categoryId == null) {
+            categoryId = categoryResolver.resolveFromText(rawText, categories);
+        }
+        if (categoryId == null && preState != null) {
+            List<nhk.quickadd.lexicon.CategoryMatch> combinedSignals = new ArrayList<>();
+            if (preState.domainSignals() != null) combinedSignals.addAll(preState.domainSignals());
+            if (preState.notImportantSignals() != null) combinedSignals.addAll(preState.notImportantSignals());
+            categoryId = categoryResolver.resolveFromDomain(combinedSignals, categories);
         }
 
         // 2. Classify intent from resolved data & context
@@ -324,7 +338,19 @@ public class QuickAddService {
         // 3. Compute type-specific date/time fields
         boolean   isAllDay  = "event".equals(type) && extraction.allDayHint();
         LocalDate eventDate = "event".equals(type) ? resolvedDate : null;
-        LocalDateTime dueDate = "task".equals(type) ? buildDueDate(resolvedDate, resolvedStartTime) : null;
+        LocalDateTime dueDate = null;
+        LocalDateTime plannedStartTime = null;
+
+        if ("task".equals(type)) {
+            boolean isDeadline = intentClassifier.isDeadlineIntent(rawText, extraction.intent());
+            if (isDeadline || resolvedStartTime == null) {
+                dueDate = buildDueDate(resolvedDate, resolvedStartTime);
+            } else {
+                plannedStartTime = buildDueDate(resolvedDate, resolvedStartTime);
+                // If it's a planned start time, we may not want a strict due date, or we set it to end of day
+                dueDate = buildDueDate(resolvedDate, null);
+            }
+        }
 
         // 4. For all-day events: clear startTime/endTime
         LocalTime effectiveStart = (isAllDay) ? null : resolvedStartTime;
@@ -376,6 +402,7 @@ public class QuickAddService {
                 recurrence.recurrenceType(),
                 recurrence.recurrenceDays(),
                 recurrence.recurrenceEndDate() != null ? recurrence.recurrenceEndDate().format(DATE_FORMATTER) : null,
+                plannedStartTime != null ? plannedStartTime.format(DT_FORMATTER) : null,
                 source
         );
     }
