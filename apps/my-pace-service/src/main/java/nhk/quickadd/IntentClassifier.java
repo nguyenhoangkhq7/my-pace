@@ -118,6 +118,12 @@ public class IntentClassifier {
         return "task";
     }
 
+    public boolean isDeadlineIntent(String rawText, String intent) {
+        String normRaw = rawText != null ? DateResolver.normalizeVietnamese(rawText.toLowerCase()) : "";
+        boolean hasDeadlineMarker = containsAny(normRaw, DEADLINE_MARKERS);
+        return hasDeadlineMarker || "deadline".equalsIgnoreCase(intent);
+    }
+
     private boolean containsAny(String text, List<String> markers) {
         if (text == null || text.isBlank()) return false;
         for (String m : markers) {

@@ -24,6 +24,7 @@ export interface UseSunsamaTaskInputOptions {
   initialMinChunkMinutes?: number | null;
   initialMaxDailyDuration?: number | null;
   initialChecklists?: string[];
+  initialPlannedStartTime?: string;
   requireDuration?: boolean;
   onSubmit?: (task: Partial<Task>) => void | Promise<void>;
   onSuccess?: () => void;
@@ -184,6 +185,8 @@ export function useSunsamaTaskInput(options?: UseSunsamaTaskInputOptions) {
         clearDueDate: !dueDate,
         clearGoalId: !goalId,
         clearCategoryId: !categoryId,
+        plannedStartTime: options?.initialPlannedStartTime,
+        plannedDuration: estimatedMinutes !== null ? estimatedMinutes : 60,
       };
 
       if (options?.onSubmit) {

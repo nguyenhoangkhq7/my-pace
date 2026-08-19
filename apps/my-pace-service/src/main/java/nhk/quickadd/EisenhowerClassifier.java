@@ -73,6 +73,7 @@ public class EisenhowerClassifier {
                 signals.domainSignals(),
                 signals.strongImportanceSignals(),
                 signals.urgencySignals(),
+                signals.notImportantSignals(),
                 reason
         );
     }

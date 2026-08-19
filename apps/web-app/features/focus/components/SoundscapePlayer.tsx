@@ -12,6 +12,7 @@ const emptySubscribe = () => () => {};
 interface YTPlayer {
   playVideo: () => void;
   pauseVideo: () => void;
+  stopVideo?: () => void;
   setVolume: (v: number) => void;
   seekTo: (seconds: number, allowSeekAhead: boolean) => void;
   nextVideo: () => void;
@@ -49,7 +50,8 @@ interface WindowWithYT extends Window {
 
 // ─── URL Parser ──────────────────────────────────────────────────────────────
 
-function parseYouTubeUrl(url: string): { videoId: string | null; listId: string | null } {
+function parseYouTubeUrl(url: string | null | undefined): { videoId: string | null; listId: string | null } {
+  if (!url) return { videoId: null, listId: null };
   const vidRegExp = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|live\/|watch\?v=|&v=)([^#&?]*).*/;
   const vidMatch = url.match(vidRegExp);
   const videoId = vidMatch && vidMatch[2].length === 11 ? vidMatch[2] : null;
@@ -115,6 +117,12 @@ export function SoundscapePlayer() {
    */
   const loadUrlIntoPlayer = (player: YTPlayer, url: string) => {
     const { videoId: vid, listId: lid } = parseYouTubeUrl(url);
+    if (!vid && !lid) {
+      try {
+        player.stopVideo?.();
+      } catch {}
+      return;
+    }
     try {
       if (loadingGuardTimerRef.current) clearTimeout(loadingGuardTimerRef.current);
       isLoadingNewUrlRef.current = true;

@@ -5,7 +5,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAvailableTimeQuery } from "./useAvailableTime";
 import { useAuthStore } from "@/features/auth";
 import { getTodayStr as getTodayStrHelper } from "@/lib/date";
-import {useCheckinMutation} from "@/features/available-time/hooks/useCheckinMutation";
+import { useCheckinMutation } from "@/features/available-time/hooks/useCheckinMutation";
+import { fetchClient } from "@/lib/fetchClient";
 
 export function useAppVisibility() {
   const user = useAuthStore((s) => s.user);
@@ -17,6 +18,8 @@ export function useAppVisibility() {
 
   const lastCheckedDate = useRef<string>("");
   const checkinMutate = checkinMutation.mutate;
+  const isAwayRef = useRef<boolean>(false);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 1. Auto Check-in when user opens app on a new day
   useEffect(() => {
@@ -28,24 +31,61 @@ export function useAppVisibility() {
         checkinMutate({ date: today });
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dataToday?.checkedIn, dataToday?.checkinTime, user?.timezone]);
+  }, [dataToday, user?.timezone, checkinMutate]);
 
-  // 2. Realtime Recalculation on window focus or visibility change
+  // 2. Realtime Recalculation & Auto-Schedule on window focus or visibility change
   useEffect(() => {
-    const handleFocusOrVisible = () => {
-      if (document.visibilityState === "visible") {
-        queryClient.invalidateQueries({ queryKey: ["availableTime", todayStr] });
-        queryClient.invalidateQueries({ queryKey: ["dailyPlan", todayStr] });
+    if (!user || !user.wakeTime || !user.sleepTime) return;
+
+    const triggerAutoScheduleAndRefresh = async () => {
+      try {
+        await fetchClient.post("auto-schedule", {});
+      } catch (e) {
+        console.error("Auto-schedule on focus failed:", e);
+      } finally {
+        queryClient.invalidateQueries({ queryKey: ["availableTime"] });
+        queryClient.invalidateQueries({ queryKey: ["dailyPlan"] });
+        queryClient.invalidateQueries({ queryKey: ["dailyPlans"] });
+        queryClient.invalidateQueries({ queryKey: ["timeBlocks"] });
+        queryClient.invalidateQueries({ queryKey: ["weeklyAllocation"] });
+        queryClient.invalidateQueries({ queryKey: ["tasks"] });
       }
     };
 
-    window.addEventListener("focus", handleFocusOrVisible);
-    document.addEventListener("visibilitychange", handleFocusOrVisible);
+    const handleLeave = () => {
+      isAwayRef.current = true;
+    };
+
+    const handleReturn = () => {
+      if (document.visibilityState === "hidden") return;
+
+      if (isAwayRef.current) {
+        isAwayRef.current = false;
+        if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = setTimeout(() => {
+          triggerAutoScheduleAndRefresh();
+        }, 500);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        handleLeave();
+      } else {
+        handleReturn();
+      }
+    };
+
+    window.addEventListener("blur", handleLeave);
+    window.addEventListener("focus", handleReturn);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      window.removeEventListener("focus", handleFocusOrVisible);
-      document.removeEventListener("visibilitychange", handleFocusOrVisible);
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      window.removeEventListener("blur", handleLeave);
+      window.removeEventListener("focus", handleReturn);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [queryClient, todayStr]);
+  }, [queryClient, user]);
 }
+

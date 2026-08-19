@@ -5,6 +5,7 @@ import { ExecutionModeView } from "./ExecutionModeView";
 import { NoPlanState } from "./NoPlanState";
 import { CancelPlanDialog } from "./CancelPlanDialog";
 import { PlanOverloadModal } from "./PlanOverloadModal";
+import { DailyBriefingModal } from "./DailyBriefingModal";
 import { useExecutionBoard } from "../hooks/useExecutionBoard";
 import { useTranslation } from "@/hooks/use-translation";
 
@@ -31,6 +32,8 @@ export function ExecutionBoard({
     setIsStartMyDayOpen,
     isOverloadModalOpen,
     setIsOverloadModalOpen,
+    isBriefingOpen,
+    setIsBriefingOpen,
     currentPlan,
     currentTimeBlocks,
     currentAvailable,
@@ -41,6 +44,7 @@ export function ExecutionBoard({
     doSavePlan,
     handleCancelPlan,
     handleRemoveExcessTasks,
+    handleUseThisPlan,
   } = useExecutionBoard({ currentDate, tomorrowDate });
   const { t } = useTranslation();
 
@@ -61,8 +65,19 @@ export function ExecutionBoard({
       );
     }
 
-    // If a plan exists with tasks
-    if (currentPlan && currentPlan.tasks && currentPlan.tasks.length > 0) {
+    // If a plan exists with tasks AND (is confirmed OR has been accepted/saved for today)
+    const hasActivePlan =
+      currentPlan &&
+      currentPlan.tasks &&
+      currentPlan.tasks.length > 0 &&
+      (currentPlan.isConfirmed ||
+        currentPlan.tasks.some(
+          pt =>
+            pt.task?.status === "Picked for Today" ||
+            pt.task?.status === "Done"
+        ));
+
+    if (hasActivePlan) {
       return (
         <ExecutionModeView
           currentPlan={currentPlan}
@@ -85,12 +100,12 @@ export function ExecutionBoard({
       );
     }
 
-
-
-    // No plan yet
+    // Unconfirmed draft or no plan yet -> display clean NoPlanState with draft prompt
     return (
       <NoPlanState
         activeTab={activeTab}
+        hasDraft={!!currentPlan && currentPlan.tasks && currentPlan.tasks.length > 0}
+        onOpenBriefing={() => setIsBriefingOpen(true)}
         onStartPlanning={() => setPlanningMode(true, activeTab)}
       />
     );
@@ -104,6 +119,17 @@ export function ExecutionBoard({
             <TabsTrigger value="today" className="data-[state=active]:bg-card data-[state=active]:text-foreground cursor-pointer">{t.board.today}</TabsTrigger>
             <TabsTrigger value="tomorrow" className="data-[state=active]:bg-card data-[state=active]:text-foreground cursor-pointer">{t.board.tomorrow}</TabsTrigger>
           </TabsList>
+
+          {activeTab === "today" && currentPlan && !currentPlan.isConfirmed && (
+            <button
+              onClick={() => setIsBriefingOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 transition-all cursor-pointer shadow-sm"
+              title={t.briefing.title}
+            >
+              <span>☀️</span>
+              <span>{t.briefing.title}</span>
+            </button>
+          )}
         </div>
         
         <TabsContent value="today" className="flex-1 mt-0 outline-none flex flex-col h-full overflow-hidden">
@@ -135,6 +161,13 @@ export function ExecutionBoard({
         plannedTasks={tasks.filter(t => plannedTaskIds.includes(t.id))}
         onRemoveTask={(taskId) => removePlannedTaskLocally(taskId)}
         onSaveAnyway={doSavePlan}
+      />
+
+      <DailyBriefingModal
+        isOpen={isBriefingOpen}
+        onOpenChange={setIsBriefingOpen}
+        currentDate={currentDate}
+        onUseThisPlan={handleUseThisPlan}
       />
     </div>
   );

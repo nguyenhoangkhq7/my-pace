@@ -11,6 +11,7 @@ export interface QuickAddTaskResult {
   isUrgent: boolean;
   isImportant: boolean;
   dueDate: string | null;
+  plannedStartTime?: string | null;
   categoryId: string | null;
   goalId: string | null;
   notes: string | null;

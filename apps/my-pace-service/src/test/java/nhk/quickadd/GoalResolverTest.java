@@ -41,4 +41,25 @@ class GoalResolverTest {
         UUID id = goalResolver.resolve("KLTN", List.of(marathonGoal, kltnGoal));
         assertThat(id).isEqualTo(kltnGoal.getId());
     }
+
+    @Test
+    @DisplayName("In-text scan: Acronym KLTN in sentence → Khóa luận tốt nghiệp UUID")
+    void testResolveFromTextAcronym() {
+        UUID id = goalResolver.resolveFromText("Làm slide KLTN tối nay", List.of(marathonGoal, kltnGoal));
+        assertThat(id).isEqualTo(kltnGoal.getId());
+    }
+
+    @Test
+    @DisplayName("In-text scan: Full title in sentence → Chạy Marathon 2026 UUID")
+    void testResolveFromTextFullTitle() {
+        UUID id = goalResolver.resolveFromText("Tập luyện cho Chạy Marathon 2026 sáng mai 6h", List.of(marathonGoal, kltnGoal));
+        assertThat(id).isEqualTo(marathonGoal.getId());
+    }
+
+    @Test
+    @DisplayName("In-text scan: No match returns null")
+    void testResolveFromTextNoMatch() {
+        UUID id = goalResolver.resolveFromText("Đi siêu thị mua sữa", List.of(marathonGoal, kltnGoal));
+        assertThat(id).isNull();
+    }
 }
